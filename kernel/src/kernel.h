@@ -23,5 +23,6 @@
 #include <semaphore.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <estructuras.h>
 
 #endif /* KERNEL_H_ */
