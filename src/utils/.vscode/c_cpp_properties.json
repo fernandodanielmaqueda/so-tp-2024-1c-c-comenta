@@ -5,13 +5,12 @@
     {
       "name": "Linux",
       "includePath": [
-        "${workspaceFolder}/src",
-        "${workspaceFolder}/../utils/src"
+        "${workspaceFolder}/src"
       ],
       "defines": [],
       "compilerPath": "/usr/bin/gcc",
-      "cStandard": "gnu17",
-      "cppStandard": "gnu++17",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
       "intelliSenseMode": "linux-gcc-x64"
     }
   ],

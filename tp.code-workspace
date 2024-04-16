@@ -8,19 +8,22 @@
 	},
 	"folders": [
 		{
-			"path": "kernel"
+			"path": "src/kernel"
 		},
 		{
-			"path": "cpu"
+			"path": "src/cpu"
 		},
 		{
-			"path": "memoria"
+			"path": "src/memoria"
 		},
 		{
-			"path": "entradasalida"
+			"path": "src/entradasalida"
 		},
 		{
-			"path": "utils"
+			"path": "src/utils"
+		},
+		{
+			"path": "tests/test1"
 		}
 	]
 }
