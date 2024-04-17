@@ -59,6 +59,12 @@ void initialize_sockets()
     fd_memoria = start_server(NULL,PUERTO_ESCUCHA);
     log_info(memoria_logger, "Servidor Memoria iniciado en el puerto %s\n", PUERTO_ESCUCHA);
 
+    log_info(memoria_logger, "Esperando conexion de CPU");
+    fd_cpu = esperar_cliente(fd_memoria);
+    log_info(memoria_logger, "Se conecto el modulo CPU");
+
+
+
 
     log_info(memoria_logger, "Esperando conexion de Kernel");
     fd_kernel = esperar_cliente(fd_memoria);

@@ -80,19 +80,19 @@ void initialize_sockets()
 
 
 	//Incio cliente kernel para ir a memoria
-	log_info(kernel_logger, "Inciando cliente kernel para ir a memoria...");
+	log_info(kernel_logger, "Iniciando cliente kernel para ir a memoria...");
 	fd_kernel = start_client(IP_MEMORIA, PUERTO_MEMORIA);
 	log_info(kernel_logger, "Kernel esta conectado a memoria en el puerto %s \n", PUERTO_MEMORIA);
 
 
 
 	//Incio cliente kernel para ir a CPU Dispatch
-	log_info(kernel_logger, "Inciando cliente kernel para ir a CPU Dispatch...");
+	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Dispatch...");
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_DISPATCH);
 	log_info(kernel_logger, "Kernel esta conectado a CPU Dispatch en el puerto %s\n", PUERTO_CPU_DISPATCH);
 
 	//Incio cliente kernel para ir a CPU Interrupt
-	log_info(kernel_logger, "Inciando cliente kernel para ir a CPU Interrupt... ");
+	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Interrupt... ");
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_INTERRUPT);
 	log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
 
