@@ -76,37 +76,47 @@ void initialize_sockets()
 	
 	//Dejo al kernel en modo server escuchando por el puerto de la config
 	fd_kernel = start_server(NULL, PUERTO_ESCUCHA);
-	log_info(kernel_logger, "Kernel escuchando en puerto... %s", PUERTO_ESCUCHA);
-
-	//Conectar como cliente a memoria
-	log_info(kernel_logger, "Conectando a memoria...");
-
-	fd_memoria = esperar_cliente(fd_kernel);
-	log_info(kernel_logger, "Kernel conectado a memoria");
+	log_info(kernel_logger, "Kernel escuchando en puerto... %s \n", PUERTO_ESCUCHA);
 
 
-	
+	//Incio cliente kernel para ir a memoria
+	log_info(kernel_logger, "Inciando cliente kernel para ir a memoria...");
+	fd_kernel = start_client(IP_MEMORIA, PUERTO_MEMORIA);
+	log_info(kernel_logger, "Kernel esta conectado a memoria en el puerto %s \n", PUERTO_MEMORIA);
 
-	//Conectar como cliente a Entrada/Salida
-	log_info(kernel_logger, "Conectando a Entrada/Salida...");
+
+
+	//Incio cliente kernel para ir a CPU Dispatch
+	log_info(kernel_logger, "Inciando cliente kernel para ir a CPU Dispatch...");
+	fd_kernel = start_client(IP_CPU, PUERTO_CPU_DISPATCH);
+	log_info(kernel_logger, "Kernel esta conectado a CPU Dispatch en el puerto %s\n", PUERTO_CPU_DISPATCH);
+
+	//Incio cliente kernel para ir a CPU Interrupt
+	log_info(kernel_logger, "Inciando cliente kernel para ir a CPU Interrupt... ");
+	fd_kernel = start_client(IP_CPU, PUERTO_CPU_INTERRUPT);
+	log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
+
+/*
+	//Espero conexion entrada/salida
+	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
 	fd_entrada_salida = esperar_cliente(fd_kernel);
+	log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
+
+*/
+
+
+/*
+
+
+	//Espero conexion entarda/salida
 	
-
-
+	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
+	fd_entrada_salida = esperar_cliente(fd_kernel);
 	log_info(kernel_logger, "Kernel conectado a Entrada/Salida");
 
 
-	//Conectar como cliente a CPU Dispatch
-	log_info(kernel_logger, "Conectando a CPU Dispatch...");
-	fd_cpu_dispatch = esperar_cliente(fd_kernel);
-	log_info(kernel_logger, "Kernel conectado a CPU Dispatch");
 
-	//Conectar como cliente a CPU Interrupt
-	log_info(kernel_logger, "Conectando a CPU Interrupt...");
-	fd_cpu_interrupt = esperar_cliente(fd_kernel);
-	log_info(kernel_logger, "Kernel conectado a CPU Interrupt");
-
-	
+	*/
 	
 }
 	
@@ -117,9 +127,7 @@ void kernel(){
 
 	
 	initialize_sockets();
-
-
- 
+	log_info(kernel_logger, "Kernel inicializado\n");
 
 
 //ESTO ES PCB Y ESTADOS
@@ -128,7 +136,7 @@ void kernel(){
 	ready_list = list_create();
 }
 
-// =====///
+
 
 
 void agregar_a_new(t_pcb* pcb){

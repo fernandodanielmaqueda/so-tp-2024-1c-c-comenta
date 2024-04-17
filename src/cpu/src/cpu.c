@@ -70,16 +70,29 @@ void initialize_sockets(){
 
     //Dejo a CPU en modo server incialzio server cpu dispatch
     fd_cpu_dispatch = start_server(NULL,PUERTO_ESCUCHA_DISPATCH);
-    log_info(cpu_logger, "CPU en modo dispatch server en puerto %s", PUERTO_ESCUCHA_DISPATCH);
+    log_info(cpu_logger, "CPU en modo dispatch server escuchando en puerto %s \n", PUERTO_ESCUCHA_DISPATCH);
 
     //Dejo a CPU en modo server incialzio server cpu interrupt
     fd_cpu_interrupt = start_server(NULL,PUERTO_ESCUCHA_INTERRUPT);
-    log_info(cpu_logger, "CPU en modo interrupt server en puerto %s", PUERTO_ESCUCHA_INTERRUPT);
+    log_info(cpu_logger, "CPU en modo interrupt server escuchando en puerto %s \n", PUERTO_ESCUCHA_INTERRUPT);
 
+
+    //Espero conexion  dispatch kernel
+    log_info(cpu_logger, "Esperando conexion de kernel en puerto disptach %s \n", PUERTO_ESCUCHA_DISPATCH);
+    fd_kernel = esperar_cliente(fd_cpu_dispatch);
+    log_info(cpu_logger, "Conectado a kernel en puerto dispatch ");
+
+    //Espero a conexion interrupt kernel
+    log_info(cpu_logger, "Esperando conexion de kernel en puerto interrupt %s \n", PUERTO_ESCUCHA_INTERRUPT);
+    fd_kernel = esperar_cliente(fd_cpu_interrupt);
+    log_info(cpu_logger, "Conectado a kernel en puerto interrupt ");
+
+
+/* 
     //Conecto a memoria como cliente cpu
     fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
     log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
-
+*/
   
 
 }
@@ -90,7 +103,7 @@ void cpu()
     initialize_config();
     initialize_sockets();
 
-    log_info(cpu_logger, "CPU inicializado");
+    log_info(cpu_logger, "CPU inicializado correctamente");
 
 }
 

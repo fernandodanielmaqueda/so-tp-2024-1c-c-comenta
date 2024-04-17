@@ -17,7 +17,6 @@ int TAM_PAGINA;
 char* PATH_INSTRUCCIONES;
 int RETARDO_RESPUESTA;
 
-char* memoria_ip= "127.0.0.1";
 
 int main() {
 
@@ -55,23 +54,18 @@ void obtener_configuracion(t_config* memoria_config)
 
 void initialize_sockets()
 {
-
-     
-    //INICIALIZO MEMORIA CON START CLIENT
-
-   // int conexion_cliente = start_client(memoria_ip,PUERTO_ESCUCHA); ========ACA DEBE SER LA CLAVE PARA QUE CONECTE BIEN
+  
+     //Incializo a memoria en modo server
+    fd_memoria = start_server(NULL,PUERTO_ESCUCHA);
+    log_info(memoria_logger, "Servidor Memoria iniciado en el puerto %s\n", PUERTO_ESCUCHA);
 
 
     log_info(memoria_logger, "Esperando conexion de Kernel");
     fd_kernel = esperar_cliente(fd_memoria);
-    log_info(memoria_logger, "Se conecto el modulo Kernel"); 
-    liberar_conexion(conexion_cliente);
-   
-     //Incializo a memoria en modo server
-    fd_memoria = start_server(NULL,PUERTO_ESCUCHA);
-    log_info(memoria_logger, "Servidor Memoria iniciado en el puerto %s", PUERTO_ESCUCHA);
-
-  
+    log_info(memoria_logger, "Se conecto el modulo Kernel\n"); 
+       
+    
+  /*
     //espero conexion entrada y salida
     log_info(memoria_logger, "Esperando conexion de EntradaSalida");
     fd_io = esperar_cliente(fd_memoria);
@@ -81,7 +75,7 @@ void initialize_sockets()
     log_info(memoria_logger, "Esperando conexion de CPU");
     fd_cpu = esperar_cliente(fd_memoria);
     log_info(memoria_logger, "Se conecto el modulo CPU");
-
+*/
  
 
 }

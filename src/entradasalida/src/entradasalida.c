@@ -59,24 +59,20 @@ void obtener_configuracion(t_config* entrada_config)
 
 void initialize_sockets(){
 
-
+/*
     //Me conecto a kernel como cliente entardasalida
-    log_info(entrada_logger, "Conectando con el kernel");
+    log_info(entrada_logger, "Inicializando cliente I/O para ir al  kernel");
     fd_kernel = start_client(IP_KERNEL, PUERTO_KERNEL);
-    log_info(entrada_logger, "Conectado con el kernel");
+    log_info(entrada_logger, "I/O esta conectado con el kernel \n");
 
-    if(fd_kernel == -1){
-        log_error(entrada_logger, "No se pudo conectar con el kernel");
-        exit(EXIT_FAILURE);
-    }
-
+*/
+    /*
     log_info(entrada_logger, "Conectando con la memoria");
     fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
-    log_info(entrada_logger, "Conectado con la memoria");
-    if(fd_memoria == -1){
-        log_error(entrada_logger, "No se pudo conectar con la memoria");
-        exit(EXIT_FAILURE);
-    }
+*/
+
+
+    
 
 }
 
@@ -85,6 +81,6 @@ void entradaysalida()
     initialize_logger();
     initialize_config();
     initialize_sockets();
-    log_info(entrada_logger, "Entrada y salida iniciado");
+    log_info(entrada_logger, "Entrada y salida iniciado correctamente\n");
    
 }
