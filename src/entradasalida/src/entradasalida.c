@@ -59,20 +59,19 @@ void obtener_configuracion(t_config* entrada_config)
 
 void initialize_sockets(){
 
-/*
+    //Me conecto a memoria como cliente entardasalida
+    log_info(entrada_logger, "Conectando con la memoria");
+    fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
+    log_info(entrada_logger, "I/O esta conectado con la memoria \n");
+
+
+
     //Me conecto a kernel como cliente entardasalida
     log_info(entrada_logger, "Inicializando cliente I/O para ir al  kernel");
     fd_kernel = start_client(IP_KERNEL, PUERTO_KERNEL);
     log_info(entrada_logger, "I/O esta conectado con el kernel \n");
 
-*/
-    /*
-    log_info(entrada_logger, "Conectando con la memoria");
-    fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
-*/
-
-
-    
+ 
 
 }
 

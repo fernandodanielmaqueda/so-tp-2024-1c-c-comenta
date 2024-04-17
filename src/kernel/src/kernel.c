@@ -79,6 +79,14 @@ void initialize_sockets()
 	log_info(kernel_logger, "Kernel escuchando en puerto... %s \n", PUERTO_ESCUCHA);
 
 
+	//=============DISCALIMER: SI ENTRADA SALIDA LO DEJO ACA HACE BIEN EL ESPERA DELMODLUO ENTRADA SALIDA... SI LO PONGO ABAJO DE TODO NO LO CONECTA======//////
+	//Espero conexion entrada/salida
+	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
+	fd_entrada_salida = esperar_cliente(fd_kernel);
+	log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
+
+//*********************************************************************************************************************************************************///
+
 	//Incio cliente kernel para ir a memoria
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a memoria...");
 	fd_kernel = start_client(IP_MEMORIA, PUERTO_MEMORIA);
@@ -96,27 +104,7 @@ void initialize_sockets()
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_INTERRUPT);
 	log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
 
-/*
-	//Espero conexion entrada/salida
-	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
-	fd_entrada_salida = esperar_cliente(fd_kernel);
-	log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
 
-*/
-
-
-/*
-
-
-	//Espero conexion entarda/salida
-	
-	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
-	fd_entrada_salida = esperar_cliente(fd_kernel);
-	log_info(kernel_logger, "Kernel conectado a Entrada/Salida");
-
-
-
-	*/
 	
 }
 	

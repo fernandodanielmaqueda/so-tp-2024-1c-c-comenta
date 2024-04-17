@@ -71,17 +71,14 @@ void initialize_sockets()
     log_info(memoria_logger, "Se conecto el modulo Kernel\n"); 
        
     
-  /*
+  
     //espero conexion entrada y salida
     log_info(memoria_logger, "Esperando conexion de EntradaSalida");
     fd_io = esperar_cliente(fd_memoria);
     log_info(memoria_logger, "Se conecto el modulo IO");
 
-    //espero conexion cpu
-    log_info(memoria_logger, "Esperando conexion de CPU");
-    fd_cpu = esperar_cliente(fd_memoria);
-    log_info(memoria_logger, "Se conecto el modulo CPU");
-*/
+
+
  
 
 }
