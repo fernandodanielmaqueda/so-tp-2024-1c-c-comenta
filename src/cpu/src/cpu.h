@@ -17,9 +17,11 @@
 #include <utils/socket.h>
 
 
-t_log* cpu_logger;
-t_log* cpu_debug_logger;
-t_config* cpu_config;
+void initialize_logger();
+void initialize_config();
+void obtener_configuracion(t_config* cpu_config);
+void cpu();
+void initialize_sockets();
 
 
 #endif /* CPU_H_ */

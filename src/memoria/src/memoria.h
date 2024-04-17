@@ -20,5 +20,12 @@ t_log* memoria_logger;
 t_log* memoria_debug_logger;
 t_config* memoria_config;
 
+void initialize_logger();
+void initialize_config();
+void obtener_configuracion(t_config* memoria_config);
+void initialize_sockets();
+void memoria();
+
+
 
 #endif /* MEMORIA_H_ */

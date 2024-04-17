@@ -8,70 +8,100 @@ extern t_log* logger;
 int start_client(char* ip, char* port)
 {
 
-	int err;
-	struct addrinfo hints, *server_info;
+	struct addrinfo hints;
+	struct addrinfo *server_info;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	
 
-	err = getaddrinfo(ip, port, &hints, &server_info);
+	getaddrinfo(ip, port, &hints, &server_info);
 
+	// Ahora vamos a crear el socket.
+	int socket_cliente = 0;
 
-	int fd_conexion   = socket(server_info->ai_family,
-                            server_info->ai_socktype,
-						    server_info->ai_protocol);
-
+	// Ahora que tenemos el socket, vamos a conectarlo
+	socket_cliente = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
 	
-	if(connect(fd_conexion  , server_info->ai_addr, server_info->ai_addrlen) == -1)
+
+    if(connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == -1)
 	{
-		return -1;
+		
+       	return -1;
 	}
-
 	freeaddrinfo(server_info);
-
-	return fd_conexion  ;
+    return socket_cliente;
 }
 
 
 int start_server(char* ip, char* port) {
 
+	int socket_servidor;
 
-	int fd_escucha ; //Guarda el File Descriptor(IDs) representado por un entero.
-
-	int err;
-	struct addrinfo hints, *servinfo; // Estruc q Contendra información sobre la dirección de un proveedor de servicios.
+	struct addrinfo hints, *servinfo, *p;
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	err = getaddrinfo(ip, port, &hints, &servinfo); //Traduce el nombre de una ubicación de servicio a un conjunto de direcciones de socket.
+	getaddrinfo(ip, port, &hints, &servinfo);
 
 	// Creamos el socket de escucha del servidor
-	fd_escucha  = socket(servinfo->ai_family,
-							 servinfo->ai_socktype,
-							 servinfo->ai_protocol);
+	socket_servidor = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+	if (socket_servidor == -1) {
+		return -1;
+		
+	}
 
-	/* bind() y listen() son las llamadas al sistema que realiza
-	 * la preparacion por parte del proceso servidor */
+	// Asociamos el socket a un puerto
+	if (bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+		
+		return -1;
+	}
+	else{
+		bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen);
+	}
 
-	int activado = 1;
-	setsockopt(fd_escucha , SOL_SOCKET, SO_REUSEADDR, &activado, sizeof(activado));
 
-	// 1) Asociamos el socket creado a un puerto
-	bind(fd_escucha ,servinfo->ai_addr, servinfo->ai_addrlen);
-
-	// 2) Escuchamos las conexiones entrantes a ese socket, cuya unica responsabilidad
-	// es notificar cuando un nuevo cliente este intentando conectarse.
-
-	listen(fd_escucha ,SOMAXCONN); // El servidor esta listo para recibir a los clientes (ESTA ESCUCHANDO).
+	// Escuchamos las conexiones entrantes
+	if (listen(socket_servidor, SOMAXCONN) == -1) {
+		
+		freeaddrinfo(servinfo);
+		return -1;
+	}
+	else{
+		listen(socket_servidor, SOMAXCONN);
+		
+	}
+		
 	freeaddrinfo(servinfo);
-	return fd_escucha ;
+	return socket_servidor;
 }
 
+int esperar_cliente(int socket_servidor)
+{
+	// Aceptamos un nuevo cliente
+	int socket_cliente = accept (socket_servidor, NULL, NULL);
+	if(socket_cliente == -1)
+    {
+        
+        return -1;
+    }
+
+	return socket_cliente;
+}
+
+void liberar_conexion(int socket_cliente)
+{
+	close(socket_cliente);
+}
+
+
+
+
+/*
 void get_ip_port_from_module(const char* module,  char * path_config, char* ip, char* port)
 {
 	t_config* config = config_create(path_config);
@@ -140,3 +170,5 @@ int start_server_module(char* module, char * pathconfig)
 
 	return socket_server;
 }
+
+*/

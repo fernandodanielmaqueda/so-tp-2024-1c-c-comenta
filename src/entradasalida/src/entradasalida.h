@@ -23,4 +23,11 @@ t_log* entrada_logger;
 t_log* entrada_debug_logger;
 t_config* entrada_config;
 
+void initialize_logger();
+void initialize_config();
+void obtener_configuracion(t_config* entrada_config);
+void entradaysalida();
+void initialize_sockets();
+
+
 #endif /* ENTRADASALIDA_H_ */
