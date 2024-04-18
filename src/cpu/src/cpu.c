@@ -68,18 +68,20 @@ void obtener_configuracion(t_config* cpu_config)
 
 void initialize_sockets(){
 
-    //Dejo a CPU en modo server incialzio server cpu dispatch
+
+        //Inicializo memoria
+    log_info(cpu_logger, "Iniciando clinte cpu para ir a memoria");
+    fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
+    log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
+
+
+    //Dejo a CPU en modo server incializo server cpu dispatch
     fd_cpu_dispatch = start_server(NULL,PUERTO_ESCUCHA_DISPATCH);
     log_info(cpu_logger, "CPU en modo dispatch server escuchando en puerto %s \n", PUERTO_ESCUCHA_DISPATCH);
 
     //Dejo a CPU en modo server incialzio server cpu interrupt
     fd_cpu_interrupt = start_server(NULL,PUERTO_ESCUCHA_INTERRUPT);
     log_info(cpu_logger, "CPU en modo interrupt server escuchando en puerto %s \n", PUERTO_ESCUCHA_INTERRUPT);
-
-    //Inicializo memoria
-    log_info(cpu_logger, "Iniciando clinte cpu para ir a memoria");
-    fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
-    log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
 
     
     //Espero conexion  dispatch kernel

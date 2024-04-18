@@ -74,16 +74,7 @@ void obtener_configuracion(t_config* kernel_config)
 void initialize_sockets()
 {
 	
-	//Dejo al kernel en modo server escuchando por el puerto de la config
-	fd_kernel = start_server(NULL, PUERTO_ESCUCHA);
-	log_info(kernel_logger, "Kernel escuchando en puerto... %s \n", PUERTO_ESCUCHA);
 
-
-	//=============DISCALIMER: SI ENTRADA SALIDA LO DEJO ACA HACE BIEN EL ESPERA DELMODLUO ENTRADA SALIDA... SI LO PONGO ABAJO DE TODO NO LO CONECTA======//////
-	//Espero conexion entrada/salida
-	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
-	fd_entrada_salida = esperar_cliente(fd_kernel);
-	log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
 
 //*********************************************************************************************************************************************************///
 
@@ -103,6 +94,19 @@ void initialize_sockets()
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Interrupt... ");
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_INTERRUPT);
 	log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
+
+	//Despues de las conexiones como cliente abro la conexion a servidor
+
+		//Dejo al kernel en modo server escuchando por el puerto de la config
+	fd_kernel = start_server(NULL, PUERTO_ESCUCHA);
+	log_info(kernel_logger, "Kernel escuchando en puerto... %s \n", PUERTO_ESCUCHA);
+
+
+	//=============DISCALIMER: SI ENTRADA SALIDA LO DEJO ACA HACE BIEN EL ESPERA DELMODLUO ENTRADA SALIDA... SI LO PONGO ABAJO DE TODO NO LO CONECTA======//////
+	//Espero conexion entrada/salida
+	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
+	fd_entrada_salida = esperar_cliente(fd_kernel);
+	log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
 
 
 	
