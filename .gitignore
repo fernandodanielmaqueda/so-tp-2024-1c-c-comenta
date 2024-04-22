@@ -1,5 +1,19 @@
 .metadata/
 
+*.log
+
+# Eclipse files
+.settings/
+.cproject
+.project
+
+# Visual Studio Code files
+.vscode/*
+!.vscode/c_cpp_properties.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
+
 # Generated folders
 .deps/
 bin/
@@ -9,6 +23,7 @@ entradasalida/
 kernel/
 memoria/
 utils/
+build/
 
 # Prerequisites
 *.d

@@ -4,23 +4,77 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build",
-      "command": "make all",
+      "label": "make src/entradasalida/bin/entradasalida",
+      "command": "make src/${workspaceFolderBasename}/bin/${workspaceFolderBasename}",
       "type": "shell",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": ["$gcc"]
+      "problemMatcher": ["$gcc"],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
     },
     {
-      "label": "clean",
-      "command": "make clean",
+      "label": "make run-entradasalida",
+      "command": "make run-${workspaceFolderBasename}",
       "type": "shell",
       "group": {
         "kind": "none"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+    {
+      "label": "make gdb-entradasalida",
+      "command": "make gdb-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+	{
+      "label": "make valgrind-none-entradasalida",
+      "command": "make valgrind-none-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+	{
+      "label": "make valgrind-memcheck-entradasalida",
+      "command": "make valgrind-memcheck-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+	{
+      "label": "make valgrind-helgrind-entradasalida",
+      "command": "make valgrind-helgrind-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
     }
   ]
 }

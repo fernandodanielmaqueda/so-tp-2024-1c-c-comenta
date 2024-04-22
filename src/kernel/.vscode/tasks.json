@@ -4,23 +4,77 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build",
-      "command": "make all",
+      "label": "make src/kernel/bin/kernel",
+      "command": "make src/${workspaceFolderBasename}/bin/${workspaceFolderBasename}",
       "type": "shell",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": ["$gcc"]
+      "problemMatcher": ["$gcc"],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
     },
     {
-      "label": "clean",
-      "command": "make clean",
+      "label": "make run-kernel",
+      "command": "make run-${workspaceFolderBasename}",
       "type": "shell",
       "group": {
         "kind": "none"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+    {
+      "label": "make gdb-kernel",
+      "command": "make gdb-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+	{
+      "label": "make valgrind-none-kernel",
+      "command": "make valgrind-none-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+	{
+      "label": "make valgrind-memcheck-kernel",
+      "command": "make valgrind-memcheck-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
+    },
+	{
+      "label": "make valgrind-helgrind-kernel",
+      "command": "make valgrind-helgrind-${workspaceFolderBasename}",
+      "type": "shell",
+      "group": {
+        "kind": "none"
+      },
+      "problemMatcher": [],
+	  "options": {
+        "cwd": "${workspaceFolder}/../../"
+      }
     }
   ]
 }
