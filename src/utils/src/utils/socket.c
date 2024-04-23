@@ -333,12 +333,12 @@ t_pcb *deserializar_pcb(int socketCliente)
   pcb->DI = *(uint32_t *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->DI = %d\n", cursor, pcb->DI);
 
-  pcb->quantum = *(int *)list_get(lista_elememtos, ++cursor);
+  pcb->quantum = *(uint32_t *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->quantum = %d\n", cursor, pcb->quantum);
 
-  pcb->estado_actual = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  pcb->estado_actual = *(int *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->estado_actual = %d\n", cursor, pcb->estado_actual);
-  pcb->fd_conexion = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  pcb->fd_conexion = *(int *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->fd_conexion = %d\n", cursor, pcb->fd_conexion);
 
   //INSTRUCCIONES
