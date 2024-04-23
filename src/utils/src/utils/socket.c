@@ -244,6 +244,9 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
   cursor++;
 */
 
+  add_to_package(paquete, &(pcb->quantum), sizeof(uint32_t));
+  DEBUG_PRINTF("\n[Serializar] paquete[%d]: quantum = %d\n", cursor, pcb->quantum);
+  cursor++;
   add_to_package(paquete, &(pcb->estado_actual), sizeof(int));
   DEBUG_PRINTF("\n[Serializar] paquete[%d]: estado_actual = %d\n", cursor, pcb->estado_actual);
   cursor++;
@@ -329,6 +332,9 @@ t_pcb *deserializar_pcb(int socketCliente)
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->SI = %d\n", cursor, pcb->SI);
   pcb->DI = *(uint32_t *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->DI = %d\n", cursor, pcb->DI);
+
+  pcb->quantum = *(int *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->quantum = %d\n", cursor, pcb->quantum);
 
   pcb->estado_actual = *(uint32_t *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->estado_actual = %d\n", cursor, pcb->estado_actual);

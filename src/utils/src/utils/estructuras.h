@@ -19,6 +19,7 @@ typedef struct {
     uint32_t SI;
     uint32_t DI;
 
+    uint32_t quantum;
     int estado_actual;
     int fd_conexion;
 
