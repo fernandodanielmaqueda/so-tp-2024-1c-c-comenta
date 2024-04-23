@@ -108,6 +108,44 @@ void add_to_package(t_paquete *paquete, void *valor, int tamanio)
 }
 
 
+void *get_buffer(int *size, int socketCliente)
+{
+  void *buffer;
+
+  recv(socketCliente, size, sizeof(int), MSG_WAITALL);
+  buffer = malloc(*size);
+  recv(socketCliente, buffer, *size, MSG_WAITALL);
+
+  return buffer;
+}
+
+
+t_list* get_package_like_list(int socketCliente)
+{
+  int sizeBuffer;
+  int tamanioContenido;
+  int desplazamiento = 0;
+
+  t_list *contenido = list_create();
+  void *buffer = get_buffer(&sizeBuffer, socketCliente);
+
+  while (desplazamiento < sizeBuffer)
+  {
+    memcpy(&tamanioContenido, buffer + desplazamiento, sizeof(int));
+    desplazamiento += sizeof(int);
+
+    void *valor = malloc(tamanioContenido);
+    memcpy(valor, buffer + desplazamiento, tamanioContenido);
+    desplazamiento += tamanioContenido;
+
+    list_add(contenido, valor);
+  }
+
+  free(buffer);
+  return contenido;
+}
+
+
 void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
 {
   DEBUG_PRINTF("\n[Serializar] serializar_pcb( ) [...]\n");
@@ -207,7 +245,7 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
 */
 
   add_to_package(paquete, &(pcb->estado_actual), sizeof(int));
-  DEBUG_PRINTF("\n[Serializar] paquete[%d]: estado_actual = %d\n", cursor, pcb->fd_conexion);
+  DEBUG_PRINTF("\n[Serializar] paquete[%d]: estado_actual = %d\n", cursor, pcb->estado_actual);
   cursor++;
   agregar_a_paquete(paquete, &(pcb->fd_conexion), sizeof(int));
   DEBUG_PRINTF("\n[Serializar] paquete[%d]: fd_conexion = %d\n", cursor, pcb->fd_conexion);
@@ -244,5 +282,88 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
   }
 
   DEBUG_PRINTF("\n[Serializar] serializar_pcb( ) [END]\n");
+
+}
+
+
+t_pcb *deserializar_pcb(int socketCliente)
+{
+  DEBUG_PRINTF("\n[Deserializar] deserializar_pcb( ) [...]\n");
+
+  t_list *lista_elememtos = get_package_like_list(socketCliente);
+  t_pcb *pcb = malloc(sizeof(t_pcb));
+  pcb->instrucciones = list_create();
+  int cursor = 0;
+
+  pcb->pid = *(uint32_t *)list_get(lista_elememtos, cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->pid = %d\n", cursor, pcb->pid);
+  pcb->pc = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->pc = %d\n", cursor, pcb->pc);
+
+  //REGISTROS
+  pcb->AX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->AX = %d\n", cursor, pcb->AX);
+  pcb->BX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->BX = %d\n", cursor, pcb->BX);
+  pcb->CX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->CX = %d\n", cursor, pcb->CX);
+  pcb->DX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->DX = %d\n", cursor, pcb->DX);
+  pcb->EAX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->EAX = %d\n", cursor, pcb->EAX);
+  pcb->EBX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->EBX = %d\n", cursor, pcb->EBX);
+  pcb->ECX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->ECX = %d\n", cursor, pcb->ECX);
+  pcb->EDX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->EDX = %d\n", cursor, pcb->EDX);
+  pcb->RAX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->RAX = %d\n", cursor, pcb->RAX);
+  pcb->RBX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->RBX = %d\n", cursor, pcb->RBX);
+  pcb->RCX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->RCX = %d\n", cursor, pcb->RCX);
+  pcb->RDX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->RDX = %d\n", cursor, pcb->RDX);
+  pcb->SI = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->SI = %d\n", cursor, pcb->SI);
+  pcb->DI = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->DI = %d\n", cursor, pcb->DI);
+
+  pcb->estado_actual = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->estado_actual = %d\n", cursor, pcb->estado_actual);
+  pcb->fd_conexion = *(uint32_t *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->fd_conexion = %d\n", cursor, pcb->fd_conexion);
+
+  //INSTRUCCIONES
+  int cantidadInstrucciones =*(int *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: cantidadInstrucciones = %d\n", cursor, cantidadInstrucciones);
+  int offset = cursor;
+
+  while (cursor < cantidadInstrucciones * 6 + offset)
+  {
+    t_instruccion *instruccion = malloc(sizeof(t_instruccion));
+    instruccion->id = string_duplicate(list_get(lista_elememtos, ++cursor));
+    DEBUG_PRINTF("\n[Deserializar] paquete[%d]: id = %s \n", cursor, instruccion->id);
+    instruccion->param1 = string_duplicate(list_get(lista_elememtos, ++cursor));
+    DEBUG_PRINTF("\n[Deserializar] paquete[%d]: param1 = %d \n", cursor, instruccion->param1);
+    instruccion->param2 = string_duplicate(list_get(lista_elememtos, ++cursor));
+    DEBUG_PRINTF("\n[Deserializar] paquete[%d]: param2 = %d \n", cursor, instruccion->param2);
+    instruccion->param3 = string_duplicate(list_get(lista_elememtos, ++cursor));
+    DEBUG_PRINTF("\n[Deserializar] paquete[%d]: param3 = %d \n", cursor, instruccion->param3);
+    instruccion->param4 = string_duplicate(list_get(lista_elememtos, ++cursor));
+    DEBUG_PRINTF("\n[Deserializar] paquete[%d]: param4 = %d \n", cursor, instruccion->param4);
+    instruccion->param5 = string_duplicate(list_get(lista_elememtos, ++cursor));
+    DEBUG_PRINTF("\n[Deserializar] paquete[%d]: param5 = %d \n", cursor, instruccion->param5);
+
+    list_add(pcb->instrucciones, instruccion);
+  }
+
+
+  list_destroy_and_destroy_elements(lista_elememtos, &free);
+
+  DEBUG_PRINTF("\n[Deserializar] deserializar_pcb( ) [END]\n");
+
+  return pcb;
 
 }

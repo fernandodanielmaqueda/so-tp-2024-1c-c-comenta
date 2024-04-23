@@ -47,6 +47,26 @@ void add_to_package(t_paquete *paquete, void *valor, int tamanio);
 void serialize_pcb(t_paquete *paquete, t_pcb *pcb);
 
 
+/**
+ * @brief Deserializacion del t_pcb para ser enviada.
+ * @param socketClient Socket desde donde se va a recibir el pcb.
+ */
+t_pcb* deserialize_pcb(int socketClient);
+
+
+/**
+ * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
+ * @param socketClient Socket desde donde se va a recibir el paquete.
+ */
+t_list* get_package_like_list(int socketClient);
+
+
+/**
+ * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
+ * @param size Tamaño del buffer.
+ * @param socketClient Socket desde donde se va a recibir el paquete.
+ */
+void *get_buffer(int *size, int socketCliente)
 
 
 #endif // SOCKET_H
