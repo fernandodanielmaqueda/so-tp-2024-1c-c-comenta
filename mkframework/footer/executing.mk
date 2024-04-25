@@ -14,6 +14,19 @@ define mkfwk_recipe_check_target_program_existence
 	fi ;
 endef
 
+# Defines a canned recipe that changes the directory (cd), executes a command passed as a parameter, and changes to the previous directory (cd)
+define mkfwk_cd_execute_and_cd_back
+	$(call mkfwk_make_check_set_directory_existence,$(1))
+	cd '$($(1))' ; $(MKFWK_BACKSLASH)
+$(2) $(MKFWK_BACKSLASH)
+cd - >/dev/null ;
+endef
+
+# Defines a canned recipe that changes the current working directory (cwd) to execute a command passed as a parameter
+define mkfwk_recipe_change_cwd_to_execute
+	$(if $($(1)),$(call mkfwk_cd_execute_and_cd_back,$(1),$(2)),$(2))
+endef
+
 # Defines an explicit rule that runs the target program in the very same window
 define mkfwk_rule_for_run
 .PHONY: run-$(2)
@@ -23,10 +36,8 @@ ifneq ($$(MUST_MAKE),)
 else
 	$(if $(VERBOSE),@$$(PRINTF) '\n#####( [run-$(2)] $$(MKFWK_PRINTF_FORMAT_MSG_INIT_TARGET-run) )#####\n')
 	$$(call mkfwk_recipe_check_target_program_existence,$$($(1)DIR)$(2)$$(EXEEXT))
-	$(if $(VERBOSE),@$$(PRINTF) '\n<<< $$(MKFWK_PRINTF_FORMAT_MSG_RELATIVE_PATH) (./): $$(MKFWK_PRINTF_FORMAT_MSG_DO_TARGET-run): "%s" >>>\n' '$$($(1)DIR)$(2)$$(EXEEXT)')
-	$$(if $$(call mkfwk_dirname,$$($(1)DIR)$(2)),cd '$$(call mkfwk_dirname,$$($(1)DIR)$(2))',:) ; \
- './$$(notdir $$($(1)DIR)$(2)$$(EXEEXT))' $$($(2)_ARGS) ; \
- $$(if $$(call mkfwk_dirname,$$($(1)DIR)$(2)),cd - >/dev/null,:) ;
+	$(if $(VERBOSE),@$$(PRINTF) '\n<<< $$(MKFWK_PRINTF_FORMAT_MSG_ABSOLUTE_PATH) (/): $$(MKFWK_PRINTF_FORMAT_MSG_DO_TARGET-run): "%s" >>>\n' '$$($(1)DIR)$(2)$$(EXEEXT)')
+	$$(call mkfwk_recipe_change_cwd_to_execute,$(2)_CWD,'$$(abspath $$($(1)DIR)$(2)$$(EXEEXT))' $$($(2)_ARGS) ;)
 	$(if $(VERBOSE),@$$(PRINTF) '<<< $$(MKFWK_PRINTF_FORMAT_MSG_DONE) >>>\n')
 	$(if $(VERBOSE),@$$(PRINTF) '\n#####( $$(MKFWK_PRINTF_FORMAT_MSG_FINISHED) )#####\n')
 endif
@@ -45,9 +56,7 @@ else
 	$(if $(VERBOSE),@$$(PRINTF) '\n#####( [gdb-$(2)] $$(MKFWK_PRINTF_FORMAT_MSG_INIT_TARGET-gdb) )#####\n')
 	$$(call mkfwk_recipe_check_target_program_existence,$$($(1)DIR)$(2)$$(EXEEXT))
 	$(if $(VERBOSE),@$$(PRINTF) '\n<<< GDB: $$(MKFWK_PRINTF_FORMAT_MSG_DO_TARGET-gdb): "%s" >>>\n' '$$($(1)DIR)$(2)$$(EXEEXT)')
-	$$(if $$(call mkfwk_dirname,$$($(1)DIR)$(2)),cd '$$(call mkfwk_dirname,$$($(1)DIR)$(2))',:) ; \
- $$(GDB) $$(GDBFLAGS) './$$(notdir $$($(1)DIR)$(2)$$(EXEEXT))' $$($(2)_ARGS) ; \
- $$(if $$(call mkfwk_dirname,$$($(1)DIR)$(2)),cd - >/dev/null,:) ;
+	$$(call mkfwk_recipe_change_cwd_to_execute,$(2)_CWD,$$(GDB) $$(GDBFLAGS) '$$(abspath $$($(1)DIR)$(2)$$(EXEEXT))' $$($(2)_ARGS) ;)
 	$(if $(VERBOSE),@$$(PRINTF) '<<< $$(MKFWK_PRINTF_FORMAT_MSG_DONE) >>>\n')
 	$(if $(VERBOSE),@$$(PRINTF) '\n#####( $$(MKFWK_PRINTF_FORMAT_MSG_FINISHED) )#####\n')
 endif
@@ -66,9 +75,7 @@ else
 	$(if $(VERBOSE),@$$(PRINTF) '\n#####( [valgrind-$(1)-$(3)] $$(MKFWK_PRINTF_FORMAT_MSG_INIT_TARGET-valgrind) )#####\n')
 	$$(call mkfwk_recipe_check_target_program_existence,$$($(2)DIR)$(3)$$(EXEEXT))
 	$(if $(VERBOSE),@$$(PRINTF) '\n<<< VALGRIND: $$(MKFWK_PRINTF_FORMAT_MSG_DO_TARGET-valgrind): "%s" >>>\n' '$$($(2)DIR)$(3)$$(EXEEXT)')
-	$$(if $$(call mkfwk_dirname,$$($(2)DIR)$(3)),cd '$$(call mkfwk_dirname,$$($(2)DIR)$(3))',:) ; \
- $$(VALGRIND) $$(VALGRIND_FLAGS) --tool=$(1) $$(VALGRIND_$(1)_FLAGS) './$$(notdir $$($(2)DIR)$(3)$$(EXEEXT))' $$($(3)_ARGS) \
- $$(if $$(call mkfwk_dirname,$$($(2)DIR)$(3)),cd - >/dev/null,:) ;
+	$$(call mkfwk_recipe_change_cwd_to_execute,$(2)_CWD,$$(VALGRIND) $$(VALGRIND_FLAGS) --tool=$(1) $$(VALGRIND_$(1)_FLAGS) '$$(abspath $$($(2)DIR)$(3)$$(EXEEXT))' $$($(3)_ARGS) ;)
 	$(if $(VERBOSE),@$$(PRINTF) '<<< $$(MKFWK_PRINTF_FORMAT_MSG_DONE) >>>\n')
 	$(if $(VERBOSE),@$$(PRINTF) '\n#####( $$(MKFWK_PRINTF_FORMAT_MSG_FINISHED) )#####\n')
 endif

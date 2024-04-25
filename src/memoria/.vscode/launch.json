@@ -4,12 +4,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "debug",
+      "name": "(gdb) Launch src/memoria/bin/memoria",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
       "args": [],
-      "stopAtEntry": false,
+      "stopAtEntry": true,
       "cwd": "${workspaceFolder}",
       "environment": [],
       "externalConsole": false,
