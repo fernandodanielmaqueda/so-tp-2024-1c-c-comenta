@@ -26,15 +26,36 @@
 #include <utils/estructuras.h>
 
 void obtener_configuracion(t_config* kernel_config);
-void kernel();
+void initialize_kernel();
 void agregar_a_new(t_pcb* pcb);
 void new_a_ready();
 void initialize_sockets();
 void initialize_logger();
 void initialize_config();
+void cambiar_estado(t_pcb* pcb, int estado_nuevo);
+t_pcb *crear_pcb(char *instrucciones, int socket_consola);
 
+//listas globales de estados
+t_list* LISTA_NEW;
+t_list* LISTA_READY;
+t_list* LISTA_EXEC;
+t_list* LISTA_BLOCKED;
+t_list* LISTA_EXIT;
 
+pthread_mutex_t mutex_PID;
+pthread_mutex_t mutex_LISTA_NEW;
+pthread_mutex_t mutex_LISTA_READY;
+pthread_mutex_t mutex_LISTA_BLOCKED;
+pthread_mutex_t mutex_LISTA_EXEC;
+pthread_mutex_t mutex_LISTA_EXIT;
 
+pthread_t hilo_largo_plazo;
+pthread_t hilo_corto_plazo;
+pthread_t hilo_mensajes_cpu;
+
+sem_t sem_planificador_largo_plazo;
+sem_t sem_planificador_corto_plazo;
+sem_t contador_multiprogramacion;
 
 
 

@@ -17,8 +17,17 @@ typedef struct {
     char* RCX;
     char* RDX;
 
+    double llegada_ready;
+    double llegada_running;
     int estado_actual;
     int fd_conexion;
 
-
 }t_pcb;
+
+typedef enum {
+    NEW,
+    READY,
+    EXEC,
+    BLOCKED,
+	EXITED
+} t_opcode;
