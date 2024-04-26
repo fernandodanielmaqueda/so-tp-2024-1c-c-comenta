@@ -34,8 +34,8 @@ char* ALGORITMO_TLB;
 
 int main(int argc, char* argv[]) {
 
-    cpu();
-
+    initialize_cpu();
+    inicializar_ciclo_cpu();
 
     return 0;
 }
@@ -68,8 +68,7 @@ void obtener_configuracion(t_config* cpu_config)
 
 void initialize_sockets(){
 
-
-        //Inicializo memoria
+    //Inicializo memoria
     log_info(cpu_logger, "Iniciando clinte cpu para ir a memoria");
     fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
     log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
@@ -94,12 +93,9 @@ void initialize_sockets(){
     fd_kernel = esperar_cliente(fd_cpu_interrupt);
     log_info(cpu_logger, "Conectado a kernel en puerto interrupt ");
 
-
-  
-
 }
 
-void cpu()
+void initialize_cpu()
 {
     initialize_logger();
     initialize_config();
@@ -107,5 +103,48 @@ void cpu()
 
     log_info(cpu_logger, "CPU inicializado correctamente");
 
+}
+
+void inicializar_ciclo_cpu() {
+	pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);
+	pthread_join(hilo_ciclo_cpu, NULL);
+}
+
+void ciclo_cpu(){
+
+	while(1){
+		/*
+        t_paquete* paquete = recibir_paquete(conexion_kernel);
+		if (paquete == NULL) {
+			continue;
+		}
+		t_pcb* pcb = deserializar_pcb(paquete->buffer);
+		
+        t_list* instrucciones = parsearInstrucciones(pcb->instrucciones);
+
+        cicloInstruccion(pcb, instrucciones);
+
+		list_destroy(instrucciones);
+        */
+	}
+}
+
+void cicloInstruccion(t_pcb *pcb, t_list *instrucciones)
+{ // esto es para ejecutar una serie de instrucciones
+
+    switch (/*identificador de instruccion*/)
+    {
+
+    case SET:
+    { 
+        
+    }
+    case EXIT:
+    {
+
+    }
+    //FALTA AGREGAR LAS INSTRUCCIONES FALTANTANTES
+    //FALTA AGREGAR ALGO QUE MANDE MENSAJES A KERNEL Y DEMAS MODULOS
+}
 }
 

@@ -20,7 +20,7 @@
 void initialize_logger();
 void initialize_config();
 void obtener_configuracion(t_config* cpu_config);
-void cpu();
+void initialize_cpu();
 void initialize_sockets();
 
 

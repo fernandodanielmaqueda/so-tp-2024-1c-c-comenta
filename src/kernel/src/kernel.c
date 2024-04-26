@@ -153,7 +153,8 @@ void iniciar_receptor_mensajes_cpu()
 }
 
 
-void planificador_largo_plazo(){ 
+void planificador_largo_plazo()
+{ 
 	while(1){
 		sem_wait(&sem_planificador_largo_plazo);
 		sem_wait(&contador_multiprogramacion);
@@ -165,7 +166,8 @@ void planificador_largo_plazo(){
 	}
 }
 
-void planificador_corto_plazo(){
+void planificador_corto_plazo()
+{
 
 	while(1){
 		sem_wait(&sem_planificador_corto_plazo);	

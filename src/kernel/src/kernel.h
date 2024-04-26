@@ -34,6 +34,14 @@ void initialize_logger();
 void initialize_config();
 void cambiar_estado(t_pcb* pcb, int estado_nuevo);
 t_pcb *crear_pcb(char *instrucciones, int socket_consola);
+void iniciar_planificador_largo_plazo();
+void iniciar_planificador_corto_plazo();
+void iniciar_receptor_mensajes_cpu();
+void planificador_largo_plazo();
+void planificador_corto_plazo();
+t_pcb *algoritmo_FIFO();
+void receptor_mensajes_cpu();
+int timenow();
 
 //listas globales de estados
 t_list* LISTA_NEW;
