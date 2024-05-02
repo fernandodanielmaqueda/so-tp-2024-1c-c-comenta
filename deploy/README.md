@@ -1,6 +1,6 @@
 # Notas de Deploy SSOO
 
-Nota: algunas de las cosas que se listan sirven para poder trabajar sobre el repositorio de manera cómoda, no sólo sirve para el deploy
+Algunas de las cosas que se listan también sirven para poder trabajar sobre el repositorio de manera cómoda, no todo es exclusivo para el deploy para la presentación del TP.
 
 ## TODO
 - Revisar permisos necesarios de administrador en Windows: en las máquinas de la facultad no tenemos :(
@@ -15,161 +15,172 @@ Nota: algunas de las cosas que se listan sirven para poder trabajar sobre el rep
 
 ## 1. Características de Windows
 
-- Desactivar Plataforma de Hipervisor de Windows
+- Desactivar `Plataforma de Hipervisor de Windows`
 
 -----------------------------
 
 ## 2. Configuración de la VM (Ubuntu Server) en VirtualBox
 
-General
-	Básico
-		Nombre: Ubuntu Server 6.1
-		Tipo: Linux
-		Versión: Ubuntu (64-bit)
-	Avanzado
-		Carpeta de instantáneas: C:\Users\Usuario\VirtualBox VMs\Ubuntu Server 6.1\Snapshots
-		Portapapeles compartido: Inhabilitado
-		Arrastrar y soltar: Inhabilitado
-	Descripción
-	Cifrado de disco
-		[ ] Habilitar cifrado de disco
+- General
+	- Básico
+		- `Nombre`: Ubuntu Server 6.1
+		- `Tipo`: Linux
+		- `Versión`: Ubuntu (64-bit)
+	- Avanzado
+		- `Carpeta de instantáneas`: C:\Users\Usuario\VirtualBox VMs\Ubuntu Server 6.1\Snapshots
+		- `Portapapeles compartido`: Inhabilitado
+		- `Arrastrar y soltar`: Inhabilitado
+	- Descripción
+	- Cifrado de disco
+		- [ ] Habilitar cifrado de disco
 
-Sistema
-	Placa base
-		Memoria base: 2048 MB
-		Orden de arranque: Óptica - Disco Duro
-		Chipset: PIIX3
-		TPM: Ninguno
-		Dispositivo apuntador: Tableta USB
-		Características extendidas:
-			[X] Habilitar I/O APIC
-			[X] Habilitar reloj hardware en tiempo UTC
-			[ ] Habilitar EFI (sólo SO especiales)
-			[ ] Habilitar Secure Boot
-	Procesador
-		Procesadores: 1
-		Límite de ejecución: 100%
-		Características extendidas:
-			[ ] Habilitar PAE/NX
-			[ ] Habilitar VT-x/AMD-V anidado
-	Aceleración
-		Interfaz de paravirtualización: Predeterminado
-		Hardware de virtualización:
-			[X] Habilitar paginación anidada
+- Sistema
+	- Placa base
+		- `Memoria base`: 2048 MB
+		- `Orden de arranque`: Óptica - Disco Duro
+		- `Chipset`: PIIX3
+		- `TPM`: Ninguno
+		- `Dispositivo apuntador`: Tableta USB
+		- `Características extendidas`:
+			- [X] Habilitar I/O APIC
+			- [X] Habilitar reloj hardware en tiempo UTC
+			- [ ] Habilitar EFI (sólo SO especiales)
+			- [ ] Habilitar Secure Boot
+	- Procesador
+		- `Procesadores`: 1
+		- `Límite de ejecución`: 100%
+		- `Características extendidas`:
+			- [ ] Habilitar PAE/NX
+			- [ ] Habilitar VT-x/AMD-V anidado
+	- Aceleración
+		- `Interfaz de paravirtualización`: Predeterminado
+		- Hardware de virtualización:
+			- [X] Habilitar paginación anidada
 
-Pantalla
-	Pantalla
-		Memoria de video: 16 MB
-		Número de monitores: 1
-		Factor de escalado: Todos los monitores | 100%
-		Controlador gráfico: VBoxVGA
-		Caracteristicas extendidas:
-			[ ] Habilitar aceleración 3D
-	Pantalla remota
-		[ ] Habilitar servidor
-	Grabación
-		[ ] Habilitar grabación
+- Pantalla
+	- Pantalla
+		- `Memoria de video`: 16 MB
+		- `Número de monitores`: 1
+		- `Factor de escalado`: Todos los monitores | 100%
+		- `Controlador gráfico`: VBoxVGA
+		- Caracteristicas extendidas:
+			- [ ] Habilitar aceleración 3D
+	- Pantalla remota
+		- [ ] Habilitar servidor
+	- Grabación
+		- [ ] Habilitar grabación
 
-Almacenamiento
+- Almacenamiento
 
-Audio
-	[ ] Habilitar audio
+- Audio
+	- [ ] Habilitar audio
 
-		Controlador de audio anfitrión: Predeterminado
-		Controlador de audio: ICH 1C97
-		Características extendidas:
-			[X] Habilitar salida de audio
-			[ ] Habilitar entrada de audio
+		- `Controlador de audio anfitrión`: Predeterminado
+		- `Controlador de audio`: ICH 1C97
+		- Características extendidas:
+			- [X] Habilitar salida de audio
+			- [ ] Habilitar entrada de audio
 
-Red
-	Adaptador 1
-		[ ] Habilitar adaptador de red
-			Conectado a: Adaptador puente
-			Nombre: Intel(R) Dual Band Wireless-AC 3165
-			> Avanzado
-				Tipo de adaptador: ...
-				Modo promiscuo: Denegar
-				Dirección MAC: ...
-				[X] Cable conectado
-	Adaptador 2
-	Adaptador 3
-	Adaptador 4
+- Red
+	- Adaptador 1
+		- [ ] Habilitar adaptador de red
+			- `Conectado a`: Adaptador puente
+			- `Nombre`: ...
+			- \> Avanzado
+				- `Tipo de adaptador`: ...
+				- `Modo promiscuo`: Denegar
+				- `Dirección MAC`: ...
+				- [X] Cable conectado
+	- Adaptador 2
+	- Adaptador 3
+	- Adaptador 4
 
-Puertos serie
-	Puerto 1
-		[ ] Habilitar puerto serie
-	Puerto 2
-	Puerto 3
-	Puerto 4
+- Puertos serie
+	- Puerto 1
+		- [ ] Habilitar puerto serie
+	- Puerto 2
+	- Puerto 3
+	- Puerto 4
 
-USB
-	[X] Habilitar controlador USB
-		(O) Controlador USB 1.1 (OHCI)
-		(O) Controlador USB 2.0 (OHCI + EHCI)
-		(O) Controlador USB 3.0 (xHCI)
-		Filtros de dispositivos USB
+- USB
+	- [X] Habilitar controlador USB
+		- (O) Controlador USB 1.1 (OHCI)
+		- (O) Controlador USB 2.0 (OHCI + EHCI)
+		- (O) Controlador USB 3.0 (xHCI)
+		- Filtros de dispositivos USB
 
-Carpetas compartidas
-	v Carpetas de la máquina
-		Nombre: Compartida | Ruta: C:\Users\Usuario\VirtualBox VMs\Compartida | Acceso: Completo | Automontar: Sí | En:
-	v Carpetas transitorias
+- Carpetas compartidas
+	- v Carpetas de la máquina
+		- `Nombre`: Compartida | `Ruta`: C:\Users\Usuario\VirtualBox VMs\Compartida | `Acceso`: Completo | `Automontar`: Sí | `En`:
+	- v Carpetas transitorias
 
-Interfaz de usuario
-	[X] Archivo
-	[X] Máquina
-	[X] Ver
-	[X] Entrada
-	[X] Dispositivos
-	[X] Ayuda
-	[X]
-	Estado visual: Normal (ventana)
-	Minibarra de herramientas:
-		[X] Mostrar en pantalla completa/fluído
-		[ ] Mostrar en la parte superior de la pantalla
-	[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
-		[X]
+- Interfaz de usuario
+	- [X] Archivo
+	- [X] Máquina
+	- [X] Ver
+	- [X] Entrada
+	- [X] Dispositivos
+	- [X] Ayuda
+	- [X] .
+	- `Estado visual`: Normal (ventana)
+	- Minibarra de herramientas:
+		- [X] Mostrar en pantalla completa/fluído
+		- [ ] Mostrar en la parte superior de la pantalla
+	- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
+		- [X] .
 
 -----------------------------
 
 ## Anexo 1: Comandos útiles
 
-Acceder como root
+> Cambiar a root
 ```bash
 sudo -s
 ```
-Leer un archivo de texto
+
+> Salir como root
+```bash
+exit
+```
+
+> Leer un archivo de texto
 ```bash
 less
 ```
-Editar un archivo de texto
+
+> Editar un archivo de texto
 ```bash
 nano
 vi
 ```
-Listar configuración de red
+
+> Listar configuración de red
 ```bash
 ifconfig
 ```
-Apagar
+
+> Apagar
 ```bash
 shutdown now
 ```
-Reiniciar
+
+> Reiniciar
 ```bash
 shutdown -r now
 ```
-Listar procesos
+
+> Listar procesos
 ```bash
 htop
 ```
@@ -209,24 +220,40 @@ sudo apt update
 
 -----------------------------
 
-## Opcional: GRUB (para cambiar el tamaño de pantalla de la VM)
+## Opcional: GRUB (para settear el tamaño de pantalla FIJO de la VM)
 
+1. Backupear el archivo `/etc/default/grub` original
 ```bash
 sudo cp /etc/default/grub /etc/default/grub.original
-sudo printf '%s\n' 'GRUB_GFXPAYLOAD_LINUX=800x600' >> /etc/default/grub
 ```
 
-CAMBIAR la línea:
+2. Editar el archivo `/etc/default/grub`
 ```bash
+sudo vi /etc/default/grub
+```
+
+- Agregar al final la siguiente línea:
+```output
+GRUB_GFXPAYLOAD_LINUX=800x600
+```
+
+- Modificar la siguiente línea:
+```output
 GRUB_CMDLINE_LINUX_DEFAULT=""
 ```
-a
-```bash
+a:
+```output
 GRUB_CMDLINE_LINUX_DEFAULT="nomodeset"
 ```
 
+3. Actualizar el gestor de arranque GRUB
+
 ```bash
 sudo update-grub
+```
+
+4. Reiniciar la VM
+```bash
 init 6
 ```
 
@@ -236,16 +263,22 @@ init 6
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
-2. Ejecutar los siguientes comandos:
-
+2. Crear el directorio donde se montará el CD de las Guest Additions:
 ```bash
 sudo mkdir /mnt/cdrom
+```
+
+3. Montar el CD de las Guest Additions en dicho directorio creado
+```bash
 sudo mount /dev/cdrom /mnt/cdrom
+```
+
+4. Ejecutar el instalador de las Guest Additions para Linux
+```bash
 sudo /mnt/cdrom/VBoxLinuxAdditions.run
 ```
 
-Por las dudas también:
-
+5. Por si acaso, también agregar el user actual (`utnso`) al grupo de usuarios `vboxsf` para tener permisos de lectura y escritura en las carpetas compartidas:
 ```bash
 sudo adduser $USER vboxsf
 sudo usermod -aG vboxsf $USER
@@ -253,51 +286,134 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 5. Configurar carpeta compartida
+## 5. Montar carpeta compartida de VirtualBox en la VM
+
+1. Crear el directorio donde montaremos la carpeta compartida en la VM
+```bash
+mkdir /home/utnso/Compartida
+```
+
+2. Para que la carpeta compartida se monte automáticamente cada vez que iniciemos la VM, editar el archivo `/etc/fstab`:
+```bash
+sudo vi /etc/fstab
+```
+
+Agregarle la siguiente línea al final de dicho archivo.
+Nótese el uso de tabulaciones en lugar de espacios para separar las columnas de la línea.
+```output
+Compartida	/home/utnso/Compartida	vboxsf	uid=1000,gid=1000	0	0
+```
+
+3. Para arrancar el servicio de carpetas compartidas de VirtualBox cada vez que iniciemos la VM, editar el archivo `/etc/modules`:
+```bash
+sudo vi /etc/modules
+```
+
+Agregarle la siguiente línea al final de dicho archivo.
+```output
+vboxsf
+```
 
 ### Nota sobre las carpetas compartidas de VirtualBox
 
-No andan las Launch Tasks (launch.json) de VSCode para depurar los ejecutables si estos están dentro de las carpetas compartidas
-Parece ser por una limitación de los permisos de ejecución del filesystem de VirtualBox (vboxfs)
+No andan los `Run and Debug` (`launch.json`) de VSCode para depurar los ejecutables si estos están dentro de las carpetas compartidas
+Parece ser por una limitación de los permisos de ejecución del filesystem de VirtualBox (vboxsf)
 
 -----------------------------
 
 ## 6. Configurar SSH en la VM
 
+1. Descargar e instalar openssh-server
 ```bash
-sudo apt-get install openssh-server -y
+sudo apt install openssh-server -y
 ```
 
+2. Asegurarse de que `ssh.service` esté activo (ejecutando)
 ```bash
 sudo systemctl status ssh
 sudo systemctl enable ssh --now
 sudo systemctl status ssh
 ```
 
+La salida debería ser similar a:
+```output
+● ssh.service - OpenBSD Secure Shell server
+     Loaded: loaded (/lib/systemd/system/ssh.service; enabled; vendor preset: enabled)
+     Active: active (running) since Wed yyyy-mm-dd hh:mm:ss UTC; #h ago
+       Docs: man:sshd(8)
+             man:sshd_config(5)
+    Process: 733 ExecStartPre=/usr/sbin/sshd -t (code=exited, status=0/SUCCESS)
+   Main PID: 778 (sshd)
+      Tasks: 1 (limit: 2220)
+     Memory: 7.7M
+        CPU: 125ms
+     CGroup: /system.slice/ssh.service
+             └─778 "sshd: /usr/sbin/sshd -D [listener] 0 of 10-100 startups"
+```
+
+3. Asegurarse de que el firewall esté funcionando y de que permita ssh
 ```bash
-sudo ufw status
+sudo ufw status verbose
 sudo ufw allow ssh
 sudo ufw enable
 sudo ufw status verbose
 ```
 
-```bash
-sudo lsof -i -P n | grep LISTEN
+La salida debería ser algo así como:
+```output
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere                  
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
 ```
 
+4. Asegurarse de que se escuchen los puertos de sshd
+```bash
+sudo lsof -i -P -n | grep LISTEN
+```
+
+La salida debería ser algo así como:
+```output
+systemd-r  697 systemd-resolve   14u  IPv4  19989      0t0  TCP 127.0.0.53:53 (LISTEN)
+sshd       778            root    3u  IPv4  20570      0t0  TCP *:22 (LISTEN)
+sshd       778            root    4u  IPv6  20624      0t0  TCP *:22 (LISTEN)
+apache2    783            root    4u  IPv6  20598      0t0  TCP *:80 (LISTEN)
+code-e170 1313           utnso    9u  IPv4  22229      0t0  TCP 127.0.0.1:39375 (LISTEN)
+apache2   2816        www-data    4u  IPv6  20598      0t0  TCP *:80 (LISTEN)
+apache2   2817        www-data    4u  IPv6  20598      0t0  TCP *:80 (LISTEN)
+```
+
+5. Editar el archivo de sshd_config
 ```bash
 sudo vi /etc/ssh/sshd_config
 ```
 
+Debajo de esta línea:
+`Include /etc/ssh/sshd_config.d/*.conf`
+
+Agregar las IPs admitidas para conectarse vía SSH con la VM.
+Las que no figuren en este listado serán rechazadas, por más que ingresen usuario y contraseña correctos.
+```console
+AllowUsers utnso@NúmeroIP
+```
+
+6. Reiniciar el servicio de ssh
 ```bash
 sudo systemctl restart ssh
 ```
 
+7. Ver cuál es la IP de la VM
 ```bash
 ifconfig
 ```
 
-Log (para ver qué IPs intentaron conectarse vía SSH con la VM)
+8. Ver el log: sirve para saber qué IPs intentaron conectarse vía SSH con la VM
+Puede ser útil para averigüar la IP del Host
 ```bash
 less /var/log/auth.log
 ```
@@ -306,15 +422,18 @@ less /var/log/auth.log
 
 ## 7. Conectarse por SSH a la VM
 
-En Windows (PowerShell):
+### En Windows (PowerShell):
 
+1. Conocer la IP del Host
 ```powershell
 ipconfig
 ```
 
+2. Conectarse con la VM vía ssh
 ```powershell
-ssh utnso@IP -p 22
+ssh utnso@NúmeroIP -p 22
 ```
+Nota: el puerto por lo general es 22
 
 -----------------------------
 
@@ -343,9 +462,7 @@ https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supporte
 
 https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=powershell#tabpanel_1_powershell
 
-PowerShell (como administrador)
-
-To install OpenSSH using PowerShell, run PowerShell as an Administrator. To make sure that OpenSSH is available, run the following cmdlet:
+1. To install OpenSSH using PowerShell, run PowerShell as an Administrator. To make sure that OpenSSH is available, run the following cmdlet:
 
 ```powershell
 Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
@@ -359,7 +476,8 @@ State : NotPresent
 Name  : OpenSSH.Server~~~~0.0.1.0
 State : NotPresent
 ```
-Then, install the server or client components as needed:
+
+2. Then, install the server or client components as needed:
 
 ```powershell
 # Install the OpenSSH Client
@@ -375,7 +493,7 @@ Path          :
 Online        : True
 RestartNeeded : False
 ```
-To start and configure OpenSSH Server for initial use, open an elevated PowerShell prompt (right click, Run as an administrator), then run the following commands to start the sshd service:
+3. To start and configure OpenSSH Server for initial use, open an elevated PowerShell prompt (right click, Run as an administrator), then run the following commands to start the sshd service:
 
 ```powershell
 # Start the sshd service
@@ -393,33 +511,38 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
 }
 ```
 
-utnso@IP
+4. Presionar el botón azul en la esquina inferior izquierda de VSCode
 
-Guardar la configuración en:
+5. Seleccionar la opción `Connect to Host...`
 
-C:\Users\Usuario\.ssh\config
+6. Ingresar en el siguiente formato:
+`utnso@NúmeroIP`
 
+7. Guardar la configuración en:
+`C:\Users\Usuario\.ssh\config`
+
+8. Verificar el archivo anterior:
 ```output
 # Nombre
-Host IP
-  HostName IP
+Host NúmeroIP
+  HostName NúmeroIP
   User utnso
   Port 22
 ```
 
 -----------------------------
 
-## Configurar Git en la VM
+## 9. Configurar Git en la VM
 
-1. Pedir un token de GitHub
-	Tokens (classic)
+1. Generar un token en GitHub
+	- Tokens (classic)
 	https://github.com/settings/tokens
 	The minimum required scopes are 'repo', 'read:org', 'workflow'.
 
-	Fine-grained tokens
+	- Fine-grained tokens
 	https://github.com/settings/tokens?type=beta
 
-2. Instalar gh (no viene instalado en la VM de Ubuntu Server)
+2. Instalar `gh` (no viene instalado en la VM de Ubuntu Server)
 
 ```bash
 sudo apt install gh -y
@@ -440,7 +563,7 @@ git config --global user.name "FDM"
 
 -----------------------------
 
-## Instalar la versión más reciente de CMake
+## 10. Instalar la versión más reciente de CMake
 
 https://cmake.org/download/
 
