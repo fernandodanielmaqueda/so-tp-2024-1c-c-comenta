@@ -13,13 +13,40 @@ Algunas de las cosas que se listan también sirven para poder trabajar sobre el 
 
 -----------------------------
 
-## 1. Características de Windows
+## 1. Descargar VirtualBox
+
+https://www.virtualbox.org/wiki/Downloads
+
+-----------------------------
+
+## 2. Descargar la VM de Ubuntu Server
+
+Página oficial
+https://docs.utnso.com.ar/recursos/vms
+
+Links de descarga
+https://drive.google.com/drive/folders/1Pn1SveTGkEVfcc7dYAr1Wc10ftEe8E0J
+https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view
+https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view?usp=drive_link
+
+Gestor de descargas (Windows)
+https://www.freedownloadmanager.org/es/download.htm
+
+Gestor de descargas (Ubuntu)
+https://chemicloud.com/blog/download-google-drive-files-using-wget/
+https://medium.com/@acpanjan/download-google-drive-files-using-wget-3c2c025a8b99
+https://stackoverflow.com/questions/25010369/wget-curl-large-file-from-google-drive
+https://superuser.com/questions/1518582/how-to-use-wget-to-download-a-file-stored-in-google-drive-without-making-publicl
+
+-----------------------------
+
+## 3. Características de Windows
 
 - Desactivar `Plataforma de Hipervisor de Windows`
 
 -----------------------------
 
-## 2. Configuración de la VM (Ubuntu Server) en VirtualBox
+## 4. Configuración de la VM (Ubuntu Server) en VirtualBox
 
 - General
 	- Básico
@@ -141,78 +168,7 @@ Algunas de las cosas que se listan también sirven para poder trabajar sobre el 
 		- [X] .
 
 -----------------------------
-
-## Anexo 1: Comandos útiles
-
-> Cambiar a root
-```bash
-sudo -s
-```
-
-> Salir como root
-```bash
-exit
-```
-
-> Leer un archivo de texto
-```bash
-less
-```
-
-> Editar un archivo de texto
-```bash
-nano
-vi
-```
-
-> Listar configuración de red
-```bash
-ifconfig
-```
-
-> Apagar
-```bash
-shutdown now
-```
-
-> Reiniciar
-```bash
-shutdown -r now
-```
-
-> Listar procesos
-```bash
-htop
-```
-
------------------------------
-
-## Anexo 2: Abrir una sesión de tmux (Terminal MUltipleXer)
-
-```bash
-tmux
-```
-
-- Para cerrar la ventana de la sesion, presione <kbd>Ctrl</kbd> + <kbd>b</kbd>, seguidamente presione <kbd>x</kbd> y por ultimo presione <kbd>y</kbd>
-- Para apartar la sesion con sus ventanas sin cerrarla [detach], presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>d</kbd>
-- Para alternar entre las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>s</kbd>
-- Para alternar entre las ventanas de las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>w</kbd>
-- Para iniciar el modo desplazamiento por la ventana, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>[</kbd> (con la distribucion de teclado latinoamericano, <kbd>[</kbd> es <kbd>⇧ Shift</kbd> + <kbd>{</kbd>)
-- Para finalizar el modo desplazamiento por la ventana, presione <kbd>q</kbd>
-
-NOTA: Para volver a las sesiones apartadas de tmux [detached], ejecute el comando:
-
-```bash
-tmux attach
-```
-
------------------------------
-## Anexo 3: Opciones importantes de gcc
-
-`-DDEBUG -fdiagnostics-color=always -lcommons -lpthread -lreadline -lm`
-
------------------------------
-## 3. Actualizar el índice de paquetes local en la VM
+## 5. Actualizar el índice de paquetes local en la VM
 
 ```bash
 sudo apt update
@@ -259,7 +215,7 @@ init 6
 
 -----------------------------
 
-## 4. Instalar VirtualBox Guest Additions (para las carpetas compartidas)
+## 6. Instalar VirtualBox Guest Additions (para las carpetas compartidas)
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
@@ -286,7 +242,7 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 5. Montar carpeta compartida de VirtualBox en la VM
+## 7. Montar carpeta compartida de VirtualBox en la VM
 
 1. Crear el directorio donde montaremos la carpeta compartida en la VM
 ```bash
@@ -321,7 +277,7 @@ Parece ser por una limitación de los permisos de ejecución del filesystem de V
 
 -----------------------------
 
-## 6. Configurar SSH en la VM
+## 8. Configurar SSH en la VM
 
 1. Descargar e instalar openssh-server
 ```bash
@@ -420,7 +376,7 @@ less /var/log/auth.log
 
 -----------------------------
 
-## 7. Conectarse por SSH a la VM
+## 9. Conectarse por SSH a la VM
 
 ### En Windows (PowerShell):
 
@@ -437,7 +393,7 @@ Nota: el puerto por lo general es 22
 
 -----------------------------
 
-## 8. Configurar VSCode
+## 10. Configurar VSCode
 
 ### Extensiones:
 	Remote - SSH
@@ -532,7 +488,7 @@ Host NúmeroIP
 
 -----------------------------
 
-## 9. Configurar Git en la VM
+## 11. Configurar Git en la VM
 
 1. Generar un token en GitHub
 	- Tokens (classic)
@@ -563,7 +519,7 @@ git config --global user.name "FDM"
 
 -----------------------------
 
-## 10. Instalar la versión más reciente de CMake
+## 12. Instalar la versión más reciente de CMake
 
 https://cmake.org/download/
 
@@ -575,3 +531,74 @@ https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-x8
 chmod +x cmake-3.29.0-linux-x86_64.sh
 sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 ```
+
+-----------------------------
+
+## Anexo 1: Comandos útiles
+
+> Cambiar a root
+```bash
+sudo -s
+```
+
+> Salir como root
+```bash
+exit
+```
+
+> Leer un archivo de texto
+```bash
+less
+```
+
+> Editar un archivo de texto
+```bash
+nano
+vi
+```
+
+> Listar configuración de red
+```bash
+ifconfig
+```
+
+> Apagar
+```bash
+shutdown now
+```
+
+> Reiniciar
+```bash
+shutdown -r now
+```
+
+> Listar procesos
+```bash
+htop
+```
+
+-----------------------------
+
+## Anexo 2: Abrir una sesión de tmux (Terminal MUltipleXer)
+
+```bash
+tmux
+```
+
+- Para cerrar la ventana de la sesion, presione <kbd>Ctrl</kbd> + <kbd>b</kbd>, seguidamente presione <kbd>x</kbd> y por ultimo presione <kbd>y</kbd>
+- Para apartar la sesion con sus ventanas sin cerrarla [detach], presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>d</kbd>
+- Para alternar entre las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>s</kbd>
+- Para alternar entre las ventanas de las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>w</kbd>
+- Para iniciar el modo desplazamiento por la ventana, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>[</kbd> (con la distribucion de teclado latinoamericano, <kbd>[</kbd> es <kbd>⇧ Shift</kbd> + <kbd>{</kbd>)
+- Para finalizar el modo desplazamiento por la ventana, presione <kbd>q</kbd>
+
+NOTA: Para volver a las sesiones apartadas de tmux [detached], ejecute el comando:
+
+```bash
+tmux attach
+```
+
+-----------------------------
+## Anexo 3: Opciones importantes de gcc
+
+`-DDEBUG -fdiagnostics-color=always -lcommons -lpthread -lreadline -lm`

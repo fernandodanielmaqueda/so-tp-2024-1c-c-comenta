@@ -106,8 +106,8 @@ void initialize_cpu()
 }
 
 void inicializar_ciclo_cpu() {
-	pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);
-	pthread_join(hilo_ciclo_cpu, NULL);
+	// pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);
+	// pthread_join(hilo_ciclo_cpu, NULL);
 }
 
 void ciclo_cpu(){
@@ -129,10 +129,11 @@ void ciclo_cpu(){
 	}
 }
 
+/* 
 void cicloInstruccion(t_pcb *pcb, t_list *instrucciones)
 { // esto es para ejecutar una serie de instrucciones
 
-    switch (/*identificador de instruccion*/)
+    switch // (identificador de instruccion)
     {
 
     case SET:
@@ -147,4 +148,4 @@ void cicloInstruccion(t_pcb *pcb, t_list *instrucciones)
     //FALTA AGREGAR ALGO QUE MANDE MENSAJES A KERNEL Y DEMAS MODULOS
 }
 }
-
+*/
