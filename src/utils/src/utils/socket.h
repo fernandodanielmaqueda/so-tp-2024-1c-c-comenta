@@ -31,6 +31,14 @@ int start_client(char* ip, char* port);
 int esperar_cliente(int socket_servidor);
 void liberar_conexion(int socket_cliente);
 
+
+/**
+ * @brief Crear paquete.
+ * @param codigoOperacion Codigo de operacion que tendra el paquete.
+ */
+t_paquete *create_package(uint8_t codigoOperacion)
+
+
 /**
  * @brief Agregar dato a paquete
  * @param paquete t_paquete a rellenar.
@@ -38,6 +46,29 @@ void liberar_conexion(int socket_cliente);
  * @param tamanio Tamaño del dato a agregar.
  */
 void add_to_package(t_paquete *paquete, void *valor, int tamanio);
+
+
+/**
+ * @brief Eliminar paquete
+ * @param paquete t_paquete a eliminar.
+ */
+void kill_package(t_paquete *paquete);
+
+
+/**
+ * @brief Eliminar pcb.
+ * @param pcbObjetivo t_pcb a eliminar.
+ */
+void kill_pcb(t_pcb *pcbObjetivo);
+
+
+
+/**
+ * @brief Eliminar instruccion.
+ * @param lineaInstruccion t_instruccion a eliminar.
+ */
+void delete_instruction(t_instruccion *lineaInstruccion)
+
 
 /**
  * @brief Serializacion del t_pcb para ser enviada.
@@ -68,5 +99,11 @@ t_list* get_package_like_list(int socketClient);
  */
 void *get_buffer(int *size, int socketCliente)
 
+
+/**
+ * @brief Crear Buffer
+ * @param paquete t_paquete donde se creara el buffer
+ */
+void create_buffer(t_paquete *paquete)
 
 #endif // SOCKET_H

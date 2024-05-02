@@ -98,13 +98,37 @@ void liberar_conexion(int socket_cliente)
 
 
 
+t_paquete *create_package(uint8_t codigoOperacion)
+{
+  t_paquete *paquete = malloc(sizeof(t_paquete));
+
+  paquete->codigo_operacion = codigoOperacion;
+  create_buffer(paquete);
+
+  return paquete;
+}
+
+
 void add_to_package(t_paquete *paquete, void *valor, int tamanio)
 {
   paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio + sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio, sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size + sizeof(int), valor, tamanio);
   paquete->buffer->size += tamanio + sizeof(int);
+}
 
+
+void kill_package(t_paquete *paquete)
+{
+  if (paquete != NULL)
+  {
+    if (paquete->buffer != NULL)
+    {
+      free(paquete->buffer->stream);
+      free(paquete->buffer);
+    }
+    free(paquete);
+  }
 }
 
 
@@ -117,6 +141,14 @@ void *get_buffer(int *size, int socketCliente)
   recv(socketCliente, buffer, *size, MSG_WAITALL);
 
   return buffer;
+}
+
+
+void create_buffer(t_paquete *paquete)
+{
+  paquete->buffer = malloc(sizeof(t_buffer));
+  paquete->buffer->size = 0;
+  paquete->buffer->stream = NULL;
 }
 
 
@@ -145,6 +177,24 @@ t_list* get_package_like_list(int socketCliente)
   return contenido;
 }
 
+
+void kill_pcb(t_pcb *pcbObjetivo)
+{
+  if (pcbObjetivo != NULL)
+  {
+    if (pcbObjetivo->instrucciones != NULL)
+      list_destroy_and_destroy_elements(pcbObjetivo->instrucciones, (void *)delete_instruction);
+
+    free(pcbObjetivo);
+  }
+}
+
+
+void delete_instruction(t_instruccion *lineaInstruccion)
+{
+  if (lineaInstruccion != NULL)
+    free(lineaInstruccion);
+}
 
 void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
 {
