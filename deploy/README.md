@@ -15,28 +15,28 @@ Algunas de las cosas que se listan también sirven para poder trabajar sobre el 
 
 ## 1. Descargar VirtualBox
 
-https://www.virtualbox.org/wiki/Downloads
+- https://www.virtualbox.org/wiki/Downloads
 
 -----------------------------
 
 ## 2. Descargar la VM de Ubuntu Server
 
 Página oficial
-https://docs.utnso.com.ar/recursos/vms
+- https://docs.utnso.com.ar/recursos/vms
 
 Links de descarga
-https://drive.google.com/drive/folders/1Pn1SveTGkEVfcc7dYAr1Wc10ftEe8E0J
-https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view
-https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view?usp=drive_link
+- https://drive.google.com/drive/folders/1Pn1SveTGkEVfcc7dYAr1Wc10ftEe8E0J
+- https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view
+- https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view?usp=drive_link
 
 Gestor de descargas (Windows)
-https://www.freedownloadmanager.org/es/download.htm
+- https://www.freedownloadmanager.org/es/download.htm
 
 Gestor de descargas (Ubuntu)
-https://chemicloud.com/blog/download-google-drive-files-using-wget/
-https://medium.com/@acpanjan/download-google-drive-files-using-wget-3c2c025a8b99
-https://stackoverflow.com/questions/25010369/wget-curl-large-file-from-google-drive
-https://superuser.com/questions/1518582/how-to-use-wget-to-download-a-file-stored-in-google-drive-without-making-publicl
+- https://chemicloud.com/blog/download-google-drive-files-using-wget/
+- https://medium.com/@acpanjan/download-google-drive-files-using-wget-3c2c025a8b99
+- https://stackoverflow.com/questions/25010369/wget-curl-large-file-from-google-drive
+- https://superuser.com/questions/1518582/how-to-use-wget-to-download-a-file-stored-in-google-drive-without-making-publicl
 
 -----------------------------
 
