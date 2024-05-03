@@ -68,10 +68,7 @@ void obtener_configuracion(t_config* cpu_config)
 
 void initialize_sockets(){
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 6f5bcf0 (agrego if para chequear errores)
     //Inicializo memoria
     log_info(cpu_logger, "Iniciando clinte cpu para ir a memoria");
     fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
