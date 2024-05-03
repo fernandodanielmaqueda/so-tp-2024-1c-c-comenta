@@ -87,16 +87,27 @@ void initialize_sockets()
 	//Incio cliente kernel para ir a CPU Dispatch
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Dispatch...");
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_DISPATCH);
+	if (fd_kernel == -1)
+	{
+		log_error(kernel_logger, "No se pudo conectar a CPU Dispatch");
+		exit(EXIT_FAILURE);
+	}else
 	log_info(kernel_logger, "Kernel esta conectado a CPU Dispatch en el puerto %s\n", PUERTO_CPU_DISPATCH);
 
 	//Incio cliente kernel para ir a CPU Interrupt
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Interrupt... ");
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_INTERRUPT);
+
+	if (fd_kernel == -1)
+	{
+		log_error(kernel_logger, "No se pudo conectar a CPU Interrupt");
+		exit(EXIT_FAILURE);
+	}else
 	log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
 
 	//Despues de las conexiones como cliente abro la conexion a servidor
 
-		//Dejo al kernel en modo server escuchando por el puerto de la config
+	//Dejo al kernel en modo server escuchando por el puerto de la config
 	fd_kernel = start_server(NULL, PUERTO_ESCUCHA);
 	log_info(kernel_logger, "Kernel escuchando en puerto... %s \n", PUERTO_ESCUCHA);
 
@@ -105,6 +116,12 @@ void initialize_sockets()
 	//Espero conexion entrada/salida
 	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
 	fd_entrada_salida = esperar_cliente(fd_kernel);
+
+	if (fd_entrada_salida == -1)
+	{
+		log_error(kernel_logger, "No se pudo conectar a Entrada/Salida");
+		exit(EXIT_FAILURE);
+	}else
 	log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
 
 
