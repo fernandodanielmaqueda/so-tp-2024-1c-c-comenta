@@ -71,7 +71,14 @@ void initialize_sockets(){
     //Inicializo memoria
     log_info(cpu_logger, "Iniciando clinte cpu para ir a memoria");
     fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
+
+    if(fd_memoria == -1){
+        log_error(cpu_logger, "No se pudo conectar a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
+        exit(EXIT_FAILURE);
+    }
+    else{ 
     log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
+    }
 
 
     //Dejo a CPU en modo server incializo server cpu dispatch
@@ -86,15 +93,28 @@ void initialize_sockets(){
     //Espero conexion  dispatch kernel
     log_info(cpu_logger, "Esperando conexion de kernel en puerto disptach %s \n", PUERTO_ESCUCHA_DISPATCH);
     fd_kernel = esperar_cliente(fd_cpu_dispatch);
+
+    if(fd_kernel == -1){
+        log_error(cpu_logger, "No se pudo conectar a kernel en puerto dispatch ");
+        
+    }
+    else{
     log_info(cpu_logger, "Conectado a kernel en puerto dispatch ");
+    }
 
     //Espero a conexion interrupt kernel
     log_info(cpu_logger, "Esperando conexion de kernel en puerto interrupt %s \n", PUERTO_ESCUCHA_INTERRUPT);
     fd_kernel = esperar_cliente(fd_cpu_interrupt);
+
+    if(fd_kernel == -1){
+        log_error(cpu_logger, "No se pudo conectar a kernel en puerto interrupt ");
+        
+    }
+    else{
     log_info(cpu_logger, "Conectado a kernel en puerto interrupt ");
 
+    }
 }
-
 void initialize_cpu()
 {
     initialize_logger();

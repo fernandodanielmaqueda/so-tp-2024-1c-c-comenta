@@ -61,23 +61,39 @@ void initialize_sockets()
 
     log_info(memoria_logger, "Esperando conexion de CPU");
     fd_cpu = esperar_cliente(fd_memoria);
-    log_info(memoria_logger, "Se conecto el modulo CPU");
 
+    if(fd_cpu == -1){
+        log_error(memoria_logger, "No se pudo conectar a cpu");
+		
+
+    }else{
+        log_info(memoria_logger, "Se conecto el modulo CPU");
+        }   
 
 
 
     log_info(memoria_logger, "Esperando conexion de Kernel");
     fd_kernel = esperar_cliente(fd_memoria);
+
+    if(fd_kernel == -1){
+        log_error(memoria_logger, "No se pudo conectar a kernel");
+
+    }else{
     log_info(memoria_logger, "Se conecto el modulo Kernel\n"); 
-       
+    }
     
   
     //espero conexion entrada y salida
     log_info(memoria_logger, "Esperando conexion de EntradaSalida");
     fd_io = esperar_cliente(fd_memoria);
-    log_info(memoria_logger, "Se conecto el modulo IO");
 
+    if(fd_io == -1){
+        log_error(memoria_logger, "No se pudo conectar a entrada y salida");
 
+    }else{
+    log_info(memoria_logger, "Se conecto el modulo Entrada salida");
+
+    }
 
  
 

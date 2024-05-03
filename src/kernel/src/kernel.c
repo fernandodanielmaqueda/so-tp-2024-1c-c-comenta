@@ -1,4 +1,5 @@
 #include "kernel.h"
+#include <commons/collections/list.h>
 t_log* kernel_logger;
 t_log* kernel_debug_logger;
 t_config* kernel_config;
@@ -82,17 +83,42 @@ void initialize_sockets()
 	//Incio cliente kernel para ir a memoria
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a memoria...");
 	fd_kernel = start_client(IP_MEMORIA, PUERTO_MEMORIA);
+
+	if(fd_kernel == -1) {
+		log_error(kernel_logger, "No se pudo conectar a memoria");
+		exit(EXIT_FAILURE);
+	}
+	else{
 	log_info(kernel_logger, "Kernel esta conectado a memoria en el puerto %s \n", PUERTO_MEMORIA);
+	}
 
 	//Incio cliente kernel para ir a CPU Dispatch
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Dispatch...");
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_DISPATCH);
-	log_info(kernel_logger, "Kernel esta conectado a CPU Dispatch en el puerto %s\n", PUERTO_CPU_DISPATCH);
+
+	if(fd_kernel == -1) {
+		log_error(kernel_logger, "No se pudo conectar a CPU Dispatch");
+		
+	}
+	else{
+		log_info(kernel_logger, "Kernel esta conectado a CPU Dispatch en el puerto %s\n", PUERTO_CPU_DISPATCH);
+	}
+	// log_info(kernel_logger, "Kernel esta conectado a CPU Dispatch en el puerto %s\n", PUERTO_CPU_DISPATCH);
 
 	//Incio cliente kernel para ir a CPU Interrupt
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Interrupt... ");
 	fd_kernel = start_client(IP_CPU, PUERTO_CPU_INTERRUPT);
-	log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
+
+	if (fd_kernel == -1)
+	{
+		log_error(kernel_logger, "No se pudo conectar a CPU Interrupt");
+		
+	}
+else{
+		log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
+	}
+	
+	//log_info(kernel_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
 
 	//Despues de las conexiones como cliente abro la conexion a servidor
 
@@ -105,7 +131,15 @@ void initialize_sockets()
 	//Espero conexion entrada/salida
 	log_info(kernel_logger, "Esperando conexion a Entrada/Salida...");
 	fd_entrada_salida = esperar_cliente(fd_kernel);
-	log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
+
+	if(fd_entrada_salida == -1) {
+		log_error(kernel_logger, "No se pudo conectar a Entrada/Salida");
+		
+	}
+	else{
+		log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
+	}
+	//log_info(kernel_logger, "Kernel conectado a Entrada/Salida\n");
 
 
 	
