@@ -70,6 +70,13 @@ void initialize_sockets(){
     } else
     log_info(entrada_logger, "I/O esta conectado con la memoria \n");
 
+    if(fd_memoria == -1){
+        log_error(entrada_logger, "No se pudo conectar con la memoria");
+        exit(EXIT_FAILURE);
+    }
+    else{
+    log_info(entrada_logger, "I/O esta conectado con la memoria \n");
+    }
 
 
     //Me conecto a kernel como cliente entardasalida

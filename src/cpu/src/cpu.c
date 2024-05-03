@@ -77,9 +77,7 @@ void initialize_sockets(){
     {
         log_error(cpu_logger, "No se pudo conectar a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
         exit(EXIT_FAILURE);
-    } else
-        log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
-
+    } else log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
 
     //Dejo a CPU en modo server incializo server cpu dispatch
     fd_cpu_dispatch = start_server(NULL,PUERTO_ESCUCHA_DISPATCH);
@@ -112,8 +110,8 @@ void initialize_sockets(){
     } else
     log_info(cpu_logger, "Conectado a kernel en puerto interrupt ");
 
-}
-
+    }
+    
 void initialize_cpu()
 {
     initialize_logger();
@@ -125,8 +123,8 @@ void initialize_cpu()
 }
 
 void inicializar_ciclo_cpu() {
-	pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);
-	pthread_join(hilo_ciclo_cpu, NULL);
+	// pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);
+	// pthread_join(hilo_ciclo_cpu, NULL);
 }
 
 void ciclo_cpu(){
@@ -148,10 +146,11 @@ void ciclo_cpu(){
 	}
 }
 
+/* 
 void cicloInstruccion(t_pcb *pcb, t_list *instrucciones)
 { // esto es para ejecutar una serie de instrucciones
 
-    switch (/*identificador de instruccion*/)
+    switch // (identificador de instruccion)
     {
 
     case SET:
@@ -166,4 +165,4 @@ void cicloInstruccion(t_pcb *pcb, t_list *instrucciones)
     //FALTA AGREGAR ALGO QUE MANDE MENSAJES A KERNEL Y DEMAS MODULOS
 }
 }
-
+*/

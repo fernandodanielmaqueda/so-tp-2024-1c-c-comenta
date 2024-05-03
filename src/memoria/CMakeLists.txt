@@ -1,0 +1,21 @@
+# Filename: CMakeLists.txt / v2024.03.26-001, part of cc-CMake
+
+set(PROGRAM4 memoria)
+set(LIBRARY1 utils)
+set(PROGRAM4_INCLUDEDIR src)
+#set(PROGRAM4_LIBDIR lib)
+add_executable(${PROGRAM4})
+file(GLOB_RECURSE PROGRAM4_SOURCES "src/*.c")
+target_sources(${PROGRAM4} PRIVATE ${PROGRAM4_SOURCES})
+add_dependencies(${PROGRAM4} ${LIBRARY1})
+target_compile_features(${PROGRAM4} PUBLIC c_std_17)
+# target_precompile_headers(${PROGRAM4} PRIVATE)
+target_include_directories(${PROGRAM4} BEFORE PUBLIC ${PROGRAM4_INCLUDEDIR})
+#target_link_directories(${PROGRAM4} BEFORE PUBLIC ${PROGRAM4_LIBDIR})
+# target_compile_definitions(${PROGRAM4} PUBLIC)
+target_compile_options(${PROGRAM4} PUBLIC "")
+target_link_options(${PROGRAM4} BEFORE PUBLIC "")
+target_link_libraries(${PROGRAM4} PUBLIC m PRIVATE "")
+
+list(APPEND EXECUTABLES_LIST ${PROGRAM4})
+set(EXECUTABLES_LIST ${EXECUTABLES_LIST} PARENT_SCOPE)

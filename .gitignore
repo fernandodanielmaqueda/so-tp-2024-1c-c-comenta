@@ -18,12 +18,13 @@
 .deps/
 bin/
 obj/
-cpu/
-entradasalida/
-kernel/
-memoria/
-utils/
 build/
+
+/cpu/
+/entradasalida/
+/kernel/
+/memoria/
+/utils/
 
 # Prerequisites
 *.d

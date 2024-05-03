@@ -1,4 +1,5 @@
 #include "kernel.h"
+#include <commons/collections/list.h>
 t_log* kernel_logger;
 t_log* kernel_debug_logger;
 t_config* kernel_config;
@@ -82,7 +83,14 @@ void initialize_sockets()
 	//Incio cliente kernel para ir a memoria
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a memoria...");
 	fd_kernel = start_client(IP_MEMORIA, PUERTO_MEMORIA);
+
+	if(fd_kernel == -1) {
+		log_error(kernel_logger, "No se pudo conectar a memoria");
+		exit(EXIT_FAILURE);
+	}
+	else{
 	log_info(kernel_logger, "Kernel esta conectado a memoria en el puerto %s \n", PUERTO_MEMORIA);
+	}
 
 	//Incio cliente kernel para ir a CPU Dispatch
 	log_info(kernel_logger, "Iniciando cliente kernel para ir a CPU Dispatch...");
@@ -155,7 +163,7 @@ void iniciar_planificador_largo_plazo()
 	pthread_detach(hilo_largo_plazo);
 }
 
-void iniciar_planificador_corto_plazo()
+void iniciar_planificador_corto_plazo() //ESTADO RUNNIG - MULTIPROCESAMIENTO 
 {
 	pthread_create(&hilo_corto_plazo, NULL, (void *)planificador_corto_plazo, NULL);
 	//log_info(logger_kernel, "Inicio planificador corto plazo");
@@ -178,7 +186,7 @@ void planificador_largo_plazo()
 		
 		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
 
-		cambiar_estado(pcb, READY);
+		// cambiar_estado(pcb, READY);
 		
 	}
 }
@@ -198,7 +206,7 @@ void planificador_corto_plazo()
 		} else if (!strcmp(ALGORITMO_PLANIFICACION, "RR")){
 			//pcb = algoritmo_RR();
 		} else {
-			log_error(logger_kernel, "El algoritmo de planificacion ingresado no existe\n");
+			// log_error(logger_kernel, "El algoritmo de planificacion ingresado no existe\n");
 		}
 
 		cambiar_estado(pcb, EXEC);
@@ -218,7 +226,7 @@ t_pcb *algoritmo_FIFO()
 
 void receptor_mensajes_cpu()
 {
-	t_paquete *paquete;
+	// t_paquete *paquete;
 
 	while (1)
 	{
@@ -226,6 +234,7 @@ void receptor_mensajes_cpu()
 		//FALTA RECIBIR PAQUETE DE LA CONEXION CON CPU
 		//FALTA DESERIALIZAR PCB
 		
+		/*
 		switch (paquete->codigo_operacion)
 		{
 			case EXIT:
@@ -316,6 +325,7 @@ void receptor_mensajes_cpu()
 			}
 			// ACA SIGO AGREGANDO CASES SEGUN LA INSTRUCCION
 		}
+		*/
 	}
 }
 
@@ -325,7 +335,7 @@ void cambiar_estado(t_pcb* pcb, int estado_nuevo)
 	pcb->estado_actual = estado_nuevo;
 	char* global_estado_anterior;
 	
-	t_paquete* paquete;
+	// t_paquete* paquete;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_pcb*)elemento)->pid == pcb->pid);
@@ -369,7 +379,7 @@ void cambiar_estado(t_pcb* pcb, int estado_nuevo)
 		{
 			pthread_mutex_lock(&mutex_LISTA_NEW);
 			list_add(LISTA_NEW, pcb);
-			log_info(logger_kernel, "Se crea el proceso <%d> en NEW" ,pcb->pid);
+			// log_info(logger_kernel, "Se crea el proceso <%d> en NEW" ,pcb->pid);
 			pthread_mutex_unlock(&mutex_LISTA_NEW);
 	
 			sem_post(&sem_planificador_largo_plazo);
@@ -380,7 +390,7 @@ void cambiar_estado(t_pcb* pcb, int estado_nuevo)
 			pcb->llegada_ready=timenow();
 
 			pthread_mutex_lock(&mutex_LISTA_READY);
-			log_info(logger_kernel, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_estado_anterior);
+			// log_info(logger_kernel, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_estado_anterior);
 			list_add(LISTA_READY, pcb);
 			pthread_mutex_unlock(&mutex_LISTA_READY);
 			sem_post(&sem_planificador_corto_plazo);
@@ -394,7 +404,7 @@ void cambiar_estado(t_pcb* pcb, int estado_nuevo)
 			pthread_mutex_lock(&mutex_LISTA_EXEC);
 			list_add(LISTA_EXEC, pcb);
 			pthread_mutex_unlock(&mutex_LISTA_EXEC);
-			log_info(logger_kernel, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXEC>",pcb->pid, global_estado_anterior);
+			// log_info(logger_kernel, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXEC>",pcb->pid, global_estado_anterior);
 	
 			break;
 		}
@@ -404,14 +414,14 @@ void cambiar_estado(t_pcb* pcb, int estado_nuevo)
 			list_add(LISTA_BLOCKED, pcb);
 			pthread_mutex_unlock(&mutex_LISTA_BLOCKED);
 
-			log_info(logger_kernel, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_estado_anterior);
+			// log_info(logger_kernel, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_estado_anterior);
 
 			break;
 		}
 		//Todos los casos de salida de un proceso.
 		case EXITED:{
 			
-			log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
+			// log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
 
 			sem_post(&contador_multiprogramacion);
 
@@ -422,6 +432,7 @@ void cambiar_estado(t_pcb* pcb, int estado_nuevo)
 		
 			break;
 		}
+		/*
 		case INVALID_RESOURCE:{
 			
 			log_info(logger_kernel, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->pid);
@@ -447,6 +458,7 @@ void cambiar_estado(t_pcb* pcb, int estado_nuevo)
 			
 			break;
 		}
+		*/
 	}
 }
 
@@ -461,14 +473,14 @@ t_pcb *create_pcb(char *instrucciones)
 	nuevoPCB->instrucciones = string_duplicate(instrucciones);
 
 	nuevoPCB->pc = 0;
-	nuevoPCB->recurso_solicitado = string_new();
+	// nuevoPCB->recurso_solicitado = string_new();
 
-	nuevoPCB->primera_aparicion = true;
+	// nuevoPCB->primera_aparicion = true;
 
 
 	pthread_mutex_lock(&mutex_PID);
-	nuevoPCB->pid = PID;
-	PID++;
+	// nuevoPCB->pid = PID;
+	// PID++;
 	pthread_mutex_unlock(&mutex_PID);
 
 	nuevoPCB->AX = string_new();
