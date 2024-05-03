@@ -138,7 +138,7 @@ void iniciar_planificador_largo_plazo()
 	pthread_detach(hilo_largo_plazo);
 }
 
-void iniciar_planificador_corto_plazo()
+void iniciar_planificador_corto_plazo() //ESTADO RUNNIG - MULTIPROCESAMIENTO 
 {
 	pthread_create(&hilo_corto_plazo, NULL, (void *)planificador_corto_plazo, NULL);
 	//log_info(logger_kernel, "Inicio planificador corto plazo");

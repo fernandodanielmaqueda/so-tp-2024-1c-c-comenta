@@ -27,13 +27,11 @@
 
 void obtener_configuracion(t_config* kernel_config);
 void initialize_kernel();
-void agregar_a_new(t_pcb* pcb);
-void new_a_ready();
 void initialize_sockets();
 void initialize_logger();
 void initialize_config();
 void cambiar_estado(t_pcb* pcb, int estado_nuevo);
-t_pcb *crear_pcb(char *instrucciones, int socket_consola);
+t_pcb *create_pcb(char *instrucciones);
 void iniciar_planificador_largo_plazo();
 void iniciar_planificador_corto_plazo();
 void iniciar_receptor_mensajes_cpu();
