@@ -38,8 +38,10 @@ void iniciar_receptor_mensajes_cpu();
 void planificador_largo_plazo();
 void planificador_corto_plazo();
 t_pcb *algoritmo_FIFO();
+t_pcb *algoritmo_RR();
 void receptor_mensajes_cpu();
 int timenow();
+void* start_quantum(void* arg);
 
 //listas globales de estados
 t_list* LISTA_NEW;
@@ -55,6 +57,7 @@ pthread_mutex_t mutex_LISTA_BLOCKED;
 pthread_mutex_t mutex_LISTA_EXEC;
 pthread_mutex_t mutex_LISTA_EXIT;
 
+pthread_t generador_de_interrupciones;
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;

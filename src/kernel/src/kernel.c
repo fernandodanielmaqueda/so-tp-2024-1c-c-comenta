@@ -75,8 +75,7 @@ void obtener_configuracion(t_config* kernel_config)
 	GRADO_MULTIPROGRAMACION = config_get_int_value(kernel_config, "GRADO_MULTIPROGRAMACION");
 }
 
-void initialize_sockets()
-{
+void initialize_sockets(){
 	
 //*********************************************************************************************************************************************************///
 
@@ -188,7 +187,7 @@ void iniciar_receptor_mensajes_cpu()
 
 
 void planificador_largo_plazo()
-{ 
+{
 	while(1){
 		sem_wait(&sem_planificador_largo_plazo);
 		sem_wait(&contador_multiprogramacion);
@@ -202,24 +201,29 @@ void planificador_largo_plazo()
 
 void planificador_corto_plazo()
 {
+		
 
 	while(1){
-		sem_wait(&sem_planificador_corto_plazo);	
+		
+		sem_wait(&sem_planificador_corto_plazo);
 
-		t_pcb* pcb;
+		t_pcb* pcb = NULL;
 
 		if(!strcmp(ALGORITMO_PLANIFICACION, "VRR")) {
 			//pcb = algoritmo_VRR();
 		} else if (!strcmp(ALGORITMO_PLANIFICACION, "FIFO")){
 			pcb = algoritmo_FIFO();
 		} else if (!strcmp(ALGORITMO_PLANIFICACION, "RR")){
-			//pcb = algoritmo_RR();
+			pcb = algoritmo_RR();
+
+	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
+			
 		} else {
 			// log_error(logger_kernel, "El algoritmo de planificacion ingresado no existe\n");
 		}
 
 		cambiar_estado(pcb, EXEC);
-
+	
 		//FALTA SERIALIZAR PCB
 		//FALTA ENVIAR PAQUETE A CPU
 	}
@@ -232,6 +236,39 @@ t_pcb *algoritmo_FIFO()
 	pthread_mutex_unlock(&mutex_LISTA_READY);
 	return pcb;
 }
+
+/*t_pcb *algoritmo_RR(void* arg)
+{
+    t_args_hilo* arg_h = (t_args_hilo*) arg;
+	
+    pthread_t generador_de_interrupciones;
+    while(1)
+    {
+        sem_wait(&procesos_en_ready);
+        sem_wait(&planificacion_corto_plazo);
+        sem_post(&planificacion_corto_plazo);
+        //log_info(logger,"Hice wait del gdmp");
+        sem_wait(&mutex_LISTA_READY);
+        //log_info(logger,"Hice wait de la cola de new: %i",cola_new);
+
+        t_pcb *pcb = (t_pcb *)list_remove(LISTA_EXEC, 0);
+        sem_post(&mutex_LISTA_READY);
+        
+		return pcb;
+
+        log_info(logger, "PID: %i - Estado Anterior: READY - Estado Actual: EXEC", execute->pid);
+  
+        send(arg_h->socket_dispatch, &(execute->pid), sizeof(uint32_t), 0);
+        //log_info(logger, "Envié %i a %i", execute->pid, arg_h->socket_dispatch);
+        enviar_contexto_de_ejecucion(execute->contexto, arg_h->socket_dispatch);
+
+        execute->contexto = recibir_contexto_de_ejecucion(arg_h->socket_dispatch);
+        motivo = recibir_motivo_desalojo(arg_h->socket_dispatch);
+        evaluar_motivo_desalojo(logger, motivo, arg);
+                
+    }
+}
+*/
 
 void receptor_mensajes_cpu()
 {
@@ -523,4 +560,12 @@ int timenow()
 	int segundos_totales;
 	segundos_totales = hours * 60 * 60 + minutes * 60 + seconds;
 	return segundos_totales;
+}
+
+void* start_quantum(void* arg)
+{
+    log_trace(logger, "Se crea hilo para INTERRUPT");
+    usleep(QUANTUM * 1000); //en milisegundos
+    send_interrupt(socket_cpu_interrupt);
+    log_trace(logger, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
 }
