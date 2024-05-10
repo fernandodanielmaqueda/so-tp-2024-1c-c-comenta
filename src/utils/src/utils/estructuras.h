@@ -3,7 +3,7 @@
 typedef struct {
     uint32_t pid; 
     uint32_t pc; 
-    char* instrucciones; 
+    t_list* instrucciones; 
     uint32_t AX;
     uint32_t BX;
     uint32_t CX; 
