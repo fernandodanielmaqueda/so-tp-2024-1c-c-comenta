@@ -30,6 +30,8 @@ int GRADO_MULTIPROGRAMACION;
 
 size_t bytes;
 
+int idProcesoGlobal;
+
 int main() {
    
     //inicializamos  kernel
@@ -162,6 +164,8 @@ void initialize_kernel(){
 	LISTA_EXEC = list_create();
 	LISTA_BLOCKED = list_create();
 	LISTA_EXIT = list_create();
+
+	idProcesoGlobal = 0;
 }
 
 void iniciar_planificador_largo_plazo()
@@ -515,34 +519,47 @@ t_pcb *create_pcb(char *instrucciones)
 
 	t_pcb *nuevoPCB = malloc(sizeof(t_pcb));
 
+	nuevoPCB->pid = idProcesoGlobal++;
+    nuevoPCB->pc = 0; 
+    nuevoPCB->AX = 0;
+    nuevoPCB->BX = 0;
+    nuevoPCB->CX = 0;
+    nuevoPCB->DX = 0;
+    nuevoPCB->EAX = 0;
+    nuevoPCB->EBX = 0;
+    nuevoPCB->ECX = 0;
+    nuevoPCB->EDX = 0;
+    nuevoPCB->RAX = 0;
+    nuevoPCB->RBX = 0;
+    nuevoPCB->RCX = 0;
+    nuevoPCB->RDX = 0;
+    nuevoPCB->SI = 0;
+    nuevoPCB->DI = 0;
+	nuevoPCB->quantum = 0;
+	nuevoPCB->estado_actual = 0;
+    nuevoPCB->estado_actual = 0;
+    //nuevoPCB->fd_conexion = socketCliente;
+    nuevoPCB->llegada_ready = 0;
+    nuevoPCB->llegada_running = 0;
+	//nuevoPCB->instrucciones = list_create();
+	nuevoPCB->instrucciones = instrucciones;
+
+
+	/*INSTRUCCIONES --> Falta capturar la lista de instrucciones
 	nuevoPCB->instrucciones = string_new();
 	nuevoPCB->instrucciones = string_duplicate(instrucciones);
-
-	nuevoPCB->pc = 0;
+	*/
 	// nuevoPCB->recurso_solicitado = string_new();
 
 	// nuevoPCB->primera_aparicion = true;
 
 
-	pthread_mutex_lock(&mutex_PID);
+
+	//pthread_mutex_lock(&mutex_PID);
 	// nuevoPCB->pid = PID;
 	// PID++;
-	pthread_mutex_unlock(&mutex_PID);
+	//pthread_mutex_unlock(&mutex_PID);
 
-	nuevoPCB->AX = string_new();
-	nuevoPCB->BX = string_new();
-	nuevoPCB->CX = string_new();
-	nuevoPCB->DX = string_new();
-	
-	nuevoPCB->EAX = string_new();
-	nuevoPCB->EBX = string_new();
-	nuevoPCB->ECX = string_new();
-	nuevoPCB->EDX = string_new();
-
-	nuevoPCB->RAX = string_new();
-	nuevoPCB->RBX = string_new();
-	nuevoPCB->RCX = string_new();
-	nuevoPCB->RDX = string_new();
 
 	return nuevoPCB;
 }

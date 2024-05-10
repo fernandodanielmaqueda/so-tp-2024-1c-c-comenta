@@ -4,23 +4,26 @@ typedef struct {
     uint32_t pid; 
     uint32_t pc; 
     char* instrucciones; 
-    char* AX;
-    char* BX;
-    char* CX; 
-    char* DX;
-    char* EAX;
-    char* EBX;
-    char* ECX;
-    char* EDX;
-    char* RAX;
-    char* RBX;
-    char* RCX;
-    char* RDX;
+    uint32_t AX;
+    uint32_t BX;
+    uint32_t CX; 
+    uint32_t DX;
+    uint32_t EAX;
+    uint32_t EBX;
+    uint32_t ECX;
+    uint32_t EDX;
+    uint32_t RAX;
+    uint32_t RBX;
+    uint32_t RCX;
+    uint32_t RDX;
+    uint32_t SI;
+    uint32_t DI;
 
-    double llegada_ready;
-    double llegada_running;
+    uint32_t quantum;
     int estado_actual;
     int fd_conexion;
+    double llegada_ready;
+    double llegada_running;
 
 }t_pcb;
 
