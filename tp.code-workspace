@@ -9,16 +9,19 @@
 	},
 	"folders": [
 		{
-			"path": "src/kernel"
+			"path": "./"
 		},
 		{
 			"path": "src/cpu"
 		},
 		{
-			"path": "src/memoria"
+			"path": "src/entradasalida"
 		},
 		{
-			"path": "src/entradasalida"
+			"path": "src/kernel"
+		},
+		{
+			"path": "src/memoria"
 		},
 		{
 			"path": "src/utils"

@@ -34,3 +34,28 @@ typedef struct {
     char* param5;
 
 }t_instruccion;
+typedef enum {
+    NEW,
+    READY,
+    EXEC,
+    BLOCKED,
+	EXITED,
+    SET,
+    MOVE_IN,
+    MOVE_OUT,
+    SUM,
+    SUB,
+    JNZ,
+    RESIZE,
+    COPY_STRING,
+    WAIT,
+    SIGNAL,
+    IO_GEN_SLEEP,
+    IO_STDIN_READ,
+    IO_STDOUT_WRITE,
+    IO_FS_CREATE,
+    IO_FS_DELETE,
+    IO_FS_TRUNCATE,
+    IO_FS_WRITE,
+    IO_FS_READ
+} t_opcode;

@@ -34,8 +34,8 @@ char* ALGORITMO_TLB;
 
 int main(int argc, char* argv[]) {
 
-    cpu();
-
+    initialize_cpu();
+    inicializar_ciclo_cpu();
 
     return 0;
 }
@@ -69,11 +69,15 @@ void obtener_configuracion(t_config* cpu_config)
 void initialize_sockets(){
 
 
-        //Inicializo memoria
+    //Inicializo memoria
     log_info(cpu_logger, "Iniciando clinte cpu para ir a memoria");
     fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
-    log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
 
+    if (fd_memoria == -1)
+    {
+        log_error(cpu_logger, "No se pudo conectar a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
+        exit(EXIT_FAILURE);
+    } else log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
 
     //Dejo a CPU en modo server incializo server cpu dispatch
     fd_cpu_dispatch = start_server(NULL,PUERTO_ESCUCHA_DISPATCH);
@@ -87,19 +91,28 @@ void initialize_sockets(){
     //Espero conexion  dispatch kernel
     log_info(cpu_logger, "Esperando conexion de kernel en puerto disptach %s \n", PUERTO_ESCUCHA_DISPATCH);
     fd_kernel = esperar_cliente(fd_cpu_dispatch);
+
+    if (fd_kernel == -1)
+    {
+        log_error(cpu_logger, "No se pudo conectar a kernel en puerto dispatch");
+        exit(EXIT_FAILURE);
+    } else
     log_info(cpu_logger, "Conectado a kernel en puerto dispatch ");
 
     //Espero a conexion interrupt kernel
     log_info(cpu_logger, "Esperando conexion de kernel en puerto interrupt %s \n", PUERTO_ESCUCHA_INTERRUPT);
     fd_kernel = esperar_cliente(fd_cpu_interrupt);
+
+    if (fd_kernel == -1)
+    {
+        log_error(cpu_logger, "No se pudo conectar a kernel en puerto interrupt");
+        exit(EXIT_FAILURE);
+    } else
     log_info(cpu_logger, "Conectado a kernel en puerto interrupt ");
 
-
-  
-
-}
-
-void cpu()
+    }
+    
+void initialize_cpu()
 {
     initialize_logger();
     initialize_config();
@@ -109,3 +122,47 @@ void cpu()
 
 }
 
+void inicializar_ciclo_cpu() {
+	// pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);
+	// pthread_join(hilo_ciclo_cpu, NULL);
+}
+
+void ciclo_cpu(){
+
+	while(1){
+		/*
+        t_paquete* paquete = recibir_paquete(conexion_kernel);
+		if (paquete == NULL) {
+			continue;
+		}
+		t_pcb* pcb = deserializar_pcb(paquete->buffer);
+		
+        t_list* instrucciones = parsearInstrucciones(pcb->instrucciones);
+
+        cicloInstruccion(pcb, instrucciones);
+
+		list_destroy(instrucciones);
+        */
+	}
+}
+
+/* 
+void cicloInstruccion(t_pcb *pcb, t_list *instrucciones)
+{ // esto es para ejecutar una serie de instrucciones
+
+    switch // (identificador de instruccion)
+    {
+
+    case SET:
+    { 
+        
+    }
+    case EXIT:
+    {
+
+    }
+    //FALTA AGREGAR LAS INSTRUCCIONES FALTANTANTES
+    //FALTA AGREGAR ALGO QUE MANDE MENSAJES A KERNEL Y DEMAS MODULOS
+}
+}
+*/
