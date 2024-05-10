@@ -22,6 +22,8 @@ typedef struct {
     uint32_t quantum;
     int estado_actual;
     int fd_conexion;
+    double llegada_ready;
+    double llegada_running;
 
 }t_pcb;
 

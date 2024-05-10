@@ -297,12 +297,19 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
   add_to_package(paquete, &(pcb->quantum), sizeof(uint32_t));
   DEBUG_PRINTF("\n[Serializar] paquete[%d]: quantum = %d\n", cursor, pcb->quantum);
   cursor++;
+  add_to_package(paquete, &(pcb->llegada_ready), sizeof(double));
+  DEBUG_PRINTF("\n[Serializar] paquete[%d]: llegada_ready = %d\n", cursor, pcb->llegada_ready);
+  cursor++;
+  add_to_package(paquete, &(pcb->llegada_running), sizeof(double));
+  DEBUG_PRINTF("\n[Serializar] paquete[%d]: llegada_running = %d\n", cursor, pcb->llegada_running);
+  cursor++;
   add_to_package(paquete, &(pcb->estado_actual), sizeof(int));
   DEBUG_PRINTF("\n[Serializar] paquete[%d]: estado_actual = %d\n", cursor, pcb->estado_actual);
   cursor++;
   agregar_a_paquete(paquete, &(pcb->fd_conexion), sizeof(int));
   DEBUG_PRINTF("\n[Serializar] paquete[%d]: fd_conexion = %d\n", cursor, pcb->fd_conexion);
   cursor++;
+
 
   //INSTRUCCIONES
   add_to_package(paquete, &cantidadInstrucciones, sizeof(int));
@@ -385,11 +392,16 @@ t_pcb *deserializar_pcb(int socketCliente)
 
   pcb->quantum = *(uint32_t *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->quantum = %d\n", cursor, pcb->quantum);
+  pcb->llegada_ready = *(double *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->llegada_ready = %d\n", cursor, pcb->llegada_ready);
+  pcb->llegada_running = *(double *)list_get(lista_elememtos, ++cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->llegada_running = %d\n", cursor, pcb->llegada_running);
 
   pcb->estado_actual = *(int *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->estado_actual = %d\n", cursor, pcb->estado_actual);
   pcb->fd_conexion = *(int *)list_get(lista_elememtos, ++cursor);
   DEBUG_PRINTF("\n[Deserializar] paquete[%d]: pcb->fd_conexion = %d\n", cursor, pcb->fd_conexion);
+
 
   //INSTRUCCIONES
   int cantidadInstrucciones =*(int *)list_get(lista_elememtos, ++cursor);
