@@ -105,8 +105,29 @@ void memoria()
 {
     initialize_logger();
     initialize_config();
+
+    memoria_principal = (void *)malloc(TAM_MEMORIA);
+    memset(memoria_principal, (u_int32_t)'0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
+
     initialize_sockets();
     log_info(memoria_logger, "Memoria inicializada correctamente");
+ 
+ /*   
+    pthread_create(&hilo_cpu, NULL, (void *)manejar_conexion_cpu, (void *)fd_cpu);
+    pthread_create(&hilo_kernel, NULL, (void *)manejar_conexion_kernel, (void *)fd_kernel);
+    pthread_create(&hilo_io, NULL, (void *)manejar_conexion_io, (void *)fd_io);
+
+    pthread_join(hilo_cpu, NULL);
+    pthread_join(hilo_kernel, NULL);
+    pthread_join(hilo_io, NULL);
+
+    */
+}
+
+
+void leer_archivo_pseudocodigo(char* nombreArchivo){
+
+    //char* path_buscado = PATH_INSTRUCCIONES;
 
 
 }
