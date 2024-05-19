@@ -1,30 +1,51 @@
 
+/* En los archivos (*.c) se pueden poner tanto DECLARACIONES como DEFINICIONES de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
 #include "memoria.h"
 
+t_log *memoria_logger;
+t_log *memoria_debug_logger;
+t_config *memoria_config;
 
-t_log* memoria_logger;
-t_log* memoria_debug_logger;
-t_config* memoria_config;
+void *memoria_principal;
+pthread_t hilo_kernel;
+pthread_t hilo_cpu;
+pthread_t hilo_io;
 
 int fd_memoria;
 int fd_io;
 int fd_cpu;
 int fd_kernel;
 
-char* PUERTO_ESCUCHA;
+char *PUERTO_ESCUCHA;
 int TAM_MEMORIA;
 int TAM_PAGINA;
-char* PATH_INSTRUCCIONES;
+char *PATH_INSTRUCCIONES;
 int RETARDO_RESPUESTA;
 
+int memoria(int argc, char* argv[])
+{
+    initialize_logger();
+    initialize_config();
 
-int main() {
+    memoria_principal = (void *)malloc(TAM_MEMORIA);
+    memset(memoria_principal, (u_int32_t)'0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
 
-    memoria();
-      
-    return 0;
+    initialize_sockets();
+    log_info(memoria_logger, "Memoria inicializada correctamente");
+ 
+ /*   
+    pthread_create(&hilo_cpu, NULL, (void *)manejar_conexion_cpu, (void *)fd_cpu);
+    pthread_create(&hilo_kernel, NULL, (void *)manejar_conexion_kernel, (void *)fd_kernel);
+    pthread_create(&hilo_io, NULL, (void *)manejar_conexion_io, (void *)fd_io);
+
+    pthread_join(hilo_cpu, NULL);
+    pthread_join(hilo_kernel, NULL);
+    pthread_join(hilo_io, NULL);
+
+    */
 }
-
 
 void initialize_logger()
 {
@@ -99,29 +120,6 @@ void initialize_sockets()
     }
 
 
-}
-
-void memoria()
-{
-    initialize_logger();
-    initialize_config();
-
-    memoria_principal = (void *)malloc(TAM_MEMORIA);
-    memset(memoria_principal, (u_int32_t)'0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
-
-    initialize_sockets();
-    log_info(memoria_logger, "Memoria inicializada correctamente");
- 
- /*   
-    pthread_create(&hilo_cpu, NULL, (void *)manejar_conexion_cpu, (void *)fd_cpu);
-    pthread_create(&hilo_kernel, NULL, (void *)manejar_conexion_kernel, (void *)fd_kernel);
-    pthread_create(&hilo_io, NULL, (void *)manejar_conexion_io, (void *)fd_io);
-
-    pthread_join(hilo_cpu, NULL);
-    pthread_join(hilo_kernel, NULL);
-    pthread_join(hilo_io, NULL);
-
-    */
 }
 
 

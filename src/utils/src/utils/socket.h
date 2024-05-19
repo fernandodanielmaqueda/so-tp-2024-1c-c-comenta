@@ -1,3 +1,6 @@
+/* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
 #ifndef SOCKET_H
 #define SOCKET_H
 
@@ -7,10 +10,10 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <string.h>
-#include <commons/log.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <estructuras.h>
+#include "commons/log.h"
+#include "commons/config.h"
+#include "commons/string.h"
+#include "estructuras.h"
 
 #ifndef DEBUG_SERIALIZATION
 #define DEBUG_SERIALIZATION 0

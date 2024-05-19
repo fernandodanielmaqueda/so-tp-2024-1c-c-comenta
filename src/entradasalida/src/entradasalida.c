@@ -1,5 +1,7 @@
-#include "entradasalida.h"
+/* En los archivos (*.c) se pueden poner tanto DECLARACIONES como DEFINICIONES de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
+#include "entradasalida.h"
 
 t_log* entrada_logger;
 t_log* entrada_debug_logger;
@@ -20,9 +22,12 @@ int BLOCK_COUNT;
 
 
 
-int main(int argc, char* argv[]) {
+int entradasalida(int argc, char* argv[]) {
 
-    entradaysalida();
+    initialize_logger();
+    initialize_config();
+    initialize_sockets();
+    log_info(entrada_logger, "Entrada y salida iniciado correctamente\n");
    
     return 0;
 }
@@ -92,13 +97,4 @@ void initialize_sockets(){
 
  
 
-}
-
-void entradaysalida()
-{
-    initialize_logger();
-    initialize_config();
-    initialize_sockets();
-    log_info(entrada_logger, "Entrada y salida iniciado correctamente\n");
-   
 }

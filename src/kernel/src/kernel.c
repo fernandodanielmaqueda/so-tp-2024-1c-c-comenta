@@ -1,5 +1,30 @@
+/* En los archivos (*.c) se pueden poner tanto DECLARACIONES como DEFINICIONES de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
 #include "kernel.h"
-#include <commons/collections/list.h>
+
+// Listas globales de estados
+t_list* LISTA_NEW;
+t_list* LISTA_READY;
+t_list* LISTA_EXEC;
+t_list* LISTA_BLOCKED;
+t_list* LISTA_EXIT;
+
+pthread_mutex_t mutex_PID;
+pthread_mutex_t mutex_LISTA_NEW;
+pthread_mutex_t mutex_LISTA_READY;
+pthread_mutex_t mutex_LISTA_BLOCKED;
+pthread_mutex_t mutex_LISTA_EXEC;
+pthread_mutex_t mutex_LISTA_EXIT;
+
+pthread_t hilo_largo_plazo;
+pthread_t hilo_corto_plazo;
+pthread_t hilo_mensajes_cpu;
+
+sem_t sem_planificador_largo_plazo;
+sem_t sem_planificador_corto_plazo;
+sem_t contador_multiprogramacion;
+
 t_log* kernel_logger;
 t_log* kernel_debug_logger;
 t_config* kernel_config;
@@ -30,7 +55,7 @@ int GRADO_MULTIPROGRAMACION;
 
 size_t bytes;
 
-int main() {
+int kernel(int argc, char* argv[]) {
    
     //inicializamos  kernel
     initialize_kernel();

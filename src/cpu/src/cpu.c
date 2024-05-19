@@ -1,18 +1,7 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <pthread.h>
-#include <time.h>
-#include <unistd.h>
-#include <commons/log.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/memory.h>
-#include <commons/bitarray.h>
-#include <commons/collections/list.h>
-#include <commons/collections/queue.h>
-#include <utils/socket.h>
-#include "cpu.h"
+/* En los archivos (*.c) se pueden poner tanto DECLARACIONES como DEFINICIONES de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
+#include "cpu.h"
 
 t_log* cpu_logger;
 t_log* cpu_debug_logger;
@@ -32,7 +21,7 @@ int CANTIDAD_ENTRADAS_TLB;
 char* ALGORITMO_TLB;
 
 
-int main(int argc, char* argv[]) {
+int cpu(int argc, char* argv[]) {
 
     initialize_cpu();
     inicializar_ciclo_cpu();

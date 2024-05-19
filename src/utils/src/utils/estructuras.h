@@ -1,6 +1,9 @@
+/* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
 #include <stdint.h>
 
-typedef struct {
+typedef struct t_pcb {
     uint32_t pid; 
     uint32_t pc; 
     t_list* instrucciones; 
@@ -25,9 +28,9 @@ typedef struct {
     double llegada_ready;
     double llegada_running;
 
-}t_pcb;
+} t_pcb;
 
-typedef struct {
+typedef struct t_instruccion {
     char* id;
     char* param1;
     char* param2;
@@ -35,8 +38,8 @@ typedef struct {
     char* param4;
     char* param5;
 
-}t_instruccion;
-typedef enum {
+} t_instruccion;
+typedef enum t_opcode {
     NEW,
     READY,
     EXEC,

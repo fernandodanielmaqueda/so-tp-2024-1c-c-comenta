@@ -1,3 +1,6 @@
+/* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
 #ifndef MEMORIA_H_
 #define MEMORIA_H_
 
@@ -6,40 +9,28 @@
 #include <pthread.h>
 #include <time.h>
 #include <unistd.h>
-#include <commons/log.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/memory.h>
-#include <commons/bitarray.h>
-#include <commons/collections/list.h>
-#include <commons/collections/queue.h>
-#include <utils/socket.h>
+#include "commons/log.h"
+#include "commons/config.h"
+#include "commons/string.h"
+#include "commons/memory.h"
+#include "commons/bitarray.h"
+#include "commons/collections/list.h"
+#include "commons/collections/queue.h"
+#include "utils/socket.h"
 
-
-
-void *memoria_principal;
-pthread_t hilo_kernel;
-pthread_t hilo_cpu;
-pthread_t hilo_io;
-
-
-typedef struct {
+typedef struct t_archivo_instruccion {
     char* nombre;
     int pid;
     int cantidadInstrucciones;
     t_list* lista_instrucciones;
 
-}t_archivo_instruccion;
+} t_archivo_instruccion;
 
-t_log* memoria_logger;
-t_log* memoria_debug_logger;
-t_config* memoria_config;
-
+int memoria(int, char*[]);
 void initialize_logger();
 void initialize_config();
 void obtener_configuracion(t_config* memoria_config);
 void initialize_sockets();
-void memoria();
 
 /**
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria
