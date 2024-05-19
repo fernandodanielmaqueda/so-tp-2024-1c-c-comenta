@@ -12,9 +12,11 @@
 #include <commons/string.h>
 #include <estructuras.h>
 
-#define DEBUG_SERIALIZACION 0
+#ifndef DEBUG_SERIALIZATION
+#define DEBUG_SERIALIZATION 0
+#endif
 
-#define DEBUGGING_SERIALIZATION if(DEBUG_SERIALIZACION)
+#define DEBUGGING_SERIALIZATION if(DEBUG_SERIALIZATION)
 
 typedef struct {
     uint32_t size;
