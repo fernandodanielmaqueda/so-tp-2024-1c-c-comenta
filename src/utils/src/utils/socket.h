@@ -67,7 +67,7 @@ void kill_pcb(t_pcb *pcbObjetivo);
  * @brief Eliminar instruccion.
  * @param lineaInstruccion t_instruccion a eliminar.
  */
-void delete_instruction(t_instruccion *lineaInstruccion)
+void delete_instruction(t_instruccion *lineaInstruccion);
 
 
 /**
@@ -97,13 +97,13 @@ t_list* get_package_like_list(int socketClient);
  * @param size Tamaño del buffer.
  * @param socketClient Socket desde donde se va a recibir el paquete.
  */
-void *get_buffer(int *size, int socketCliente)
+void *get_buffer(int *size, int socketCliente);
 
 
 /**
  * @brief Crear Buffer
  * @param paquete t_paquete donde se creara el buffer
  */
-void create_buffer(t_paquete *paquete)
+void create_buffer(t_paquete *paquete);
 
 #endif // SOCKET_H

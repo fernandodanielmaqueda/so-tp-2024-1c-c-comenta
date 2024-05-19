@@ -5,8 +5,7 @@ extern t_log* logger;
 
 
 
-int start_client(char* ip, char* port)
-{
+int start_client(char* ip, char* port){
 
 	struct addrinfo hints;
 	struct addrinfo *server_info;
