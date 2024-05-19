@@ -23,7 +23,6 @@
 #include <semaphore.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <utils/estructuras.h>
 
 void obtener_configuracion(t_config* kernel_config);
 void initialize_kernel();

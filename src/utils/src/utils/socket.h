@@ -1,5 +1,6 @@
 #ifndef SOCKET_H
 #define SOCKET_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -10,6 +11,10 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <estructuras.h>
+
+#define DEBUG_SERIALIZACION 0
+
+#define DEBUGGING_SERIALIZATION if(DEBUG_SERIALIZACION)
 
 typedef struct {
     uint32_t size;
@@ -36,7 +41,7 @@ void liberar_conexion(int socket_cliente);
  * @brief Crear paquete.
  * @param codigoOperacion Codigo de operacion que tendra el paquete.
  */
-t_paquete *create_package(uint8_t codigoOperacion)
+t_paquete *create_package(uint8_t codigoOperacion);
 
 
 /**

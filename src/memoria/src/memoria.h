@@ -18,9 +18,9 @@
 
 
 void *memoria_principal;
-p_thread_t hilo_kernel;
-p_thread_t hilo_cpu;
-p_thread_t hilo_io;
+pthread_t hilo_kernel;
+pthread_t hilo_cpu;
+pthread_t hilo_io;
 
 
 typedef struct {
