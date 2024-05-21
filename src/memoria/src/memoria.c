@@ -4,9 +4,12 @@
 
 #include "memoria.h"
 
-t_log *memoria_logger;
-t_log *memoria_debug_logger;
-t_config *memoria_config;
+char *module_name = "memoria";
+char *module_log_pathname = "memoria.log";
+char *module_config_pathname = "memoria.config";
+
+t_log *module_logger;
+t_config *module_config;
 
 void *memoria_principal;
 pthread_t hilo_kernel;
@@ -24,16 +27,15 @@ int TAM_PAGINA;
 char *PATH_INSTRUCCIONES;
 int RETARDO_RESPUESTA;
 
-int memoria(int argc, char* argv[])
-{
-    initialize_logger();
-    initialize_config();
+int module(int argc, char* argv[]) {
+    initialize_module_logger();
+    initialize_module_config();
 
-    memoria_principal = (void *)malloc(TAM_MEMORIA);
+    memoria_principal = (void*) malloc(TAM_MEMORIA);
     memset(memoria_principal, (u_int32_t)'0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
 
     initialize_sockets();
-    log_info(memoria_logger, "Memoria inicializada correctamente");
+    log_info(module_logger, "Memoria inicializada correctamente");
  
  /*   
     pthread_create(&hilo_cpu, NULL, (void *)manejar_conexion_cpu, (void *)fd_cpu);
@@ -45,32 +47,17 @@ int memoria(int argc, char* argv[])
     pthread_join(hilo_io, NULL);
 
     */
+
+   return EXIT_SUCCESS;
 }
 
-void initialize_logger()
+void read_module_config(t_config* module_config)
 {
-    memoria_logger = log_create("memoria.log", "memoria", true, LOG_LEVEL_INFO);
-}
-
-void initialize_config()
-{
-    t_config* memoria_config = config_create("memoria.config");
-    if(memoria_config == NULL) {
-        log_error(memoria_logger, "No se pudo abrir la config de memoria");
-        exit(EXIT_FAILURE);
-    }
-
-    obtener_configuracion(memoria_config);
-
-}
-
-void obtener_configuracion(t_config* memoria_config)
-{
-    PUERTO_ESCUCHA = config_get_string_value(memoria_config, "PUERTO_ESCUCHA");
-    TAM_MEMORIA = config_get_int_value(memoria_config, "TAM_MEMORIA");
-    TAM_PAGINA = config_get_int_value(memoria_config, "TAM_PAGINA");
-    PATH_INSTRUCCIONES = config_get_string_value(memoria_config, "PATH_INSTRUCCIONES");
-    RETARDO_RESPUESTA = config_get_int_value(memoria_config, "RETARDO_RESPUESTA");
+    PUERTO_ESCUCHA = config_get_string_value(module_config, "PUERTO_ESCUCHA");
+    TAM_MEMORIA = config_get_int_value(module_config, "TAM_MEMORIA");
+    TAM_PAGINA = config_get_int_value(module_config, "TAM_PAGINA");
+    PATH_INSTRUCCIONES = config_get_string_value(module_config, "PATH_INSTRUCCIONES");
+    RETARDO_RESPUESTA = config_get_int_value(module_config, "RETARDO_RESPUESTA");
 }
 
 void initialize_sockets()
@@ -78,44 +65,44 @@ void initialize_sockets()
   
      //Incializo a memoria en modo server
     fd_memoria = start_server(NULL,PUERTO_ESCUCHA);
-    log_info(memoria_logger, "Servidor Memoria iniciado en el puerto %s\n", PUERTO_ESCUCHA);
+    log_info(module_logger, "Servidor Memoria iniciado en el puerto %s\n", PUERTO_ESCUCHA);
 
-    log_info(memoria_logger, "Esperando conexion de CPU");
+    log_info(module_logger, "Esperando conexion de CPU");
     fd_cpu = esperar_cliente(fd_memoria);
 
     if (fd_cpu == -1)
     {
-        log_error(memoria_logger, "No se pudo conectar a CPU");
+        log_error(module_logger, "No se pudo conectar a CPU");
         exit(EXIT_FAILURE);
-    } else log_info(memoria_logger, "Se conecto el modulo CPU");
+    } else log_info(module_logger, "Se conecto el modulo CPU");
     
 
-    log_info(memoria_logger, "Esperando conexion de Kernel");
+    log_info(module_logger, "Esperando conexion de Kernel");
     fd_kernel = esperar_cliente(fd_memoria);
 
     if (fd_kernel == -1)
     {
-        log_error(memoria_logger, "No se pudo conectar a Kernel");
+        log_error(module_logger, "No se pudo conectar a Kernel");
         exit(EXIT_FAILURE);
     } else
-    log_info(memoria_logger, "Se conecto el modulo Kernel\n"); 
+    log_info(module_logger, "Se conecto el modulo Kernel\n"); 
     
     //espero conexion entrada y salida
-    log_info(memoria_logger, "Esperando conexion de EntradaSalida");
+    log_info(module_logger, "Esperando conexion de EntradaSalida");
     fd_io = esperar_cliente(fd_memoria);
 
     if (fd_io == -1)
     {
-        log_error(memoria_logger, "No se pudo conectar a IO");
+        log_error(module_logger, "No se pudo conectar a IO");
         exit(EXIT_FAILURE);
     } else
-    log_info(memoria_logger, "Se conecto el modulo IO");
+    log_info(module_logger, "Se conecto el modulo IO");
 
     if(fd_io == -1){
-        log_error(memoria_logger, "No se pudo conectar a entrada y salida");
+        log_error(module_logger, "No se pudo conectar a entrada y salida");
 
     }else{
-    log_info(memoria_logger, "Se conecto el modulo Entrada salida");
+    log_info(module_logger, "Se conecto el modulo Entrada salida");
 
     }
 

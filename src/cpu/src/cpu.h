@@ -20,15 +20,13 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
+#include "utils/modules.h"
 #include "utils/socket.h"
 
-int cpu(int, char*[]);
-void initialize_logger();
-void initialize_config();
-void obtener_configuracion(t_config* cpu_config);
-void initialize_cpu();
+int module(int, char*[]);
+void read_module_config(t_config*);
+void initialize_sockets(void);
 void inicializar_ciclo_cpu();
-void initialize_sockets();
 
 
 #endif /* CPU_H_ */

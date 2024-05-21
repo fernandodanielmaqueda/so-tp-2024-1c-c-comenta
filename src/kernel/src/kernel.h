@@ -21,23 +21,21 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
+#include "utils/modules.h"
 #include "utils/socket.h"
 
-int kernel(int, char*[]);
-void obtener_configuracion(t_config* kernel_config);
-void initialize_kernel();
-void initialize_sockets();
-void initialize_logger();
-void initialize_config();
-void cambiar_estado(t_pcb* pcb, int estado_nuevo);
+int module(int, char*[]);
+void read_module_config(t_config*);
+void initialize_sockets(void);
+void switch_process_state(t_pcb *pcb, int estado_nuevo);
 t_pcb *create_pcb(char *instrucciones);
-void iniciar_planificador_largo_plazo();
-void iniciar_planificador_corto_plazo();
-void iniciar_receptor_mensajes_cpu();
-void planificador_largo_plazo();
-void planificador_corto_plazo();
-t_pcb *algoritmo_FIFO();
+void initialize_long_term_scheduler();
+void initialize_short_term_scheduler();
+void initialize_cpu_command_line_interface();
+void long_term_scheduler();
+void short_term_scheduler();
+t_pcb *FIFO_scheduling_algorithm();
 void receptor_mensajes_cpu();
-int timenow();
+int current_time();
 
 #endif /* KERNEL_H_ */

@@ -42,7 +42,7 @@ typedef struct t_instruccion {
 typedef enum t_opcode {
     NEW,
     READY,
-    EXEC,
+    EXECUTING,
     BLOCKED,
 	EXITED,
     SET,

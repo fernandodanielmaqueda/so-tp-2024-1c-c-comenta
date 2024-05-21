@@ -3,15 +3,17 @@
 
 #include "cpu.h"
 
-t_log* cpu_logger;
-t_log* cpu_debug_logger;
-t_config* cpu_config;
+char *module_name = "cpu";
+char *module_log_pathname = "cpu.log";
+char *module_config_pathname = "cpu.config";
+
+t_log* module_logger;
+t_config* module_config;
 
 int fd_kernel;
 int fd_memoria;
 int fd_cpu_dispatch;
 int fd_cpu_interrupt;
-
 
 char* IP_MEMORIA;
 char* PUERTO_MEMORIA;
@@ -20,96 +22,73 @@ char* PUERTO_ESCUCHA_INTERRUPT;
 int CANTIDAD_ENTRADAS_TLB;
 char* ALGORITMO_TLB;
 
+int module(int argc, char* argv[]) {
 
-int cpu(int argc, char* argv[]) {
+    initialize_module_logger();
+    initialize_module_config();
+    initialize_sockets();
+    log_info(module_logger, "Modulo %s inicializado correctamente", module_name);
 
-    initialize_cpu();
     inicializar_ciclo_cpu();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-void initialize_logger()
+void read_module_config(t_config* module_config)
 {
-	cpu_logger = log_create("cpu.log", "cpu", true, LOG_LEVEL_INFO);
-}
-
-void initialize_config()
-{
-    t_config* cpu_config = config_create("cpu.config");
-    if(cpu_config == NULL) {
-        log_error(cpu_logger, "No se pudo abrir la config de cpu");
-        exit(EXIT_FAILURE);
-    }
-
-    obtener_configuracion(cpu_config);
-}
-
-void obtener_configuracion(t_config* cpu_config)
-{
-    IP_MEMORIA = config_get_string_value(cpu_config, "IP_MEMORIA");
-    PUERTO_MEMORIA = config_get_string_value(cpu_config, "PUERTO_MEMORIA");
-    PUERTO_ESCUCHA_DISPATCH = config_get_string_value(cpu_config, "PUERTO_ESCUCHA_DISPATCH");
-    PUERTO_ESCUCHA_INTERRUPT = config_get_string_value(cpu_config, "PUERTO_ESCUCHA_INTERRUPT");
-    CANTIDAD_ENTRADAS_TLB = config_get_int_value(cpu_config, "CANTIDAD_ENTRADAS_TLB");
-    ALGORITMO_TLB = config_get_string_value(cpu_config, "ALGORITMO_TLB");
+    IP_MEMORIA = config_get_string_value(module_config, "IP_MEMORIA");
+    PUERTO_MEMORIA = config_get_string_value(module_config, "PUERTO_MEMORIA");
+    PUERTO_ESCUCHA_DISPATCH = config_get_string_value(module_config, "PUERTO_ESCUCHA_DISPATCH");
+    PUERTO_ESCUCHA_INTERRUPT = config_get_string_value(module_config, "PUERTO_ESCUCHA_INTERRUPT");
+    CANTIDAD_ENTRADAS_TLB = config_get_int_value(module_config, "CANTIDAD_ENTRADAS_TLB");
+    ALGORITMO_TLB = config_get_string_value(module_config, "ALGORITMO_TLB");
 }
 
 void initialize_sockets(){
 
 
     //Inicializo memoria
-    log_info(cpu_logger, "Iniciando clinte cpu para ir a memoria");
-    fd_memoria = start_client(IP_MEMORIA, PUERTO_MEMORIA);
+    log_info(module_logger, "Iniciando clinte cpu para ir a memoria");
+    fd_memoria = client_connect(IP_MEMORIA, PUERTO_MEMORIA);
 
     if (fd_memoria == -1)
     {
-        log_error(cpu_logger, "No se pudo conectar a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
+        log_error(module_logger, "No se pudo conectar a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
         exit(EXIT_FAILURE);
-    } else log_info(cpu_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
+    } else log_info(module_logger, "Conectado a memoria en %s:%s", IP_MEMORIA, PUERTO_MEMORIA);
 
     //Dejo a CPU en modo server incializo server cpu dispatch
     fd_cpu_dispatch = start_server(NULL,PUERTO_ESCUCHA_DISPATCH);
-    log_info(cpu_logger, "CPU en modo dispatch server escuchando en puerto %s \n", PUERTO_ESCUCHA_DISPATCH);
+    log_info(module_logger, "CPU en modo dispatch server escuchando en puerto %s \n", PUERTO_ESCUCHA_DISPATCH);
 
     //Dejo a CPU en modo server incialzio server cpu interrupt
     fd_cpu_interrupt = start_server(NULL,PUERTO_ESCUCHA_INTERRUPT);
-    log_info(cpu_logger, "CPU en modo interrupt server escuchando en puerto %s \n", PUERTO_ESCUCHA_INTERRUPT);
+    log_info(module_logger, "CPU en modo interrupt server escuchando en puerto %s \n", PUERTO_ESCUCHA_INTERRUPT);
 
     
     //Espero conexion  dispatch kernel
-    log_info(cpu_logger, "Esperando conexion de kernel en puerto disptach %s \n", PUERTO_ESCUCHA_DISPATCH);
+    log_info(module_logger, "Esperando conexion de kernel en puerto disptach %s \n", PUERTO_ESCUCHA_DISPATCH);
     fd_kernel = esperar_cliente(fd_cpu_dispatch);
 
     if (fd_kernel == -1)
     {
-        log_error(cpu_logger, "No se pudo conectar a kernel en puerto dispatch");
+        log_error(module_logger, "No se pudo conectar a kernel en puerto dispatch");
         exit(EXIT_FAILURE);
     } else
-    log_info(cpu_logger, "Conectado a kernel en puerto dispatch ");
+    log_info(module_logger, "Conectado a kernel en puerto dispatch ");
 
     //Espero a conexion interrupt kernel
-    log_info(cpu_logger, "Esperando conexion de kernel en puerto interrupt %s \n", PUERTO_ESCUCHA_INTERRUPT);
+    log_info(module_logger, "Esperando conexion de kernel en puerto interrupt %s \n", PUERTO_ESCUCHA_INTERRUPT);
     fd_kernel = esperar_cliente(fd_cpu_interrupt);
 
     if (fd_kernel == -1)
     {
-        log_error(cpu_logger, "No se pudo conectar a kernel en puerto interrupt");
+        log_error(module_logger, "No se pudo conectar a kernel en puerto interrupt");
         exit(EXIT_FAILURE);
     } else
-    log_info(cpu_logger, "Conectado a kernel en puerto interrupt ");
+    log_info(module_logger, "Conectado a kernel en puerto interrupt ");
 
     }
-    
-void initialize_cpu()
-{
-    initialize_logger();
-    initialize_config();
-    initialize_sockets();
-
-    log_info(cpu_logger, "CPU inicializado correctamente");
-
-}
 
 void inicializar_ciclo_cpu() {
 	// pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);

@@ -16,6 +16,7 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
+#include "utils/modules.h"
 #include "utils/socket.h"
 
 typedef struct t_archivo_instruccion {
@@ -26,11 +27,9 @@ typedef struct t_archivo_instruccion {
 
 } t_archivo_instruccion;
 
-int memoria(int, char*[]);
-void initialize_logger();
-void initialize_config();
-void obtener_configuracion(t_config* memoria_config);
-void initialize_sockets();
+int module(int, char*[]);
+void read_module_config(t_config*);
+void initialize_sockets(void);
 
 /**
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria

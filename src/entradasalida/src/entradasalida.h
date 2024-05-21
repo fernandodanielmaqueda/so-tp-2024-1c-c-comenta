@@ -17,16 +17,11 @@
 #include "commons/config.h"
 #include "commons/string.h"
 #include "commons/collections/list.h"
+#include "utils/modules.h"
 #include "utils/socket.h"
 
-extern t_log* entrada_logger;
-extern t_log* entrada_debug_logger;
-extern t_config* entrada_config;
-
-int entradasalida(int, char*[]);
-void initialize_logger();
-void initialize_config();
-void obtener_configuracion(t_config* entrada_config);
-void initialize_sockets();
+int module(int, char*[]);
+void read_module_config(t_config*);
+void initialize_sockets(void);
 
 #endif /* ENTRADASALIDA_H_ */

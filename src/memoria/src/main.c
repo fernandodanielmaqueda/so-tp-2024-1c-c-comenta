@@ -4,5 +4,5 @@
 #include "main.h"
 
 int main(int argc, char* argv[]) {
-    return memoria(argc, argv);
+    return module(argc, argv);
 }

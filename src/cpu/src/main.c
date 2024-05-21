@@ -4,5 +4,5 @@
 #include "main.h"
 
 int main(int argc, char* argv[]) {
-    return cpu(argc, argv);
+    return module(argc, argv);
 }

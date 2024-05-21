@@ -3,37 +3,61 @@
 
 #include "socket.h"
 
-extern t_log* logger;
+extern t_log *module_logger;
 
-int start_client(char* ip, char* port)
+int client_connect(char *ip, char *port)
 {
 
+  int exit_code;
+
 	struct addrinfo hints;
-	struct addrinfo *server_info;
+	struct addrinfo *result, *rp;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_UNSPEC; // AF_INET para IPv4 unicamente
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags = AI_PASSIVE;
-	
 
-	getaddrinfo(ip, port, &hints, &server_info);
+	exit_code = getaddrinfo(ip, port, &hints, &result);
+  if (exit_code != 0) {
+    log_warning(module_logger, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
+    return(-1);
+  }
+
+  // getaddrinfo() returns a list of address structures. Try each address until we successfully connect(2).
+  // If socket(2) (or connect(2)) fails, we (close the socket and) try the next address.
 
 	// Ahora vamos a crear el socket.
-	int socket_cliente = 0;
+	int fd_client;
 
-	// Ahora que tenemos el socket, vamos a conectarlo
-	socket_cliente = socket(server_info->ai_family, server_info->ai_socktype, server_info->ai_protocol);
+  for(rp = result ; rp != NULL ; rp = rp->ai_next) {
+    fd_client = socket(
+      rp->ai_family,
+      rp->ai_socktype,
+      rp->ai_protocol
+    );
+
+    if(fd_client == -1) {
+      log_warning(module_logger, "Funcion socket: %s\n", strerror(errno));
+      continue; /* This one failed */
+    }
+
+    if(connect(fd_client, rp->ai_addr, rp->ai_addrlen) == 0) {
+      break; /* Until one succeeds */
+    } else {
+      log_warning(module_logger, "Funcion connect: %s\n", strerror(errno));
+    }
+
+    close(fd_client);
+  }
 	
-	int devuelve_connect = connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
+  freeaddrinfo(result); /* No longer needed */
 
-    if( devuelve_connect!= 0)
-	{
-		printf("Error u conectar el socket\n");
-       	return -1;
-	}
-	freeaddrinfo(server_info);
-    return socket_cliente;
+  if (rp == NULL) { /* No address succeeded */
+    return(-1);
+  }
+	
+  return fd_client;
+
 }
 
 
