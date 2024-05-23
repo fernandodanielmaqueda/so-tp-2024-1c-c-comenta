@@ -64,3 +64,17 @@ typedef enum t_opcode {
     IO_FS_WRITE,
     IO_FS_READ
 } t_opcode;
+
+
+//Estructuras que necesita la consola para entender las palabras
+typedef enum {
+    INICIAR_PROCESO,
+    FINALIZAR_PROCESO,
+    DETENER_PLANIFICACION,
+    INICIAR_PLANIFICACION,
+    MULTIPROGRAMACION,
+    PROCESO_ESTADO,
+    EJECUTAR_SCRIPT
+} t_funcion;
+
+

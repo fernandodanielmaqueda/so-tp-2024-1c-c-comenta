@@ -109,10 +109,3 @@ void initialize_sockets()
 
 }
 
-
-void leer_archivo_pseudocodigo(char* nombreArchivo){
-
-    //char* path_buscado = PATH_INSTRUCCIONES;
-
-
-}

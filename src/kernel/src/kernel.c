@@ -21,6 +21,13 @@ pthread_mutex_t mutex_LIST_BLOCKED;
 pthread_mutex_t mutex_LIST_EXECUTING;
 pthread_mutex_t mutex_LIST_EXIT;
 
+//consola interactiva
+pthread_mutex_t mutex_pid_detected;
+int identifier_pid=1;
+//
+
+
+
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
@@ -30,6 +37,7 @@ sem_t sem_short_term_scheduler;
 sem_t sem_multiprogramming_level;
 
 t_log *module_logger;
+t_log *module_logger_consola;
 t_config *module_config;
 
 // Connections
@@ -65,6 +73,10 @@ int module(int argc, char *argv[]) {
 	initialize_sockets();
 
 	log_info(module_logger, "Kernel inicializado\n");
+
+	//Voy a inciializar la consola activa
+	initalize_console_interactive();
+	
 
 	sem_init(&sem_long_term_scheduler, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);
@@ -233,6 +245,8 @@ t_pcb *FIFO_scheduling_algorithm()
 5. Detener planificación
 6. Listar procesos por estado
 */
+
+
 
 void receptor_mensajes_cpu()
 {
@@ -512,6 +526,7 @@ t_pcb *create_pcb(char *instrucciones)
 }
 
 int current_time()
+
 {
 	time_t now = time(NULL);
 	struct tm *local = localtime(&now);
@@ -523,4 +538,15 @@ int current_time()
 
 	int total_seconds = hours * 60 * 60 + minutes * 60 + seconds;
 	return total_seconds;
+}
+
+int asignar_PID(){
+
+    pthread_mutex_lock(&mutex_pid_detected);
+    static unsigned int value_pid = identifier_pid;
+    identifier_pid++;
+    pthread_mutex_unlock(&mutex_pid_detected);
+
+    return value_pid;
+  
 }
