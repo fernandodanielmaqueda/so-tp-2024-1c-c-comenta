@@ -122,6 +122,20 @@ void liberar_conexion(int socket_cliente)
 
 
 
+t_opcode get_codOp(int socket){
+  t_opcode codigoOperacion;
+
+  if (recv(socket, &codigoOperacion, sizeof(int), MSG_WAITALL) > 0)
+    return codigoOperacion;
+  else
+  {
+    close(socket);
+    return DESCONEXION;
+  }
+
+}
+
+
 t_paquete *create_package(uint8_t codigoOperacion)
 {
   t_paquete *paquete = malloc(sizeof(t_paquete));
@@ -334,7 +348,7 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: fd_conexion = %d\n", cursor, pcb->fd_conexion); }
   cursor++;
 
-
+/*
   //INSTRUCCIONES
   add_to_package(paquete, &cantidadInstrucciones, sizeof(int));
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Cantidad de Instrucciones = %d\n", cursor, cantidadInstrucciones); }
@@ -364,13 +378,13 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
     { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Param5 = %d\n", cursor, lineaInstruccion->param5); }
     cursor++;
   }
-
+*/
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [END]\n"); }
 
 }
 
 
-t_pcb *deserializar_pcb(int socketCliente)
+t_pcb *deserialize_pcb(int socketCliente)
 {
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_pcb( ) [...]\n"); }
 
@@ -426,7 +440,7 @@ t_pcb *deserializar_pcb(int socketCliente)
   pcb->fd_conexion = *(int *)list_get(lista_elememtos, ++cursor);
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->fd_conexion = %d\n", cursor, pcb->fd_conexion); }
 
-
+/*
   //INSTRUCCIONES
   int cantidadInstrucciones =*(int *)list_get(lista_elememtos, ++cursor);
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: cantidadInstrucciones = %d\n", cursor, cantidadInstrucciones); }
@@ -450,7 +464,7 @@ t_pcb *deserializar_pcb(int socketCliente)
 
     list_add(pcb->instrucciones, instruccion);
   }
-
+*/
 
   list_destroy_and_destroy_elements(lista_elememtos, &free);
 
