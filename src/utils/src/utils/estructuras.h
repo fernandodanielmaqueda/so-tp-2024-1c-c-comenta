@@ -40,11 +40,21 @@ typedef struct t_instruccion {
 
 } t_instruccion;
 typedef enum t_opcode {
+    DESCONEXION = -1,
+    //Estado PCB
     NEW,
     READY,
     EXECUTING,
     BLOCKED,
 	EXITED,
+    //::OPERACIONES MODULOS::
+    //Kernel - Memoria
+    PROCESS_NEW,
+    //Kernel - IO
+    //Kernel - CPU
+    //CPU - Memoria
+    //IO - Memoria
+    //Instrucciones
     SET,
     MOVE_IN,
     MOVE_OUT,

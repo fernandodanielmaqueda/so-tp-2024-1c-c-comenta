@@ -117,4 +117,12 @@ void *get_buffer(int *size, int socketCliente);
  */
 void create_buffer(t_paquete *paquete);
 
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param socket t_paquete donde se creara el buffer
+ */
+t_opcode get_codOp(int socket);
+
+
 #endif // SOCKET_H

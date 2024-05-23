@@ -122,6 +122,20 @@ void liberar_conexion(int socket_cliente)
 
 
 
+t_opcode get_codOp(int socket){
+  t_opcode codigoOperacion;
+
+  if (recv(socket, &codigoOperacion, sizeof(int), MSG_WAITALL) > 0)
+    return codigoOperacion;
+  else
+  {
+    close(socket);
+    return DESCONEXION;
+  }
+
+}
+
+
 t_paquete *create_package(uint8_t codigoOperacion)
 {
   t_paquete *paquete = malloc(sizeof(t_paquete));
