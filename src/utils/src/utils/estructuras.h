@@ -6,7 +6,6 @@
 typedef struct t_pcb {
     uint32_t pid; 
     uint32_t pc; 
-    t_list* instrucciones; 
     uint32_t AX;
     uint32_t BX;
     uint32_t CX; 
