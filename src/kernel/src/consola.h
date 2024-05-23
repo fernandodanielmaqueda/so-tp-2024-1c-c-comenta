@@ -24,6 +24,8 @@
 #include "kernel.h"
 #include "scheduler.h"
 
+
+
 void initalize_console_interactive();
 bool validate_command_console(char* leido);
 void attend_command_console(char* leido);

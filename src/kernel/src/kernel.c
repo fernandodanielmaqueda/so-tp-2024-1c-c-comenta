@@ -37,7 +37,6 @@ sem_t sem_short_term_scheduler;
 sem_t sem_multiprogramming_level;
 
 t_log *module_logger;
-t_log *module_logger_consola;
 t_config *module_config;
 
 // Connections
@@ -493,8 +492,7 @@ t_pcb *create_pcb(char *instrucciones)
 
 	t_pcb *nuevoPCB = malloc(sizeof(t_pcb));
 
-	nuevoPCB->instrucciones = string_new();
-	nuevoPCB->instrucciones = string_duplicate(instrucciones);
+	
 
 	nuevoPCB->pc = 0;
 	// nuevoPCB->recurso_solicitado = string_new();
@@ -543,7 +541,7 @@ int current_time()
 int asignar_PID(){
 
     pthread_mutex_lock(&mutex_pid_detected);
-    static unsigned int value_pid = identifier_pid;
+    unsigned int value_pid = identifier_pid;
     identifier_pid++;
     pthread_mutex_unlock(&mutex_pid_detected);
 

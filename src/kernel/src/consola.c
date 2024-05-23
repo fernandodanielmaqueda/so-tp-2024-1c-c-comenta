@@ -1,7 +1,11 @@
 #include "consola.h"
 
+t_log *module_logger_consola;
+
 
 void initalize_console_interactive(){
+
+    module_logger_consola = log_create("consola.log", "Consola", true, LOG_LEVEL_TRACE);
 
     char* leido;
     leido = readline("> ");
@@ -32,47 +36,48 @@ bool validate_command_console(char* leido){
     bool result_validation = false;
 
     char** command_console = string_split(leido, " ");
+    t_funcion funcion = pedir_enum_funcion(command_console);
    
 
-    switch (command_console[0])
+    switch (funcion)
     {
         
-        case "EJECUTAR_SCRIPT":
-            if(strcmp(command_console[0], "EJECUTAR_SCRIPT") == 0 && (command_console[1] != NULL)){
+        case EJECUTAR_SCRIPT:
+            if(strcmp(command_console[0], "EJECUTAR_SCRIPT") == 0 && string_is_empty(command_console[1]) == false){
                 result_validation = true;
             }
             break;
 
-        case "INICIAR_PROCESO":
-            if(strcmp(command_console[0], "INICIAR_PROCESO") == 0  && (command_console[1] != NULL)){
+        case INICIAR_PROCESO:
+            if(strcmp(command_console[0], "INICIAR_PROCESO") == 0  && string_is_empty(command_console[1]) == false){
                 result_validation = true;
             }
             break;
 
-        case "FINALIZAR_PROCESO":
-            if(strcmp(command_console[0], "FINALIZAR_PROCESO") == 0  && (command_console[1] != NULL)){
+        case FINALIZAR_PROCESO:
+            if(strcmp(command_console[0], "FINALIZAR_PROCESO") == 0  && string_is_empty(command_console[1]) == false){
                 result_validation = true;
             }
             break;
 
-        case "DETENER_PLANIFICACION":
+        case DETENER_PLANIFICACION:
             if(strcmp(command_console[0], "DETENER_PLANIFICACION") == 0 ) {
                 result_validation = true;
             }
             break;
 
-        case "INICIAR_PLANIFICACION":
+        case INICIAR_PLANIFICACION:
             if(strcmp(command_console[0], "INICIAR_PLANIFICACION") == 0 ){
                 result_validation = true;
             }
             break;
-        case "MULTIPROGRAMACION":
-            if(strcmp(command_console[0], "MULTIPROGRAMACION") == 0  && (command_console[1] != NULL)){
+        case MULTIPROGRAMACION:
+            if(strcmp(command_console[0], "MULTIPROGRAMACION") == 0  && string_is_empty(command_console[1]) == false){
                 result_validation = true;
             }
             break;
 
-        case "PROCESO_ESTADO":
+        case PROCESO_ESTADO:
             if(strcmp(command_console[0], "PROCESO_ESTADO") == 0  ){
                 result_validation = true;
             }

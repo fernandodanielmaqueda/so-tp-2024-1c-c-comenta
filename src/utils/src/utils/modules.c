@@ -5,6 +5,7 @@
 
 void initialize_module_logger() {
 	module_logger = log_create(module_log_pathname, module_name, true, LOG_LEVEL_INFO);
+	
 }
 
 void initialize_module_config() {

@@ -13,6 +13,7 @@ extern char *module_log_pathname;
 extern char *module_config_pathname;
 
 extern t_log *module_logger;
+
 extern t_config *module_config;
 
 void initialize_module_logger(void);

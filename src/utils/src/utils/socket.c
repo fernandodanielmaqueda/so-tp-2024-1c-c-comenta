@@ -215,18 +215,18 @@ t_list* get_package_like_list(int socketCliente)
   return contenido;
 }
 
-
+/* 
 void kill_pcb(t_pcb *pcbObjetivo)
 {
-  if (pcbObjetivo != NULL)
+  if ( != NULL)
   {
-    if (pcbObjetivo->instrucciones != NULL)
-      list_destroy_and_destroy_elements(pcbObjetivo->instrucciones, (void *)delete_instruction);
+    if ( != NULL)
+      list_destroy_and_destroy_elements(, (void *)delete_instruction);
 
-    free(pcbObjetivo);
+    free();
   }
 }
-
+*/
 
 void delete_instruction(t_instruccion *lineaInstruccion)
 {
@@ -238,8 +238,7 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
 {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [...]\n"); }
 
-  int cantidadInstrucciones = list_size(pcb->instrucciones);
-
+  
   int cursor = 0;
   
   add_to_package(paquete, &(pcb->pid), sizeof(uint32_t));
@@ -390,7 +389,6 @@ t_pcb *deserialize_pcb(int socketCliente)
 
   t_list *lista_elememtos = get_package_like_list(socketCliente);
   t_pcb *pcb = malloc(sizeof(t_pcb));
-  pcb->instrucciones = list_create();
   int cursor = 0;
 
   pcb->pid = *(uint32_t *)list_get(lista_elememtos, cursor);
