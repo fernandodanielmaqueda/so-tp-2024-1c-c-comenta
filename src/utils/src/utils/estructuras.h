@@ -1,9 +1,11 @@
+/* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
 #include <stdint.h>
 
-typedef struct {
+typedef struct t_pcb {
     uint32_t pid; 
     uint32_t pc; 
-    t_list* instrucciones; 
     uint32_t AX;
     uint32_t BX;
     uint32_t CX; 
@@ -25,14 +27,33 @@ typedef struct {
     double llegada_ready;
     double llegada_running;
 
-}t_pcb;
+} t_pcb;
 
-typedef enum {
+typedef struct t_instruccion {
+    char* id;
+    char* param1;
+    char* param2;
+    char* param3;
+    char* param4;
+    char* param5;
+
+} t_instruccion;
+typedef enum t_opcode {
+    DESCONEXION = -1,
+    //Estado PCB
     NEW,
     READY,
-    EXEC,
+    EXECUTING,
     BLOCKED,
 	EXITED,
+    //::OPERACIONES MODULOS::
+    //Kernel - Memoria
+    PROCESS_NEW,
+    //Kernel - IO
+    //Kernel - CPU
+    //CPU - Memoria
+    //IO - Memoria
+    //Instrucciones
     SET,
     MOVE_IN,
     MOVE_OUT,
@@ -52,3 +73,17 @@ typedef enum {
     IO_FS_WRITE,
     IO_FS_READ
 } t_opcode;
+
+
+//Estructuras que necesita la consola para entender las palabras
+typedef enum {
+    INICIAR_PROCESO,
+    FINALIZAR_PROCESO,
+    DETENER_PLANIFICACION,
+    INICIAR_PLANIFICACION,
+    MULTIPROGRAMACION,
+    PROCESO_ESTADO,
+    EJECUTAR_SCRIPT
+} t_funcion;
+
+

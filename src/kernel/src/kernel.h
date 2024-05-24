@@ -1,9 +1,8 @@
+/* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
 #ifndef KERNEL_H_
 #define KERNEL_H_
-
-#ifndef DEBUG 
-#define DEBUG 1
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,58 +13,30 @@
 #include <pthread.h>
 #include <time.h>
 #include <unistd.h>
-#include <commons/log.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/collections/list.h>
-#include <commons/collections/dictionary.h>
-#include <utils/socket.h>
 #include <semaphore.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <utils/estructuras.h>
+#include "commons/log.h"
+#include "commons/config.h"
+#include "commons/string.h"
+#include "commons/collections/list.h"
+#include "commons/collections/dictionary.h"
+#include "utils/modules.h"
+#include "utils/socket.h"
 
-void obtener_configuracion(t_config* kernel_config);
-void initialize_kernel();
-void initialize_sockets();
-void initialize_logger();
-void initialize_config();
-void cambiar_estado(t_pcb* pcb, int estado_nuevo);
+int module(int, char*[]);
+void read_module_config(t_config*);
+void initialize_sockets(void);
+void switch_process_state(t_pcb *pcb, int estado_nuevo);
 t_pcb *create_pcb(char *instrucciones);
-void iniciar_planificador_largo_plazo();
-void iniciar_planificador_corto_plazo();
-void iniciar_receptor_mensajes_cpu();
-void planificador_largo_plazo();
-void planificador_corto_plazo();
-t_pcb *algoritmo_FIFO();
-t_pcb *algoritmo_RR();
+void initialize_long_term_scheduler();
+void initialize_short_term_scheduler();
+void initialize_cpu_command_line_interface();
+void long_term_scheduler();
+void short_term_scheduler();
+t_pcb *FIFO_scheduling_algorithm();
 void receptor_mensajes_cpu();
-int timenow();
-void* start_quantum(void* arg);
-
-//listas globales de estados
-t_list* LISTA_NEW;
-t_list* LISTA_READY;
-t_list* LISTA_EXEC;
-t_list* LISTA_BLOCKED;
-t_list* LISTA_EXIT;
-
-pthread_mutex_t mutex_PID;
-pthread_mutex_t mutex_LISTA_NEW;
-pthread_mutex_t mutex_LISTA_READY;
-pthread_mutex_t mutex_LISTA_BLOCKED;
-pthread_mutex_t mutex_LISTA_EXEC;
-pthread_mutex_t mutex_LISTA_EXIT;
-
-pthread_t generador_de_interrupciones;
-pthread_t hilo_largo_plazo;
-pthread_t hilo_corto_plazo;
-pthread_t hilo_mensajes_cpu;
-
-sem_t sem_planificador_largo_plazo;
-sem_t sem_planificador_corto_plazo;
-sem_t contador_multiprogramacion;
-
-
+int current_time();
+int asignar_PID();
 
 #endif /* KERNEL_H_ */

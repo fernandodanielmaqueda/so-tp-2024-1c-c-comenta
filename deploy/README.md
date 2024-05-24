@@ -10,6 +10,10 @@ Algunas de las cosas que se listan también sirven para poder trabajar sobre el 
 - Hacer un script que instale automáticamente las extensiones de VSCode
 - Hacer un script que tome las IPs del Host y del Guest y que haga las conexiones SSH automáticamente y edite los .config acordemente
 - Editar el archivo /home/utnso/base.sh acordemente
+- Conexión a GitHub
+- Sistema operativo Host utilizado en las computadoras de la facultad: Windows o Linux
+- Acceso a GitHub desde las computadoras de la facultad
+	- https://stackoverflow.com/questions/69336114/the-application-requires-one-of-the-following-versions-of-the-net-framework-ho
 
 -----------------------------
 
@@ -246,10 +250,20 @@ sudo usermod -aG vboxsf $USER
 
 1. Crear el directorio donde montaremos la carpeta compartida en la VM
 ```bash
-mkdir /home/utnso/Compartida
+mkdir /home/utnso/vboxsfCompartida
 ```
 
-2. Para que la carpeta compartida se monte automáticamente cada vez que iniciemos la VM, editar el archivo `/etc/fstab`:
+2. Montar manualmente la carpeta compartida en la VM
+```bash
+sudo mount -t vboxsf Compartida /home/utnso/vboxsfCompartida -o rw,exec,uid=1000,gid=1000
+```
+
+3. Verificar que la carpeta compartida se haya montado correctamente en la VM
+```bash
+ls /home/utnso/vboxsfCompartida
+```
+
+4. Para que la carpeta compartida se monte automáticamente cada vez que iniciemos la VM, editar el archivo `/etc/fstab`:
 ```bash
 sudo vi /etc/fstab
 ```
@@ -260,7 +274,7 @@ Nótese el uso de tabulaciones en lugar de espacios para separar las columnas de
 Compartida	/home/utnso/Compartida	vboxsf	uid=1000,gid=1000	0	0
 ```
 
-3. Para arrancar el servicio de carpetas compartidas de VirtualBox cada vez que iniciemos la VM, editar el archivo `/etc/modules`:
+5. Para arrancar el servicio de carpetas compartidas de VirtualBox cada vez que iniciemos la VM, editar el archivo `/etc/modules`:
 ```bash
 sudo vi /etc/modules
 ```
@@ -274,6 +288,46 @@ vboxsf
 
 No andan los `Run and Debug` (`launch.json`) de VSCode para depurar los ejecutables si estos están dentro de las carpetas compartidas
 Parece ser por una limitación de los permisos de ejecución del filesystem de VirtualBox (vboxsf)
+
+-----------------------------
+
+## Opcional. Montar una carpeta compartida usando Samba (SMB)
+
+Este método no tiene la limitación anteriormente mencionada.
+
+En la VM Ubuntu Server:
+
+1. Descargar e instalar `cifs-utils`
+```bash
+sudo apt install cifs-utils
+```
+
+2. Crear el directorio donde montaremos la carpeta compartida en la VM
+```bash
+mkdir /home/utnso/smb
+```
+
+3. Montar manualmente la carpeta compartida en la VM
+```bash
+sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smb -o username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777
+```
+
+4. Verificar que la carpeta compartida se haya montado correctamente en la VM
+```bash
+ls /home/utnso/smb
+```
+
+5. Para que la carpeta compartida se monte automáticamente cada vez que iniciemos la VM, editar el archivo `/etc/fstab`:
+```bash
+sudo vi /etc/fstab
+```
+
+Agregarle la siguiente línea al final de dicho archivo.
+```output
+//NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smb cifs username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777 0 0
+```
+
+Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cambiarse a 2.0, por ejemplo, de ser necesario
 
 -----------------------------
 
@@ -467,6 +521,8 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
 }
 ```
 
+- https://code.visualstudio.com/docs/remote/ssh-tutorial
+
 4. Presionar el botón azul en la esquina inferior izquierda de VSCode
 
 5. Seleccionar la opción `Connect to Host...`
@@ -546,6 +602,11 @@ sudo -s
 exit
 ```
 
+> Desmontar un disco
+```bash
+sudo umount /ruta/al/punto/de/montaje
+```
+
 > Leer un archivo de texto
 ```bash
 less
@@ -579,24 +640,62 @@ htop
 
 -----------------------------
 
-## Anexo 2: Abrir una sesión de tmux (Terminal MUltipleXer)
+## Anexo 2: tmux (Terminal MUltipleXer)
 
+Abrir una sesión nueva
 ```bash
 tmux
 ```
+Equivalente:
+```bash
+tmux new
+```
+Abrir una sesión nueva y ponerle un nombre:
+```bash
+tmux new -s 'NombreDeSesion'
+```
 
-- Para cerrar la ventana de la sesion, presione <kbd>Ctrl</kbd> + <kbd>b</kbd>, seguidamente presione <kbd>x</kbd> y por ultimo presione <kbd>y</kbd>
+Cerrar la ventana actual de una sesión
+```bash
+exit
+```
+
+- Para cerrar forzosamente la ventana de la sesion, presione <kbd>Ctrl</kbd> + <kbd>b</kbd>, seguidamente presione <kbd>x</kbd> y por ultimo presione <kbd>y</kbd>
+- Para crear una nueva ventana, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>c</kbd>
 - Para apartar la sesion con sus ventanas sin cerrarla [detach], presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>d</kbd>
+- Para volver a las sesiones apartadas de tmux [detached], ejecute el comando:
+```bash
+tmux attach
+```
+	- Por el número identificador de la sesión
+```bash
+tmux attach -t 0
+```
+	- Por el nombre de la sesión
+```bash
+tmux attach -t 'NombreDeSesion'
+```
+- Para listar cuántas sesiones de tmux están abiertas, ejecute el comando:
+```bash
+tmux ls
+```
+- Para cerrar forzosamente una sesión de tmux, ejecute el comando:
+```bash
+tmux kill-session
+```
+	- Por el número identificador de la sesión
+```bash
+tmux kill -t 0
+```
+	- Por el nombre de la sesión
+```bash
+tmux kill -t 'NombreDeSesion'
+```
+- Para cambiarle el nombre a la sesion actual de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>,</kbd>
 - Para alternar entre las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>s</kbd>
 - Para alternar entre las ventanas de las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>w</kbd>
 - Para iniciar el modo desplazamiento por la ventana, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>[</kbd> (con la distribucion de teclado latinoamericano, <kbd>[</kbd> es <kbd>⇧ Shift</kbd> + <kbd>{</kbd>)
 - Para finalizar el modo desplazamiento por la ventana, presione <kbd>q</kbd>
-
-NOTA: Para volver a las sesiones apartadas de tmux [detached], ejecute el comando:
-
-```bash
-tmux attach
-```
 
 -----------------------------
 ## Anexo 3: Opciones importantes de gcc
