@@ -26,7 +26,7 @@
 int module(int, char*[]);
 void read_module_config(t_config*);
 void initialize_sockets(void);
-void inicializar_ciclo_cpu();
-
-
+void instruction_cycle();
+void execute(t_instruction_use *instruction, t_contexto *contexto);
+t_register string_a_registro(const char *string);
 #endif /* CPU_H_ */
