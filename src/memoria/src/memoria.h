@@ -56,7 +56,7 @@ void create_process(int socket);
  * @param pid Program counter requerido.
  * @param pc Program counter requerido.
  */
-t_instruccion read_instruccion(int pid,int pc);
+void seek_instruccion(int socket);
 
 
 

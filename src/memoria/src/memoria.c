@@ -136,6 +136,7 @@ void listen_kernel(int fd_kernel){
 }
 
 
+
 void create_process(int socketRecibido){
 
     t_process* nuevo_proceso;
@@ -163,7 +164,10 @@ void create_process(int socketRecibido){
     nuevo_proceso->tabla_paginas = tabla_paginas;
     list_add(lista_procesos,nuevo_proceso);
     
-    //ENVIAR RTA OK A KERNEL
+    log_debug(module_logger, "Archivo leido: %s", path_buscado);
+
+    //ENVIAR RTA OK A KERNEL --> En este caso solo envio el pid del proceso origen
+    send_message(PROCESS_CREATED, atoi(nuevo_proceso->pid), fd_kernel);
     
 }
 
@@ -207,4 +211,59 @@ void parser_file(char* path, t_list* list_instruction ){
        
         fclose(file);
     
+}
+
+void listen_cpu(int fd_cpu){
+    while(1){
+        t_opcode opcode = get_codOp(fd_cpu);
+        switch (opcode)
+            {
+            case INSTUCTION_REQUEST:
+                log_info(module_logger, "CPU: Pedido de instruccion recibido.");
+                seek_instruccion(fd_cpu);
+                break;
+
+            case DESCONEXION:
+                log_warning(module_logger, "Se desconecto CPU.");
+                log_destroy(module_logger);
+                return;
+            
+            default:
+                log_warning(module_logger, "Operacion desconocida..");
+                break;
+            }
+    }
+}
+
+t_process* seek_process_by_pid(int pidBuscado){
+
+    t_process* procesoBuscado;
+    int size= list_size(lista_procesos);
+
+    procesoBuscado = list_get(lista_procesos,0); //SUPONEMOS QUE SIEMPRE ENCUENTRA EL PID
+
+    for (size_t i = 0; i < size; i++)
+    {
+        procesoBuscado = list_get(lista_procesos,i);
+        if (procesoBuscado->pid == pidBuscado) i=size;
+        
+    }
+    
+    return procesoBuscado;
+}
+
+void seek_instruccion(int socketRecibido){
+    t_list *lista_elememtos = get_package_like_list(socketRecibido);
+    int cursor = 0;
+    int pid = *(int *)list_get(lista_elememtos, ++cursor);
+    int pc = *(int *)list_get(lista_elememtos, ++cursor);
+    list_destroy_and_destroy_elements(lista_elememtos, &free);
+
+    
+    t_process* procesoBuscado = seek_process_by_pid(pid);
+    //Suponemos que la instruccion es encontrada siempre
+    t_instruction_use* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
+    
+
+
 }

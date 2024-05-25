@@ -56,6 +56,7 @@ typedef enum t_opcode {
     //Kernel - IO
     //Kernel - CPU
     //CPU - Memoria
+    INSTUCTION_REQUEST,
     //IO - Memoria
     //Instrucciones
     SET,
