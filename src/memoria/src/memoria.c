@@ -151,11 +151,12 @@ void create_process(int socketRecibido){
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
-    string_append(path_buscado, '/');
+    string_append(path_buscado, "/");
     string_append(path_buscado, nuevo_proceso->nombre);
     log_debug(module_logger, "Archivo Buscado: %s", path_buscado);
 
     //CREAR LISTA INST CON EL PARSER
+    parser_file(path_buscado,lista_instrucciones);
 
     nuevo_proceso->cantidadInstrucciones = list_size(lista_instrucciones);
     nuevo_proceso->lista_instrucciones = lista_instrucciones;
@@ -163,4 +164,47 @@ void create_process(int socketRecibido){
     list_add(lista_procesos,nuevo_proceso);
     
     //ENVIAR RTA OK A KERNEL
+    
+}
+
+void create_instruction(FILE* file, t_list* list_instruction){
+
+    t_instruction_use* nueva_instruccion = malloc(sizeof(t_instruction_use));
+    char *linea = string_new();
+    int tamanio_buffer = 0;
+ 
+    getline(&linea, (size_t *restrict)&tamanio_buffer, file);
+
+    if (linea[strlen(linea) - 1] == '\n') linea[strlen(linea) - 1] = '\0';
+  
+    char** campos = string_split(linea," ");
+
+    nueva_instruccion->operation = (t_opcode)(campos[0]);
+    nueva_instruccion->parameters = list_create();
+
+    int numero_elementos = count_elements(campos);
+    for (int pos = 1; pos < numero_elementos; pos++) 
+	{
+        list_add(nueva_instruccion->parameters, campos[pos]); 
+	}
+
+	list_add(list_instruction, nueva_instruccion);
+
+    free(linea);
+
+}
+
+void parser_file(char* path, t_list* list_instruction ){
+
+    FILE* file;
+    if ((file = fopen(path, "r")) == NULL)
+    {
+        log_error(module_logger, "[ERROR] No se pudo abrir el archivo de pseudocodigo indicado.");
+        exit(EXIT_FAILURE);
+    }
+        
+        while(!feof(file)) create_instruction(file, list_instruction);
+       
+        fclose(file);
+    
 }

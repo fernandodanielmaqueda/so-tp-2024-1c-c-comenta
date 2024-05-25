@@ -52,6 +52,7 @@ typedef enum t_opcode {
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_NEW,
+    PROCESS_CREATED,
     //Kernel - IO
     //Kernel - CPU
     //CPU - Memoria

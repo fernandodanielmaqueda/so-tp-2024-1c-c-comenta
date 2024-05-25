@@ -471,3 +471,35 @@ t_pcb *deserialize_pcb(int socketCliente)
   return pcb;
 
 }
+
+
+void send_message(t_opcode codigoOperacion, char* mensaje, int socket){
+
+            t_paquete *paquete = create_package(codigoOperacion);
+            add_to_package(paquete, mensaje, strlen(mensaje) + 1);
+            send_package(paquete, socket);
+            kill_package(paquete);
+}
+
+void send_package(t_paquete* paquete, int socket)
+{
+  int bytes = paquete->buffer->size + 2 * sizeof(int);
+  void *aEnviar = serialize_package(paquete, bytes);
+
+  send(socket, aEnviar, bytes, 0);
+  free(aEnviar);
+}
+
+void *serialize_package(t_paquete *paquete, int bytes)
+{
+  void *magic = malloc(bytes);
+  int desplazamiento = 0;
+
+  memcpy(magic + desplazamiento, &(paquete->codigo_operacion), sizeof(int));
+  desplazamiento += sizeof(int);
+  memcpy(magic + desplazamiento, &(paquete->buffer->size), sizeof(int));
+  desplazamiento += sizeof(int);
+  memcpy(magic + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
+
+  return magic;
+}
