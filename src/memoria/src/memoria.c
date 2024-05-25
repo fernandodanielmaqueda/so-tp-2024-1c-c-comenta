@@ -167,7 +167,7 @@ void create_process(int socketRecibido){
     log_debug(module_logger, "Archivo leido: %s", path_buscado);
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el pid del proceso origen
-    send_message(PROCESS_CREATED, itoa(nuevo_proceso->pid), fd_kernel);
+    send_message(PROCESS_CREATED, string_itoa(nuevo_proceso->pid), fd_kernel);
     
 }
 
@@ -186,7 +186,10 @@ void create_instruction(FILE* file, t_list* list_instruction){
     nueva_instruccion->operation = (t_opcode)(campos[0]);
     nueva_instruccion->parameters = list_create();
 
-    int numero_elementos = count_elements(campos);
+    int numero_elementos= 0;
+        while (campos[numero_elementos] != NULL) {
+        numero_elementos++;
+    }
     for (int pos = 1; pos < numero_elementos; pos++) 
 	{
         char* parametro = string_new();

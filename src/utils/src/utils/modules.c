@@ -17,4 +17,5 @@ void initialize_module_config() {
 	}
 
 	read_module_config(module_config);
+
 }

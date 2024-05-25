@@ -71,7 +71,34 @@ int module(int argc, char *argv[]) {
 	initialize_module_config();
 	initialize_sockets();
 
+	t_pcb pcb = {
+        .pid = 1234,
+        .pc = 5678,
+        .AX = 1,
+        .BX = 2,
+        .CX = 3,
+        .DX = 4,
+        .EAX = 10,
+        .EBX = 20,
+        .ECX = 30,
+        .EDX = 40,
+        .RAX = 100,
+        .RBX = 200,
+        .RCX = 300,
+        .RDX = 400,
+        .SI = 500,
+        .DI = 600,
+        .quantum = 50,
+        .estado_actual = 1,
+        .fd_conexion = 2,
+        .llegada_ready = 123.456,
+        .llegada_running = 789.012
+    };
+	enviar_pcb(fd_cpu_dispatch, &pcb);
 	log_info(module_logger, "Kernel inicializado\n");
+
+
+
 
 	//Voy a inciializar la consola activa
 	initalize_console_interactive();
