@@ -503,3 +503,70 @@ void *serialize_package(t_paquete *paquete, int bytes)
 
   return magic;
 }
+
+
+void send_instruccion(t_instruction_use* instruccion, int socket){
+  
+  t_paquete* paquete = create_package(INSTUCTION_REQUEST);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [...]\n"); }
+  
+  int cursor = 0;
+  int cantidad_parametros= list_size(instruccion->parameters);
+
+
+    agregar_a_paquete(paquete, instruccion->operation, sizeof(int));
+    DEBUG_PRINTF("\n[Serializar] paquete[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
+    cursor++;
+
+  //PARAMETROS
+  add_to_package(paquete, &cantidad_parametros, sizeof(int));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Cantidad de parametros = %d\n", cursor, cantidad_parametros); }
+  cursor++;
+
+  char* parametro;
+  for (int i = 0; i < cantidad_parametros; i++)
+  {
+    parametro = list_get(instruccion->parameters, i);
+
+    add_to_package(paquete, parametro, strlen(parametro) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Parametro = %s\n", cursor, parametro); }
+    cursor++;
+  }
+
+
+  DEBUG_PRINTF("\n[Serializar] serializar_instruccion( ) [END]\n");
+
+  send_package(paquete, socket);
+
+  kill_package(paquete);
+
+}
+
+
+t_instruction_use* receive_instruccion(int socket){
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_instruccion( ) [...]\n"); }
+
+  t_list *propiedadesPlanas = obtener_paquete_como_lista(socket);
+  t_instruction_use* instruccionRecibida = malloc(sizeof(t_instruction_use));
+  int cursor = 0;
+
+  instruccionRecibida->operation = *(t_opcode*)list_get(propiedadesPlanas, cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
+  
+  int cantidadParametros = *(int*)list_get(propiedadesPlanas, cursor);
+  DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
+  
+  for (size_t i = 0; i < cantidadParametros; i++)
+  {
+    char* parametro = string_new();
+    parametro = string_duplicate(list_get(propiedadesPlanas, ++cursor));
+    DEBUG_PRINTF("\n[Deserializar] paquete[%d]: parametro = %s \n", cursor, parametro);
+    list_add(instruccionRecibida->parameters, parametro);
+  }
+  
+  list_destroy_and_destroy_elements(propiedadesPlanas, &free);
+
+  DEBUG_PRINTF("\n[Deserializar] deserializar_instruccion( ) [END]\n");
+
+  return instruccionRecibida;
+}

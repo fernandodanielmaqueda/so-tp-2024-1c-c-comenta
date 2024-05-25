@@ -167,7 +167,7 @@ void create_process(int socketRecibido){
     log_debug(module_logger, "Archivo leido: %s", path_buscado);
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el pid del proceso origen
-    send_message(PROCESS_CREATED, atoi(nuevo_proceso->pid), fd_kernel);
+    send_message(PROCESS_CREATED, itoa(nuevo_proceso->pid), fd_kernel);
     
 }
 
@@ -189,7 +189,9 @@ void create_instruction(FILE* file, t_list* list_instruction){
     int numero_elementos = count_elements(campos);
     for (int pos = 1; pos < numero_elementos; pos++) 
 	{
-        list_add(nueva_instruccion->parameters, campos[pos]); 
+        char* parametro = string_new();
+        parametro = campos[pos];
+        list_add(nueva_instruccion->parameters, parametro); 
 	}
 
 	list_add(list_instruction, nueva_instruccion);
@@ -263,7 +265,8 @@ void seek_instruccion(int socketRecibido){
     t_process* procesoBuscado = seek_process_by_pid(pid);
     //Suponemos que la instruccion es encontrada siempre
     t_instruction_use* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
+
+    send_instruccion(instruccionBuscada, fd_cpu);
+    log_info(module_logger, "Instruccion enviada.");
     
-
-
 }

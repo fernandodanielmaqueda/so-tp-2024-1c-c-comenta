@@ -149,4 +149,19 @@ void send_package(t_paquete* pack, int socket);
  */
 void* serialize_package(t_paquete* pack, int bytes);
 
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param instruccion Instruccion a enviar
+ * @param socket Socket destino
+ */
+void send_instruccion(t_instruction_use* instruccion, int socket);
+
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param socket Socket a recibir
+ */
+t_instruction_use* receive_instruccion(int socket);
+
 #endif // SOCKET_H
