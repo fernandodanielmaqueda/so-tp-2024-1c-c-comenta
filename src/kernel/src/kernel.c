@@ -21,6 +21,7 @@ pthread_mutex_t mutex_LIST_BLOCKED;
 pthread_mutex_t mutex_LIST_EXECUTING;
 pthread_mutex_t mutex_LIST_EXIT;
 
+pthread_t thread_kernel_coordinator_for_io;
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
@@ -30,45 +31,33 @@ sem_t sem_short_term_scheduler;
 sem_t sem_multiprogramming_level;
 
 t_log *module_logger;
+extern t_log *connections_logger;
 t_config *module_config;
 
-// Connections
-int socket_cpu_interrupt;
-int socket_cpu_dispatch;
-int socket_memoria;
-int socket_entradasalida;
+Server COORDINATOR_IO;
+Connection CONNECTION_MEMORY;
+Connection CONNECTION_CPU_DISPATCH;
+Connection CONNECTION_CPU_INTERRUPT;
 
-int fd_memoria;
-int fd_cpu_dispatch;
-int fd_cpu_interrupt;
-int fd_entrada_salida;
-int fd_kernel;
-
-char *PUERTO_ESCUCHA;
-char *IP_MEMORIA;
-char *PUERTO_MEMORIA;
-char *IP_CPU;
-char *PUERTO_CPU_DISPATCH;
-char *PUERTO_CPU_INTERRUPT;
-char *ALGORITMO_PLANIFICACION;
+char *SCHEDULING_ALGORITHM;
 int QUANTUM;
-char **RECURSOS;
-char **INSTANCIAS_RECURSOS;
-int GRADO_MULTIPROGRAMACION;
+char **RESOURCES;
+char **RESOURCE_INSTANCES;
+int MULTIPROGRAMMING_LEVEL;
 
 size_t bytes;
 
 int module(int argc, char *argv[]) {
 
-	initialize_module_logger();
-	initialize_module_config();
+	initialize_loggers();
+	initialize_configs();
 	initialize_sockets();
 
-	log_info(module_logger, "Kernel inicializado\n");
+	log_info(module_logger, "Modulo %s inicializado correctamente\n", module_name);
 
 	sem_init(&sem_long_term_scheduler, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);
-	sem_init(&sem_multiprogramming_level, 0, GRADO_MULTIPROGRAMACION);
+	sem_init(&sem_multiprogramming_level, 0, MULTIPROGRAMMING_LEVEL);
 
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
@@ -81,104 +70,133 @@ int module(int argc, char *argv[]) {
 	initialize_short_term_scheduler();
 	initialize_cpu_command_line_interface();
 
+	//finish_threads();
+	finish_sockets();
+	//finish_configs();
+	finish_loggers();
+
     return EXIT_SUCCESS;
 }
 
 void read_module_config(t_config *module_config)
 {
-	PUERTO_ESCUCHA = config_get_string_value(module_config, "PUERTO_ESCUCHA");
-	IP_MEMORIA = config_get_string_value(module_config, "IP_MEMORIA");
-	PUERTO_MEMORIA = config_get_string_value(module_config, "PUERTO_MEMORIA");
-	IP_CPU = config_get_string_value(module_config, "IP_CPU");
-	PUERTO_CPU_DISPATCH = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH");
-	PUERTO_CPU_INTERRUPT = config_get_string_value(module_config, "PUERTO_CPU_INTERRUPT");
-	ALGORITMO_PLANIFICACION = config_get_string_value(module_config, "ALGORITMO_PLANIFICACION");
+	COORDINATOR_IO = (struct Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA")};
+	CONNECTION_MEMORY = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
+	CONNECTION_CPU_DISPATCH = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH")};
+	CONNECTION_CPU_INTERRUPT = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_INTERRUPT")};
+	SCHEDULING_ALGORITHM = config_get_string_value(module_config, "ALGORITMO_PLANIFICACION");
 	QUANTUM = config_get_int_value(module_config, "QUANTUM");
-	RECURSOS = config_get_array_value(module_config, "RECURSOS");
-	INSTANCIAS_RECURSOS = config_get_array_value(module_config, "INSTANCIAS_RECURSOS");
-	GRADO_MULTIPROGRAMACION = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
+	RESOURCES = config_get_array_value(module_config, "RECURSOS");
+	RESOURCE_INSTANCES = config_get_array_value(module_config, "INSTANCIAS_RECURSOS");
+	MULTIPROGRAMMING_LEVEL = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
 }
 
-void initialize_sockets()
+void initialize_sockets(void)
 {
+	pthread_t thread_kernel_start_server_for_io;
+	pthread_t thread_kernel_connect_to_memory;
+	pthread_t thread_kernel_connect_to_cpu_dispatch;
+	pthread_t thread_kernel_connect_to_cpu_interrupt;
 
-	//Incio cliente kernel para ir a memoria
-	log_info(module_logger, "Iniciando cliente kernel para ir a memoria...");
-	fd_kernel = client_connect(IP_MEMORIA, PUERTO_MEMORIA);
+	// [Server] Kernel <- [Cliente(s)] Entrada/Salida
+	pthread_create(&thread_kernel_start_server_for_io, NULL, kernel_start_server_for_io, (void*) &COORDINATOR_IO);
+	// [Client] Kernel -> [Server] Memoria
+	pthread_create(&thread_kernel_connect_to_memory, NULL, client_thread_connect_to_server, (void*) &CONNECTION_MEMORY);
+	// [Client] Kernel -> [Server] CPU (Dispatch Port)
+	pthread_create(&thread_kernel_connect_to_cpu_dispatch, NULL, client_thread_connect_to_server, (void*) &CONNECTION_CPU_DISPATCH);
+	// [Client] Kernel -> [Server] CPU (Interrupt Port)
+	pthread_create(&thread_kernel_connect_to_cpu_interrupt, NULL, client_thread_connect_to_server, (void*) &CONNECTION_CPU_INTERRUPT);
 
-	if(fd_kernel == -1) {
-		log_error(module_logger, "No se pudo conectar a memoria");
-		exit(EXIT_FAILURE);
-	}
-	else{
-	log_info(module_logger, "Kernel esta conectado a memoria en el puerto %s \n", PUERTO_MEMORIA);
-	}
-
-	//Incio cliente kernel para ir a CPU Dispatch
-	log_info(module_logger, "Iniciando cliente kernel para ir a CPU Dispatch...");
-	fd_kernel = client_connect(IP_CPU, PUERTO_CPU_DISPATCH);
-	if (fd_kernel == -1)
-	{
-		log_error(module_logger, "No se pudo conectar a CPU Dispatch");
-		exit(EXIT_FAILURE);
-	}else
-	log_info(module_logger, "Kernel esta conectado a CPU Dispatch en el puerto %s\n", PUERTO_CPU_DISPATCH);
-
-	//Incio cliente kernel para ir a CPU Interrupt
-	log_info(module_logger, "Iniciando cliente kernel para ir a CPU Interrupt... ");
-	fd_kernel = client_connect(IP_CPU, PUERTO_CPU_INTERRUPT);
-
-	if (fd_kernel == -1)
-	{
-		log_error(module_logger, "No se pudo conectar a CPU Interrupt");
-		exit(EXIT_FAILURE);
-	}else
-	log_info(module_logger, "Kernel esta conectado a CPU Interrupt en el puerto %s\n", PUERTO_CPU_INTERRUPT);
-
-	//Despues de las conexiones como cliente abro la conexion a servidor
-
-	//Dejo al kernel en modo server escuchando por el puerto de la config
-	fd_kernel = start_server(NULL, PUERTO_ESCUCHA);
-	log_info(module_logger, "Kernel escuchando en puerto... %s \n", PUERTO_ESCUCHA);
-
-	//=============DISCLAIMER: SI ENTRADA SALIDA LO DEJO ACA HACE BIEN EL ESPERA DEL MODLUO ENTRADA SALIDA... SI LO PONGO ABAJO DE TODO NO LO CONECTA======//////
-	//Espero conexion entrada/salida
-	log_info(module_logger, "Esperando conexion a Entrada/Salida...");
-	fd_entrada_salida = esperar_cliente(fd_kernel);
-
-	if (fd_entrada_salida == -1)
-	{
-		log_error(module_logger, "No se pudo conectar a Entrada/Salida");
-		exit(EXIT_FAILURE);
-	}else
-	log_info(module_logger, "Kernel conectado a Entrada/Salida\n");
-
-
-	
+	// Se bloquea hasta que se realicen todas las conexiones
+	pthread_join(thread_kernel_connect_to_memory, NULL);
+	pthread_join(thread_kernel_connect_to_cpu_dispatch, NULL);
+	pthread_join(thread_kernel_connect_to_cpu_interrupt, NULL);
 }
 
-void initialize_long_term_scheduler()
+void finish_sockets(void) {
+	close(COORDINATOR_IO.fd_listen);
+	close(CONNECTION_MEMORY.fd_connection);
+	close(CONNECTION_CPU_DISPATCH.fd_connection);
+	close(CONNECTION_CPU_INTERRUPT.fd_connection);
+}
+
+void *kernel_start_server_for_io(void *server_parameter) {
+	Server *server = (Server*) server_parameter;
+
+	int *fd_new_client;
+	pthread_t thread_new_client;
+
+	server_start(server);
+
+	while(1) {
+		fd_new_client = malloc(sizeof(int));
+		log_info(connections_logger, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		*fd_new_client = server_accept(server->fd_listen);
+
+		if(*fd_new_client == -1) {
+			log_warning(connections_logger, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+			free(fd_new_client);
+			continue;
+		}
+
+		log_info(connections_logger, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		pthread_create(&thread_new_client, NULL, kernel_client_handler_for_io, (void*) fd_new_client);
+		pthread_detach(thread_new_client);
+	}
+
+	return NULL;
+}
+
+void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
+	int* fd_new_client = (int*) fd_new_client_parameter;
+
+	size_t bytes;
+
+    int32_t handshake;
+    int32_t resultOk = 0;
+    int32_t resultError = -1;
+
+    bytes = recv(*fd_new_client, &handshake, sizeof(int32_t), MSG_WAITALL);
+
+    switch((enum PortType) handshake) {
+        case IO_TYPE:
+            log_info(connections_logger, "OK Handshake con [Cliente(s)] %s", "Entrada/Salida");
+            bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
+            // Lógica de manejo de cliente Entrada/Salida
+            free(fd_new_client);
+        break;
+        default:
+            log_warning(connections_logger, "Error Handshake con [Cliente(s)] %s", "No reconocido");
+            bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
+            free(fd_new_client);
+        break;
+    }
+
+	return NULL;
+}
+
+void initialize_long_term_scheduler(void)
 {
 	pthread_create(&hilo_largo_plazo, NULL, (void *) long_term_scheduler, NULL);
 	//log_info(module_logger, "Inicio planificador largo plazo");
 	pthread_detach(hilo_largo_plazo);
 }
 
-void initialize_short_term_scheduler() //ESTADO RUNNIG - MULTIPROCESAMIENTO 
+void initialize_short_term_scheduler(void) //ESTADO RUNNIG - MULTIPROCESAMIENTO 
 {
 	pthread_create(&hilo_corto_plazo, NULL, (void *) short_term_scheduler, NULL);
 	//log_info(module_logger, "Inicio planificador corto plazo");
 	pthread_detach(hilo_corto_plazo);
 }
 
-void initialize_cpu_command_line_interface()
+void initialize_cpu_command_line_interface(void)
 {
 	pthread_create(&hilo_mensajes_cpu, NULL, (void *)receptor_mensajes_cpu, NULL);
 	//log_info(module_logger, "Inicio mensajes cpu");
 	pthread_detach(hilo_mensajes_cpu);
 }
 
-void long_term_scheduler()
+void long_term_scheduler(void)
 {
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
@@ -191,19 +209,18 @@ void long_term_scheduler()
 	}
 }
 
-void short_term_scheduler()
-{
+void short_term_scheduler(void) {
 
 	t_pcb* pcb;
 
 	while(1) {
 		sem_wait(&sem_short_term_scheduler);	
 
-		if(!strcmp(ALGORITMO_PLANIFICACION, "VRR")) {
+		if(!strcmp(SCHEDULING_ALGORITHM, "VRR")) {
 			//pcb = algoritmo_VRR();
-		} else if (!strcmp(ALGORITMO_PLANIFICACION, "FIFO")){
+		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
 			pcb = FIFO_scheduling_algorithm();
-		} else if (!strcmp(ALGORITMO_PLANIFICACION, "RR")){
+		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
 			//pcb = algoritmo_RR();
 		} else {
 			// log_error(module_logger, "El algoritmo de planificacion ingresado no existe\n");
@@ -216,8 +233,7 @@ void short_term_scheduler()
 	}
 }
 
-t_pcb *FIFO_scheduling_algorithm()
-{
+t_pcb *FIFO_scheduling_algorithm(void) {
 	pthread_mutex_lock(&mutex_LIST_READY);
 		t_pcb *pcb = (t_pcb *) list_remove(LIST_READY, 0);
 	pthread_mutex_unlock(&mutex_LIST_READY);
@@ -234,8 +250,7 @@ t_pcb *FIFO_scheduling_algorithm()
 6. Listar procesos por estado
 */
 
-void receptor_mensajes_cpu()
-{
+void receptor_mensajes_cpu(void) {
 	// t_paquete *paquete;
 
 	while (1)
@@ -339,8 +354,7 @@ void receptor_mensajes_cpu()
 	}
 }
 
-void switch_process_state(t_pcb* pcb, int estado_nuevo) 
-{
+void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 	int estado_anterior = pcb->estado_actual;
 	pcb->estado_actual = estado_nuevo;
 	char* global_estado_anterior;
@@ -473,8 +487,7 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo)
 }
 
 //POR REVISAR
-t_pcb *create_pcb(char *instrucciones)
-{
+t_pcb *create_pcb(char *instrucciones) {
 	//FALTA AGREGAR ATRIBUTOS AL PCB
 
 	t_pcb *nuevoPCB = malloc(sizeof(t_pcb));
@@ -511,8 +524,7 @@ t_pcb *create_pcb(char *instrucciones)
 	return nuevoPCB;
 }
 
-int current_time()
-{
+int current_time() {
 	time_t now = time(NULL);
 	struct tm *local = localtime(&now);
 	int hours, minutes, seconds; //

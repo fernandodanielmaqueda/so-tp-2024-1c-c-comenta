@@ -10,17 +10,40 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <string.h>
+#include <pthread.h>
 #include <errno.h>
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"
 #include "estructuras.h"
+#include "modules.h"
+
+#define RETRY_CONNECTION_IN_SECONDS 10
+#define MAX_CONNECTION_ATTEMPS 10
 
 #ifndef DEBUG_SERIALIZATION
 #define DEBUG_SERIALIZATION 0
 #endif
 
 #define DEBUGGING_SERIALIZATION if(DEBUG_SERIALIZATION)
+
+extern const char *PORT_NAMES[PortType_Count];
+//extern const int32_t HANDSHAKES[PortType_Count];
+
+typedef struct Connection {
+    int fd_connection;
+    enum PortType client_type;
+    enum PortType server_type;
+    char *ip;
+    char *port;
+} Connection;
+
+typedef struct Server {
+    int fd_listen;
+    enum PortType server_type;
+    enum PortType clients_type;
+    char *port;
+} Server;
 
 typedef struct {
     uint32_t size;
@@ -37,11 +60,12 @@ int start_server_module(char* module, char * pathconfig);
 int start_client_module(char* module, char* pathconfig);
 void get_ip_port_from_module(const char* module, char* path_config,char* ip, char* port);
 */
-int client_connect(char* ip, char* port);
-int start_server(char* ip, char* port);
-int esperar_cliente(int socket_servidor);
-void liberar_conexion(int socket_cliente);
 
+void *client_thread_connect_to_server(void *connection_parameter);
+int client_start_try(char* ip, char* port);
+void server_start(Server *server);
+int server_start_try(char* port);
+int server_accept(int socket_servidor);
 
 /**
  * @brief Crear paquete.

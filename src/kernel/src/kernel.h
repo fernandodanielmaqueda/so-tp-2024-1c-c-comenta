@@ -25,17 +25,20 @@
 #include "utils/socket.h"
 
 int module(int, char*[]);
-void read_module_config(t_config*);
+void read_module_config(t_config *module_config);
 void initialize_sockets(void);
+void finish_sockets(void);
+void *kernel_start_server_for_io(void *server_parameter);
+void *kernel_client_handler_for_io(void *fd_new_client_parameter);
 void switch_process_state(t_pcb *pcb, int estado_nuevo);
 t_pcb *create_pcb(char *instrucciones);
-void initialize_long_term_scheduler();
-void initialize_short_term_scheduler();
-void initialize_cpu_command_line_interface();
-void long_term_scheduler();
-void short_term_scheduler();
-t_pcb *FIFO_scheduling_algorithm();
-void receptor_mensajes_cpu();
-int current_time();
+void initialize_long_term_scheduler(void);
+void initialize_short_term_scheduler(void);
+void initialize_cpu_command_line_interface(void);
+void long_term_scheduler(void);
+void short_term_scheduler(void);
+t_pcb *FIFO_scheduling_algorithm(void);
+void receptor_mensajes_cpu(void);
+int current_time(void);
 
 #endif /* KERNEL_H_ */

@@ -24,9 +24,12 @@
 #include "utils/socket.h"
 
 int module(int, char*[]);
-void read_module_config(t_config*);
+void read_module_config(t_config *module_config);
 void initialize_sockets(void);
-void inicializar_ciclo_cpu();
+void finish_sockets(void);
+void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
+void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
+void inicializar_ciclo_cpu(void);
 
 
 #endif /* CPU_H_ */

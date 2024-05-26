@@ -3,12 +3,48 @@
 
 #include "socket.h"
 
-extern t_log *module_logger;
+const char *PORT_NAMES[PortType_Count] = {[KERNEL_TYPE] = "Kernel", [CPU_TYPE] = "CPU", [CPU_DISPATCH_TYPE] = "CPU (Dispatch)", [CPU_INTERRUPT_TYPE] = "CPU (Interrupt)", [MEMORY_TYPE] = "Memoria", [IO_TYPE] = "Entrada/Salida", [TO_BE_DEFINED_TYPE] = "A identificar"};
+//
+const int32_t HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [UNIDENTIFIED_TYPE] = -1};
+void *client_thread_connect_to_server(void *connection_parameter) {
+  Connection *connection = (Connection*) connection_parameter;
 
-int client_connect(char *ip, char *port)
-{
+  size_t bytes;
 
-  int exit_code;
+  int32_t handshake = (int32_t) connection->client_type;
+  int32_t result;
+
+  while(1) {
+    while(1) {
+      log_info(connections_logger, "Intentando conectar con [Servidor] %s en IP: %s - Puerto: %s...", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+      connection->fd_connection = client_start_try(connection->ip, connection->port);
+
+      if(connection->fd_connection != -1) break;
+      else {
+        log_warning(connections_logger, "No se pudo conectar con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+        sleep(RETRY_CONNECTION_IN_SECONDS);
+      }
+    }
+
+    log_info(connections_logger, "Conectado con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+
+    // Handshake
+
+    bytes = send(connection->fd_connection, &handshake, sizeof(int32_t), 0);
+    bytes = recv(connection->fd_connection, &result, sizeof(int32_t), MSG_WAITALL);
+
+    if(result == 0) break;
+    else {
+      close(connection->fd_connection);
+      log_warning(connections_logger, "Error Handshake con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+      sleep(RETRY_CONNECTION_IN_SECONDS);
+    }
+  }
+
+  return NULL;
+}
+
+int client_start_try(char *ip, char *port) {
 
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
@@ -17,14 +53,11 @@ int client_connect(char *ip, char *port)
 	hints.ai_family = AF_UNSPEC; // AF_INET para IPv4 unicamente
 	hints.ai_socktype = SOCK_STREAM;
 
-	exit_code = getaddrinfo(ip, port, &hints, &result);
+	int exit_code = getaddrinfo(ip, port, &hints, &result);
   if (exit_code != 0) {
-    log_warning(module_logger, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
-    return(-1);
+    log_warning(connections_logger, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
+    return -1;
   }
-
-  // getaddrinfo() returns a list of address structures. Try each address until we successfully connect(2).
-  // If socket(2) (or connect(2)) fails, we (close the socket and) try the next address.
 
 	// Ahora vamos a crear el socket.
 	int fd_client;
@@ -37,14 +70,13 @@ int client_connect(char *ip, char *port)
     );
 
     if(fd_client == -1) {
-      log_warning(module_logger, "Funcion socket: %s\n", strerror(errno));
+      log_warning(connections_logger, "Funcion socket: %s\n", strerror(errno));
       continue; /* This one failed */
     }
 
-    if(connect(fd_client, rp->ai_addr, rp->ai_addrlen) == 0) {
-      break; /* Until one succeeds */
-    } else {
-      log_warning(module_logger, "Funcion connect: %s\n", strerror(errno));
+    if(connect(fd_client, rp->ai_addr, rp->ai_addrlen) == 0) break; /* Until one succeeds */
+    else {
+      log_warning(connections_logger, "Funcion connect: %s\n", strerror(errno));
     }
 
     close(fd_client);
@@ -53,77 +85,95 @@ int client_connect(char *ip, char *port)
   freeaddrinfo(result); /* No longer needed */
 
   if (rp == NULL) { /* No address succeeded */
-    return(-1);
+    return -1;
   }
 	
   return fd_client;
+}
+
+void server_start(Server *server) {
+
+  while(1) {
+    log_info(connections_logger, "Intentando iniciar [Servidor] %s en Puerto: %s...", PORT_NAMES[server->server_type], server->port);
+    server->fd_listen = server_start_try(server->port);
+
+    if(server->fd_listen != -1) break;
+    else {
+      log_warning(connections_logger, "No se pudo iniciar [Servidor] %s en Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[server->server_type], server->port, RETRY_CONNECTION_IN_SECONDS);
+      sleep(RETRY_CONNECTION_IN_SECONDS);
+    }
+  }
+
+  log_info(connections_logger, "Escuchando [Servidor] %s en Puerto: %s", PORT_NAMES[server->server_type], server->port);
 
 }
 
+int server_start_try(char* port) {
 
-int start_server(char* ip, char* port) {
-
-	int socket_servidor;
-
-	struct addrinfo hints, *servinfo, *p;
+	struct addrinfo hints;
+  struct addrinfo *result, *rp;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_UNSPEC; // AF_INET para IPv4 unicamente
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	getaddrinfo(ip, port, &hints, &servinfo);
+	int exit_code = getaddrinfo(NULL, port, &hints, &result);
+  if (exit_code != 0) {
+    log_warning(connections_logger, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
+    return -1;
+  }
 
-	// Creamos el socket de escucha del servidor
-	socket_servidor = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
-	if (socket_servidor == -1) {
-		return -1;
-		
-	}
+  int fd_server;
 
-	// Asociamos el socket a un puerto
-	if (bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+  for(rp = result ; rp != NULL ; rp = rp->ai_next) {
+    fd_server = socket(
+      rp->ai_family,
+      rp->ai_socktype,
+      rp->ai_protocol
+    );
 
-		close(socket_servidor);
-		return -1;
-	}
-	
-
-
-	// Escuchamos las conexiones entrantes
-	if (listen(socket_servidor, SOMAXCONN) == -1) {
-		
-		freeaddrinfo(servinfo);
-		return -1;
-	}
-	
-		
-	freeaddrinfo(servinfo);
-	return socket_servidor;
-}
-
-int esperar_cliente(int socket_servidor)
-{
-	// Aceptamos un nuevo cliente
-	int socket_cliente = accept (socket_servidor, NULL, NULL);
-	if(socket_cliente == -1)
-    {
-        printf("Error al aceptar cliente\n");
-        return -1;
+    if(fd_server == -1) {
+      log_warning(connections_logger, "Funcion socket: %s\n", strerror(errno));
+      continue; /* This one failed */
     }
 
-	return socket_cliente;
+    if(bind(fd_server, rp->ai_addr, rp->ai_addrlen) == 0) break; /* Until one succeeds */
+    else {
+      log_warning(connections_logger, "Funcion bind: %s\n", strerror(errno));
+      continue;
+    }
+
+    return fd_server;
+  }
+	
+  freeaddrinfo(result); /* No longer needed */
+
+  if (rp == NULL) { /* No address succeeded */
+    return -1;
+  }
+
+	// Escuchamos las conexiones entrantes
+	if (listen(fd_server, SOMAXCONN) == -1) {
+		log_warning(connections_logger, "Funcion listen: %s\n", strerror(errno));
+		return -1;
+	}
+
+	return fd_server;
 }
 
-void liberar_conexion(int socket_cliente)
-{
-	close(socket_cliente);
+int server_accept(int fd_server) {
+  // Syscall bloqueante que se queda esperando hasta que llegue un nuevo cliente
+	int fd_client = accept(fd_server, NULL, NULL);
+
+	if(fd_client == -1) {
+      log_warning(connections_logger, "Funcion accept: %s\n", strerror(errno));
+  }
+
+	return fd_client;
 }
 
-
-
-t_paquete *create_package(uint8_t codigoOperacion)
-{
+t_paquete *create_package(uint8_t codigoOperacion) {
   t_paquete *paquete = malloc(sizeof(t_paquete));
 
   paquete->codigo_operacion = codigoOperacion;
@@ -133,8 +183,7 @@ t_paquete *create_package(uint8_t codigoOperacion)
 }
 
 
-void add_to_package(t_paquete *paquete, void *valor, int tamanio)
-{
+void add_to_package(t_paquete *paquete, void *valor, int tamanio) {
   paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio + sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio, sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size + sizeof(int), valor, tamanio);
@@ -142,8 +191,7 @@ void add_to_package(t_paquete *paquete, void *valor, int tamanio)
 }
 
 
-void kill_package(t_paquete *paquete)
-{
+void kill_package(t_paquete *paquete) {
   if (paquete != NULL)
   {
     if (paquete->buffer != NULL)
@@ -156,8 +204,7 @@ void kill_package(t_paquete *paquete)
 }
 
 
-void *get_buffer(int *size, int socketCliente)
-{
+void *get_buffer(int *size, int socketCliente) {
   void *buffer;
 
   recv(socketCliente, size, sizeof(int), MSG_WAITALL);
@@ -168,16 +215,14 @@ void *get_buffer(int *size, int socketCliente)
 }
 
 
-void create_buffer(t_paquete *paquete)
-{
+void create_buffer(t_paquete *paquete) {
   paquete->buffer = malloc(sizeof(t_buffer));
   paquete->buffer->size = 0;
   paquete->buffer->stream = NULL;
 }
 
 
-t_list* get_package_like_list(int socketCliente)
-{
+t_list* get_package_like_list(int socketCliente) {
   int sizeBuffer;
   int tamanioContenido;
   int desplazamiento = 0;
@@ -202,8 +247,7 @@ t_list* get_package_like_list(int socketCliente)
 }
 
 
-void kill_pcb(t_pcb *pcbObjetivo)
-{
+void kill_pcb(t_pcb *pcbObjetivo) {
   if (pcbObjetivo != NULL)
   {
     if (pcbObjetivo->instrucciones != NULL)
@@ -214,14 +258,12 @@ void kill_pcb(t_pcb *pcbObjetivo)
 }
 
 
-void delete_instruction(t_instruccion *lineaInstruccion)
-{
+void delete_instruction(t_instruccion *lineaInstruccion) {
   if (lineaInstruccion != NULL)
     free(lineaInstruccion);
 }
 
-void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
-{
+void serialize_pcb(t_paquete *paquete, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [...]\n"); }
 
   int cantidadInstrucciones = list_size(pcb->instrucciones);
