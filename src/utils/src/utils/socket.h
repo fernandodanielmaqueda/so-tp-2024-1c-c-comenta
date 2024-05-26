@@ -141,4 +141,51 @@ void *get_buffer(int *size, int socketCliente);
  */
 void create_buffer(t_paquete *paquete);
 
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param socket t_paquete donde se creara el buffer
+ */
+t_opcode get_codOp(int socket);
+
+
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param codigoOperacion Codigo de operacion a enviar
+ * @param mensaje Mensaje a enviar
+ * @param socket Socket destino
+ */
+void send_message(t_opcode codigoOperacion, char* mensaje, int socket);
+
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param pack Paquete a enviar
+ * @param socket Socket destino
+ */
+void send_package(t_paquete* pack, int socket);
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param pack Paquete a serializar
+ * @param bytes Tamanio del paquete
+ */
+void* serialize_package(t_paquete* pack, int bytes);
+
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param instruccion Instruccion a enviar
+ * @param socket Socket destino
+ */
+void send_instruccion(t_instruction_use* instruccion, int socket);
+
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param socket Socket a recibir
+ */
+t_instruction_use* receive_instruccion(int socket);
+
 #endif // SOCKET_H

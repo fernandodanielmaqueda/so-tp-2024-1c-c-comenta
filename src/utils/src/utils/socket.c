@@ -173,7 +173,21 @@ int server_accept(int fd_server) {
 	return fd_client;
 }
 
-t_paquete *create_package(uint8_t codigoOperacion) {
+t_opcode get_codOp(int socket){
+  t_opcode codigoOperacion;
+
+  if (recv(socket, &codigoOperacion, sizeof(int), MSG_WAITALL) > 0)
+    return codigoOperacion;
+  else
+  {
+    close(socket);
+    return DESCONEXION;
+  }
+
+}
+
+t_paquete *create_package(uint8_t codigoOperacion)
+{
   t_paquete *paquete = malloc(sizeof(t_paquete));
 
   paquete->codigo_operacion = codigoOperacion;
@@ -182,14 +196,12 @@ t_paquete *create_package(uint8_t codigoOperacion) {
   return paquete;
 }
 
-
 void add_to_package(t_paquete *paquete, void *valor, int tamanio) {
   paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio + sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio, sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size + sizeof(int), valor, tamanio);
   paquete->buffer->size += tamanio + sizeof(int);
 }
-
 
 void kill_package(t_paquete *paquete) {
   if (paquete != NULL)
@@ -203,7 +215,6 @@ void kill_package(t_paquete *paquete) {
   }
 }
 
-
 void *get_buffer(int *size, int socketCliente) {
   void *buffer;
 
@@ -214,13 +225,11 @@ void *get_buffer(int *size, int socketCliente) {
   return buffer;
 }
 
-
 void create_buffer(t_paquete *paquete) {
   paquete->buffer = malloc(sizeof(t_buffer));
   paquete->buffer->size = 0;
   paquete->buffer->stream = NULL;
 }
-
 
 t_list* get_package_like_list(int socketCliente) {
   int sizeBuffer;
@@ -246,17 +255,18 @@ t_list* get_package_like_list(int socketCliente) {
   return contenido;
 }
 
-
-void kill_pcb(t_pcb *pcbObjetivo) {
-  if (pcbObjetivo != NULL)
+/* 
+void kill_pcb(t_pcb *pcbObjetivo)
+{
+  if ( != NULL)
   {
-    if (pcbObjetivo->instrucciones != NULL)
-      list_destroy_and_destroy_elements(pcbObjetivo->instrucciones, (void *)delete_instruction);
+    if ( != NULL)
+      list_destroy_and_destroy_elements(, (void *)delete_instruction);
 
-    free(pcbObjetivo);
+    free();
   }
 }
-
+*/
 
 void delete_instruction(t_instruccion *lineaInstruccion) {
   if (lineaInstruccion != NULL)
@@ -266,8 +276,7 @@ void delete_instruction(t_instruccion *lineaInstruccion) {
 void serialize_pcb(t_paquete *paquete, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [...]\n"); }
 
-  int cantidadInstrucciones = list_size(pcb->instrucciones);
-
+  
   int cursor = 0;
   
   add_to_package(paquete, &(pcb->pid), sizeof(uint32_t));
@@ -376,7 +385,7 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: fd_conexion = %d\n", cursor, pcb->fd_conexion); }
   cursor++;
 
-
+/*
   //INSTRUCCIONES
   add_to_package(paquete, &cantidadInstrucciones, sizeof(int));
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Cantidad de Instrucciones = %d\n", cursor, cantidadInstrucciones); }
@@ -406,19 +415,18 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb) {
     { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Param5 = %d\n", cursor, lineaInstruccion->param5); }
     cursor++;
   }
-
+*/
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [END]\n"); }
 
 }
 
 
-t_pcb *deserializar_pcb(int socketCliente)
+t_pcb *deserialize_pcb(int socketCliente)
 {
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_pcb( ) [...]\n"); }
 
   t_list *lista_elememtos = get_package_like_list(socketCliente);
   t_pcb *pcb = malloc(sizeof(t_pcb));
-  pcb->instrucciones = list_create();
   int cursor = 0;
 
   pcb->pid = *(uint32_t *)list_get(lista_elememtos, cursor);
@@ -468,7 +476,7 @@ t_pcb *deserializar_pcb(int socketCliente)
   pcb->fd_conexion = *(int *)list_get(lista_elememtos, ++cursor);
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->fd_conexion = %d\n", cursor, pcb->fd_conexion); }
 
-
+/*
   //INSTRUCCIONES
   int cantidadInstrucciones =*(int *)list_get(lista_elememtos, ++cursor);
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: cantidadInstrucciones = %d\n", cursor, cantidadInstrucciones); }
@@ -492,7 +500,7 @@ t_pcb *deserializar_pcb(int socketCliente)
 
     list_add(pcb->instrucciones, instruccion);
   }
-
+*/
 
   list_destroy_and_destroy_elements(lista_elememtos, &free);
 
@@ -500,4 +508,303 @@ t_pcb *deserializar_pcb(int socketCliente)
 
   return pcb;
 
+}
+
+
+void send_message(t_opcode codigoOperacion, char* mensaje, int socket){
+
+            t_paquete *paquete = create_package(codigoOperacion);
+            add_to_package(paquete, mensaje, strlen(mensaje) + 1);
+            send_package(paquete, socket);
+            kill_package(paquete);
+}
+
+void send_package(t_paquete* paquete, int socket)
+{
+  int bytes = paquete->buffer->size + 2 * sizeof(int);
+  void *aEnviar = serialize_package(paquete, bytes);
+
+  send(socket, aEnviar, bytes, 0);
+  free(aEnviar);
+}
+
+void *serialize_package(t_paquete *paquete, int bytes)
+{
+  void *magic = malloc(bytes);
+  int desplazamiento = 0;
+
+  memcpy(magic + desplazamiento, &(paquete->codigo_operacion), sizeof(int));
+  desplazamiento += sizeof(int);
+  memcpy(magic + desplazamiento, &(paquete->buffer->size), sizeof(int));
+  desplazamiento += sizeof(int);
+  memcpy(magic + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
+
+  return magic;
+}
+
+
+void send_instruccion(t_instruction_use* instruccion, int socket){
+  
+  t_paquete* paquete = create_package(INSTUCTION_REQUEST);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [...]\n"); }
+  
+  int cursor = 0;
+  int cantidad_parametros= list_size(instruccion->parameters);
+
+
+    add_to_package(paquete, &instruccion->operation, sizeof(t_opcode));
+    //DEBUG_PRINTF("\n[Serializar] paquete[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
+    cursor++;
+
+  //PARAMETROS
+  add_to_package(paquete, &cantidad_parametros, sizeof(int));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Cantidad de parametros = %d\n", cursor, cantidad_parametros); }
+  cursor++;
+
+  char* parametro;
+  for (int i = 0; i < cantidad_parametros; i++)
+  {
+    parametro = list_get(instruccion->parameters, i);
+
+    add_to_package(paquete, parametro, strlen(parametro) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Parametro = %s\n", cursor, parametro); }
+    cursor++;
+  }
+
+
+  //DEBUG_PRINTF("\n[Serializar] serializar_instruccion( ) [END]\n");
+
+  send_package(paquete, socket);
+
+  kill_package(paquete);
+
+}
+
+
+t_instruction_use* receive_instruccion(int socket){
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_instruccion( ) [...]\n"); }
+
+  t_list *propiedadesPlanas = get_package_like_list(socket);
+  t_instruction_use* instruccionRecibida = malloc(sizeof(t_instruction_use));
+  int cursor = 0;
+
+  instruccionRecibida->operation = *(t_opcode*)list_get(propiedadesPlanas, cursor);
+  //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
+  
+  int cantidadParametros = *(int*)list_get(propiedadesPlanas, cursor);
+  //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
+  
+  for (size_t i = 0; i < cantidadParametros; i++)
+  {
+    char* parametro = string_new();
+    parametro = string_duplicate(list_get(propiedadesPlanas, ++cursor));
+    //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: parametro = %s \n", cursor, parametro);
+    list_add(instruccionRecibida->parameters, parametro);
+  }
+  
+  list_destroy_and_destroy_elements(propiedadesPlanas, &free);
+
+  //DEBUG_PRINTF("\n[Deserializar] deserializar_instruccion( ) [END]\n");
+
+  return instruccionRecibida;
+}
+
+void serializar_pcb(t_paquete* paquete, t_pcb* pcb) {
+    // Calcular el tamaño total necesario para el buffer
+    uint32_t buffer_size = sizeof(t_pcb);
+
+    // Reservar memoria para el buffer
+    paquete->buffer = malloc(sizeof(t_buffer));
+    paquete->buffer->size = buffer_size;
+    paquete->buffer->stream = malloc(buffer_size);
+
+    // Copiar los datos de la estructura t_pcb al buffer
+    uint32_t offset = 0;
+    memcpy(paquete->buffer->stream + offset, &pcb->pid, sizeof(pcb->pid));
+    offset += sizeof(pcb->pid);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->pc, sizeof(pcb->pc));
+    offset += sizeof(pcb->pc);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->AX, sizeof(pcb->AX));
+    offset += sizeof(pcb->AX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->BX, sizeof(pcb->BX));
+    offset += sizeof(pcb->BX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->CX, sizeof(pcb->CX));
+    offset += sizeof(pcb->CX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->DX, sizeof(pcb->DX));
+    offset += sizeof(pcb->DX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->EAX, sizeof(pcb->EAX));
+    offset += sizeof(pcb->EAX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->EBX, sizeof(pcb->EBX));
+    offset += sizeof(pcb->EBX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->ECX, sizeof(pcb->ECX));
+    offset += sizeof(pcb->ECX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->EDX, sizeof(pcb->EDX));
+    offset += sizeof(pcb->EDX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RAX, sizeof(pcb->RAX));
+    offset += sizeof(pcb->RAX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RBX, sizeof(pcb->RBX));
+    offset += sizeof(pcb->RBX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RCX, sizeof(pcb->RCX));
+    offset += sizeof(pcb->RCX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RDX, sizeof(pcb->RDX));
+    offset += sizeof(pcb->RDX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->SI, sizeof(pcb->SI));
+    offset += sizeof(pcb->SI);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->DI, sizeof(pcb->DI));
+    offset += sizeof(pcb->DI);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->quantum, sizeof(pcb->quantum));
+    offset += sizeof(pcb->quantum);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->estado_actual, sizeof(pcb->estado_actual));
+    offset += sizeof(pcb->estado_actual);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->fd_conexion, sizeof(pcb->fd_conexion));
+    offset += sizeof(pcb->fd_conexion);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->llegada_ready, sizeof(pcb->llegada_ready));
+    offset += sizeof(pcb->llegada_ready);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->llegada_running, sizeof(pcb->llegada_running));
+    offset += sizeof(pcb->llegada_running);
+
+    // Establecer el código de operación del paquete, si es necesario
+    paquete->codigo_operacion = 1;  // O el valor que necesites
+}
+
+// Función de ejemplo para liberar la memoria asignada
+void liberar_paquete(t_paquete* paquete) {
+    if (paquete->buffer != NULL) {
+        if (paquete->buffer->stream != NULL) {
+            free(paquete->buffer->stream);
+        }
+        free(paquete->buffer);
+    }
+}
+
+void enviar_pcb(int socket, t_pcb* pcb) {
+    t_paquete paquete;
+    serializar_pcb(&paquete, pcb);
+
+    uint32_t total_size = sizeof(paquete.codigo_operacion) + sizeof(paquete.buffer->size) + paquete.buffer->size;
+    void* buffer = malloc(total_size);
+
+    uint32_t offset = 0;
+    memcpy(buffer + offset, &paquete.codigo_operacion, sizeof(paquete.codigo_operacion));
+    offset += sizeof(paquete.codigo_operacion);
+
+    memcpy(buffer + offset, &paquete.buffer->size, sizeof(paquete.buffer->size));
+    offset += sizeof(paquete.buffer->size);
+
+    memcpy(buffer + offset, paquete.buffer->stream, paquete.buffer->size);
+
+    send(socket, buffer, total_size, 0);
+
+    free(buffer);
+    liberar_paquete(&paquete);
+}
+
+void deserializar_pcb(t_pcb* pcb, void* stream) {
+    uint32_t offset = 0;
+
+    memcpy(&pcb->pid, stream + offset, sizeof(pcb->pid));
+    offset += sizeof(pcb->pid);
+
+    memcpy(&pcb->pc, stream + offset, sizeof(pcb->pc));
+    offset += sizeof(pcb->pc);
+
+    memcpy(&pcb->AX, stream + offset, sizeof(pcb->AX));
+    offset += sizeof(pcb->AX);
+
+    memcpy(&pcb->BX, stream + offset, sizeof(pcb->BX));
+    offset += sizeof(pcb->BX);
+
+    memcpy(&pcb->CX, stream + offset, sizeof(pcb->CX));
+    offset += sizeof(pcb->CX);
+
+    memcpy(&pcb->DX, stream + offset, sizeof(pcb->DX));
+    offset += sizeof(pcb->DX);
+
+    memcpy(&pcb->EAX, stream + offset, sizeof(pcb->EAX));
+    offset += sizeof(pcb->EAX);
+
+    memcpy(&pcb->EBX, stream + offset, sizeof(pcb->EBX));
+    offset += sizeof(pcb->EBX);
+
+    memcpy(&pcb->ECX, stream + offset, sizeof(pcb->ECX));
+    offset += sizeof(pcb->ECX);
+
+    memcpy(&pcb->EDX, stream + offset, sizeof(pcb->EDX));
+    offset += sizeof(pcb->EDX);
+
+    memcpy(&pcb->RAX, stream + offset, sizeof(pcb->RAX));
+    offset += sizeof(pcb->RAX);
+
+    memcpy(&pcb->RBX, stream + offset, sizeof(pcb->RBX));
+    offset += sizeof(pcb->RBX);
+
+    memcpy(&pcb->RCX, stream + offset, sizeof(pcb->RCX));
+    offset += sizeof(pcb->RCX);
+
+    memcpy(&pcb->RDX, stream + offset, sizeof(pcb->RDX));
+    offset += sizeof(pcb->RDX);
+
+    memcpy(&pcb->SI, stream + offset, sizeof(pcb->SI));
+    offset += sizeof(pcb->SI);
+
+    memcpy(&pcb->DI, stream + offset, sizeof(pcb->DI));
+    offset += sizeof(pcb->DI);
+
+    memcpy(&pcb->quantum, stream + offset, sizeof(pcb->quantum));
+    offset += sizeof(pcb->quantum);
+
+    memcpy(&pcb->estado_actual, stream + offset, sizeof(pcb->estado_actual));
+    offset += sizeof(pcb->estado_actual);
+
+    memcpy(&pcb->fd_conexion, stream + offset, sizeof(pcb->fd_conexion));
+    offset += sizeof(pcb->fd_conexion);
+
+    memcpy(&pcb->llegada_ready, stream + offset, sizeof(pcb->llegada_ready));
+    offset += sizeof(pcb->llegada_ready);
+
+    memcpy(&pcb->llegada_running, stream + offset, sizeof(pcb->llegada_running));
+    offset += sizeof(pcb->llegada_running);
+}
+
+void recibir_pcb(int socket, t_pcb *pcb) {
+    uint8_t codigo_operacion;
+    uint32_t buffer_size;
+
+    // Recibir el código de operación
+    recv(socket, &codigo_operacion, sizeof(codigo_operacion), 0);
+
+    // Recibir el tamaño del buffer
+    recv(socket, &buffer_size, sizeof(buffer_size), 0);
+
+    // Reservar memoria para el buffer
+    void *buffer = malloc(buffer_size);
+
+    // Recibir el buffer
+    recv(socket, buffer, buffer_size, 0);
+
+    // Deserializar el buffer en la estructura t_pcb
+    deserializar_pcb(pcb, buffer);
+
+    // Liberar la memoria del buffer
+    free(buffer);
 }

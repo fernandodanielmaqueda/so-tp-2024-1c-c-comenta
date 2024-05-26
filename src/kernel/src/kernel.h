@@ -40,5 +40,6 @@ void short_term_scheduler(void);
 t_pcb *FIFO_scheduling_algorithm(void);
 void receptor_mensajes_cpu(void);
 int current_time(void);
+int asignar_PID();
 
 #endif /* KERNEL_H_ */

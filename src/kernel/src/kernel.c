@@ -21,7 +21,11 @@ pthread_mutex_t mutex_LIST_BLOCKED;
 pthread_mutex_t mutex_LIST_EXECUTING;
 pthread_mutex_t mutex_LIST_EXIT;
 
-pthread_t thread_kernel_coordinator_for_io;
+//consola interactiva
+pthread_mutex_t mutex_pid_detected;
+int identifier_pid=1;
+//
+
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
@@ -53,8 +57,35 @@ int module(int argc, char *argv[]) {
 	initialize_configs();
 	initialize_sockets();
 
+	t_pcb pcb = {
+        .pid = 1234,
+        .pc = 5678,
+        .AX = 1,
+        .BX = 2,
+        .CX = 3,
+        .DX = 4,
+        .EAX = 10,
+        .EBX = 20,
+        .ECX = 30,
+        .EDX = 40,
+        .RAX = 100,
+        .RBX = 200,
+        .RCX = 300,
+        .RDX = 400,
+        .SI = 500,
+        .DI = 600,
+        .quantum = 50,
+        .estado_actual = 1,
+        .fd_conexion = 2,
+        .llegada_ready = 123.456,
+        .llegada_running = 789.012
+    };
+	enviar_pcb(fd_cpu_dispatch, &pcb);
 	log_info(module_logger, "Modulo %s inicializado correctamente\n", module_name);
 
+	//Voy a inciializar la consola activa
+	initalize_console_interactive();
+	
 	sem_init(&sem_long_term_scheduler, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);
 	sem_init(&sem_multiprogramming_level, 0, MULTIPROGRAMMING_LEVEL);
@@ -78,8 +109,7 @@ int module(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void read_module_config(t_config *module_config)
-{
+void read_module_config(t_config *module_config) {
 	COORDINATOR_IO = (struct Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA")};
 	CONNECTION_MEMORY = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
 	CONNECTION_CPU_DISPATCH = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH")};
@@ -91,8 +121,7 @@ void read_module_config(t_config *module_config)
 	MULTIPROGRAMMING_LEVEL = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
 }
 
-void initialize_sockets(void)
-{
+void initialize_sockets(void) {
 	pthread_t thread_kernel_start_server_for_io;
 	pthread_t thread_kernel_connect_to_memory;
 	pthread_t thread_kernel_connect_to_cpu_dispatch;
@@ -175,29 +204,25 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 	return NULL;
 }
 
-void initialize_long_term_scheduler(void)
-{
+void initialize_long_term_scheduler(void) {
 	pthread_create(&hilo_largo_plazo, NULL, (void *) long_term_scheduler, NULL);
 	//log_info(module_logger, "Inicio planificador largo plazo");
 	pthread_detach(hilo_largo_plazo);
 }
 
-void initialize_short_term_scheduler(void) //ESTADO RUNNIG - MULTIPROCESAMIENTO 
-{
+void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENTO
 	pthread_create(&hilo_corto_plazo, NULL, (void *) short_term_scheduler, NULL);
 	//log_info(module_logger, "Inicio planificador corto plazo");
 	pthread_detach(hilo_corto_plazo);
 }
 
-void initialize_cpu_command_line_interface(void)
-{
+void initialize_cpu_command_line_interface(void) {
 	pthread_create(&hilo_mensajes_cpu, NULL, (void *)receptor_mensajes_cpu, NULL);
 	//log_info(module_logger, "Inicio mensajes cpu");
 	pthread_detach(hilo_mensajes_cpu);
 }
 
-void long_term_scheduler(void)
-{
+void long_term_scheduler(void) {
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
 		sem_wait(&sem_multiprogramming_level);
@@ -492,8 +517,7 @@ t_pcb *create_pcb(char *instrucciones) {
 
 	t_pcb *nuevoPCB = malloc(sizeof(t_pcb));
 
-	nuevoPCB->instrucciones = string_new();
-	nuevoPCB->instrucciones = string_duplicate(instrucciones);
+	
 
 	nuevoPCB->pc = 0;
 	// nuevoPCB->recurso_solicitado = string_new();
@@ -524,7 +548,7 @@ t_pcb *create_pcb(char *instrucciones) {
 	return nuevoPCB;
 }
 
-int current_time() {
+int current_time(void) {
 	time_t now = time(NULL);
 	struct tm *local = localtime(&now);
 	int hours, minutes, seconds; //
@@ -535,4 +559,15 @@ int current_time() {
 
 	int total_seconds = hours * 60 * 60 + minutes * 60 + seconds;
 	return total_seconds;
+}
+
+int asignar_PID(void) {
+
+    pthread_mutex_lock(&mutex_pid_detected);
+    unsigned int value_pid = identifier_pid;
+    identifier_pid++;
+    pthread_mutex_unlock(&mutex_pid_detected);
+
+    return value_pid;
+  
 }
