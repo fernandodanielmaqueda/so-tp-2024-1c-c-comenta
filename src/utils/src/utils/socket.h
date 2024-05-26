@@ -68,6 +68,13 @@ int server_start_try(char* port);
 int server_accept(int socket_servidor);
 
 /**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param socket t_paquete donde se creara el buffer
+ */
+t_opcode get_codOp(int socket);
+
+
+/**
  * @brief Crear paquete.
  * @param codigoOperacion Codigo de operacion que tendra el paquete.
  */
@@ -91,11 +98,31 @@ void kill_package(t_paquete *paquete);
 
 
 /**
+ * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
+ * @param size Tamaño del buffer.
+ * @param socketClient Socket desde donde se va a recibir el paquete.
+ */
+void *get_buffer(int *size, int socketCliente);
+
+
+/**
+ * @brief Crear Buffer
+ * @param paquete t_paquete donde se creara el buffer
+ */
+void create_buffer(t_paquete *paquete);
+
+
+/**
+ * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
+ * @param socketClient Socket desde donde se va a recibir el paquete.
+ */
+t_list* get_package_like_list(int socketClient);
+
+/**
  * @brief Eliminar pcb.
  * @param pcbObjetivo t_pcb a eliminar.
  */
-void kill_pcb(t_pcb *pcbObjetivo);
-
+//void kill_pcb(t_pcb *pcbObjetivo);
 
 
 /**
@@ -121,36 +148,6 @@ t_pcb* deserialize_pcb(int socketClient);
 
 
 /**
- * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
- * @param socketClient Socket desde donde se va a recibir el paquete.
- */
-t_list* get_package_like_list(int socketClient);
-
-
-/**
- * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
- * @param size Tamaño del buffer.
- * @param socketClient Socket desde donde se va a recibir el paquete.
- */
-void *get_buffer(int *size, int socketCliente);
-
-
-/**
- * @brief Crear Buffer
- * @param paquete t_paquete donde se creara el buffer
- */
-void create_buffer(t_paquete *paquete);
-
-
-/**
- * @brief Obtiene el codigo de operacion de un paquete
- * @param socket t_paquete donde se creara el buffer
- */
-t_opcode get_codOp(int socket);
-
-
-
-/**
  * @brief Obtiene el codigo de operacion de un paquete
  * @param codigoOperacion Codigo de operacion a enviar
  * @param mensaje Mensaje a enviar
@@ -165,6 +162,7 @@ void send_message(t_opcode codigoOperacion, char* mensaje, int socket);
  * @param socket Socket destino
  */
 void send_package(t_paquete* pack, int socket);
+
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
@@ -187,5 +185,11 @@ void send_instruccion(t_instruction_use* instruccion, int socket);
  * @param socket Socket a recibir
  */
 t_instruction_use* receive_instruccion(int socket);
+
+void serialize_pcb_2(t_paquete* paquete, t_pcb* pcb);
+void free_package(t_paquete* paquete);
+void send_pcb(int socket, t_pcb* pcb);
+void deserialize_pcb_2(t_pcb* pcb, void* stream);
+void receive_pcb(int socket, t_pcb *pcb);
 
 #endif // SOCKET_H

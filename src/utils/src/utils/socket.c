@@ -4,8 +4,8 @@
 #include "socket.h"
 
 const char *PORT_NAMES[PortType_Count] = {[KERNEL_TYPE] = "Kernel", [CPU_TYPE] = "CPU", [CPU_DISPATCH_TYPE] = "CPU (Dispatch)", [CPU_INTERRUPT_TYPE] = "CPU (Interrupt)", [MEMORY_TYPE] = "Memoria", [IO_TYPE] = "Entrada/Salida", [TO_BE_DEFINED_TYPE] = "A identificar"};
-//
-const int32_t HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [UNIDENTIFIED_TYPE] = -1};
+// const int32_t HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [TO_BE_DEFINED_TYPE] = -1};
+
 void *client_thread_connect_to_server(void *connection_parameter) {
   Connection *connection = (Connection*) connection_parameter;
 
@@ -609,7 +609,7 @@ t_instruction_use* receive_instruccion(int socket){
   return instruccionRecibida;
 }
 
-void serializar_pcb(t_paquete* paquete, t_pcb* pcb) {
+void serialize_pcb_2(t_paquete* paquete, t_pcb* pcb) {
     // Calcular el tamaño total necesario para el buffer
     uint32_t buffer_size = sizeof(t_pcb);
 
@@ -688,7 +688,7 @@ void serializar_pcb(t_paquete* paquete, t_pcb* pcb) {
 }
 
 // Función de ejemplo para liberar la memoria asignada
-void liberar_paquete(t_paquete* paquete) {
+void free_package(t_paquete* paquete) {
     if (paquete->buffer != NULL) {
         if (paquete->buffer->stream != NULL) {
             free(paquete->buffer->stream);
@@ -697,9 +697,9 @@ void liberar_paquete(t_paquete* paquete) {
     }
 }
 
-void enviar_pcb(int socket, t_pcb* pcb) {
+void send_pcb(int socket, t_pcb* pcb) {
     t_paquete paquete;
-    serializar_pcb(&paquete, pcb);
+    serialize_pcb_2(&paquete, pcb);
 
     uint32_t total_size = sizeof(paquete.codigo_operacion) + sizeof(paquete.buffer->size) + paquete.buffer->size;
     void* buffer = malloc(total_size);
@@ -716,10 +716,10 @@ void enviar_pcb(int socket, t_pcb* pcb) {
     send(socket, buffer, total_size, 0);
 
     free(buffer);
-    liberar_paquete(&paquete);
+    free_package(&paquete);
 }
 
-void deserializar_pcb(t_pcb* pcb, void* stream) {
+void deserialize_pcb_2(t_pcb* pcb, void* stream) {
     uint32_t offset = 0;
 
     memcpy(&pcb->pid, stream + offset, sizeof(pcb->pid));
@@ -786,7 +786,7 @@ void deserializar_pcb(t_pcb* pcb, void* stream) {
     offset += sizeof(pcb->llegada_running);
 }
 
-void recibir_pcb(int socket, t_pcb *pcb) {
+void receive_pcb(int socket, t_pcb *pcb) {
     uint8_t codigo_operacion;
     uint32_t buffer_size;
 
@@ -803,7 +803,7 @@ void recibir_pcb(int socket, t_pcb *pcb) {
     recv(socket, buffer, buffer_size, 0);
 
     // Deserializar el buffer en la estructura t_pcb
-    deserializar_pcb(pcb, buffer);
+    deserialize_pcb_2(pcb, buffer);
 
     // Liberar la memoria del buffer
     free(buffer);

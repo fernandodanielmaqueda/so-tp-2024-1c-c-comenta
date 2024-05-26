@@ -23,6 +23,7 @@
 #include "commons/collections/dictionary.h"
 #include "utils/modules.h"
 #include "utils/socket.h"
+#include "console.h"
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);

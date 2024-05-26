@@ -216,7 +216,7 @@ void create_process(int socketRecibido) {
     log_debug(module_logger, "Archivo leido: %s", path_buscado);
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el pid del proceso origen
-    send_message(PROCESS_CREATED, string_itoa(nuevo_proceso->pid), fd_kernel);
+    send_message(PROCESS_CREATED, string_itoa(nuevo_proceso->pid), FD_CLIENT_KERNEL);
     
 }
 
@@ -317,6 +317,6 @@ void seek_instruccion(int socketRecibido) {
     //Suponemos que la instruccion es encontrada siempre
     t_instruction_use* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
 
-    send_instruccion(instruccionBuscada, fd_cpu);
+    send_instruccion(instruccionBuscada, FD_CLIENT_CPU);
     log_info(module_logger, "Instruccion enviada.");
 }

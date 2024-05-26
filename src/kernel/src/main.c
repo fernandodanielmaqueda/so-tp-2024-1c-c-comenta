@@ -1,4 +1,4 @@
-/* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, asÃ como directivas de preprocesador */
+/* En los archivos (*.c) se pueden poner tanto DECLARACIONES como DEFINICIONES de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
 #include "main.h"

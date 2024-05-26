@@ -80,11 +80,10 @@ int module(int argc, char *argv[]) {
         .llegada_ready = 123.456,
         .llegada_running = 789.012
     };
-	enviar_pcb(fd_cpu_dispatch, &pcb);
+	send_pcb(CONNECTION_CPU_DISPATCH.fd_connection, &pcb);
 	log_info(module_logger, "Modulo %s inicializado correctamente\n", module_name);
 
-	//Voy a inciializar la consola activa
-	initalize_console_interactive();
+	initialize_interactive_console();
 	
 	sem_init(&sem_long_term_scheduler, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);

@@ -76,10 +76,4 @@ void create_instruction(FILE* file, t_list* list_instruction){
 
 }
 
-/*
-int main(int argc, char* argv[]) {
-    module(argc, argv);
-    return 0;
-}
-
 */
