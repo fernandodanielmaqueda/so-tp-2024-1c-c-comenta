@@ -3,12 +3,20 @@
 
 #include "modules.h"
 
-void initialize_module_logger() {
+t_log *connections_logger;
+char *connections_log_pathname = "connections.log";
+
+void initialize_loggers(void) {
 	module_logger = log_create(module_log_pathname, module_name, true, LOG_LEVEL_INFO);
-	
+	connections_logger = log_create(connections_log_pathname, module_name, true, LOG_LEVEL_INFO);
 }
 
-void initialize_module_config() {
+void finish_loggers(void) {
+	log_destroy(module_logger);
+	log_destroy(connections_logger);
+}
+
+void initialize_configs(void) {
 	t_config *module_config = config_create(module_config_pathname);
 
 	if(module_config == NULL) {
@@ -17,4 +25,8 @@ void initialize_module_config() {
 	}
 
 	read_module_config(module_config);
+}
+
+void finish_configs(void) {
+	config_destroy(module_config);
 }

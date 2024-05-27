@@ -3,12 +3,48 @@
 
 #include "socket.h"
 
-extern t_log *module_logger;
+const char *PORT_NAMES[PortType_Count] = {[KERNEL_TYPE] = "Kernel", [CPU_TYPE] = "CPU", [CPU_DISPATCH_TYPE] = "CPU (Dispatch)", [CPU_INTERRUPT_TYPE] = "CPU (Interrupt)", [MEMORY_TYPE] = "Memoria", [IO_TYPE] = "Entrada/Salida", [TO_BE_DEFINED_TYPE] = "A identificar"};
+// const int32_t HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [TO_BE_DEFINED_TYPE] = -1};
 
-int client_connect(char *ip, char *port)
-{
+void *client_thread_connect_to_server(void *connection_parameter) {
+  Connection *connection = (Connection*) connection_parameter;
 
-  int exit_code;
+  size_t bytes;
+
+  int32_t handshake = (int32_t) connection->client_type;
+  int32_t result;
+
+  while(1) {
+    while(1) {
+      log_info(connections_logger, "Intentando conectar con [Servidor] %s en IP: %s - Puerto: %s...", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+      connection->fd_connection = client_start_try(connection->ip, connection->port);
+
+      if(connection->fd_connection != -1) break;
+      else {
+        log_warning(connections_logger, "No se pudo conectar con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+        sleep(RETRY_CONNECTION_IN_SECONDS);
+      }
+    }
+
+    log_info(connections_logger, "Conectado con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+
+    // Handshake
+
+    bytes = send(connection->fd_connection, &handshake, sizeof(int32_t), 0);
+    bytes = recv(connection->fd_connection, &result, sizeof(int32_t), MSG_WAITALL);
+
+    if(result == 0) break;
+    else {
+      close(connection->fd_connection);
+      log_warning(connections_logger, "Error Handshake con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+      sleep(RETRY_CONNECTION_IN_SECONDS);
+    }
+  }
+
+  return NULL;
+}
+
+int client_start_try(char *ip, char *port) {
 
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
@@ -17,14 +53,11 @@ int client_connect(char *ip, char *port)
 	hints.ai_family = AF_UNSPEC; // AF_INET para IPv4 unicamente
 	hints.ai_socktype = SOCK_STREAM;
 
-	exit_code = getaddrinfo(ip, port, &hints, &result);
+	int exit_code = getaddrinfo(ip, port, &hints, &result);
   if (exit_code != 0) {
-    log_warning(module_logger, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
-    return(-1);
+    log_warning(connections_logger, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
+    return -1;
   }
-
-  // getaddrinfo() returns a list of address structures. Try each address until we successfully connect(2).
-  // If socket(2) (or connect(2)) fails, we (close the socket and) try the next address.
 
 	// Ahora vamos a crear el socket.
 	int fd_client;
@@ -37,14 +70,13 @@ int client_connect(char *ip, char *port)
     );
 
     if(fd_client == -1) {
-      log_warning(module_logger, "Funcion socket: %s\n", strerror(errno));
+      log_warning(connections_logger, "Funcion socket: %s\n", strerror(errno));
       continue; /* This one failed */
     }
 
-    if(connect(fd_client, rp->ai_addr, rp->ai_addrlen) == 0) {
-      break; /* Until one succeeds */
-    } else {
-      log_warning(module_logger, "Funcion connect: %s\n", strerror(errno));
+    if(connect(fd_client, rp->ai_addr, rp->ai_addrlen) == 0) break; /* Until one succeeds */
+    else {
+      log_warning(connections_logger, "Funcion connect: %s\n", strerror(errno));
     }
 
     close(fd_client);
@@ -53,74 +85,93 @@ int client_connect(char *ip, char *port)
   freeaddrinfo(result); /* No longer needed */
 
   if (rp == NULL) { /* No address succeeded */
-    return(-1);
+    return -1;
   }
 	
   return fd_client;
+}
+
+void server_start(Server *server) {
+
+  while(1) {
+    log_info(connections_logger, "Intentando iniciar [Servidor] %s en Puerto: %s...", PORT_NAMES[server->server_type], server->port);
+    server->fd_listen = server_start_try(server->port);
+
+    if(server->fd_listen != -1) break;
+    else {
+      log_warning(connections_logger, "No se pudo iniciar [Servidor] %s en Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[server->server_type], server->port, RETRY_CONNECTION_IN_SECONDS);
+      sleep(RETRY_CONNECTION_IN_SECONDS);
+    }
+  }
+
+  log_info(connections_logger, "Escuchando [Servidor] %s en Puerto: %s", PORT_NAMES[server->server_type], server->port);
 
 }
 
+int server_start_try(char* port) {
 
-int start_server(char* ip, char* port) {
-
-	int socket_servidor;
-
-	struct addrinfo hints, *servinfo, *p;
+	struct addrinfo hints;
+  struct addrinfo *result, *rp;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+	hints.ai_family = AF_UNSPEC; // AF_INET para IPv4 unicamente
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	getaddrinfo(ip, port, &hints, &servinfo);
+	int exit_code = getaddrinfo(NULL, port, &hints, &result);
+  if (exit_code != 0) {
+    log_warning(connections_logger, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
+    return -1;
+  }
 
-	// Creamos el socket de escucha del servidor
-	socket_servidor = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
-	if (socket_servidor == -1) {
-		return -1;
-		
-	}
+  int fd_server;
 
-	// Asociamos el socket a un puerto
-	if (bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+  for(rp = result ; rp != NULL ; rp = rp->ai_next) {
+    fd_server = socket(
+      rp->ai_family,
+      rp->ai_socktype,
+      rp->ai_protocol
+    );
 
-		close(socket_servidor);
-		return -1;
-	}
-	
-
-
-	// Escuchamos las conexiones entrantes
-	if (listen(socket_servidor, SOMAXCONN) == -1) {
-		
-		freeaddrinfo(servinfo);
-		return -1;
-	}
-	
-		
-	freeaddrinfo(servinfo);
-	return socket_servidor;
-}
-
-int esperar_cliente(int socket_servidor)
-{
-	// Aceptamos un nuevo cliente
-	int socket_cliente = accept (socket_servidor, NULL, NULL);
-	if(socket_cliente == -1)
-    {
-        printf("Error al aceptar cliente\n");
-        return -1;
+    if(fd_server == -1) {
+      log_warning(connections_logger, "Funcion socket: %s\n", strerror(errno));
+      continue; /* This one failed */
     }
 
-	return socket_cliente;
+    if(bind(fd_server, rp->ai_addr, rp->ai_addrlen) == 0) break; /* Until one succeeds */
+    else {
+      log_warning(connections_logger, "Funcion bind: %s\n", strerror(errno));
+      continue;
+    }
+
+    return fd_server;
+  }
+	
+  freeaddrinfo(result); /* No longer needed */
+
+  if (rp == NULL) { /* No address succeeded */
+    return -1;
+  }
+
+	// Escuchamos las conexiones entrantes
+	if (listen(fd_server, SOMAXCONN) == -1) {
+		log_warning(connections_logger, "Funcion listen: %s\n", strerror(errno));
+		return -1;
+	}
+
+	return fd_server;
 }
 
-void liberar_conexion(int socket_cliente)
-{
-	close(socket_cliente);
+int server_accept(int fd_server) {
+  // Syscall bloqueante que se queda esperando hasta que llegue un nuevo cliente
+	int fd_client = accept(fd_server, NULL, NULL);
+
+	if(fd_client == -1) {
+      log_warning(connections_logger, "Funcion accept: %s\n", strerror(errno));
+  }
+
+	return fd_client;
 }
-
-
 
 t_opcode get_codOp(int socket){
   t_opcode codigoOperacion;
@@ -135,7 +186,6 @@ t_opcode get_codOp(int socket){
 
 }
 
-
 t_paquete *create_package(uint8_t codigoOperacion)
 {
   t_paquete *paquete = malloc(sizeof(t_paquete));
@@ -146,18 +196,14 @@ t_paquete *create_package(uint8_t codigoOperacion)
   return paquete;
 }
 
-
-void add_to_package(t_paquete *paquete, void *valor, int tamanio)
-{
+void add_to_package(t_paquete *paquete, void *valor, int tamanio) {
   paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio + sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio, sizeof(int));
   memcpy(paquete->buffer->stream + paquete->buffer->size + sizeof(int), valor, tamanio);
   paquete->buffer->size += tamanio + sizeof(int);
 }
 
-
-void kill_package(t_paquete *paquete)
-{
+void kill_package(t_paquete *paquete) {
   if (paquete != NULL)
   {
     if (paquete->buffer != NULL)
@@ -169,9 +215,7 @@ void kill_package(t_paquete *paquete)
   }
 }
 
-
-void *get_buffer(int *size, int socketCliente)
-{
+void *get_buffer(int *size, int socketCliente) {
   void *buffer;
 
   recv(socketCliente, size, sizeof(int), MSG_WAITALL);
@@ -181,17 +225,13 @@ void *get_buffer(int *size, int socketCliente)
   return buffer;
 }
 
-
-void create_buffer(t_paquete *paquete)
-{
+void create_buffer(t_paquete *paquete) {
   paquete->buffer = malloc(sizeof(t_buffer));
   paquete->buffer->size = 0;
   paquete->buffer->stream = NULL;
 }
 
-
-t_list* get_package_like_list(int socketCliente)
-{
+t_list* get_package_like_list(int socketCliente) {
   int sizeBuffer;
   int tamanioContenido;
   int desplazamiento = 0;
@@ -228,14 +268,12 @@ void kill_pcb(t_pcb *pcbObjetivo)
 }
 */
 
-void delete_instruction(t_instruccion *lineaInstruccion)
-{
+void delete_instruction(t_instruccion *lineaInstruccion) {
   if (lineaInstruccion != NULL)
     free(lineaInstruccion);
 }
 
-void serialize_pcb(t_paquete *paquete, t_pcb *pcb)
-{
+void serialize_pcb(t_paquete *paquete, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [...]\n"); }
 
   
@@ -470,4 +508,303 @@ t_pcb *deserialize_pcb(int socketCliente)
 
   return pcb;
 
+}
+
+
+void send_message(t_opcode codigoOperacion, char* mensaje, int socket){
+
+            t_paquete *paquete = create_package(codigoOperacion);
+            add_to_package(paquete, mensaje, strlen(mensaje) + 1);
+            send_package(paquete, socket);
+            kill_package(paquete);
+}
+
+void send_package(t_paquete* paquete, int socket)
+{
+  int bytes = paquete->buffer->size + 2 * sizeof(int);
+  void *aEnviar = serialize_package(paquete, bytes);
+
+  send(socket, aEnviar, bytes, 0);
+  free(aEnviar);
+}
+
+void *serialize_package(t_paquete *paquete, int bytes)
+{
+  void *magic = malloc(bytes);
+  int desplazamiento = 0;
+
+  memcpy(magic + desplazamiento, &(paquete->codigo_operacion), sizeof(int));
+  desplazamiento += sizeof(int);
+  memcpy(magic + desplazamiento, &(paquete->buffer->size), sizeof(int));
+  desplazamiento += sizeof(int);
+  memcpy(magic + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
+
+  return magic;
+}
+
+
+void send_instruccion(t_instruction_use* instruccion, int socket){
+  
+  t_paquete* paquete = create_package(INSTUCTION_REQUEST);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [...]\n"); }
+  
+  int cursor = 0;
+  int cantidad_parametros= list_size(instruccion->parameters);
+
+
+    add_to_package(paquete, &instruccion->operation, sizeof(t_opcode));
+    //DEBUG_PRINTF("\n[Serializar] paquete[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
+    cursor++;
+
+  //PARAMETROS
+  add_to_package(paquete, &cantidad_parametros, sizeof(int));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Cantidad de parametros = %d\n", cursor, cantidad_parametros); }
+  cursor++;
+
+  char* parametro;
+  for (int i = 0; i < cantidad_parametros; i++)
+  {
+    parametro = list_get(instruccion->parameters, i);
+
+    add_to_package(paquete, parametro, strlen(parametro) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Parametro = %s\n", cursor, parametro); }
+    cursor++;
+  }
+
+
+  //DEBUG_PRINTF("\n[Serializar] serializar_instruccion( ) [END]\n");
+
+  send_package(paquete, socket);
+
+  kill_package(paquete);
+
+}
+
+
+t_instruction_use* receive_instruccion(int socket){
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_instruccion( ) [...]\n"); }
+
+  t_list *propiedadesPlanas = get_package_like_list(socket);
+  t_instruction_use* instruccionRecibida = malloc(sizeof(t_instruction_use));
+  int cursor = 0;
+
+  instruccionRecibida->operation = *(t_opcode*)list_get(propiedadesPlanas, cursor);
+  //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
+  
+  int cantidadParametros = *(int*)list_get(propiedadesPlanas, cursor);
+  //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
+  
+  for (size_t i = 0; i < cantidadParametros; i++)
+  {
+    char* parametro = string_new();
+    parametro = string_duplicate(list_get(propiedadesPlanas, ++cursor));
+    //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: parametro = %s \n", cursor, parametro);
+    list_add(instruccionRecibida->parameters, parametro);
+  }
+  
+  list_destroy_and_destroy_elements(propiedadesPlanas, &free);
+
+  //DEBUG_PRINTF("\n[Deserializar] deserializar_instruccion( ) [END]\n");
+
+  return instruccionRecibida;
+}
+
+void serialize_pcb_2(t_paquete* paquete, t_pcb* pcb) {
+    // Calcular el tamaño total necesario para el buffer
+    uint32_t buffer_size = sizeof(t_pcb);
+
+    // Reservar memoria para el buffer
+    paquete->buffer = malloc(sizeof(t_buffer));
+    paquete->buffer->size = buffer_size;
+    paquete->buffer->stream = malloc(buffer_size);
+
+    // Copiar los datos de la estructura t_pcb al buffer
+    uint32_t offset = 0;
+    memcpy(paquete->buffer->stream + offset, &pcb->pid, sizeof(pcb->pid));
+    offset += sizeof(pcb->pid);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->pc, sizeof(pcb->pc));
+    offset += sizeof(pcb->pc);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->AX, sizeof(pcb->AX));
+    offset += sizeof(pcb->AX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->BX, sizeof(pcb->BX));
+    offset += sizeof(pcb->BX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->CX, sizeof(pcb->CX));
+    offset += sizeof(pcb->CX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->DX, sizeof(pcb->DX));
+    offset += sizeof(pcb->DX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->EAX, sizeof(pcb->EAX));
+    offset += sizeof(pcb->EAX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->EBX, sizeof(pcb->EBX));
+    offset += sizeof(pcb->EBX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->ECX, sizeof(pcb->ECX));
+    offset += sizeof(pcb->ECX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->EDX, sizeof(pcb->EDX));
+    offset += sizeof(pcb->EDX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RAX, sizeof(pcb->RAX));
+    offset += sizeof(pcb->RAX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RBX, sizeof(pcb->RBX));
+    offset += sizeof(pcb->RBX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RCX, sizeof(pcb->RCX));
+    offset += sizeof(pcb->RCX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->RDX, sizeof(pcb->RDX));
+    offset += sizeof(pcb->RDX);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->SI, sizeof(pcb->SI));
+    offset += sizeof(pcb->SI);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->DI, sizeof(pcb->DI));
+    offset += sizeof(pcb->DI);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->quantum, sizeof(pcb->quantum));
+    offset += sizeof(pcb->quantum);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->estado_actual, sizeof(pcb->estado_actual));
+    offset += sizeof(pcb->estado_actual);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->fd_conexion, sizeof(pcb->fd_conexion));
+    offset += sizeof(pcb->fd_conexion);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->llegada_ready, sizeof(pcb->llegada_ready));
+    offset += sizeof(pcb->llegada_ready);
+
+    memcpy(paquete->buffer->stream + offset, &pcb->llegada_running, sizeof(pcb->llegada_running));
+    offset += sizeof(pcb->llegada_running);
+
+    // Establecer el código de operación del paquete, si es necesario
+    paquete->codigo_operacion = 1;  // O el valor que necesites
+}
+
+// Función de ejemplo para liberar la memoria asignada
+void free_package(t_paquete* paquete) {
+    if (paquete->buffer != NULL) {
+        if (paquete->buffer->stream != NULL) {
+            free(paquete->buffer->stream);
+        }
+        free(paquete->buffer);
+    }
+}
+
+void send_pcb(int socket, t_pcb* pcb) {
+    t_paquete paquete;
+    serialize_pcb_2(&paquete, pcb);
+
+    uint32_t total_size = sizeof(paquete.codigo_operacion) + sizeof(paquete.buffer->size) + paquete.buffer->size;
+    void* buffer = malloc(total_size);
+
+    uint32_t offset = 0;
+    memcpy(buffer + offset, &paquete.codigo_operacion, sizeof(paquete.codigo_operacion));
+    offset += sizeof(paquete.codigo_operacion);
+
+    memcpy(buffer + offset, &paquete.buffer->size, sizeof(paquete.buffer->size));
+    offset += sizeof(paquete.buffer->size);
+
+    memcpy(buffer + offset, paquete.buffer->stream, paquete.buffer->size);
+
+    send(socket, buffer, total_size, 0);
+
+    free(buffer);
+    free_package(&paquete);
+}
+
+void deserialize_pcb_2(t_pcb* pcb, void* stream) {
+    uint32_t offset = 0;
+
+    memcpy(&pcb->pid, stream + offset, sizeof(pcb->pid));
+    offset += sizeof(pcb->pid);
+
+    memcpy(&pcb->pc, stream + offset, sizeof(pcb->pc));
+    offset += sizeof(pcb->pc);
+
+    memcpy(&pcb->AX, stream + offset, sizeof(pcb->AX));
+    offset += sizeof(pcb->AX);
+
+    memcpy(&pcb->BX, stream + offset, sizeof(pcb->BX));
+    offset += sizeof(pcb->BX);
+
+    memcpy(&pcb->CX, stream + offset, sizeof(pcb->CX));
+    offset += sizeof(pcb->CX);
+
+    memcpy(&pcb->DX, stream + offset, sizeof(pcb->DX));
+    offset += sizeof(pcb->DX);
+
+    memcpy(&pcb->EAX, stream + offset, sizeof(pcb->EAX));
+    offset += sizeof(pcb->EAX);
+
+    memcpy(&pcb->EBX, stream + offset, sizeof(pcb->EBX));
+    offset += sizeof(pcb->EBX);
+
+    memcpy(&pcb->ECX, stream + offset, sizeof(pcb->ECX));
+    offset += sizeof(pcb->ECX);
+
+    memcpy(&pcb->EDX, stream + offset, sizeof(pcb->EDX));
+    offset += sizeof(pcb->EDX);
+
+    memcpy(&pcb->RAX, stream + offset, sizeof(pcb->RAX));
+    offset += sizeof(pcb->RAX);
+
+    memcpy(&pcb->RBX, stream + offset, sizeof(pcb->RBX));
+    offset += sizeof(pcb->RBX);
+
+    memcpy(&pcb->RCX, stream + offset, sizeof(pcb->RCX));
+    offset += sizeof(pcb->RCX);
+
+    memcpy(&pcb->RDX, stream + offset, sizeof(pcb->RDX));
+    offset += sizeof(pcb->RDX);
+
+    memcpy(&pcb->SI, stream + offset, sizeof(pcb->SI));
+    offset += sizeof(pcb->SI);
+
+    memcpy(&pcb->DI, stream + offset, sizeof(pcb->DI));
+    offset += sizeof(pcb->DI);
+
+    memcpy(&pcb->quantum, stream + offset, sizeof(pcb->quantum));
+    offset += sizeof(pcb->quantum);
+
+    memcpy(&pcb->estado_actual, stream + offset, sizeof(pcb->estado_actual));
+    offset += sizeof(pcb->estado_actual);
+
+    memcpy(&pcb->fd_conexion, stream + offset, sizeof(pcb->fd_conexion));
+    offset += sizeof(pcb->fd_conexion);
+
+    memcpy(&pcb->llegada_ready, stream + offset, sizeof(pcb->llegada_ready));
+    offset += sizeof(pcb->llegada_ready);
+
+    memcpy(&pcb->llegada_running, stream + offset, sizeof(pcb->llegada_running));
+    offset += sizeof(pcb->llegada_running);
+}
+
+void receive_pcb(int socket, t_pcb *pcb) {
+    uint8_t codigo_operacion;
+    uint32_t buffer_size;
+
+    // Recibir el código de operación
+    recv(socket, &codigo_operacion, sizeof(codigo_operacion), 0);
+
+    // Recibir el tamaño del buffer
+    recv(socket, &buffer_size, sizeof(buffer_size), 0);
+
+    // Reservar memoria para el buffer
+    void *buffer = malloc(buffer_size);
+
+    // Recibir el buffer
+    recv(socket, buffer, buffer_size, 0);
+
+    // Deserializar el buffer en la estructura t_pcb
+    deserialize_pcb_2(pcb, buffer);
+
+    // Liberar la memoria del buffer
+    free(buffer);
 }

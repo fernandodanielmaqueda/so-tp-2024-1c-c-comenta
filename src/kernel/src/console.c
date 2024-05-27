@@ -1,9 +1,9 @@
-#include "consola.h"
+#include "console.h"
 
 t_log *module_logger_consola;
 
 
-void initalize_console_interactive(){
+void initialize_interactive_console(void) {
 
     module_logger_consola = log_create("consola.log", "Consola", true, LOG_LEVEL_TRACE);
 

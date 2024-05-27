@@ -24,10 +24,9 @@
 #include "kernel.h"
 #include "scheduler.h"
 
-
-
-void initalize_console_interactive();
+void initialize_interactive_console(void);
 bool validate_command_console(char* leido);
 void attend_command_console(char* leido);
 int pedir_enum_funcion(char** sublinea);
+
 #endif /* CONSOLA_H_ */

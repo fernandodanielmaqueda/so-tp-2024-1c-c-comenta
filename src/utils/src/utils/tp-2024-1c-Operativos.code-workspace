@@ -1,0 +1,40 @@
+{
+	"folders": [
+		{
+			"name": "tp-2024-1c-Operativos",
+			"path": "../../../.."
+		},
+		{
+			"name": "cpu",
+			"path": "../../../cpu"
+		},
+		{
+			"name": "entradasalida",
+			"path": "../../../entradasalida"
+		},
+		{
+			"name": "kernel",
+			"path": "../../../kernel"
+		},
+		{
+			"name": "memoria",
+			"path": "../../../memoria"
+		},
+		{
+			"name": "utils",
+			"path": "../.."
+		},
+		{
+			"name": "test1",
+			"path": "../../../../tests/test1"
+		}
+	],
+	"settings": {
+		"debug.onTaskErrors": "abort",
+		"files.associations": {
+			"*.h": "c",
+			"functional": "c",
+			"typeinfo": "c"
+		}
+	}
+}

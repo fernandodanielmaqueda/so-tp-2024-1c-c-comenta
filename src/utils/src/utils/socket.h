@@ -10,17 +10,40 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <string.h>
+#include <pthread.h>
 #include <errno.h>
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"
 #include "estructuras.h"
+#include "modules.h"
+
+#define RETRY_CONNECTION_IN_SECONDS 10
+#define MAX_CONNECTION_ATTEMPS 10
 
 #ifndef DEBUG_SERIALIZATION
 #define DEBUG_SERIALIZATION 0
 #endif
 
 #define DEBUGGING_SERIALIZATION if(DEBUG_SERIALIZATION)
+
+extern const char *PORT_NAMES[PortType_Count];
+//extern const int32_t HANDSHAKES[PortType_Count];
+
+typedef struct Connection {
+    int fd_connection;
+    enum PortType client_type;
+    enum PortType server_type;
+    char *ip;
+    char *port;
+} Connection;
+
+typedef struct Server {
+    int fd_listen;
+    enum PortType server_type;
+    enum PortType clients_type;
+    char *port;
+} Server;
 
 typedef struct {
     uint32_t size;
@@ -37,10 +60,18 @@ int start_server_module(char* module, char * pathconfig);
 int start_client_module(char* module, char* pathconfig);
 void get_ip_port_from_module(const char* module, char* path_config,char* ip, char* port);
 */
-int client_connect(char* ip, char* port);
-int start_server(char* ip, char* port);
-int esperar_cliente(int socket_servidor);
-void liberar_conexion(int socket_cliente);
+
+void *client_thread_connect_to_server(void *connection_parameter);
+int client_start_try(char* ip, char* port);
+void server_start(Server *server);
+int server_start_try(char* port);
+int server_accept(int socket_servidor);
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param socket t_paquete donde se creara el buffer
+ */
+t_opcode get_codOp(int socket);
 
 
 /**
@@ -67,11 +98,31 @@ void kill_package(t_paquete *paquete);
 
 
 /**
+ * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
+ * @param size Tamaño del buffer.
+ * @param socketClient Socket desde donde se va a recibir el paquete.
+ */
+void *get_buffer(int *size, int socketCliente);
+
+
+/**
+ * @brief Crear Buffer
+ * @param paquete t_paquete donde se creara el buffer
+ */
+void create_buffer(t_paquete *paquete);
+
+
+/**
+ * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
+ * @param socketClient Socket desde donde se va a recibir el paquete.
+ */
+t_list* get_package_like_list(int socketClient);
+
+/**
  * @brief Eliminar pcb.
  * @param pcbObjetivo t_pcb a eliminar.
  */
-void kill_pcb(t_pcb *pcbObjetivo);
-
+//void kill_pcb(t_pcb *pcbObjetivo);
 
 
 /**
@@ -97,32 +148,48 @@ t_pcb* deserialize_pcb(int socketClient);
 
 
 /**
- * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
- * @param socketClient Socket desde donde se va a recibir el paquete.
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param codigoOperacion Codigo de operacion a enviar
+ * @param mensaje Mensaje a enviar
+ * @param socket Socket destino
  */
-t_list* get_package_like_list(int socketClient);
-
-
-/**
- * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
- * @param size Tamaño del buffer.
- * @param socketClient Socket desde donde se va a recibir el paquete.
- */
-void *get_buffer(int *size, int socketCliente);
-
-
-/**
- * @brief Crear Buffer
- * @param paquete t_paquete donde se creara el buffer
- */
-void create_buffer(t_paquete *paquete);
+void send_message(t_opcode codigoOperacion, char* mensaje, int socket);
 
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
- * @param socket t_paquete donde se creara el buffer
+ * @param pack Paquete a enviar
+ * @param socket Socket destino
  */
-t_opcode get_codOp(int socket);
+void send_package(t_paquete* pack, int socket);
 
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param pack Paquete a serializar
+ * @param bytes Tamanio del paquete
+ */
+void* serialize_package(t_paquete* pack, int bytes);
+
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param instruccion Instruccion a enviar
+ * @param socket Socket destino
+ */
+void send_instruccion(t_instruction_use* instruccion, int socket);
+
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param socket Socket a recibir
+ */
+t_instruction_use* receive_instruccion(int socket);
+
+void serialize_pcb_2(t_paquete* paquete, t_pcb* pcb);
+void free_package(t_paquete* paquete);
+void send_pcb(int socket, t_pcb* pcb);
+void deserialize_pcb_2(t_pcb* pcb, void* stream);
+void receive_pcb(int socket, t_pcb *pcb);
 
 #endif // SOCKET_H

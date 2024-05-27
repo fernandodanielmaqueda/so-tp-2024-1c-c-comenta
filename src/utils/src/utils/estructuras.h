@@ -6,10 +6,10 @@
 typedef struct t_pcb {
     uint32_t pid; 
     uint32_t pc; 
-    uint32_t AX;
-    uint32_t BX;
-    uint32_t CX; 
-    uint32_t DX;
+    uint8_t AX;
+    uint8_t BX;
+    uint8_t CX; 
+    uint8_t DX;
     uint32_t EAX;
     uint32_t EBX;
     uint32_t ECX;
@@ -29,15 +29,17 @@ typedef struct t_pcb {
 
 } t_pcb;
 
+//IDEA DE BRAI===============
 typedef struct t_instruccion {
-    char* id;
-    char* param1;
-    char* param2;
-    char* param3;
-    char* param4;
-    char* param5;
-
+    char *id;
+    char *param1;
+    char *param2;
+    char *param3;
+    char *param4;
+    char *param5;
 } t_instruccion;
+////////////////////////////
+
 typedef enum t_opcode {
     DESCONEXION = -1,
     //Estado PCB
@@ -49,9 +51,11 @@ typedef enum t_opcode {
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_NEW,
+    PROCESS_CREATED,
     //Kernel - IO
     //Kernel - CPU
     //CPU - Memoria
+    INSTUCTION_REQUEST,
     //IO - Memoria
     //Instrucciones
     SET,
@@ -74,7 +78,6 @@ typedef enum t_opcode {
     IO_FS_READ
 } t_opcode;
 
-
 //Estructuras que necesita la consola para entender las palabras
 typedef enum {
     INICIAR_PROCESO,
@@ -86,4 +89,58 @@ typedef enum {
     EJECUTAR_SCRIPT
 } t_funcion;
 
+//////Para el ciclo de instruccion sugerencia ========================
+typedef enum {
+    SIN_INT,     //sin interrupcion
+    FIN_PROCESO, //por exit
+    FIN_QUANTUM, //por syscall 
 
+} t_int;
+
+typedef struct{
+    int id;
+    unsigned int pc; 
+    uint32_t registros[4];
+    t_int interrupcion;  
+} t_contexto;
+////////////////////////////////////////////////////////
+
+///SUGUERENCIA ESTRUCTURA OPTIMA PARA  MANEJO DE RECURSO PARA EL CICLO EXECUTE////
+
+/* 
+typedef enum {
+    SET,
+    MOV_IN,
+    MOV_OUT,
+    SUM,
+    SUB,
+    JNZ,
+    RESIZE,
+    COPY_STRING,
+    WAIT,
+    SIGNAL,
+    IO_GEN_SLEEP,
+    IO_STDIN_READ,
+    IO_STDOUT_WRITE,
+    IO_FS_CREATE,
+    IO_FS_DELETE,
+    IO_FS_TRUNCATE,
+    IO_FS_WRITE,
+    IO_FS_READ,
+    EXIT,
+} t_instruction_type_use;
+*/
+
+typedef struct {
+	t_opcode operation;
+	t_list* parameters;
+} t_instruction_use;
+
+typedef enum {
+	AX,
+	BX,
+	CX,
+	DX,
+} t_register;
+
+/////////////////=================//////////////////////

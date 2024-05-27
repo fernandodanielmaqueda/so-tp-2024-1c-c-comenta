@@ -21,7 +21,8 @@
 #include "utils/socket.h"
 
 int module(int, char*[]);
-void read_module_config(t_config*);
+void read_module_config(t_config *module_config);
 void initialize_sockets(void);
+void finish_sockets(void);
 
 #endif /* ENTRADASALIDA_H_ */

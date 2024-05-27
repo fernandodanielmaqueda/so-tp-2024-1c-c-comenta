@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
+#include <semaphore.h>
 #include <unistd.h>
 #include "commons/log.h"
 #include "commons/config.h"
@@ -42,8 +43,11 @@ typedef struct t_marco {
 } t_marco;
 
 int module(int, char*[]);
-void read_module_config(t_config*);
+void read_module_config(t_config *module_config);
 void initialize_sockets(void);
+void finish_sockets(void);
+void *memory_start_server(void *server_parameter);
+void *memory_client_handler(void *fd_new_client_parameter);
 
 /**
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria
@@ -56,8 +60,6 @@ void create_process(int socket);
  * @param pid Program counter requerido.
  * @param pc Program counter requerido.
  */
-t_instruccion read_instruccion(int pid,int pc);
-
-
+void seek_instruccion(int socket);
 
 #endif /* MEMORIA_H_ */
