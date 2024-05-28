@@ -3,9 +3,19 @@
 
 #include <stdint.h>
 
+typedef enum process_status{
+    //Estado PCB
+    NEW,
+    READY,
+    EXECUTING,
+    BLOCKED, 
+	EXIT
+} process_status;
+
 typedef struct t_pcb {
-    uint32_t pid; 
-    uint32_t pc; 
+    uint32_t pid;
+    uint32_t pc;
+    //registers_1[t_register];
     uint8_t AX;
     uint8_t BX;
     uint8_t CX; 
@@ -22,40 +32,29 @@ typedef struct t_pcb {
     uint32_t DI;
 
     uint32_t quantum;
-    int estado_actual;
-    int fd_conexion;
-    double llegada_ready;
-    double llegada_running;
+    enum process_status current_status;
+    //int fd_conexion;
+    double arrival_READY;
+    double arrival_RUNNING;
 
 } t_pcb;
 
-//IDEA DE BRAI===============
-typedef struct t_instruccion {
-    char *id;
-    char *param1;
-    char *param2;
-    char *param3;
-    char *param4;
-    char *param5;
-} t_instruccion;
-////////////////////////////
 
 typedef enum t_opcode {
-    DESCONEXION = -1,
-    //Estado PCB
-    NEW,
-    READY,
-    EXECUTING,
-    BLOCKED,
-	EXITED,
+    DISCONNECTED = -1,
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_NEW,
     PROCESS_CREATED,
     //Kernel - IO
     //Kernel - CPU
-    //CPU - Memoria
+    TYPE_INTERRUPT_SIN_INT,
+    TYPE_INTERRUPT_FIN_PROCESO,
+    TYPE_INTERRUPT_FIN_QUANTUM,
+    ///////////////
+    //CPU - Memoria////
     INSTUCTION_REQUEST,
+    ///////////////////
     //IO - Memoria
     //Instrucciones
     SET,
@@ -89,47 +88,7 @@ typedef enum {
     EJECUTAR_SCRIPT
 } t_funcion;
 
-//////Para el ciclo de instruccion sugerencia ========================
-typedef enum {
-    SIN_INT,     //sin interrupcion
-    FIN_PROCESO, //por exit
-    FIN_QUANTUM, //por syscall 
 
-} t_int;
-
-typedef struct{
-    int id;
-    unsigned int pc; 
-    uint32_t registros[4];
-    t_int interrupcion;  
-} t_contexto;
-////////////////////////////////////////////////////////
-
-///SUGUERENCIA ESTRUCTURA OPTIMA PARA  MANEJO DE RECURSO PARA EL CICLO EXECUTE////
-
-/* 
-typedef enum {
-    SET,
-    MOV_IN,
-    MOV_OUT,
-    SUM,
-    SUB,
-    JNZ,
-    RESIZE,
-    COPY_STRING,
-    WAIT,
-    SIGNAL,
-    IO_GEN_SLEEP,
-    IO_STDIN_READ,
-    IO_STDOUT_WRITE,
-    IO_FS_CREATE,
-    IO_FS_DELETE,
-    IO_FS_TRUNCATE,
-    IO_FS_WRITE,
-    IO_FS_READ,
-    EXIT,
-} t_instruction_type_use;
-*/
 
 typedef struct {
 	t_opcode operation;
@@ -143,4 +102,3 @@ typedef enum {
 	DX,
 } t_register;
 
-/////////////////=================//////////////////////

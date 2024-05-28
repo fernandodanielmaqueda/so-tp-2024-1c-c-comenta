@@ -30,7 +30,7 @@ void finish_sockets(void);
 void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
-void execute(t_instruction_use *instruction, t_contexto *contexto);
-t_register string_a_registro(const char *string);
+void execute(t_instruction_use *instruction, t_pcb *pcb);
+t_pcb *string_to_register(const char *string);
 
 #endif /* CPU_H_ */

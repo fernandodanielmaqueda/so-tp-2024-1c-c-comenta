@@ -2,7 +2,6 @@
 
 t_log *module_logger_consola;
 
-
 void initialize_interactive_console(void) {
 
     module_logger_consola = log_create("consola.log", "Consola", true, LOG_LEVEL_TRACE);
@@ -20,7 +19,6 @@ void initialize_interactive_console(void) {
              leido = readline("> ");
     continue;
     }
- 
  
  else{
     log_info(module_logger_consola, "Comando de CONSOLA valido");
@@ -154,8 +152,6 @@ void attend_command_console(char* leido){
     
     free_strv(command_console);
 }
-
-
 
 int pedir_enum_funcion(char** sublinea)
 {

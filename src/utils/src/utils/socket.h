@@ -50,12 +50,12 @@ typedef struct {
     void* stream;
 } t_buffer;
 
-typedef struct {
+typedef struct t_package {
     uint8_t codigo_operacion;
     t_buffer* buffer;
-} t_paquete;
+} t_package;
 
-/* 
+/*
 int start_server_module(char* module, char * pathconfig);
 int start_client_module(char* module, char* pathconfig);
 void get_ip_port_from_module(const char* module, char* path_config,char* ip, char* port);
@@ -69,75 +69,75 @@ int server_accept(int socket_servidor);
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
- * @param socket t_paquete donde se creara el buffer
+ * @param socket t_package donde se creara el buffer
  */
-t_opcode get_codOp(int socket);
+t_opcode get_opCode(int fd_socket);
 
 
 /**
  * @brief Crear paquete.
- * @param codigoOperacion Codigo de operacion que tendra el paquete.
+ * @param opCode Codigo de operacion que tendra el paquete.
  */
-t_paquete *create_package(uint8_t codigoOperacion);
+t_package *package_create(uint8_t opCode);
 
 
 /**
  * @brief Agregar dato a paquete
- * @param paquete t_paquete a rellenar.
- * @param valor Dato a agregar
- * @param tamanio Tamaño del dato a agregar.
+ * @param package t_package a rellenar.
+ * @param value Dato a agregar
+ * @param size Tamaño del dato a agregar.
  */
-void add_to_package(t_paquete *paquete, void *valor, int tamanio);
+void package_add(t_package *package, void *value, int size);
 
 
 /**
  * @brief Eliminar paquete
- * @param paquete t_paquete a eliminar.
+ * @param paquete t_package a eliminar.
  */
-void kill_package(t_paquete *paquete);
+void package_kill(t_package *package);
 
 
 /**
  * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
  * @param size Tamaño del buffer.
- * @param socketClient Socket desde donde se va a recibir el paquete.
+ * @param fd_client Socket desde donde se va a recibir el paquete.
  */
-void *get_buffer(int *size, int socketCliente);
+void *buffer_get(int *size, int fd_client);
 
 
 /**
  * @brief Crear Buffer
- * @param paquete t_paquete donde se creara el buffer
+ * @param package t_package donde se creara el buffer
  */
-void create_buffer(t_paquete *paquete);
+void buffer_create(t_package *package);
 
 
 /**
  * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
- * @param socketClient Socket desde donde se va a recibir el paquete.
+ * @param fd_client Socket desde donde se va a recibir el paquete.
  */
-t_list* get_package_like_list(int socketClient);
+t_list* get_package_like_list(int fd_client);
 
 /**
  * @brief Eliminar pcb.
- * @param pcbObjetivo t_pcb a eliminar.
+ * @param pcb_target t_pcb a eliminar.
  */
-//void kill_pcb(t_pcb *pcbObjetivo);
+//void kill_pcb(t_pcb *pcb_target);
 
 
 /**
  * @brief Eliminar instruccion.
- * @param lineaInstruccion t_instruccion a eliminar.
+ * @param lineInstruccion t_instruccion a eliminar.
  */
-void delete_instruction(t_instruccion *lineaInstruccion);
+//void instruction_delete(t_instruccion *lineInstruccion);
 
 
 /**
  * @brief Serializacion del t_pcb para ser enviada.
- * @param paquete t_paquete a rellenar.
+ * @param package t_package a rellenar.
  * @param pcb Pcb a serializar
  */
-void serialize_pcb(t_paquete *paquete, t_pcb *pcb);
+void serialize_pcb(t_package *package, t_pcb *pcb);
 
 
 /**
@@ -158,18 +158,18 @@ void send_message(t_opcode codigoOperacion, char* mensaje, int socket);
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
- * @param pack Paquete a enviar
+ * @param package Paquete a enviar
  * @param socket Socket destino
  */
-void send_package(t_paquete* pack, int socket);
+void package_send(t_package* package, int socket);
 
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
- * @param pack Paquete a serializar
+ * @param package Paquete a serializar
  * @param bytes Tamanio del paquete
  */
-void* serialize_package(t_paquete* pack, int bytes);
+void* package_serialize(t_package* package, int bytes);
 
 
 /**
@@ -186,8 +186,8 @@ void send_instruccion(t_instruction_use* instruccion, int socket);
  */
 t_instruction_use* receive_instruccion(int socket);
 
-void serialize_pcb_2(t_paquete* paquete, t_pcb* pcb);
-void free_package(t_paquete* paquete);
+void serialize_pcb_2(t_package* paquete, t_pcb* pcb);
+void free_package(t_package* paquete);
 void send_pcb(int socket, t_pcb* pcb);
 void deserialize_pcb_2(t_pcb* pcb, void* stream);
 void receive_pcb(int socket, t_pcb *pcb);

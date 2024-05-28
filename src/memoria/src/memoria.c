@@ -136,26 +136,26 @@ void *memory_client_handler(void *fd_new_client_parameter) {
     switch((enum PortType) handshake) {
         case KERNEL_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
-            log_info(connections_logger, "OK Handshake con [Cliente(s)] %s", "Kernel");
+            log_info(connections_logger, "OK Handshake con [Cliente] %s", "Kernel");
             FD_CLIENT_KERNEL = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_kernel_client_connected);
         break;
         case CPU_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
-            log_info(connections_logger, "OK Handshake con [Cliente(s)] %s", "CPU");
+            log_info(connections_logger, "OK Handshake con [Cliente] %s", "CPU");
             FD_CLIENT_CPU = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_cpu_client_connected);
         break;
         case IO_TYPE:
-            log_info(connections_logger, "OK Handshake con [Cliente(s)] %s", "Entrada/Salida");
+            log_info(connections_logger, "OK Handshake con [Cliente] %s", "Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             // Lógica de manejo de cliente Entrada/Salida
             free(fd_new_client);
         break;
         default:
-            log_warning(connections_logger, "Error Handshake con [Cliente(s)] %s", "No reconocido");
+            log_warning(connections_logger, "Error Handshake con [Cliente] %s", "No reconocido");
             bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
             free(fd_new_client);
         break;
@@ -166,7 +166,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
 
 void listen_kernel(int fd_kernel) {
     while(1){
-        t_opcode opcode = get_codOp(fd_kernel);
+        t_opcode opcode = get_opCode(fd_kernel);
         switch (opcode)
             {
             case PROCESS_NEW:
@@ -174,7 +174,7 @@ void listen_kernel(int fd_kernel) {
                 create_process(fd_kernel);
                 break;
 
-            case DESCONEXION:
+            case DISCONNECTED:
                 log_warning(module_logger, "Se desconecto kernel.");
                 log_destroy(module_logger);
                 return;
@@ -267,16 +267,15 @@ void parser_file(char* path, t_list* list_instruction) {
 }
 
 void listen_cpu(int fd_cpu) {
-    while(1){
-        t_opcode opcode = get_codOp(fd_cpu);
-        switch (opcode)
-            {
+    while(1) {
+        t_opcode opcode = get_opCode(fd_cpu);
+        switch (opcode) {
             case INSTUCTION_REQUEST:
                 log_info(module_logger, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(fd_cpu);
                 break;
 
-            case DESCONEXION:
+            case DISCONNECTED:
                 log_warning(module_logger, "Se desconecto CPU.");
                 log_destroy(module_logger);
                 return;

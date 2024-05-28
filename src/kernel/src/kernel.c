@@ -61,8 +61,7 @@ int module(int argc, char *argv[]) {
 	initialize_configs();
 	initialize_sockets();
 	pidContador = 0;
-
-
+	
 	t_pcb pcb = {
         .pid = 1234,
         .pc = 5678,
@@ -80,11 +79,11 @@ int module(int argc, char *argv[]) {
         .RDX = 400,
         .SI = 500,
         .DI = 600,
-        .quantum = 50,
-        .estado_actual = 1,
-        .fd_conexion = 2,
-        .llegada_ready = 123.456,
-        .llegada_running = 789.012
+        .quantum = 2,
+        .current_status = NEW,
+        //.fd_conexion = 2,
+        .arrival_READY = 123.456,
+        .arrival_RUNNING = 789.012
     };
 	send_pcb(CONNECTION_CPU_DISPATCH.fd_connection, &pcb);
 	log_info(module_logger, "Modulo %s inicializado correctamente\n", module_name);
@@ -194,13 +193,13 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 
     switch((enum PortType) handshake) {
         case IO_TYPE:
-            log_info(connections_logger, "OK Handshake con [Cliente(s)] %s", "Entrada/Salida");
+            log_info(connections_logger, "OK Handshake con [Cliente] Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             // Lógica de manejo de cliente Entrada/Salida
             free(fd_new_client);
         break;
         default:
-            log_warning(connections_logger, "Error Handshake con [Cliente(s)] %s", "No reconocido");
+            log_warning(connections_logger, "Error Handshake con [Cliente] No reconocido");
             bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
             free(fd_new_client);
         break;
@@ -229,7 +228,6 @@ void initialize_cpu_command_line_interface(void) {
 
 void long_term_scheduler(void) {
 
-
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
 		sem_wait(&sem_multiprogramming_level);
@@ -254,7 +252,7 @@ void short_term_scheduler(void) {
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
 			pcb = FIFO_scheduling_algorithm();
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
-			pcb = RR_scheduling_algorithm();
+			//pcb = RR_scheduling_algorithm();
 
 	    	//pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
 			//pthread_join(&thread_interrupt, NULL);
@@ -310,9 +308,8 @@ t_pcb *FIFO_scheduling_algorithm(void) {
 }
 */
 
-void receptor_mensajes_cpu()
-{
-	// t_paquete *paquete;
+void receptor_mensajes_cpu() {
+	// t_package *package;
 
 	while (1)
 	{
@@ -321,7 +318,7 @@ void receptor_mensajes_cpu()
 		//FALTA DESERIALIZAR PCB
 		
 		/*
-		switch (paquete->codigo_operacion)
+		switch (package->codigo_operacion)
 		{
 			case EXIT:
 			{
@@ -415,28 +412,28 @@ void receptor_mensajes_cpu()
 	}
 }
 
-void switch_process_state(t_pcb* pcb, int estado_nuevo) {
-	int estado_anterior = pcb->estado_actual;
-	pcb->estado_actual = estado_nuevo;
-	char* global_estado_anterior;
+void switch_process_state(t_pcb* pcb, int new_state) {
+	int previous_state = pcb->current_status;
+	pcb->current_status = new_state;
+	char* global_previous_state;
 	
-	t_paquete* paquete;
+	t_package* package;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_pcb*)elemento)->pid == pcb->pid);
 	}
 
-	switch (estado_anterior){ //! ESTADO ANTERIOR
+	switch (previous_state){ //! ESTADO ANTERIOR
 		case NEW:
 		{
-			global_estado_anterior="NEW";
+			global_previous_state="NEW";
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_remove_by_condition(LIST_NEW, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 			break;
 		}
 		case READY:{
-			global_estado_anterior="READY";
+			global_previous_state="READY";
 			pthread_mutex_lock(&mutex_LIST_READY);
 			list_remove_by_condition(LIST_READY, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_READY);
@@ -444,7 +441,7 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 		}
 		case EXECUTING:
 		{
-			global_estado_anterior="EXECUTING";
+			global_previous_state="EXECUTING";
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
 			list_remove_by_condition(LIST_EXECUTING, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
@@ -452,14 +449,14 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 		}
 		case BLOCKED:
 		{
-			global_estado_anterior="BLOCKED";
+			global_previous_state="BLOCKED";
 			pthread_mutex_lock(&mutex_LIST_BLOCKED);
 			list_remove_by_condition(LIST_BLOCKED, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_BLOCKED);		
 			break;
 		}
 		}
-	switch(estado_nuevo){ // ! ESTADO NUEVO
+	switch(new_state){ // ! ESTADO NUEVO
 		case NEW:
 		{
 			pthread_mutex_lock(&mutex_LIST_NEW);
@@ -472,10 +469,10 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 		}
 		case READY:
 		{
-			pcb -> llegada_ready = current_time();
+			pcb -> arrival_READY = current_time();
 
 			pthread_mutex_lock(&mutex_LIST_READY);
-			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_estado_anterior);
+			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_previous_state);
 			list_add(LIST_READY, pcb);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			sem_post(&sem_short_term_scheduler);
@@ -484,12 +481,12 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 		}
 		case EXECUTING:
 		{
-			pcb -> llegada_running = current_time();
+			pcb -> arrival_RUNNING = current_time();
 			
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
 			list_add(LIST_EXECUTING, pcb);
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
-			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->pid, global_estado_anterior);
+			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->pid, global_previous_state);
 	
 			break;
 		}
@@ -499,12 +496,13 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 			list_add(LIST_BLOCKED, pcb);
 			pthread_mutex_unlock(&mutex_LIST_BLOCKED);
 
-			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_estado_anterior);
+			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_previous_state);
 
 			break;
 		}
 		//Todos los casos de salida de un proceso.
-		case EXITED:{
+		case EXIT:
+		{
 			
 			// log_info(module_logger, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
 
@@ -553,7 +551,6 @@ t_pcb *create_pcb() {
 
 	t_pcb *nuevoPCB = malloc(sizeof(t_pcb));
 
-
 	nuevoPCB->pid = pidContador++;
     nuevoPCB->pc = 0; 
     nuevoPCB->AX = 0;
@@ -571,10 +568,10 @@ t_pcb *create_pcb() {
     nuevoPCB->SI = 0;
     nuevoPCB->DI = 0;
 	nuevoPCB->quantum = 0;
-	nuevoPCB->estado_actual = 0;
-    nuevoPCB->fd_conexion = 0; //CORREGIR y agregar arg socket cliente en la definición
-    nuevoPCB->llegada_ready = 0;
-    nuevoPCB->llegada_running = 0;
+	nuevoPCB->current_status = 0;
+    //nuevoPCB->fd_conexion = 0; //CORREGIR y agregar arg socket cliente en la definición
+    nuevoPCB->arrival_READY = 0;
+    nuevoPCB->arrival_RUNNING = 0;
 
 	// nuevoPCB->recurso_solicitado = string_new();
 

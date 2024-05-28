@@ -159,65 +159,72 @@ void instruction_cycle(void) {
     //   t_contexto* context = recibe_contexto(fd_kernel);
 }
 
-void execute(t_instruction_use *instruction, t_contexto *contexto) {
+/*
+void execute(t_instruction_use *instruction, t_pcb *pcb) {
     //size_t largo_nombre = 0;
    // uint32_t dir_logica = 0;
    // uint32_t dir_fisica = 0;
-    uint32_t valor = 0;
-    char *parametro = NULL;
-    char *parametro2 = NULL;
+    uint32_t value = 0;
+    char *parameter = NULL;
+    char *parameter2 = NULL;
    // char *recurso = NULL;
-    t_register registro_destino;
-    t_register registro_origen;
+    t_pcb new_pcb;
+    t_register register_origin;
 
     // Declarame las variables que necesites para en el case de IO_GEN_SLEEP (Interfaz, Unidades de trabajo): Esta instrucción solicita al Kernel que se envíe a una interfaz de I/O a que realice un sleep por una cantidad de unidades de trabajo.
-    uint32_t unidades_trabajo = 0;
+    uint32_t unit_work = 0;
     char *interfaz = NULL;
 
-    // contexto->pc++; // TODO: no hay problema con incrementarlo antes de ejecutar instruccion?// LO SAQIE DEL TP NO SE LA RESPUESTA AUN ..
     switch (instruction->operation) {
     case SET:
     {
 
-        parametro = list_get(instruction->parameters, 0);
-        parametro2 = list_get(instruction->parameters, 1);
-        registro_destino = string_a_registro(parametro);
-        valor = atoi(parametro2);
-        contexto->registros[registro_destino] = valor;
+        // LOS REGISTROS SUELTOS  EL PCB ESTAN... recib intruccion parametros ... recibo por ejmplo ax y le asigno el valor parametro 2 
+        
+        //adfaptarlo para que el enum lo busque en un campo previamente moviendolo a string
+
+        parameter = list_get(instruction->parameters, 0);
+        parameter2 = list_get(instruction->parameters, 1);
+        register_destination = string_to_register(parameter);
+        value = atoi(parameter2);
+        //MODIFICO EL CONTEXTO
+
+      //  contexto->registros[register_destination] = value;
         break;
     }
 
     case SUM:
     {
-        parametro = list_get(instruction->parameters, 0);
-        parametro2 = list_get(instruction->parameters, 1);
-        registro_destino = string_a_registro(parametro);
-        registro_origen = string_a_registro(parametro2);
-        contexto->registros[registro_destino] = contexto->registros[registro_destino] + contexto->registros[registro_origen];
+        parameter = list_get(instruction->parameters, 0);
+        parameter2 = list_get(instruction->parameters, 1);
+        register_destination = string_to_register(parameter);
+        register_origin = string_to_register(parameter2);
+     //   contexto->registros[register_destination] = contexto->registros[register_destination] + contexto->registros[register_origin];
         break;
     }
 
     case SUB:
     {
-        parametro = list_get(instruction->parameters, 0);
-        parametro2 = list_get(instruction->parameters, 1);
-        registro_destino = string_a_registro(parametro);
-        registro_origen = string_a_registro(parametro2);
-        contexto->registros[registro_destino] = contexto->registros[registro_destino] - contexto->registros[registro_origen];
+        parameter = list_get(instruction->parameters, 0);
+        parameter2 = list_get(instruction->parameters, 1);
+        register_destination = string_to_register(parameter);
+        register_origin = string_to_register(parameter2);
+    //    contexto->registros[register_destination] = contexto->registros[register_destination] - contexto->registros[register_origin];
         break;
     }
 
     case JNZ:
     {
-        parametro = list_get(instruction->parameters, 0);
-        parametro2 = list_get(instruction->parameters, 1);
-        registro_destino = string_a_registro(parametro);
-        valor = atoi(parametro2);
-        if (contexto->registros[registro_destino] != 0)
+        parameter = list_get(instruction->parameters, 0);
+        parameter2 = list_get(instruction->parameters, 1);
+        register_destination = string_to_register(parameter);
+        value = atoi(parameter2);
+        if (contexto->registros[register_destination] != 0)
         {
-            contexto->pc = valor;
+            contexto->pc = value;
         }
         break;
+      
     }
 
         // IO_GEN_SLEEP (Interfaz, Unidades de trabajo): Esta instrucción solicita al Kernel que se envíe a una interfaz de I/O a que realice un sleep por una cantidad de unidades de trabajo.
@@ -226,8 +233,8 @@ void execute(t_instruction_use *instruction, t_contexto *contexto) {
     case IO_GEN_SLEEP:
     {
         interfaz = list_get(instruction->parameters, 0);
-        unidades_trabajo = atoi(list_get(instruction->parameters, 1));
-        sleep(unidades_trabajo);
+        unit_work = atoi(list_get(instruction->parameters, 1));
+        sleep(unit_work);
     }
 
         // ==================================================================//////////////
@@ -239,8 +246,11 @@ void execute(t_instruction_use *instruction, t_contexto *contexto) {
     }
     }
 }
+*/
 
-t_register string_a_registro(const char *string)
+/*
+//t_pcb usar
+t_pcb *string_to_register(const char *string)
 {
     if (strcmp(string, "AX") == 0)
     {
@@ -258,40 +268,47 @@ t_register string_a_registro(const char *string)
     {
         return DX;
     }
+    else if (strcmp(string, "EAX") == 0)
+    {
+        return EAX;
+    }
+    else if (strcmp(string, "EBX") == 0)
+    {
+        return EBX;
+    }
+    else if (strcmp(string, "ECX") == 0)
+    {
+        return ECX;
+    }
+    else if (strcmp(string, "EDX") == 0)
+    {
+        return EDX;
+    }
+    else if (strcmp(string, "RAX") == 0)
+    {
+        return RAX;
+    }
+    else if (strcmp(string, "RBX") == 0)
+    {
+        return RBX;
+    }
+    else if (strcmp(string, "RCX") == 0)
+    {
+        return RCX;
+    }
+    else if (strcmp(string, "SI") == 0)
+    {
+        return SI;
+    }
+    else if (strcmp(string, "DI") == 0)
+    {
+        return DI;
+    }
+   
     else
     {
         log_error(module_logger, "Se intentó convertir string a registro un parámetro que no es registro.");
         exit(EXIT_FAILURE);
     }
 }
-
-/*
-===============old estaba aca==========================================////////
-void inicializar_ciclo_cpu() {
-    // pthread_create(&hilo_ciclo_cpu, NULL, (void*)ciclo_cpu, NULL);
-    // pthread_join(hilo_ciclo_cpu, NULL);
-}
-
-void ciclo_cpu(void){
-
-    while(1){
-      
-        t_paquete* paquete = recibir_paquete(conexion_kernel);
-        if (paquete == NULL) {
-            continue;
-        }
-        t_pcb* pcb = deserializar_pcb(paquete->buffer);
-
-        t_list* instrucciones = parsearInstrucciones(pcb->instrucciones);
-
-        cicloInstruccion(pcb, instrucciones);
-
-        list_destroy(instrucciones);
-     
-    }
-
 */
-
-
-
-

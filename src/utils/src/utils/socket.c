@@ -173,80 +173,79 @@ int server_accept(int fd_server) {
 	return fd_client;
 }
 
-t_opcode get_codOp(int socket){
-  t_opcode codigoOperacion;
+t_opcode get_opCode(int fd_socket) {
+  t_opcode opCode;
 
-  if (recv(socket, &codigoOperacion, sizeof(int), MSG_WAITALL) > 0)
-    return codigoOperacion;
+  if (recv(fd_socket, &opCode, sizeof(int), MSG_WAITALL) > 0)
+    return opCode;
   else
   {
-    close(socket);
-    return DESCONEXION;
+    close(fd_socket);
+    return DISCONNECTED;
   }
 
 }
 
-t_paquete *create_package(uint8_t codigoOperacion)
-{
-  t_paquete *paquete = malloc(sizeof(t_paquete));
+t_package *package_create(uint8_t opCode) {
+  t_package *package = malloc(sizeof(t_package));
 
-  paquete->codigo_operacion = codigoOperacion;
-  create_buffer(paquete);
+  package->codigo_operacion = opCode;
+  buffer_create(package);
 
-  return paquete;
+  return package;
 }
 
-void add_to_package(t_paquete *paquete, void *valor, int tamanio) {
-  paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio + sizeof(int));
-  memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio, sizeof(int));
-  memcpy(paquete->buffer->stream + paquete->buffer->size + sizeof(int), valor, tamanio);
-  paquete->buffer->size += tamanio + sizeof(int);
+void package_add(t_package *package, void *value, int size) {
+  package->buffer->stream = realloc(package->buffer->stream, package->buffer->size + size + sizeof(int));
+  memcpy(package->buffer->stream + package->buffer->size, &size, sizeof(int));
+  memcpy(package->buffer->stream + package->buffer->size + sizeof(int), value, size);
+  package->buffer->size += size + sizeof(int);
 }
 
-void kill_package(t_paquete *paquete) {
-  if (paquete != NULL)
+void package_kill(t_package *package) {
+  if (package != NULL)
   {
-    if (paquete->buffer != NULL)
+    if (package->buffer != NULL)
     {
-      free(paquete->buffer->stream);
-      free(paquete->buffer);
+      free(package->buffer->stream);
+      free(package->buffer);
     }
-    free(paquete);
+    free(package);
   }
 }
 
-void *get_buffer(int *size, int socketCliente) {
+void *buffer_get(int *size, int fd_client) {
   void *buffer;
 
-  recv(socketCliente, size, sizeof(int), MSG_WAITALL);
+  recv(fd_client, size, sizeof(int), MSG_WAITALL);
   buffer = malloc(*size);
-  recv(socketCliente, buffer, *size, MSG_WAITALL);
+  recv(fd_client, buffer, *size, MSG_WAITALL);
 
   return buffer;
 }
 
-void create_buffer(t_paquete *paquete) {
-  paquete->buffer = malloc(sizeof(t_buffer));
-  paquete->buffer->size = 0;
-  paquete->buffer->stream = NULL;
+void buffer_create(t_package *package) {
+  package->buffer = malloc(sizeof(t_buffer));
+  package->buffer->size = 0;
+  package->buffer->stream = NULL;
 }
 
-t_list* get_package_like_list(int socketCliente) {
-  int sizeBuffer;
+t_list* get_package_like_list(int fd_client) {
+  int buffer_size;
   int tamanioContenido;
-  int desplazamiento = 0;
+  int offset = 0;
 
   t_list *contenido = list_create();
-  void *buffer = get_buffer(&sizeBuffer, socketCliente);
+  void *buffer = buffer_get(&buffer_size, fd_client);
 
-  while (desplazamiento < sizeBuffer)
+  while (offset < buffer_size)
   {
-    memcpy(&tamanioContenido, buffer + desplazamiento, sizeof(int));
-    desplazamiento += sizeof(int);
+    memcpy(&tamanioContenido, buffer + offset, sizeof(int));
+    offset += sizeof(int);
 
     void *valor = malloc(tamanioContenido);
-    memcpy(valor, buffer + desplazamiento, tamanioContenido);
-    desplazamiento += tamanioContenido;
+    memcpy(valor, buffer + offset, tamanioContenido);
+    offset += tamanioContenido;
 
     list_add(contenido, valor);
   }
@@ -255,7 +254,7 @@ t_list* get_package_like_list(int socketCliente) {
   return contenido;
 }
 
-/* 
+/*  LIBERA ESPACIO
 void kill_pcb(t_pcb *pcbObjetivo)
 {
   if ( != NULL)
@@ -266,129 +265,129 @@ void kill_pcb(t_pcb *pcbObjetivo)
     free();
   }
 }
+
+//TODO: BRAI CONTINUAR  ESTA FUNCION  ====================================//////////////
+
+void instruction_delete(t_instruccion_use *lineaInstruccion) {
+  if (lineaInstruccion != NULL) free(lineaInstruccion);
+}
 */
 
-void delete_instruction(t_instruccion *lineaInstruccion) {
-  if (lineaInstruccion != NULL)
-    free(lineaInstruccion);
-}
-
-void serialize_pcb(t_paquete *paquete, t_pcb *pcb) {
+void serialize_pcb(t_package *package, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [...]\n"); }
-
   
   int cursor = 0;
   
-  add_to_package(paquete, &(pcb->pid), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: pid = %d\n", cursor, pcb->pid); }
+  package_add(package, &(pcb->pid), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: pid = %d\n", cursor, pcb->pid); }
   cursor++;
-  add_to_package(paquete, &(pcb->pc), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: pc = %d\n", cursor, pcb->pc); }
+  package_add(package, &(pcb->pc), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: pc = %d\n", cursor, pcb->pc); }
   cursor++;
 
   //REGISTROS
-  add_to_package(paquete, &(pcb->AX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro AX = %s\n", cursor, pcb->AX); }
+  package_add(package, &(pcb->AX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro AX = %s\n", cursor, pcb->AX); }
   cursor++;
-  add_to_package(paquete, &(pcb->BX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro BX = %s\n", cursor, pcb->BX); }
+  package_add(package, &(pcb->BX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro BX = %s\n", cursor, pcb->BX); }
   cursor++;
-  add_to_package(paquete, &(pcb->CX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro CX = %s\n", cursor, pcb->CX); }
+  package_add(package, &(pcb->CX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro CX = %s\n", cursor, pcb->CX); }
   cursor++;
-  add_to_package(paquete, &(pcb->DX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro DX = %s\n", cursor, pcb->DX); }
+  package_add(package, &(pcb->DX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DX = %s\n", cursor, pcb->DX); }
   cursor++;
-  add_to_package(paquete, &(pcb->EAX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro EAX = %s\n", cursor, pcb->EAX); }
+  package_add(package, &(pcb->EAX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EAX = %s\n", cursor, pcb->EAX); }
   cursor++;
-  add_to_package(paquete, &(pcb->EBX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro EBX = %s\n", cursor, pcb->EBX); }
+  package_add(package, &(pcb->EBX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EBX = %s\n", cursor, pcb->EBX); }
   cursor++;
-  add_to_package(paquete, &(pcb->ECX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro ECX = %s\n", cursor, pcb->ECX); }
+  package_add(package, &(pcb->ECX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro ECX = %s\n", cursor, pcb->ECX); }
   cursor++;
-  add_to_package(paquete, &(pcb->EDX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro EDX = %s\n", cursor, pcb->EDX); }
+  package_add(package, &(pcb->EDX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EDX = %s\n", cursor, pcb->EDX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RAX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RAX = %s\n", cursor, pcb->RAX); }
+  package_add(package, &(pcb->RAX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RAX = %s\n", cursor, pcb->RAX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RBX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RBX = %s\n", cursor, pcb->RBX); }
+  package_add(package, &(pcb->RBX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RBX = %s\n", cursor, pcb->RBX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RCX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RCX = %s\n", cursor, pcb->RCX); }
+  package_add(package, &(pcb->RCX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RCX = %s\n", cursor, pcb->RCX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RDX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RDX = %s\n", cursor, pcb->RDX); }
+  package_add(package, &(pcb->RDX), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RDX = %s\n", cursor, pcb->RDX); }
   cursor++;
-  add_to_package(paquete, &(pcb->SI), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro SI = %s\n", cursor, pcb->SI); }
+  package_add(package, &(pcb->SI), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro SI = %s\n", cursor, pcb->SI); }
   cursor++;
-  add_to_package(paquete, &(pcb->DI), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro DI = %s\n", cursor, pcb->DI); }
+  package_add(package, &(pcb->DI), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DI = %s\n", cursor, pcb->DI); }
   cursor++;
 
   /*CASO CHAR*
-  add_to_package(paquete, &(pcb->AX), strlen(&(pcb->AX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro AX = %s\n", cursor, pcb->AX); }
+  package_add(package, &(pcb->AX), strlen(&(pcb->AX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro AX = %s\n", cursor, pcb->AX); }
   cursor++;
-  add_to_package(paquete, &(pcb->BX), strlen(&(pcb->BX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro BX = %s\n", cursor, pcb->BX); }
+  package_add(package, &(pcb->BX), strlen(&(pcb->BX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro BX = %s\n", cursor, pcb->BX); }
   cursor++;
-  add_to_package(paquete, &(pcb->CX), strlen(&(pcb->CX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro CX = %s\n", cursor, pcb->CX); }
+  package_add(package, &(pcb->CX), strlen(&(pcb->CX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro CX = %s\n", cursor, pcb->CX); }
   cursor++;
-  add_to_package(paquete, &(pcb->DX), strlen(&(pcb->DX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro DX = %s\n", cursor, pcb->DX); }
+  package_add(package, &(pcb->DX), strlen(&(pcb->DX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DX = %s\n", cursor, pcb->DX); }
   cursor++;
-  add_to_package(paquete, &(pcb->EAX), strlen(&(pcb->EAX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro EAX = %s\n", cursor, pcb->EAX); }
+  package_add(package, &(pcb->EAX), strlen(&(pcb->EAX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EAX = %s\n", cursor, pcb->EAX); }
   cursor++;
-  add_to_package(paquete, &(pcb->EBX), strlen(&(pcb->EBX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro EBX = %s\n", cursor, pcb->EBX); }
+  package_add(package, &(pcb->EBX), strlen(&(pcb->EBX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EBX = %s\n", cursor, pcb->EBX); }
   cursor++;
-  add_to_package(paquete, &(pcb->ECX), strlen(&(pcb->ECX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro ECX = %s\n", cursor, pcb->ECX); }
+  package_add(package, &(pcb->ECX), strlen(&(pcb->ECX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro ECX = %s\n", cursor, pcb->ECX); }
   cursor++;
-  add_to_package(paquete, &(pcb->EDX), strlen(&(pcb->EDX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro EDX = %s\n", cursor, pcb->EDX); }
+  package_add(package, &(pcb->EDX), strlen(&(pcb->EDX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EDX = %s\n", cursor, pcb->EDX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RAX), strlen(&(pcb->RAX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RAX = %s\n", cursor, pcb->RAX); }
+  package_add(package, &(pcb->RAX), strlen(&(pcb->RAX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RAX = %s\n", cursor, pcb->RAX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RBX), strlen(&(pcb->RBX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RBX = %s\n", cursor, pcb->RBX); }
+  package_add(package, &(pcb->RBX), strlen(&(pcb->RBX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RBX = %s\n", cursor, pcb->RBX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RCX), strlen(&(pcb->RCX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RCX = %s\n", cursor, pcb->RCX); }
+  package_add(package, &(pcb->RCX), strlen(&(pcb->RCX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RCX = %s\n", cursor, pcb->RCX); }
   cursor++;
-  add_to_package(paquete, &(pcb->RDX), strlen(&(pcb->RDX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Registro RDX = %s\n", cursor, pcb->RDX); }
+  package_add(package, &(pcb->RDX), strlen(&(pcb->RDX)) + 1);
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RDX = %s\n", cursor, pcb->RDX); }
   cursor++;
 */
 
-  add_to_package(paquete, &(pcb->quantum), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: quantum = %d\n", cursor, pcb->quantum); }
+  package_add(package, &(pcb->quantum), sizeof(uint32_t));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: quantum = %d\n", cursor, pcb->quantum); }
   cursor++;
-  add_to_package(paquete, &(pcb->llegada_ready), sizeof(double));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: llegada_ready = %d\n", cursor, pcb->llegada_ready); }
+  package_add(package, &(pcb->arrival_READY), sizeof(double));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: arrival_READY = %d\n", cursor, pcb->arrival_READY); }
   cursor++;
-  add_to_package(paquete, &(pcb->llegada_running), sizeof(double));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: llegada_running = %d\n", cursor, pcb->llegada_running); }
+  package_add(package, &(pcb->arrival_RUNNING), sizeof(double));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: arrival_RUNNING = %d\n", cursor, pcb->arrival_RUNNING); }
   cursor++;
-  add_to_package(paquete, &(pcb->estado_actual), sizeof(int));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: estado_actual = %d\n", cursor, pcb->estado_actual); }
+  package_add(package, &(pcb->current_status), sizeof(int));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: current_status = %d\n", cursor, pcb->current_status); }
   cursor++;
-  add_to_package(paquete, &(pcb->fd_conexion), sizeof(int));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: fd_conexion = %d\n", cursor, pcb->fd_conexion); }
-  cursor++;
+  //package_add(package, &(pcb->fd_conexion), sizeof(int));
+  //{ DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: fd_conexion = %d\n", cursor, pcb->fd_conexion); }
+  //cursor++;
 
 /*
   //INSTRUCCIONES
-  add_to_package(paquete, &cantidadInstrucciones, sizeof(int));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Cantidad de Instrucciones = %d\n", cursor, cantidadInstrucciones); }
+  package_add(package, &cantidadInstrucciones, sizeof(int));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Cantidad de Instrucciones = %d\n", cursor, cantidadInstrucciones); }
   cursor++;
 
   t_instruccion *lineaInstruccion;
@@ -396,23 +395,23 @@ void serialize_pcb(t_paquete *paquete, t_pcb *pcb) {
   {
     lineaInstruccion = list_get(pcb->instrucciones, i);
 
-    add_to_package(paquete, lineaInstruccion->id, strlen(lineaInstruccion->id) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Identificador instruccion = %s\n", cursor, lineaInstruccion->id); }
+    package_add(package, lineaInstruccion->id, strlen(lineaInstruccion->id) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Identificador instruccion = %s\n", cursor, lineaInstruccion->id); }
     cursor++;
-    add_to_package(paquete, lineaInstruccion->param1, strlen(lineaInstruccion->param1) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Param1 = %d\n", cursor, lineaInstruccion->param1); }
+    package_add(package, lineaInstruccion->param1, strlen(lineaInstruccion->param1) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Param1 = %d\n", cursor, lineaInstruccion->param1); }
     cursor++;
-    add_to_package(paquete, lineaInstruccion->param2, strlen(lineaInstruccion->param2) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Param2 = %d\n", cursor, lineaInstruccion->param2); }
+    package_add(package, lineaInstruccion->param2, strlen(lineaInstruccion->param2) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Param2 = %d\n", cursor, lineaInstruccion->param2); }
     cursor++;
-    add_to_package(paquete, lineaInstruccion->param3, strlen(lineaInstruccion->param3) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Param3 = %d\n", cursor, lineaInstruccion->param3); }
+    package_add(package, lineaInstruccion->param3, strlen(lineaInstruccion->param3) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Param3 = %d\n", cursor, lineaInstruccion->param3); }
     cursor++;
-    add_to_package(paquete, lineaInstruccion->param4, strlen(lineaInstruccion->param4) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Param4 = %d\n", cursor, lineaInstruccion->param4); }
+    package_add(package, lineaInstruccion->param4, strlen(lineaInstruccion->param4) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Param4 = %d\n", cursor, lineaInstruccion->param4); }
     cursor++;
-    add_to_package(paquete, lineaInstruccion->param5, strlen(lineaInstruccion->param5) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Param5 = %d\n", cursor, lineaInstruccion->param5); }
+    package_add(package, lineaInstruccion->param5, strlen(lineaInstruccion->param5) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Param5 = %d\n", cursor, lineaInstruccion->param5); }
     cursor++;
   }
 */
@@ -430,73 +429,73 @@ t_pcb *deserialize_pcb(int socketCliente)
   int cursor = 0;
 
   pcb->pid = *(uint32_t *)list_get(lista_elememtos, cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->pid = %d\n", cursor, pcb->pid); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->pid = %d\n", cursor, pcb->pid); }
   pcb->pc = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->pc = %d\n", cursor, pcb->pc); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->pc = %d\n", cursor, pcb->pc); }
 
   //REGISTROS
   pcb->AX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->AX = %d\n", cursor, pcb->AX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->AX = %d\n", cursor, pcb->AX); }
   pcb->BX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->BX = %d\n", cursor, pcb->BX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->BX = %d\n", cursor, pcb->BX); }
   pcb->CX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->CX = %d\n", cursor, pcb->CX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->CX = %d\n", cursor, pcb->CX); }
   pcb->DX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->DX = %d\n", cursor, pcb->DX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->DX = %d\n", cursor, pcb->DX); }
   pcb->EAX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->EAX = %d\n", cursor, pcb->EAX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->EAX = %d\n", cursor, pcb->EAX); }
   pcb->EBX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->EBX = %d\n", cursor, pcb->EBX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->EBX = %d\n", cursor, pcb->EBX); }
   pcb->ECX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->ECX = %d\n", cursor, pcb->ECX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->ECX = %d\n", cursor, pcb->ECX); }
   pcb->EDX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->EDX = %d\n", cursor, pcb->EDX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->EDX = %d\n", cursor, pcb->EDX); }
   pcb->RAX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->RAX = %d\n", cursor, pcb->RAX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->RAX = %d\n", cursor, pcb->RAX); }
   pcb->RBX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->RBX = %d\n", cursor, pcb->RBX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->RBX = %d\n", cursor, pcb->RBX); }
   pcb->RCX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->RCX = %d\n", cursor, pcb->RCX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->RCX = %d\n", cursor, pcb->RCX); }
   pcb->RDX = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->RDX = %d\n", cursor, pcb->RDX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->RDX = %d\n", cursor, pcb->RDX); }
   pcb->SI = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->SI = %d\n", cursor, pcb->SI); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->SI = %d\n", cursor, pcb->SI); }
   pcb->DI = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->DI = %d\n", cursor, pcb->DI); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->DI = %d\n", cursor, pcb->DI); }
 
   pcb->quantum = *(uint32_t *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->quantum = %d\n", cursor, pcb->quantum); }
-  pcb->llegada_ready = *(double *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->llegada_ready = %d\n", cursor, pcb->llegada_ready); }
-  pcb->llegada_running = *(double *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->llegada_running = %d\n", cursor, pcb->llegada_running); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->quantum = %d\n", cursor, pcb->quantum); }
+  pcb->arrival_READY = *(double *)list_get(lista_elememtos, ++cursor);
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->arrival_READY = %d\n", cursor, pcb->arrival_READY); }
+  pcb->arrival_RUNNING = *(double *)list_get(lista_elememtos, ++cursor);
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->arrival_RUNNING = %d\n", cursor, pcb->arrival_RUNNING); }
 
-  pcb->estado_actual = *(int *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->estado_actual = %d\n", cursor, pcb->estado_actual); }
-  pcb->fd_conexion = *(int *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: pcb->fd_conexion = %d\n", cursor, pcb->fd_conexion); }
+  pcb->current_status = *(int *)list_get(lista_elememtos, ++cursor);
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->current_status = %d\n", cursor, pcb->current_status); }
+  //pcb->fd_conexion = *(int *)list_get(lista_elememtos, ++cursor);
+  //{ DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->fd_conexion = %d\n", cursor, pcb->fd_conexion); }
 
 /*
   //INSTRUCCIONES
   int cantidadInstrucciones =*(int *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: cantidadInstrucciones = %d\n", cursor, cantidadInstrucciones); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: cantidadInstrucciones = %d\n", cursor, cantidadInstrucciones); }
   int offset = cursor;
 
   while (cursor < cantidadInstrucciones * 6 + offset)
   {
     t_instruccion *instruccion = malloc(sizeof(t_instruccion));
     instruccion->id = string_duplicate(list_get(lista_elememtos, ++cursor));
-    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: id = %s \n", cursor, instruccion->id); }
+    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: id = %s \n", cursor, instruccion->id); }
     instruccion->param1 = string_duplicate(list_get(lista_elememtos, ++cursor));
-    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: param1 = %d \n", cursor, instruccion->param1); }
+    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: param1 = %d \n", cursor, instruccion->param1); }
     instruccion->param2 = string_duplicate(list_get(lista_elememtos, ++cursor));
-    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: param2 = %d \n", cursor, instruccion->param2); }
+    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: param2 = %d \n", cursor, instruccion->param2); }
     instruccion->param3 = string_duplicate(list_get(lista_elememtos, ++cursor));
-    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: param3 = %d \n", cursor, instruccion->param3); }
+    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: param3 = %d \n", cursor, instruccion->param3); }
     instruccion->param4 = string_duplicate(list_get(lista_elememtos, ++cursor));
-    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: param4 = %d \n", cursor, instruccion->param4); }
+    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: param4 = %d \n", cursor, instruccion->param4); }
     instruccion->param5 = string_duplicate(list_get(lista_elememtos, ++cursor));
-    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] paquete[%d]: param5 = %d \n", cursor, instruccion->param5); }
+    { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: param5 = %d \n", cursor, instruccion->param5); }
 
     list_add(pcb->instrucciones, instruccion);
   }
@@ -507,58 +506,53 @@ t_pcb *deserialize_pcb(int socketCliente)
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_pcb( ) [END]\n"); }
 
   return pcb;
-
 }
 
-
-void send_message(t_opcode codigoOperacion, char* mensaje, int socket){
-
-            t_paquete *paquete = create_package(codigoOperacion);
-            add_to_package(paquete, mensaje, strlen(mensaje) + 1);
-            send_package(paquete, socket);
-            kill_package(paquete);
+void send_message(t_opcode codigoOperacion, char* mensaje, int socket) {
+  t_package *package = package_create(codigoOperacion);
+  package_add(package, mensaje, strlen(mensaje) + 1);
+  package_send(package, socket);
+  package_kill(package);
 }
 
-void send_package(t_paquete* paquete, int socket)
-{
-  int bytes = paquete->buffer->size + 2 * sizeof(int);
-  void *aEnviar = serialize_package(paquete, bytes);
+void package_send(t_package* package, int fd_receiver) {
+  int bytes = package->buffer->size + 2 * sizeof(int);
+  void *aEnviar = package_serialize(package, bytes);
 
-  send(socket, aEnviar, bytes, 0);
+  send(fd_receiver, aEnviar, bytes, 0);
   free(aEnviar);
 }
 
-void *serialize_package(t_paquete *paquete, int bytes)
-{
-  void *magic = malloc(bytes);
-  int desplazamiento = 0;
+void *package_serialize(t_package *package, int bytes) {
+  void *package_void = malloc(bytes);
+  int offset = 0;
 
-  memcpy(magic + desplazamiento, &(paquete->codigo_operacion), sizeof(int));
-  desplazamiento += sizeof(int);
-  memcpy(magic + desplazamiento, &(paquete->buffer->size), sizeof(int));
-  desplazamiento += sizeof(int);
-  memcpy(magic + desplazamiento, paquete->buffer->stream, paquete->buffer->size);
+  memcpy(package_void + offset, &(package->codigo_operacion), sizeof(int));
+  offset += sizeof(int);
+  memcpy(package_void + offset, &(package->buffer->size), sizeof(int));
+  offset += sizeof(int);
+  memcpy(package_void + offset, package->buffer->stream, package->buffer->size);
 
-  return magic;
+  return package_void;
 }
 
 
 void send_instruccion(t_instruction_use* instruccion, int socket){
   
-  t_paquete* paquete = create_package(INSTUCTION_REQUEST);
+  t_package* package = package_create(INSTUCTION_REQUEST);
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [...]\n"); }
   
   int cursor = 0;
   int cantidad_parametros= list_size(instruccion->parameters);
 
 
-    add_to_package(paquete, &instruccion->operation, sizeof(t_opcode));
-    //DEBUG_PRINTF("\n[Serializar] paquete[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
+    package_add(package, &instruccion->operation, sizeof(t_opcode));
+    //DEBUG_PRINTF("\n[Serializar] package[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
     cursor++;
 
   //PARAMETROS
-  add_to_package(paquete, &cantidad_parametros, sizeof(int));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Cantidad de parametros = %d\n", cursor, cantidad_parametros); }
+  package_add(package, &cantidad_parametros, sizeof(int));
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Cantidad de parametros = %d\n", cursor, cantidad_parametros); }
   cursor++;
 
   char* parametro;
@@ -566,18 +560,16 @@ void send_instruccion(t_instruction_use* instruccion, int socket){
   {
     parametro = list_get(instruccion->parameters, i);
 
-    add_to_package(paquete, parametro, strlen(parametro) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] paquete[%d]: Parametro = %s\n", cursor, parametro); }
+    package_add(package, parametro, strlen(parametro) + 1);
+    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Parametro = %s\n", cursor, parametro); }
     cursor++;
   }
 
-
   //DEBUG_PRINTF("\n[Serializar] serializar_instruccion( ) [END]\n");
 
-  send_package(paquete, socket);
+  package_send(package, socket);
 
-  kill_package(paquete);
-
+  package_kill(package);
 }
 
 
@@ -589,16 +581,16 @@ t_instruction_use* receive_instruccion(int socket){
   int cursor = 0;
 
   instruccionRecibida->operation = *(t_opcode*)list_get(propiedadesPlanas, cursor);
-  //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
+  //DEBUG_PRINTF("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
   
   int cantidadParametros = *(int*)list_get(propiedadesPlanas, cursor);
-  //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
+  //DEBUG_PRINTF("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
   
   for (size_t i = 0; i < cantidadParametros; i++)
   {
     char* parametro = string_new();
     parametro = string_duplicate(list_get(propiedadesPlanas, ++cursor));
-    //DEBUG_PRINTF("\n[Deserializar] paquete[%d]: parametro = %s \n", cursor, parametro);
+    //DEBUG_PRINTF("\n[Deserializar] package[%d]: parametro = %s \n", cursor, parametro);
     list_add(instruccionRecibida->parameters, parametro);
   }
   
@@ -609,116 +601,118 @@ t_instruction_use* receive_instruccion(int socket){
   return instruccionRecibida;
 }
 
-void serialize_pcb_2(t_paquete* paquete, t_pcb* pcb) {
+// Alternativa iña
+void serialize_pcb_2(t_package* package, t_pcb* pcb) {
     // Calcular el tamaño total necesario para el buffer
     uint32_t buffer_size = sizeof(t_pcb);
 
     // Reservar memoria para el buffer
-    paquete->buffer = malloc(sizeof(t_buffer));
-    paquete->buffer->size = buffer_size;
-    paquete->buffer->stream = malloc(buffer_size);
+    package->buffer = malloc(sizeof(t_buffer));
+    package->buffer->size = buffer_size;
+    package->buffer->stream = malloc(buffer_size);
 
     // Copiar los datos de la estructura t_pcb al buffer
     uint32_t offset = 0;
-    memcpy(paquete->buffer->stream + offset, &pcb->pid, sizeof(pcb->pid));
+    memcpy(package->buffer->stream + offset, &pcb->pid, sizeof(pcb->pid));
     offset += sizeof(pcb->pid);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->pc, sizeof(pcb->pc));
+    memcpy(package->buffer->stream + offset, &pcb->pc, sizeof(pcb->pc));
     offset += sizeof(pcb->pc);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->AX, sizeof(pcb->AX));
+    memcpy(package->buffer->stream + offset, &pcb->AX, sizeof(pcb->AX));
     offset += sizeof(pcb->AX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->BX, sizeof(pcb->BX));
+    memcpy(package->buffer->stream + offset, &pcb->BX, sizeof(pcb->BX));
     offset += sizeof(pcb->BX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->CX, sizeof(pcb->CX));
+    memcpy(package->buffer->stream + offset, &pcb->CX, sizeof(pcb->CX));
     offset += sizeof(pcb->CX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->DX, sizeof(pcb->DX));
+    memcpy(package->buffer->stream + offset, &pcb->DX, sizeof(pcb->DX));
     offset += sizeof(pcb->DX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->EAX, sizeof(pcb->EAX));
+    memcpy(package->buffer->stream + offset, &pcb->EAX, sizeof(pcb->EAX));
     offset += sizeof(pcb->EAX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->EBX, sizeof(pcb->EBX));
+    memcpy(package->buffer->stream + offset, &pcb->EBX, sizeof(pcb->EBX));
     offset += sizeof(pcb->EBX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->ECX, sizeof(pcb->ECX));
+    memcpy(package->buffer->stream + offset, &pcb->ECX, sizeof(pcb->ECX));
     offset += sizeof(pcb->ECX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->EDX, sizeof(pcb->EDX));
+    memcpy(package->buffer->stream + offset, &pcb->EDX, sizeof(pcb->EDX));
     offset += sizeof(pcb->EDX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->RAX, sizeof(pcb->RAX));
+    memcpy(package->buffer->stream + offset, &pcb->RAX, sizeof(pcb->RAX));
     offset += sizeof(pcb->RAX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->RBX, sizeof(pcb->RBX));
+    memcpy(package->buffer->stream + offset, &pcb->RBX, sizeof(pcb->RBX));
     offset += sizeof(pcb->RBX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->RCX, sizeof(pcb->RCX));
+    memcpy(package->buffer->stream + offset, &pcb->RCX, sizeof(pcb->RCX));
     offset += sizeof(pcb->RCX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->RDX, sizeof(pcb->RDX));
+    memcpy(package->buffer->stream + offset, &pcb->RDX, sizeof(pcb->RDX));
     offset += sizeof(pcb->RDX);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->SI, sizeof(pcb->SI));
+    memcpy(package->buffer->stream + offset, &pcb->SI, sizeof(pcb->SI));
     offset += sizeof(pcb->SI);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->DI, sizeof(pcb->DI));
+    memcpy(package->buffer->stream + offset, &pcb->DI, sizeof(pcb->DI));
     offset += sizeof(pcb->DI);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->quantum, sizeof(pcb->quantum));
+    memcpy(package->buffer->stream + offset, &pcb->quantum, sizeof(pcb->quantum));
     offset += sizeof(pcb->quantum);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->estado_actual, sizeof(pcb->estado_actual));
-    offset += sizeof(pcb->estado_actual);
+    memcpy(package->buffer->stream + offset, &pcb->current_status, sizeof(pcb->current_status));
+    offset += sizeof(pcb->current_status);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->fd_conexion, sizeof(pcb->fd_conexion));
-    offset += sizeof(pcb->fd_conexion);
+    //memcpy(package->buffer->stream + offset, &pcb->fd_conexion, sizeof(pcb->fd_conexion));
+    //offset += sizeof(pcb->fd_conexion);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->llegada_ready, sizeof(pcb->llegada_ready));
-    offset += sizeof(pcb->llegada_ready);
+    memcpy(package->buffer->stream + offset, &pcb->arrival_READY, sizeof(pcb->arrival_READY));
+    offset += sizeof(pcb->arrival_READY);
 
-    memcpy(paquete->buffer->stream + offset, &pcb->llegada_running, sizeof(pcb->llegada_running));
-    offset += sizeof(pcb->llegada_running);
+    memcpy(package->buffer->stream + offset, &pcb->arrival_RUNNING, sizeof(pcb->arrival_RUNNING));
+    offset += sizeof(pcb->arrival_RUNNING);
 
-    // Establecer el código de operación del paquete, si es necesario
-    paquete->codigo_operacion = 1;  // O el valor que necesites
+    // Establecer el código de operación del package, si es necesario
+    package->codigo_operacion = 1;  // O el valor que necesites
 }
 
 // Función de ejemplo para liberar la memoria asignada
-void free_package(t_paquete* paquete) {
-    if (paquete->buffer != NULL) {
-        if (paquete->buffer->stream != NULL) {
-            free(paquete->buffer->stream);
+void free_package(t_package* package) {
+    if (package->buffer != NULL) {
+        if (package->buffer->stream != NULL) {
+            free(package->buffer->stream);
         }
-        free(paquete->buffer);
+        free(package->buffer);
     }
 }
 
 void send_pcb(int socket, t_pcb* pcb) {
-    t_paquete paquete;
-    serialize_pcb_2(&paquete, pcb);
+    t_package package;
+    serialize_pcb_2(&package, pcb);
 
-    uint32_t total_size = sizeof(paquete.codigo_operacion) + sizeof(paquete.buffer->size) + paquete.buffer->size;
+    uint32_t total_size = sizeof(package.codigo_operacion) + sizeof(package.buffer->size) + package.buffer->size;
     void* buffer = malloc(total_size);
 
     uint32_t offset = 0;
-    memcpy(buffer + offset, &paquete.codigo_operacion, sizeof(paquete.codigo_operacion));
-    offset += sizeof(paquete.codigo_operacion);
+    memcpy(buffer + offset, &package.codigo_operacion, sizeof(package.codigo_operacion));
+    offset += sizeof(package.codigo_operacion);
 
-    memcpy(buffer + offset, &paquete.buffer->size, sizeof(paquete.buffer->size));
-    offset += sizeof(paquete.buffer->size);
+    memcpy(buffer + offset, &package.buffer->size, sizeof(package.buffer->size));
+    offset += sizeof(package.buffer->size);
 
-    memcpy(buffer + offset, paquete.buffer->stream, paquete.buffer->size);
+    memcpy(buffer + offset, package.buffer->stream, package.buffer->size);
 
     send(socket, buffer, total_size, 0);
 
     free(buffer);
-    free_package(&paquete);
+    free_package(&package);
 }
 
+// Alternativa iña
 void deserialize_pcb_2(t_pcb* pcb, void* stream) {
     uint32_t offset = 0;
 
@@ -773,17 +767,17 @@ void deserialize_pcb_2(t_pcb* pcb, void* stream) {
     memcpy(&pcb->quantum, stream + offset, sizeof(pcb->quantum));
     offset += sizeof(pcb->quantum);
 
-    memcpy(&pcb->estado_actual, stream + offset, sizeof(pcb->estado_actual));
-    offset += sizeof(pcb->estado_actual);
+    memcpy(&pcb->current_status, stream + offset, sizeof(pcb->current_status));
+    offset += sizeof(pcb->current_status);
 
-    memcpy(&pcb->fd_conexion, stream + offset, sizeof(pcb->fd_conexion));
-    offset += sizeof(pcb->fd_conexion);
+    //memcpy(&pcb->fd_conexion, stream + offset, sizeof(pcb->fd_conexion));
+    //offset += sizeof(pcb->fd_conexion);
 
-    memcpy(&pcb->llegada_ready, stream + offset, sizeof(pcb->llegada_ready));
-    offset += sizeof(pcb->llegada_ready);
+    memcpy(&pcb->arrival_READY, stream + offset, sizeof(pcb->arrival_READY));
+    offset += sizeof(pcb->arrival_READY);
 
-    memcpy(&pcb->llegada_running, stream + offset, sizeof(pcb->llegada_running));
-    offset += sizeof(pcb->llegada_running);
+    memcpy(&pcb->arrival_RUNNING, stream + offset, sizeof(pcb->arrival_RUNNING));
+    offset += sizeof(pcb->arrival_RUNNING);
 }
 
 void receive_pcb(int socket, t_pcb *pcb) {
