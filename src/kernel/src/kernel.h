@@ -32,7 +32,7 @@ void finish_sockets(void);
 void *kernel_start_server_for_io(void *server_parameter);
 void *kernel_client_handler_for_io(void *fd_new_client_parameter);
 void switch_process_state(t_pcb *pcb, int estado_nuevo);
-t_pcb *create_pcb(char *instrucciones);
+t_pcb *create_pcb();
 void initialize_long_term_scheduler(void);
 void initialize_short_term_scheduler(void);
 void initialize_cpu_command_line_interface(void);

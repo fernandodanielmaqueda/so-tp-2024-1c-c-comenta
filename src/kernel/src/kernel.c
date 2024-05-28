@@ -3,6 +3,7 @@
 
 #include "kernel.h"
 
+
 char *module_name = "kernel";
 char *module_log_pathname = "kernel.log";
 char *module_config_pathname = "kernel.config";
@@ -29,6 +30,7 @@ int identifier_pid=1;
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
+pthread_t thread_interrupt;
 
 sem_t sem_long_term_scheduler;
 sem_t sem_short_term_scheduler;
@@ -48,14 +50,18 @@ int QUANTUM;
 char **RESOURCES;
 char **RESOURCE_INSTANCES;
 int MULTIPROGRAMMING_LEVEL;
+int pidContador;
 
 size_t bytes;
+
 
 int module(int argc, char *argv[]) {
 
 	initialize_loggers();
 	initialize_configs();
 	initialize_sockets();
+	pidContador = 0;
+
 
 	t_pcb pcb = {
         .pid = 1234,
@@ -222,13 +228,16 @@ void initialize_cpu_command_line_interface(void) {
 }
 
 void long_term_scheduler(void) {
+
+
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
 		sem_wait(&sem_multiprogramming_level);
-		
+		t_pcb *pcb = list_get(LIST_NEW, 0);
+
 		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
 
-		// switch_process_state(pcb, READY);
+	     switch_process_state(pcb, READY);
 		
 	}
 }
@@ -244,11 +253,11 @@ void short_term_scheduler(void) {
 			//pcb = algoritmo_VRR();
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
 			pcb = FIFO_scheduling_algorithm();
-		} else if (!strcmp(ALGORITMO_PLANIFICACION, "RR")){
-			pcb = algoritmo_RR();
+		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
+			pcb = RR_scheduling_algorithm();
 
-	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
-			
+	    	//pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
+			//pthread_join(&thread_interrupt, NULL);
 		} else {
 			// log_error(module_logger, "El algoritmo de planificacion ingresado no existe\n");
 		}
@@ -268,7 +277,7 @@ t_pcb *FIFO_scheduling_algorithm(void) {
 	return pcb;
 }
 
-/*t_pcb *algoritmo_RR(void* arg)
+/*t_pcb *RR_scheduling_algorithm(void* arg)
 {
     t_args_hilo* arg_h = (t_args_hilo*) arg;
 	
@@ -411,7 +420,7 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 	pcb->estado_actual = estado_nuevo;
 	char* global_estado_anterior;
 	
-	// t_paquete* paquete;
+	t_paquete* paquete;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_pcb*)elemento)->pid == pcb->pid);
@@ -539,12 +548,13 @@ void switch_process_state(t_pcb* pcb, int estado_nuevo) {
 }
 
 //POR REVISAR
-t_pcb *create_pcb(char *instrucciones) {
+t_pcb *create_pcb() {
 	//FALTA AGREGAR ATRIBUTOS AL PCB
 
 	t_pcb *nuevoPCB = malloc(sizeof(t_pcb));
 
-	nuevoPCB->pid = idProcesoGlobal++;
+
+	nuevoPCB->pid = pidContador++;
     nuevoPCB->pc = 0; 
     nuevoPCB->AX = 0;
     nuevoPCB->BX = 0;
@@ -562,29 +572,13 @@ t_pcb *create_pcb(char *instrucciones) {
     nuevoPCB->DI = 0;
 	nuevoPCB->quantum = 0;
 	nuevoPCB->estado_actual = 0;
-    nuevoPCB->estado_actual = 0;
-    //nuevoPCB->fd_conexion = socketCliente;
+    nuevoPCB->fd_conexion = 0; //CORREGIR y agregar arg socket cliente en la definición
     nuevoPCB->llegada_ready = 0;
     nuevoPCB->llegada_running = 0;
-	//nuevoPCB->instrucciones = list_create();
-	nuevoPCB->instrucciones = instrucciones;
 
-
-	/*INSTRUCCIONES --> Falta capturar la lista de instrucciones
-	nuevoPCB->instrucciones = string_new();
-	nuevoPCB->instrucciones = string_duplicate(instrucciones);
-	*/
 	// nuevoPCB->recurso_solicitado = string_new();
 
 	// nuevoPCB->primera_aparicion = true;
-
-
-
-	//pthread_mutex_lock(&mutex_PID);
-	// nuevoPCB->pid = PID;
-	// PID++;
-	//pthread_mutex_unlock(&mutex_PID);
-
 
 	return nuevoPCB;
 }
@@ -612,11 +606,12 @@ int asignar_PID(void) {
     return value_pid;
   
 }
-
+/*
 void* start_quantum(void* arg)
 {
-    log_trace(logger, "Se crea hilo para INTERRUPT");
+    log_trace(module_logger, "Se crea hilo para INTERRUPT");
     usleep(QUANTUM * 1000); //en milisegundos
-    send_interrupt(socket_cpu_interrupt);
-    log_trace(logger, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+    send_interrupt(thread_cpu_interrupt_start_server_for_kernel); //PREGUNTAR
+    log_trace(module_logger, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
 }
+*/
