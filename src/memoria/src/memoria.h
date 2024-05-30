@@ -63,4 +63,43 @@ void create_process(int socket);
  */
 void seek_instruccion(int socket);
 
+
+
+/**
+ * @brief Crea la lista de instrucciones asociada al archivo pasado por parametro
+ * @param file Archivo a leer
+ * @param list_instruction Lista a llenarse con las instrucciones del archivo.
+ */
+void create_instruction(FILE* file, t_list* list_instruction);
+
+
+/**
+ * @brief Busca un archivo, lo lee y crea una lista de instrucciones
+ * @param path Path donde se encuentra el archivo.
+ * @param list_instruction Lista a llenarse con las instrucciones del archivo.
+ */
+void parser_file(char* path, t_list* list_instruction);
+
+
+/**
+ * @brief Busca el proceso asociado al pid de interes.
+ * @param pidBuscado Pid de la lista de instrucciones asociada
+ */
+t_process* seek_process_by_pid(int pidBuscado);
+
+
+
+/**
+ * @brief Funcion que encapsula al hilo escucha cpu
+ * @param socket Socket escuchado
+ */
+void listen_cpu(int socket);
+
+
+/**
+ * @brief Funcion que encapsula al hilo escucha kernel
+ * @param socket Socket escuchado
+ */
+void listen_kernel(int socket);
+
 #endif /* MEMORIA_H */
