@@ -55,6 +55,16 @@ typedef enum t_register {
 	BX,
 	CX,
 	DX,
+    EAX,
+    EBX,
+    ECX,
+    EDX,
+    RAX,
+    RBX,
+    RCX,
+    SI,
+    DI
+
 } t_register;
 
 #endif // ESTRUCTURAS_H

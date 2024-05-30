@@ -20,7 +20,9 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
+#include "utils/estructuras.h"
 #include "utils/modules.h"
+#include "utils/estructuras.h"
 #include "utils/serialize.h"
 #include "utils/socket.h"
 
@@ -32,6 +34,6 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
 void execute(t_instruction_use *instruction, t_pcb *pcb);
-t_pcb *string_to_register(const char *string);
+int string_to_register(const char *string);
 
 #endif /* CPU_H */
