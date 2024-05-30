@@ -25,6 +25,7 @@ typedef enum HeaderCode {
     //Kernel - Memoria
     PROCESS_NEW,
     PROCESS_CREATED,
+    PROCESS_FINALIZED,
     //Kernel - IO
     //Kernel - CPU
     TYPE_INTERRUPT_SIN_INT,
@@ -34,6 +35,9 @@ typedef enum HeaderCode {
     ///////////////
     //CPU - Memoria////
     INSTUCTION_REQUEST,
+    READ_REQUEST, //utilizado en MEMORIA-IO
+    WRITE_REQUEST, //utilizado en MEMORIA-IO
+    RESIZE_REQUEST,
     ///////////////////
     //IO - Memoria
     //Instrucciones
