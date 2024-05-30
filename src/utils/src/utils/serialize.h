@@ -30,6 +30,7 @@ typedef enum HeaderCode {
     TYPE_INTERRUPT_SIN_INT,
     TYPE_INTERRUPT_FIN_PROCESO,
     TYPE_INTERRUPT_FIN_QUANTUM,
+    PCB,
     ///////////////
     //CPU - Memoria////
     INSTUCTION_REQUEST,
@@ -156,6 +157,14 @@ void serialize_pcb(Package *package, t_pcb *pcb);
  * @param socketClient Socket desde donde se va a recibir el pcb.
  */
 t_pcb* deserialize_pcb(int socketClient);
+
+
+/**
+ * @brief Enviar pcb (incluye el serializado)
+ * @param pcbEnviado t_pcb a enviar.
+ * @param socket Socket desde donde se va a recibir el pcb.
+ */
+void send_pcb_to(t_pcb* pcbEnviado, int socket);
 
 
 /**

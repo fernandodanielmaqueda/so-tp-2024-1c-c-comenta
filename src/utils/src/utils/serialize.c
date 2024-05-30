@@ -163,44 +163,6 @@ void serialize_pcb(Package *package, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DI = %s\n", cursor, pcb->DI); }
   cursor++;
 
-  /*CASO CHAR*
-  package_add(package, &(pcb->AX), strlen(&(pcb->AX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro AX = %s\n", cursor, pcb->AX); }
-  cursor++;
-  package_add(package, &(pcb->BX), strlen(&(pcb->BX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro BX = %s\n", cursor, pcb->BX); }
-  cursor++;
-  package_add(package, &(pcb->CX), strlen(&(pcb->CX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro CX = %s\n", cursor, pcb->CX); }
-  cursor++;
-  package_add(package, &(pcb->DX), strlen(&(pcb->DX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DX = %s\n", cursor, pcb->DX); }
-  cursor++;
-  package_add(package, &(pcb->EAX), strlen(&(pcb->EAX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EAX = %s\n", cursor, pcb->EAX); }
-  cursor++;
-  package_add(package, &(pcb->EBX), strlen(&(pcb->EBX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EBX = %s\n", cursor, pcb->EBX); }
-  cursor++;
-  package_add(package, &(pcb->ECX), strlen(&(pcb->ECX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro ECX = %s\n", cursor, pcb->ECX); }
-  cursor++;
-  package_add(package, &(pcb->EDX), strlen(&(pcb->EDX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EDX = %s\n", cursor, pcb->EDX); }
-  cursor++;
-  package_add(package, &(pcb->RAX), strlen(&(pcb->RAX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RAX = %s\n", cursor, pcb->RAX); }
-  cursor++;
-  package_add(package, &(pcb->RBX), strlen(&(pcb->RBX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RBX = %s\n", cursor, pcb->RBX); }
-  cursor++;
-  package_add(package, &(pcb->RCX), strlen(&(pcb->RCX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RCX = %s\n", cursor, pcb->RCX); }
-  cursor++;
-  package_add(package, &(pcb->RDX), strlen(&(pcb->RDX)) + 1);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RDX = %s\n", cursor, pcb->RDX); }
-  cursor++;
-*/
 
   package_add(package, &(pcb->quantum), sizeof(uint32_t));
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: quantum = %d\n", cursor, pcb->quantum); }
@@ -340,6 +302,14 @@ t_pcb *deserialize_pcb(int socketCliente) {
   return pcb;
 }
 
+void send_pcb_to(t_pcb* pcbEnviado, int socket){
+  Package* pack = package_create(PCB);
+  serialize_pcb(pack, pcbEnviado);
+  package_send(pack, socket);
+  package_destroy(pack);
+}
+
+
 void package_send(Package* package, int fd_receiver) {
   int bytes = package->buffer->size + 2 * sizeof(int);
   void *aEnviar = package_serialize(package, bytes);
@@ -372,7 +342,7 @@ void send_instruccion(t_instruction_use* instruccion, int socket) {
 
 
     package_add(package, &instruccion->operation, sizeof(enum HeaderCode));
-    //DEBUG_PRINTF("\n[Serializar] package[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
+    DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
     cursor++;
 
   //PARAMETROS
@@ -390,7 +360,7 @@ void send_instruccion(t_instruction_use* instruccion, int socket) {
     cursor++;
   }
 
-  //DEBUG_PRINTF("\n[Serializar] serializar_instruccion( ) [END]\n");
+  DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [END]\n");
 
   package_send(package, socket);
 
@@ -405,22 +375,22 @@ t_instruction_use* receive_instruccion(int socket) {
   int cursor = 0;
 
   instruccionRecibida->operation = *(enum HeaderCode*)list_get(propiedadesPlanas, cursor);
-  //DEBUG_PRINTF("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
+  DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
   
   int cantidadParametros = *(int*)list_get(propiedadesPlanas, cursor);
-  //DEBUG_PRINTF("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
+  DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
   
   for (size_t i = 0; i < cantidadParametros; i++)
   {
     char* parametro = string_new();
     parametro = string_duplicate(list_get(propiedadesPlanas, ++cursor));
-    //DEBUG_PRINTF("\n[Deserializar] package[%d]: parametro = %s \n", cursor, parametro);
+    DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: parametro = %s \n", cursor, parametro);
     list_add(instruccionRecibida->parameters, parametro);
   }
   
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
 
-  //DEBUG_PRINTF("\n[Deserializar] deserializar_instruccion( ) [END]\n");
+  DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_instruccion( ) [END]\n");
 
   return instruccionRecibida;
 }
