@@ -101,11 +101,21 @@ void kill_pcb(t_pcb *pcbObjetivo)
 }
 
 //TODO: BRAI CONTINUAR  ESTA FUNCION  ====================================//////////////
-
-void instruction_delete(t_instruccion_use *lineaInstruccion) {
-  if (lineaInstruccion != NULL) free(lineaInstruccion);
-}
 */
+void free_string_element(void* element) {
+    free((char*)element);
+}
+
+void instruction_delete(t_instruction_use *lineaInstruccion) {
+  
+    if (lineaInstruccion->parameters != NULL) {
+        list_iterate(lineaInstruccion->parameters, free_string_element);
+        list_destroy(lineaInstruccion->parameters);
+    }
+  free(lineaInstruccion);
+  
+}
+
 
 void serialize_pcb(Package *package, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_pcb( ) [...]\n"); }

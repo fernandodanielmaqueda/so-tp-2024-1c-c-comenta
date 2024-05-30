@@ -206,6 +206,13 @@ void send_instruccion(t_instruction_use* instruccion, int socket);
  */
 t_instruction_use* receive_instruccion(int socket);
 
+
+/**
+ * @brief Libera la memoria reservada para una instruccion determinada.
+ * @param lineaInstruccion Instruccion a liberar
+ */
+void instruction_delete(t_instruction_use *lineaInstruccion);
+
 void serialize_pcb_2(Package* paquete, t_pcb* pcb);
 void free_package(Package* paquete);
 void send_pcb(int socket, t_pcb* pcb);
