@@ -26,7 +26,7 @@ Package *package_create(uint8_t header) {
   Package *package = malloc(sizeof(Package));
 
   package->header = header;
-  buffer_create(package);
+  package_buffer_create(package);
 
   return package;
 }
@@ -48,7 +48,9 @@ void package_destroy(Package *package) {
   }
 }
 
-void buffer_create(Package *package) {
+//
+
+void package_buffer_create(Package *package) {
   package->buffer = malloc(sizeof(Buffer));
   package->buffer->size = 0;
   package->buffer->stream = NULL;
@@ -63,6 +65,8 @@ void *buffer_get(int *size, int fd_client) {
 
   return buffer;
 }
+
+//
 
 t_list* get_package_like_list(int fd_client) {
   int buffer_size;

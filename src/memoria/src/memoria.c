@@ -267,8 +267,8 @@ void parser_file(char* path, t_list* list_instruction) {
 
 void listen_cpu(int fd_cpu) {
     while(1) {
-        enum HeaderCode opcode = receive_headerCode(fd_cpu);
-        switch (opcode) {
+        enum HeaderCode headerCode = receive_headerCode(fd_cpu);
+        switch (headerCode) {
             case INSTUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(fd_cpu);

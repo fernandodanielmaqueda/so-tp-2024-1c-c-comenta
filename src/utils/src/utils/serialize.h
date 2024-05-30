@@ -56,11 +56,6 @@ typedef enum HeaderCode {
     IO_FS_READ
 } HeaderCode;
 
-typedef struct t_instruction_use {
-	enum HeaderCode operation;
-	t_list* parameters;
-} t_instruction_use;
-
 typedef struct Buffer {
     uint32_t size; // Tamaño del payload
     // uint32_t offset; // Desplazamiento dentro del payload
@@ -71,6 +66,11 @@ typedef struct Package {
     uint8_t header;
     Buffer* buffer;
 } Package;
+
+typedef struct t_instruction_use {
+	enum HeaderCode operation;
+	t_list* parameters;
+} t_instruction_use;
 
 /*
 int start_server_module(char* module, char * pathconfig);
@@ -120,7 +120,7 @@ void *buffer_get(int *size, int fd_client);
  * @brief Crear Buffer
  * @param package Package donde se creara el buffer
  */
-void buffer_create(Package *package);
+void package_buffer_create(Package *package);
 
 
 /**
