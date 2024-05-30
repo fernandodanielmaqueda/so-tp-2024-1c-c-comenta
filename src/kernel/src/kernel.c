@@ -3,10 +3,13 @@
 
 #include "kernel.h"
 
+char *MODULE_NAME = "kernel";
+char *MODULE_LOG_PATHNAME = "kernel.log";
+char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
-char *module_name = "kernel";
-char *module_log_pathname = "kernel.log";
-char *module_config_pathname = "kernel.config";
+t_log *MODULE_LOGGER;
+extern t_log *CONNECTIONS_LOGGER;
+t_config *MODULE_CONFIG;
 
 // Listas globales de estados
 t_list *LIST_NEW;
@@ -36,10 +39,6 @@ sem_t sem_long_term_scheduler;
 sem_t sem_short_term_scheduler;
 sem_t sem_multiprogramming_level;
 
-t_log *module_logger;
-extern t_log *connections_logger;
-t_config *module_config;
-
 Server COORDINATOR_IO;
 Connection CONNECTION_MEMORY;
 Connection CONNECTION_CPU_DISPATCH;
@@ -53,7 +52,6 @@ int MULTIPROGRAMMING_LEVEL;
 int pidContador;
 
 size_t bytes;
-
 
 int module(int argc, char *argv[]) {
 
@@ -80,13 +78,13 @@ int module(int argc, char *argv[]) {
         .SI = 500,
         .DI = 600,
         .quantum = 2,
-        .current_status = NEW,
+        .current_state = NEW,
         //.fd_conexion = 2,
         .arrival_READY = 123.456,
         .arrival_RUNNING = 789.012
     };
 	send_pcb(CONNECTION_CPU_DISPATCH.fd_connection, &pcb);
-	log_info(module_logger, "Modulo %s inicializado correctamente\n", module_name);
+	log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	initialize_interactive_console();
 	
@@ -113,16 +111,16 @@ int module(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void read_module_config(t_config *module_config) {
-	COORDINATOR_IO = (struct Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA")};
-	CONNECTION_MEMORY = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
-	CONNECTION_CPU_DISPATCH = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH")};
-	CONNECTION_CPU_INTERRUPT = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_INTERRUPT")};
-	SCHEDULING_ALGORITHM = config_get_string_value(module_config, "ALGORITMO_PLANIFICACION");
-	QUANTUM = config_get_int_value(module_config, "QUANTUM");
-	RESOURCES = config_get_array_value(module_config, "RECURSOS");
-	RESOURCE_INSTANCES = config_get_array_value(module_config, "INSTANCIAS_RECURSOS");
-	MULTIPROGRAMMING_LEVEL = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
+void read_module_config(t_config *MODULE_CONFIG) {
+	COORDINATOR_IO = (struct Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+	CONNECTION_MEMORY = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+	CONNECTION_CPU_DISPATCH = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_DISPATCH")};
+	CONNECTION_CPU_INTERRUPT = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_INTERRUPT")};
+	SCHEDULING_ALGORITHM = config_get_string_value(MODULE_CONFIG, "ALGORITMO_PLANIFICACION");
+	QUANTUM = config_get_int_value(MODULE_CONFIG, "QUANTUM");
+	RESOURCES = config_get_array_value(MODULE_CONFIG, "RECURSOS");
+	RESOURCE_INSTANCES = config_get_array_value(MODULE_CONFIG, "INSTANCIAS_RECURSOS");
+	MULTIPROGRAMMING_LEVEL = config_get_int_value(MODULE_CONFIG, "GRADO_MULTIPROGRAMACION");
 }
 
 void initialize_sockets(void) {
@@ -163,16 +161,16 @@ void *kernel_start_server_for_io(void *server_parameter) {
 
 	while(1) {
 		fd_new_client = malloc(sizeof(int));
-		log_info(connections_logger, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_info(CONNECTIONS_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		*fd_new_client = server_accept(server->fd_listen);
 
 		if(*fd_new_client == -1) {
-			log_warning(connections_logger, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+			log_warning(CONNECTIONS_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 			free(fd_new_client);
 			continue;
 		}
 
-		log_info(connections_logger, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_info(CONNECTIONS_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		pthread_create(&thread_new_client, NULL, kernel_client_handler_for_io, (void*) fd_new_client);
 		pthread_detach(thread_new_client);
 	}
@@ -193,13 +191,13 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 
     switch((enum PortType) handshake) {
         case IO_TYPE:
-            log_info(connections_logger, "OK Handshake con [Cliente] Entrada/Salida");
+            log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             // Lógica de manejo de cliente Entrada/Salida
             free(fd_new_client);
         break;
         default:
-            log_warning(connections_logger, "Error Handshake con [Cliente] No reconocido");
+            log_warning(CONNECTIONS_LOGGER, "Error Handshake con [Cliente] No reconocido");
             bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
             free(fd_new_client);
         break;
@@ -210,19 +208,19 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 
 void initialize_long_term_scheduler(void) {
 	pthread_create(&hilo_largo_plazo, NULL, (void *) long_term_scheduler, NULL);
-	//log_info(module_logger, "Inicio planificador largo plazo");
+	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
 	pthread_detach(hilo_largo_plazo);
 }
 
 void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENTO
 	pthread_create(&hilo_corto_plazo, NULL, (void *) short_term_scheduler, NULL);
-	//log_info(module_logger, "Inicio planificador corto plazo");
+	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
 	pthread_detach(hilo_corto_plazo);
 }
 
 void initialize_cpu_command_line_interface(void) {
 	pthread_create(&hilo_mensajes_cpu, NULL, (void *)receptor_mensajes_cpu, NULL);
-	//log_info(module_logger, "Inicio mensajes cpu");
+	//log_info(MODULE_LOGGER, "Inicio mensajes cpu");
 	pthread_detach(hilo_mensajes_cpu);
 }
 
@@ -257,7 +255,7 @@ void short_term_scheduler(void) {
 	    	//pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
 			//pthread_join(&thread_interrupt, NULL);
 		} else {
-			// log_error(module_logger, "El algoritmo de planificacion ingresado no existe\n");
+			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
 		}
 
 		switch_process_state(pcb, EXECUTING);
@@ -309,10 +307,9 @@ t_pcb *FIFO_scheduling_algorithm(void) {
 */
 
 void receptor_mensajes_cpu() {
-	// t_package *package;
+	// Package *package;
 
-	while (1)
-	{
+	while(1) {
 		
 		//FALTA RECIBIR PAQUETE DE LA CONEXION CON CPU
 		//FALTA DESERIALIZAR PCB
@@ -413,11 +410,11 @@ void receptor_mensajes_cpu() {
 }
 
 void switch_process_state(t_pcb* pcb, int new_state) {
-	int previous_state = pcb->current_status;
-	pcb->current_status = new_state;
+	int previous_state = pcb->current_state;
+	pcb->current_state = new_state;
 	char* global_previous_state;
 	
-	t_package* package;
+	Package* package;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_pcb*)elemento)->pid == pcb->pid);
@@ -425,20 +422,17 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 
 	switch (previous_state){ //! ESTADO ANTERIOR
 		case NEW:
-		{
 			global_previous_state="NEW";
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_remove_by_condition(LIST_NEW, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 			break;
-		}
-		case READY:{
+		case READY:
 			global_previous_state="READY";
 			pthread_mutex_lock(&mutex_LIST_READY);
 			list_remove_by_condition(LIST_READY, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			break;
-		}
 		case EXECUTING:
 		{
 			global_previous_state="EXECUTING";
@@ -461,7 +455,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		{
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_add(LIST_NEW, pcb);
-			// log_info(module_logger, "Se crea el proceso <%d> en NEW" ,pcb->pid);
+			// log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->pid);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 	
 			sem_post(&sem_long_term_scheduler);
@@ -472,7 +466,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			pcb -> arrival_READY = current_time();
 
 			pthread_mutex_lock(&mutex_LIST_READY);
-			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_previous_state);
+			// log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_previous_state);
 			list_add(LIST_READY, pcb);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			sem_post(&sem_short_term_scheduler);
@@ -486,7 +480,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
 			list_add(LIST_EXECUTING, pcb);
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
-			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->pid, global_previous_state);
+			// log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->pid, global_previous_state);
 	
 			break;
 		}
@@ -496,7 +490,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			list_add(LIST_BLOCKED, pcb);
 			pthread_mutex_unlock(&mutex_LIST_BLOCKED);
 
-			// log_info(module_logger, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_previous_state);
+			// log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_previous_state);
 
 			break;
 		}
@@ -504,7 +498,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		case EXIT:
 		{
 			
-			// log_info(module_logger, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
+			// log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
 
 			sem_post(&sem_multiprogramming_level);
 
@@ -518,7 +512,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		/*
 		case INVALID_RESOURCE:{
 			
-			log_info(module_logger, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->pid);
+			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->pid);
 			
 
 			sem_post(&sem_multiprogramming_level);
@@ -531,7 +525,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		}
 		case INVALID_WRITE:{
 			
-			log_info(module_logger, "Finaliza el proceso <%d> - Motivo: <INVALID_WRITE>", pcb->pid);
+			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_WRITE>", pcb->pid);
 		
 			sem_post(&sem_multiprogramming_level);
 
@@ -568,7 +562,7 @@ t_pcb *create_pcb() {
     nuevoPCB->SI = 0;
     nuevoPCB->DI = 0;
 	nuevoPCB->quantum = 0;
-	nuevoPCB->current_status = 0;
+	nuevoPCB->current_state = 0;
     //nuevoPCB->fd_conexion = 0; //CORREGIR y agregar arg socket cliente en la definición
     nuevoPCB->arrival_READY = 0;
     nuevoPCB->arrival_RUNNING = 0;
@@ -601,14 +595,14 @@ int asignar_PID(void) {
     pthread_mutex_unlock(&mutex_pid_detected);
 
     return value_pid;
-  
 }
+
 /*
 void* start_quantum(void* arg)
 {
-    log_trace(module_logger, "Se crea hilo para INTERRUPT");
+    log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(QUANTUM * 1000); //en milisegundos
     send_interrupt(thread_cpu_interrupt_start_server_for_kernel); //PREGUNTAR
-    log_trace(module_logger, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
 }
 */

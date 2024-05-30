@@ -3,21 +3,21 @@
 
 #include "entradasalida.h"
 
-char *module_name = "entradasalida";
-char *module_log_pathname = "entradasalida.log";
-char *module_config_pathname = "entradasalida.config";
+char *MODULE_NAME = "entradasalida";
+char *MODULE_LOG_PATHNAME = "entradasalida.log";
+char *MODULE_CONFIG_PATHNAME = "entradasalida.config";
 
-t_log* module_logger;
-extern t_log *connections_logger;
-t_config* module_config;
+t_log* MODULE_LOGGER;
+extern t_log *CONNECTIONS_LOGGER;
+t_config* MODULE_CONFIG;
 
-char* TIPO_INTERFAZ;
+char *TIPO_INTERFAZ;
 int TIEMPO_UNIDAD_TRABAJO;
 
 Connection CONNECTION_KERNEL;
 Connection CONNECTION_MEMORY;
 
-char*  PATH_BASE_DIALFS;
+char* PATH_BASE_DIALFS;
 int BLOCK_SIZE;
 int BLOCK_COUNT;
 
@@ -27,7 +27,7 @@ int module(int argc, char* argv[]) {
 	initialize_configs();
     initialize_sockets();
 
-    log_info(module_logger, "Modulo %s inicializado correctamente\n", module_name);
+    log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	//finish_threads();
 	finish_sockets();
@@ -37,14 +37,14 @@ int module(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-void read_module_config(t_config* module_config) {
-    TIPO_INTERFAZ = config_get_string_value(module_config, "TIPO_INTERFAZ");
-    TIEMPO_UNIDAD_TRABAJO = config_get_int_value(module_config, "TIEMPO_UNIDAD_TRABAJO");
-    CONNECTION_KERNEL = (struct Connection) {.client_type = IO_TYPE, .server_type = KERNEL_TYPE, .ip = config_get_string_value(module_config, "IP_KERNEL"), .port = config_get_string_value(module_config, "PUERTO_KERNEL")};
-    CONNECTION_MEMORY = (struct Connection) {.client_type = IO_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
-    PATH_BASE_DIALFS = config_get_string_value(module_config, "PATH_BASE_DIALFS");
-    BLOCK_SIZE = config_get_int_value(module_config, "BLOCK_SIZE");
-    BLOCK_COUNT = config_get_int_value(module_config, "BLOCK_COUNT");
+void read_module_config(t_config* MODULE_CONFIG) {
+    TIPO_INTERFAZ = config_get_string_value(MODULE_CONFIG, "TIPO_INTERFAZ");
+    TIEMPO_UNIDAD_TRABAJO = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
+    CONNECTION_KERNEL = (struct Connection) {.client_type = IO_TYPE, .server_type = KERNEL_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
+    CONNECTION_MEMORY = (struct Connection) {.client_type = IO_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+    PATH_BASE_DIALFS = config_get_string_value(MODULE_CONFIG, "PATH_BASE_DIALFS");
+    BLOCK_SIZE = config_get_int_value(MODULE_CONFIG, "BLOCK_SIZE");
+    BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");
 }
 
 void initialize_sockets(void) {

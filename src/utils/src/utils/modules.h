@@ -19,14 +19,14 @@ typedef enum PortType {
 } PortType;
 #define PortType_Count 7
 
-extern char *module_name;
-extern char *module_log_pathname;
-extern char *connections_log_pathname;
-extern char *module_config_pathname;
+extern char *MODULE_NAME;
+extern char *MODULE_LOG_PATHNAME;
+extern char *CONNECTIONS_LOG_PATHNAME;
+extern char *MODULE_CONFIG_PATHNAME;
 
-extern t_log *module_logger;
-extern t_log *connections_logger;
-extern t_config *module_config;
+extern t_log *MODULE_LOGGER;
+extern t_log *CONNECTIONS_LOGGER;
+extern t_config *MODULE_CONFIG;
 
 void initialize_loggers(void);
 void finish_loggers(void);

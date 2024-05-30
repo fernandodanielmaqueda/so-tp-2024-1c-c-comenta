@@ -3,30 +3,30 @@
 
 #include "modules.h"
 
-t_log *connections_logger;
-char *connections_log_pathname = "connections.log";
+t_log *CONNECTIONS_LOGGER;
+char *CONNECTIONS_LOG_PATHNAME = "connections.log";
 
 void initialize_loggers(void) {
-	module_logger = log_create(module_log_pathname, module_name, true, LOG_LEVEL_INFO);
-	connections_logger = log_create(connections_log_pathname, module_name, true, LOG_LEVEL_INFO);
+	MODULE_LOGGER = log_create(MODULE_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
+	CONNECTIONS_LOGGER = log_create(CONNECTIONS_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
 }
 
 void finish_loggers(void) {
-	log_destroy(module_logger);
-	log_destroy(connections_logger);
+	log_destroy(MODULE_LOGGER);
+	log_destroy(CONNECTIONS_LOGGER);
 }
 
 void initialize_configs(void) {
-	t_config *module_config = config_create(module_config_pathname);
+	MODULE_CONFIG = config_create(MODULE_CONFIG_PATHNAME);
 
-	if(module_config == NULL) {
-		log_error(module_logger, "No se pudo abrir el archivo config del modulo %s: %s", module_name, module_config_pathname);
+	if(MODULE_CONFIG == NULL) {
+		log_error(MODULE_LOGGER, "No se pudo abrir el archivo config del modulo %s: %s", MODULE_NAME, MODULE_CONFIG_PATHNAME);
         exit(EXIT_FAILURE);
 	}
 
-	read_module_config(module_config);
+	read_module_config(MODULE_CONFIG);
 }
 
 void finish_configs(void) {
-	config_destroy(module_config);
+	config_destroy(MODULE_CONFIG);
 }

@@ -4,13 +4,13 @@
 
 #include "memoria.h"
 
-char *module_name = "memoria";
-char *module_log_pathname = "memoria.log";
-char *module_config_pathname = "memoria.config";
+char *MODULE_NAME = "memoria";
+char *MODULE_LOG_PATHNAME = "memoria.log";
+char *MODULE_CONFIG_PATHNAME = "memoria.config";
 
-t_log *module_logger;
-extern t_log *connections_logger;
-t_config *module_config;
+t_log *MODULE_LOGGER;
+extern t_log *CONNECTIONS_LOGGER;
+t_config *MODULE_CONFIG;
 
 void *memoria_principal;
 pthread_t hilo_kernel;
@@ -37,13 +37,13 @@ int module(int argc, char* argv[]) {
 	initialize_configs();
 
     memoria_principal = (void*) malloc(TAM_MEMORIA);
-    memset(memoria_principal, (u_int32_t)'0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
+    memset(memoria_principal, (u_int32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
     lista_procesos = list_create();
     lista_marcos = list_create();
 
     initialize_sockets();
 
-    log_info(module_logger, "Modulo %s inicializado correctamente\n", module_name);
+    log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
  
  /*   
     pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)fd_cpu);
@@ -64,12 +64,12 @@ int module(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
 
-void read_module_config(t_config* module_config) {
-    COORDINATOR_MEMORY = (struct Server) {.server_type = MEMORY_TYPE, .clients_type = TO_BE_DEFINED_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA")};
-    TAM_MEMORIA = config_get_int_value(module_config, "TAM_MEMORIA");
-    TAM_PAGINA = config_get_int_value(module_config, "TAM_PAGINA");
-    PATH_INSTRUCCIONES = config_get_string_value(module_config, "PATH_INSTRUCCIONES");
-    RETARDO_RESPUESTA = config_get_int_value(module_config, "RETARDO_RESPUESTA");
+void read_module_config(t_config* MODULE_CONFIG) {
+    COORDINATOR_MEMORY = (struct Server) {.server_type = MEMORY_TYPE, .clients_type = TO_BE_DEFINED_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+    TAM_MEMORIA = config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
+    TAM_PAGINA = config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
+    PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
+    RETARDO_RESPUESTA = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
 }
 
 void initialize_sockets(void) {
@@ -104,17 +104,17 @@ void *memory_start_server(void *server_parameter) {
 
 	while(1) {
 		fd_new_client = malloc(sizeof(int));
-		log_info(connections_logger, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_info(CONNECTIONS_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		*fd_new_client = server_accept(server->fd_listen);
 
 		if(*fd_new_client == -1) {
-			log_warning(connections_logger, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+			log_warning(CONNECTIONS_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 			free(fd_new_client);
             sleep(2);
 			continue;
 		}
 
-		log_info(connections_logger, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_info(CONNECTIONS_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		pthread_create(&thread_new_client, NULL, memory_client_handler, (void*) fd_new_client);
 		pthread_detach(thread_new_client);
 	}
@@ -136,26 +136,26 @@ void *memory_client_handler(void *fd_new_client_parameter) {
     switch((enum PortType) handshake) {
         case KERNEL_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
-            log_info(connections_logger, "OK Handshake con [Cliente] %s", "Kernel");
+            log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] %s", "Kernel");
             FD_CLIENT_KERNEL = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_kernel_client_connected);
         break;
         case CPU_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
-            log_info(connections_logger, "OK Handshake con [Cliente] %s", "CPU");
+            log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] %s", "CPU");
             FD_CLIENT_CPU = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_cpu_client_connected);
         break;
         case IO_TYPE:
-            log_info(connections_logger, "OK Handshake con [Cliente] %s", "Entrada/Salida");
+            log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] %s", "Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             // Lógica de manejo de cliente Entrada/Salida
             free(fd_new_client);
         break;
         default:
-            log_warning(connections_logger, "Error Handshake con [Cliente] %s", "No reconocido");
+            log_warning(CONNECTIONS_LOGGER, "Error Handshake con [Cliente] %s", "No reconocido");
             bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
             free(fd_new_client);
         break;
@@ -165,24 +165,23 @@ void *memory_client_handler(void *fd_new_client_parameter) {
 }
 
 void listen_kernel(int fd_kernel) {
-    while(1){
-        t_opcode opcode = get_opCode(fd_kernel);
-        switch (opcode)
-            {
+    while(1) {
+        enum HeaderCode headerCode = receive_headerCode(fd_kernel);
+        switch (headerCode) {
             case PROCESS_NEW:
-                log_info(module_logger, "KERNEL: Proceso nuevo recibido.");
+                log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
                 create_process(fd_kernel);
                 break;
 
             case DISCONNECTED:
-                log_warning(module_logger, "Se desconecto kernel.");
-                log_destroy(module_logger);
+                log_warning(MODULE_LOGGER, "Se desconecto kernel.");
+                log_destroy(MODULE_LOGGER);
                 return;
             
             default:
-                log_warning(module_logger, "Operacion desconocida..");
+                log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
-            }
+        }
     }
 }
 
@@ -203,7 +202,7 @@ void create_process(int socketRecibido) {
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
     string_append(path_buscado, "/");
     string_append(path_buscado, nuevo_proceso->nombre);
-    log_debug(module_logger, "Archivo Buscado: %s", path_buscado);
+    log_debug(MODULE_LOGGER, "Archivo Buscado: %s", path_buscado);
 
     //CREAR LISTA INST CON EL PARSER
     parser_file(path_buscado,lista_instrucciones);
@@ -213,10 +212,10 @@ void create_process(int socketRecibido) {
     nuevo_proceso->tabla_paginas = tabla_paginas;
     list_add(lista_procesos,nuevo_proceso);
     
-    log_debug(module_logger, "Archivo leido: %s", path_buscado);
+    log_debug(MODULE_LOGGER, "Archivo leido: %s", path_buscado);
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el pid del proceso origen
-    send_message(PROCESS_CREATED, string_itoa(nuevo_proceso->pid), FD_CLIENT_KERNEL);
+    message_send(PROCESS_CREATED, string_itoa(nuevo_proceso->pid), FD_CLIENT_KERNEL);
     
 }
 
@@ -232,7 +231,7 @@ void create_instruction(FILE* file, t_list* list_instruction) {
   
     char** campos = string_split(linea," ");
 
-    nueva_instruccion->operation = (t_opcode)(campos[0]);
+    nueva_instruccion->operation = (enum HeaderCode)(campos[0]);
     nueva_instruccion->parameters = list_create();
 
     int numero_elementos= 0;
@@ -256,7 +255,7 @@ void parser_file(char* path, t_list* list_instruction) {
     FILE* file;
     if ((file = fopen(path, "r")) == NULL)
     {
-        log_error(module_logger, "[ERROR] No se pudo abrir el archivo de pseudocodigo indicado.");
+        log_error(MODULE_LOGGER, "[ERROR] No se pudo abrir el archivo de pseudocodigo indicado.");
         exit(EXIT_FAILURE);
     }
         
@@ -268,20 +267,20 @@ void parser_file(char* path, t_list* list_instruction) {
 
 void listen_cpu(int fd_cpu) {
     while(1) {
-        t_opcode opcode = get_opCode(fd_cpu);
+        enum HeaderCode opcode = receive_headerCode(fd_cpu);
         switch (opcode) {
             case INSTUCTION_REQUEST:
-                log_info(module_logger, "CPU: Pedido de instruccion recibido.");
+                log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(fd_cpu);
                 break;
 
             case DISCONNECTED:
-                log_warning(module_logger, "Se desconecto CPU.");
-                log_destroy(module_logger);
+                log_warning(MODULE_LOGGER, "Se desconecto CPU.");
+                log_destroy(MODULE_LOGGER);
                 return;
             
             default:
-                log_warning(module_logger, "Operacion desconocida..");
+                log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
             }
     }
@@ -317,5 +316,5 @@ void seek_instruccion(int socketRecibido) {
     t_instruction_use* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
 
     send_instruccion(instruccionBuscada, FD_CLIENT_CPU);
-    log_info(module_logger, "Instruccion enviada.");
+    log_info(MODULE_LOGGER, "Instruccion enviada.");
 }

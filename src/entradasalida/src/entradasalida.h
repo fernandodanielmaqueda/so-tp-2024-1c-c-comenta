@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef ENTRADASALIDA_H_
-#define ENTRADASALIDA_H_
+#ifndef ENTRADASALIDA_H
+#define ENTRADASALIDA_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -25,4 +25,4 @@ void read_module_config(t_config *module_config);
 void initialize_sockets(void);
 void finish_sockets(void);
 
-#endif /* ENTRADASALIDA_H_ */
+#endif /* ENTRADASALIDA_H */

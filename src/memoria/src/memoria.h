@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef MEMORIA_H_
-#define MEMORIA_H_
+#ifndef MEMORIA_H
+#define MEMORIA_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +18,7 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "utils/modules.h"
+#include "utils/serialize.h"
 #include "utils/socket.h"
 
 typedef struct t_process {
@@ -62,4 +63,4 @@ void create_process(int socket);
  */
 void seek_instruccion(int socket);
 
-#endif /* MEMORIA_H_ */
+#endif /* MEMORIA_H */

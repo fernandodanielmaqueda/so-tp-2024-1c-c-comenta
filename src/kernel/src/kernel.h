@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef KERNEL_H_
-#define KERNEL_H_
+#ifndef KERNEL_H
+#define KERNEL_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,6 +22,7 @@
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
 #include "utils/modules.h"
+#include "utils/serialize.h"
 #include "utils/socket.h"
 #include "console.h"
 
@@ -43,4 +44,4 @@ void receptor_mensajes_cpu(void);
 int current_time(void);
 int asignar_PID();
 
-#endif /* KERNEL_H_ */
+#endif /* KERNEL_H */

@@ -99,45 +99,51 @@ void attend_command_console(char* leido){
     switch (funcion)
     {
         case EJECUTAR_SCRIPT:
+        {
             char* path_script = strdup(command_console[1]);
             log_trace(module_logger_consola, "Se va a ejecutar el script %s", path_script);
             //TODO: ejecutar_script(path);==========================//
             break;
-
+        }
         case INICIAR_PROCESO:
+        {
             // strdup: duplica la cadena de caracteres y le asigna memoria sufuente
             char* path = strdup(command_console[1]);
             log_trace(module_logger_consola, "Se va a iniciar el proceso %s", path);
 
             //TODO: iniciar_proceso(path);==========================//
             break;
-    
+        }
 
         //usar
         case FINALIZAR_PROCESO:
+        {
          int pid = atoi(command_console[1]);
          //NECESITO EL PCB PARA SEGUIR ACA =-=======================//
          log_trace(module_logger_consola, "Se fianlizo el proceso %d", pid);
           break;
-
+        }
         //usar
         case DETENER_PLANIFICACION:
+        {
           log_trace(module_logger_consola, "Se  detuvo la planificacion");
           stop_planificacion();
           break;
-  
+        }
         //usar
         case INICIAR_PLANIFICACION:
+        {
          log_trace(module_logger_consola, "Se  inicio la planificacion");
          init_planificacion();
          break;
-
+        }
          case MULTIPROGRAMACION:
+         {
           int nuevo_grado = atoi(command_console[1]);
         log_trace(module_logger_consola, " Grado Actual: %d",  nuevo_grado);   
         //TODO:crear_nuevo_semaforo_multiprog==========================// 
          break;
-
+        }
         //usar
         //necesito el PCB
         case PROCESO_ESTADO:
