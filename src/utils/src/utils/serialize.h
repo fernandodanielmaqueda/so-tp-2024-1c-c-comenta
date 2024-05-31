@@ -26,6 +26,7 @@ typedef enum HeaderCode {
     //Kernel - Memoria
     PROCESS_NEW,
     PROCESS_CREATED,
+    PROCESS_FINALIZED,
     //Kernel - IO
     //Kernel - CPU
     TYPE_INTERRUPT_SIN_INT,
@@ -35,6 +36,9 @@ typedef enum HeaderCode {
     ///////////////
     //CPU - Memoria////
     INSTUCTION_REQUEST,
+    READ_REQUEST, //utilizado en MEMORIA-IO
+    WRITE_REQUEST, //utilizado en MEMORIA-IO
+    RESIZE_REQUEST,
     ///////////////////
     //IO - Memoria
     //Instrucciones
@@ -209,6 +213,13 @@ void send_instruccion(t_instruction_use* instruccion, int socket);
  * @param socket Socket a recibir
  */
 t_instruction_use* receive_instruccion(int socket);
+
+
+/**
+ * @brief Libera la memoria reservada para una instruccion determinada.
+ * @param lineaInstruccion Instruccion a liberar
+ */
+void instruction_delete(t_instruction_use *lineaInstruccion);
 
 void serialize_pcb_2(Package* paquete, t_pcb* pcb);
 void free_package(Package* paquete);
