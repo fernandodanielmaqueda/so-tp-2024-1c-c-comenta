@@ -187,7 +187,7 @@ void listen_kernel(int fd_kernel) {
 
 void create_process(int socketRecibido) {
 
-    t_process* nuevo_proceso;
+    t_process* nuevo_proceso // = malloc(sizeof(t_process));
     t_list* lista_instrucciones = list_create();
     t_list* tabla_paginas = list_create();
 
@@ -200,8 +200,8 @@ void create_process(int socketRecibido) {
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
-    string_append(path_buscado, "/");
-    string_append(path_buscado, nuevo_proceso->nombre);
+    string_append(&path_buscado, "/");
+    string_append(&path_buscado, nuevo_proceso->nombre);
     log_debug(MODULE_LOGGER, "Archivo Buscado: %s", path_buscado);
 
     //CREAR LISTA INST CON EL PARSER

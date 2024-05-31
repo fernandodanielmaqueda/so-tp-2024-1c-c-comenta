@@ -37,10 +37,10 @@ t_pcb *create_pcb();
 void initialize_long_term_scheduler(void);
 void initialize_short_term_scheduler(void);
 void initialize_cpu_command_line_interface(void);
-void long_term_scheduler(void);
-void short_term_scheduler(void);
+void *long_term_scheduler(void*);
+void *short_term_scheduler(void*);
 t_pcb *FIFO_scheduling_algorithm(void);
-void receptor_mensajes_cpu(void);
+void *receptor_mensajes_cpu(void*);
 int current_time(void);
 int asignar_PID();
 

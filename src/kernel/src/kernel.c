@@ -207,24 +207,24 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 }
 
 void initialize_long_term_scheduler(void) {
-	pthread_create(&hilo_largo_plazo, NULL, (void *) long_term_scheduler, NULL);
+	pthread_create(&hilo_largo_plazo, NULL, long_term_scheduler, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
 	pthread_detach(hilo_largo_plazo);
 }
 
 void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENTO
-	pthread_create(&hilo_corto_plazo, NULL, (void *) short_term_scheduler, NULL);
+	pthread_create(&hilo_corto_plazo, NULL, short_term_scheduler, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
 	pthread_detach(hilo_corto_plazo);
 }
 
 void initialize_cpu_command_line_interface(void) {
-	pthread_create(&hilo_mensajes_cpu, NULL, (void *)receptor_mensajes_cpu, NULL);
+	pthread_create(&hilo_mensajes_cpu, NULL, receptor_mensajes_cpu, NULL);
 	//log_info(MODULE_LOGGER, "Inicio mensajes cpu");
 	pthread_detach(hilo_mensajes_cpu);
 }
 
-void long_term_scheduler(void) {
+void *long_term_scheduler(void *parameter) {
 
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
@@ -236,9 +236,11 @@ void long_term_scheduler(void) {
 	     switch_process_state(pcb, READY);
 		
 	}
+
+	return NULL;
 }
 
-void short_term_scheduler(void) {
+void *short_term_scheduler(void *parameter) {
 
 	t_pcb* pcb;
 
@@ -263,6 +265,8 @@ void short_term_scheduler(void) {
 		//FALTA SERIALIZAR PCB
 		//FALTA ENVIAR PAQUETE A CPU
 	}
+
+	return NULL;
 }
 
 t_pcb *FIFO_scheduling_algorithm(void) {
@@ -306,7 +310,7 @@ t_pcb *FIFO_scheduling_algorithm(void) {
 }
 */
 
-void receptor_mensajes_cpu() {
+void *receptor_mensajes_cpu(void *parameter) {
 	// Package *package;
 
 	while(1) {
@@ -407,6 +411,8 @@ void receptor_mensajes_cpu() {
 		}
 		*/
 	}
+
+	return NULL;
 }
 
 void switch_process_state(t_pcb* pcb, int new_state) {

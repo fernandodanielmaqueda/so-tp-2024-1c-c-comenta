@@ -31,11 +31,11 @@ Package *package_create(uint8_t header) {
   return package;
 }
 
-void package_add(Package *package, void *value, size_t size) {
-  package->buffer->stream = realloc(package->buffer->stream, package->buffer->size + size + sizeof(int));
-  memcpy(package->buffer->stream + package->buffer->size, &size, sizeof(int));
-  memcpy(package->buffer->stream + package->buffer->size + sizeof(int), value, size);
-  package->buffer->size += size + sizeof(int);
+void package_add(Package *package, void *value, uint32_t size) {
+  package->buffer->stream = realloc(package->buffer->stream, package->buffer->size + size + sizeof(uint32_t));
+  memcpy((void*)(((uint8_t*) package->buffer->stream) + package->buffer->size), &size, sizeof(uint32_t));
+  memcpy((void*)(((uint8_t*) package->buffer->stream) + package->buffer->size + sizeof(uint32_t)), value, size);
+  package->buffer->size += size + sizeof(uint32_t);
 }
 
 void package_destroy(Package *package) {
@@ -51,12 +51,66 @@ void package_destroy(Package *package) {
 //
 
 void package_buffer_create(Package *package) {
-  package->buffer = malloc(sizeof(Buffer));
-  package->buffer->size = 0;
-  package->buffer->stream = NULL;
+  package->buffer = buffer_create(0);
 }
 
-void *buffer_get(int *size, int fd_client) {
+// Crea un buffer vacío de tamaño size y offset 0
+Buffer *buffer_create(uint32_t size) {
+  Buffer *buffer = malloc(sizeof(Buffer));
+  buffer->size = size;
+  buffer->stream = malloc((size_t) size);
+  return buffer;
+}
+
+// Libera la memoria asociada al buffer
+void buffer_destroy(Buffer *buffer) {
+  free(buffer->stream);
+  free(buffer);
+}
+
+// Agrega un stream al buffer en la posición actual y avanza el offset
+void buffer_add(Buffer *buffer, void *data, uint32_t dataSize) {
+  buffer->stream = realloc(buffer->stream, (size_t) (buffer->size + dataSize));
+  memcpy((void*)(((uint8_t*) buffer->stream) + buffer->size), data, dataSize);
+  buffer->size += dataSize;
+}
+
+// Agrega un uint32_t al buffer
+void buffer_add_uint32(Buffer *buffer, uint32_t data) {
+
+}
+
+// Lee un uint32_t del buffer y avanza el offset
+uint32_t buffer_read_uint32(Buffer *buffer) {
+
+}
+
+// Agrega un uint8_t al buffer
+void buffer_add_uint8(Buffer *buffer, uint8_t data) {
+
+}
+
+// Lee un uint8_t del buffer y avanza el offset
+uint8_t buffer_read_uint8(Buffer *buffer) {
+
+}
+
+// Agrega string al buffer con un uint32_t adelante indicando su longitud
+void buffer_add_string(Buffer *buffer, uint32_t length, char *string) {
+
+}
+
+// Lee un string y su longitud del buffer y avanza el offset
+char *buffer_read_string(Buffer *buffer, uint32_t *length) {
+
+}
+
+// Guarda size bytes del principio del buffer en la dirección data y avanza el offset
+void buffer_read(Buffer *buffer, void *data, uint32_t size) {
+
+}
+
+void *buffer_receive(int *size, int fd_client) {
   void *buffer;
 
   recv(fd_client, size, sizeof(int), MSG_WAITALL);
@@ -74,15 +128,15 @@ t_list* get_package_like_list(int fd_client) {
   int offset = 0;
 
   t_list *contenido = list_create();
-  void *buffer = buffer_get(&buffer_size, fd_client);
+  void *buffer = buffer_receive(&buffer_size, fd_client);
 
   while (offset < buffer_size)
   {
-    memcpy(&tamanioContenido, buffer + offset, sizeof(int));
+    memcpy((void*) &tamanioContenido, (void*)(((uint8_t*) buffer) + offset), sizeof(int));
     offset += sizeof(int);
 
     void *valor = malloc(tamanioContenido);
-    memcpy(valor, buffer + offset, tamanioContenido);
+    memcpy(valor, (void*)(((uint8_t*) buffer) + offset), tamanioContenido);
     offset += tamanioContenido;
 
     list_add(contenido, valor);
@@ -125,46 +179,46 @@ void serialize_pcb(Package *package, t_pcb *pcb) {
 
   //REGISTROS
   package_add(package, &(pcb->AX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro AX = %s\n", cursor, pcb->AX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro AX = %d\n", cursor, pcb->AX); }
   cursor++;
   package_add(package, &(pcb->BX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro BX = %s\n", cursor, pcb->BX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro BX = %d\n", cursor, pcb->BX); }
   cursor++;
   package_add(package, &(pcb->CX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro CX = %s\n", cursor, pcb->CX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro CX = %d\n", cursor, pcb->CX); }
   cursor++;
   package_add(package, &(pcb->DX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DX = %s\n", cursor, pcb->DX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DX = %d\n", cursor, pcb->DX); }
   cursor++;
   package_add(package, &(pcb->EAX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EAX = %s\n", cursor, pcb->EAX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EAX = %d\n", cursor, pcb->EAX); }
   cursor++;
   package_add(package, &(pcb->EBX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EBX = %s\n", cursor, pcb->EBX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EBX = %d\n", cursor, pcb->EBX); }
   cursor++;
   package_add(package, &(pcb->ECX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro ECX = %s\n", cursor, pcb->ECX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro ECX = %d\n", cursor, pcb->ECX); }
   cursor++;
   package_add(package, &(pcb->EDX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EDX = %s\n", cursor, pcb->EDX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro EDX = %d\n", cursor, pcb->EDX); }
   cursor++;
   package_add(package, &(pcb->RAX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RAX = %s\n", cursor, pcb->RAX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RAX = %d\n", cursor, pcb->RAX); }
   cursor++;
   package_add(package, &(pcb->RBX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RBX = %s\n", cursor, pcb->RBX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RBX = %d\n", cursor, pcb->RBX); }
   cursor++;
   package_add(package, &(pcb->RCX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RCX = %s\n", cursor, pcb->RCX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RCX = %d\n", cursor, pcb->RCX); }
   cursor++;
   package_add(package, &(pcb->RDX), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RDX = %s\n", cursor, pcb->RDX); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro RDX = %d\n", cursor, pcb->RDX); }
   cursor++;
   package_add(package, &(pcb->SI), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro SI = %s\n", cursor, pcb->SI); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro SI = %d\n", cursor, pcb->SI); }
   cursor++;
   package_add(package, &(pcb->DI), sizeof(uint32_t));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DI = %s\n", cursor, pcb->DI); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Registro DI = %d\n", cursor, pcb->DI); }
   cursor++;
 
 
@@ -172,10 +226,10 @@ void serialize_pcb(Package *package, t_pcb *pcb) {
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: quantum = %d\n", cursor, pcb->quantum); }
   cursor++;
   package_add(package, &(pcb->arrival_READY), sizeof(double));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: arrival_READY = %d\n", cursor, pcb->arrival_READY); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: arrival_READY = %g\n", cursor, pcb->arrival_READY); }
   cursor++;
   package_add(package, &(pcb->arrival_RUNNING), sizeof(double));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: arrival_RUNNING = %d\n", cursor, pcb->arrival_RUNNING); }
+  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: arrival_RUNNING = %g\n", cursor, pcb->arrival_RUNNING); }
   cursor++;
   package_add(package, &(pcb->current_state), sizeof(int));
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: current_state = %d\n", cursor, pcb->current_state); }
@@ -264,9 +318,9 @@ t_pcb *deserialize_pcb(int socketCliente) {
   pcb->quantum = *(uint32_t *)list_get(lista_elememtos, ++cursor);
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->quantum = %d\n", cursor, pcb->quantum); }
   pcb->arrival_READY = *(double *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->arrival_READY = %d\n", cursor, pcb->arrival_READY); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->arrival_READY = %g\n", cursor, pcb->arrival_READY); }
   pcb->arrival_RUNNING = *(double *)list_get(lista_elememtos, ++cursor);
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->arrival_RUNNING = %d\n", cursor, pcb->arrival_RUNNING); }
+  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->arrival_RUNNING = %g\n", cursor, pcb->arrival_RUNNING); }
 
   pcb->current_state = *(int *)list_get(lista_elememtos, ++cursor);
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: pcb->current_state = %d\n", cursor, pcb->current_state); }
@@ -326,11 +380,11 @@ void *package_serialize(Package *package, int bytes) {
   void *package_void = malloc(bytes);
   int offset = 0;
 
-  memcpy(package_void + offset, &(package->header), sizeof(int));
+  memcpy((void*)(((uint8_t*) package_void) + offset), &(package->header), sizeof(int));
   offset += sizeof(int);
-  memcpy(package_void + offset, &(package->buffer->size), sizeof(int));
+  memcpy((void*)(((uint8_t*) package_void) + offset), &(package->buffer->size), sizeof(int));
   offset += sizeof(int);
-  memcpy(package_void + offset, package->buffer->stream, package->buffer->size);
+  memcpy((void*)(((uint8_t*) package_void) + offset), package->buffer->stream, package->buffer->size);
 
   return package_void;
 }
@@ -411,67 +465,67 @@ void serialize_pcb_2(Package* package, t_pcb* pcb) {
 
     // Copiar los datos de la estructura t_pcb al buffer
     uint32_t offset = 0;
-    memcpy(package->buffer->stream + offset, &pcb->pid, sizeof(pcb->pid));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->pid, sizeof(pcb->pid));
     offset += sizeof(pcb->pid);
 
-    memcpy(package->buffer->stream + offset, &pcb->pc, sizeof(pcb->pc));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->pc, sizeof(pcb->pc));
     offset += sizeof(pcb->pc);
 
-    memcpy(package->buffer->stream + offset, &pcb->AX, sizeof(pcb->AX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->AX, sizeof(pcb->AX));
     offset += sizeof(pcb->AX);
 
-    memcpy(package->buffer->stream + offset, &pcb->BX, sizeof(pcb->BX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->BX, sizeof(pcb->BX));
     offset += sizeof(pcb->BX);
 
-    memcpy(package->buffer->stream + offset, &pcb->CX, sizeof(pcb->CX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->CX, sizeof(pcb->CX));
     offset += sizeof(pcb->CX);
 
-    memcpy(package->buffer->stream + offset, &pcb->DX, sizeof(pcb->DX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->DX, sizeof(pcb->DX));
     offset += sizeof(pcb->DX);
 
-    memcpy(package->buffer->stream + offset, &pcb->EAX, sizeof(pcb->EAX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->EAX, sizeof(pcb->EAX));
     offset += sizeof(pcb->EAX);
 
-    memcpy(package->buffer->stream + offset, &pcb->EBX, sizeof(pcb->EBX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->EBX, sizeof(pcb->EBX));
     offset += sizeof(pcb->EBX);
 
-    memcpy(package->buffer->stream + offset, &pcb->ECX, sizeof(pcb->ECX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->ECX, sizeof(pcb->ECX));
     offset += sizeof(pcb->ECX);
 
-    memcpy(package->buffer->stream + offset, &pcb->EDX, sizeof(pcb->EDX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->EDX, sizeof(pcb->EDX));
     offset += sizeof(pcb->EDX);
 
-    memcpy(package->buffer->stream + offset, &pcb->RAX, sizeof(pcb->RAX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->RAX, sizeof(pcb->RAX));
     offset += sizeof(pcb->RAX);
 
-    memcpy(package->buffer->stream + offset, &pcb->RBX, sizeof(pcb->RBX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->RBX, sizeof(pcb->RBX));
     offset += sizeof(pcb->RBX);
 
-    memcpy(package->buffer->stream + offset, &pcb->RCX, sizeof(pcb->RCX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->RCX, sizeof(pcb->RCX));
     offset += sizeof(pcb->RCX);
 
-    memcpy(package->buffer->stream + offset, &pcb->RDX, sizeof(pcb->RDX));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->RDX, sizeof(pcb->RDX));
     offset += sizeof(pcb->RDX);
 
-    memcpy(package->buffer->stream + offset, &pcb->SI, sizeof(pcb->SI));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->SI, sizeof(pcb->SI));
     offset += sizeof(pcb->SI);
 
-    memcpy(package->buffer->stream + offset, &pcb->DI, sizeof(pcb->DI));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->DI, sizeof(pcb->DI));
     offset += sizeof(pcb->DI);
 
-    memcpy(package->buffer->stream + offset, &pcb->quantum, sizeof(pcb->quantum));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->quantum, sizeof(pcb->quantum));
     offset += sizeof(pcb->quantum);
 
-    memcpy(package->buffer->stream + offset, &pcb->current_state, sizeof(pcb->current_state));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->current_state, sizeof(pcb->current_state));
     offset += sizeof(pcb->current_state);
 
-    //memcpy(package->buffer->stream + offset, &pcb->fd_conexion, sizeof(pcb->fd_conexion));
+    //memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->fd_conexion, sizeof(pcb->fd_conexion));
     //offset += sizeof(pcb->fd_conexion);
 
-    memcpy(package->buffer->stream + offset, &pcb->arrival_READY, sizeof(pcb->arrival_READY));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->arrival_READY, sizeof(pcb->arrival_READY));
     offset += sizeof(pcb->arrival_READY);
 
-    memcpy(package->buffer->stream + offset, &pcb->arrival_RUNNING, sizeof(pcb->arrival_RUNNING));
+    memcpy((void*)(((uint8_t*) package->buffer->stream) + offset), &pcb->arrival_RUNNING, sizeof(pcb->arrival_RUNNING));
     offset += sizeof(pcb->arrival_RUNNING);
 
     // Establecer el código de operación del package, si es necesario
@@ -496,13 +550,13 @@ void send_pcb(int socket, t_pcb* pcb) {
     void* buffer = malloc(total_size);
 
     uint32_t offset = 0;
-    memcpy(buffer + offset, &package.header, sizeof(package.header));
+    memcpy((void*)(((uint8_t*) buffer) + offset), &package.header, sizeof(package.header));
     offset += sizeof(package.header);
 
-    memcpy(buffer + offset, &package.buffer->size, sizeof(package.buffer->size));
+    memcpy((void*)(((uint8_t*) buffer) + offset), &package.buffer->size, sizeof(package.buffer->size));
     offset += sizeof(package.buffer->size);
 
-    memcpy(buffer + offset, package.buffer->stream, package.buffer->size);
+    memcpy((void*)(((uint8_t*) buffer) + offset), package.buffer->stream, package.buffer->size);
 
     send(socket, buffer, total_size, 0);
 
@@ -514,67 +568,67 @@ void send_pcb(int socket, t_pcb* pcb) {
 void deserialize_pcb_2(t_pcb* pcb, void* stream) {
     uint32_t offset = 0;
 
-    memcpy(&pcb->pid, stream + offset, sizeof(pcb->pid));
+    memcpy((void*) &pcb->pid, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->pid));
     offset += sizeof(pcb->pid);
 
-    memcpy(&pcb->pc, stream + offset, sizeof(pcb->pc));
+    memcpy((void*) &pcb->pc, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->pc));
     offset += sizeof(pcb->pc);
 
-    memcpy(&pcb->AX, stream + offset, sizeof(pcb->AX));
+    memcpy((void*) &pcb->AX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->AX));
     offset += sizeof(pcb->AX);
 
-    memcpy(&pcb->BX, stream + offset, sizeof(pcb->BX));
+    memcpy((void*) &pcb->BX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->BX));
     offset += sizeof(pcb->BX);
 
-    memcpy(&pcb->CX, stream + offset, sizeof(pcb->CX));
+    memcpy((void*) &pcb->CX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->CX));
     offset += sizeof(pcb->CX);
 
-    memcpy(&pcb->DX, stream + offset, sizeof(pcb->DX));
+    memcpy((void*) &pcb->DX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->DX));
     offset += sizeof(pcb->DX);
 
-    memcpy(&pcb->EAX, stream + offset, sizeof(pcb->EAX));
+    memcpy((void*) &pcb->EAX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->EAX));
     offset += sizeof(pcb->EAX);
 
-    memcpy(&pcb->EBX, stream + offset, sizeof(pcb->EBX));
+    memcpy((void*) &pcb->EBX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->EBX));
     offset += sizeof(pcb->EBX);
 
-    memcpy(&pcb->ECX, stream + offset, sizeof(pcb->ECX));
+    memcpy((void*) &pcb->ECX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->ECX));
     offset += sizeof(pcb->ECX);
 
-    memcpy(&pcb->EDX, stream + offset, sizeof(pcb->EDX));
+    memcpy((void*) &pcb->EDX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->EDX));
     offset += sizeof(pcb->EDX);
 
-    memcpy(&pcb->RAX, stream + offset, sizeof(pcb->RAX));
+    memcpy((void*) &pcb->RAX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->RAX));
     offset += sizeof(pcb->RAX);
 
-    memcpy(&pcb->RBX, stream + offset, sizeof(pcb->RBX));
+    memcpy((void*) &pcb->RBX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->RBX));
     offset += sizeof(pcb->RBX);
 
-    memcpy(&pcb->RCX, stream + offset, sizeof(pcb->RCX));
+    memcpy((void*) &pcb->RCX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->RCX));
     offset += sizeof(pcb->RCX);
 
-    memcpy(&pcb->RDX, stream + offset, sizeof(pcb->RDX));
+    memcpy((void*) &pcb->RDX, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->RDX));
     offset += sizeof(pcb->RDX);
 
-    memcpy(&pcb->SI, stream + offset, sizeof(pcb->SI));
+    memcpy((void*) &pcb->SI, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->SI));
     offset += sizeof(pcb->SI);
 
-    memcpy(&pcb->DI, stream + offset, sizeof(pcb->DI));
+    memcpy((void*) &pcb->DI, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->DI));
     offset += sizeof(pcb->DI);
 
-    memcpy(&pcb->quantum, stream + offset, sizeof(pcb->quantum));
+    memcpy((void*) &pcb->quantum, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->quantum));
     offset += sizeof(pcb->quantum);
 
-    memcpy(&pcb->current_state, stream + offset, sizeof(pcb->current_state));
+    memcpy((void*) &pcb->current_state, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->current_state));
     offset += sizeof(pcb->current_state);
 
-    //memcpy(&pcb->fd_conexion, stream + offset, sizeof(pcb->fd_conexion));
+    //memcpy((void*) &pcb->fd_conexion, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->fd_conexion));
     //offset += sizeof(pcb->fd_conexion);
 
-    memcpy(&pcb->arrival_READY, stream + offset, sizeof(pcb->arrival_READY));
+    memcpy((void*) &pcb->arrival_READY, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->arrival_READY));
     offset += sizeof(pcb->arrival_READY);
 
-    memcpy(&pcb->arrival_RUNNING, stream + offset, sizeof(pcb->arrival_RUNNING));
+    memcpy((void*) &pcb->arrival_RUNNING, (void*)(((uint8_t*) stream) + offset), sizeof(pcb->arrival_RUNNING));
     offset += sizeof(pcb->arrival_RUNNING);
 }
 

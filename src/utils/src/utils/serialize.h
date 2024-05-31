@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <string.h>
 #include "commons/config.h"
+#include "commons/string.h"
 #include "estructuras.h"
 
 #ifndef DEBUG_SERIALIZATION
@@ -99,7 +100,7 @@ Package *package_create(uint8_t headerCode);
  * @param value Dato a agregar
  * @param size Tamaño del dato a agregar.
  */
-void package_add(Package *package, void *value, size_t size);
+void package_add(Package *package, void *value, uint32_t size);
 
 
 /**
@@ -114,7 +115,7 @@ void package_destroy(Package *package);
  * @param size Tamaño del buffer.
  * @param fd_client Socket desde donde se va a recibir el paquete.
  */
-void *buffer_get(int *size, int fd_client);
+void *buffer_receive(int *size, int fd_client);
 
 
 /**
@@ -122,6 +123,9 @@ void *buffer_get(int *size, int fd_client);
  * @param package Package donde se creara el buffer
  */
 void package_buffer_create(Package *package);
+
+
+Buffer *buffer_create(uint32_t size);
 
 
 /**

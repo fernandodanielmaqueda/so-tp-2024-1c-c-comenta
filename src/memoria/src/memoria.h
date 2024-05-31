@@ -50,17 +50,24 @@ void finish_sockets(void);
 void *memory_start_server(void *server_parameter);
 void *memory_client_handler(void *fd_new_client_parameter);
 
+void listen_kernel(int fd_kernel);
+
 /**
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria
- * @param socket Socket desde donde se va a recibir el pcb.
+ * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
-void create_process(int socket);
+void create_process(int socketRecibido);
+
+void create_instruction(FILE* file, t_list* list_instruction);
+void parser_file(char* path, t_list* list_instruction);
+void listen_cpu(int fd_cpu);
+t_process* seek_process_by_pid(int pidBuscado);
 
 /**
  * @brief Busca la lista de instruccion y devuelve la instruccion buscada
  * @param pid Program counter requerido.
  * @param pc Program counter requerido.
  */
-void seek_instruccion(int socket);
+void seek_instruccion(int socketRecibido);
 
 #endif /* MEMORIA_H */
