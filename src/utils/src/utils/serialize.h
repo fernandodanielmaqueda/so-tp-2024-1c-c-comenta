@@ -44,8 +44,8 @@ typedef enum HeaderCode {
     //IO - Memoria
     //Instrucciones
     SET,
-    MOVE_IN,
-    MOVE_OUT,
+    MOV_IN,
+    MOV_OUT,
     SUM,
     SUB,
     JNZ,

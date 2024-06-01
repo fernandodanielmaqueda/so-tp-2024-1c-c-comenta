@@ -214,7 +214,7 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         register_destination = value;
         break;
 
-    case MOVE_IN:
+    case MOV_IN:
 
         parameter = list_get(instruction->parameters, 0);  // de este registro debo saber la direccion logica
         parameter2 = list_get(instruction->parameters, 1); // de este registro debo saber la direccion logica
@@ -227,6 +227,23 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
 
         dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, IN);
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, IN);
+
+        dir_fisica_destination = dir_fisica_origin;
+        break;
+
+    case MOV_OUT:
+
+        parameter = list_get(instruction->parameters, 0);  // de este registro debo saber la direccion logica
+        parameter2 = list_get(instruction->parameters, 1); // de este registro debo saber la direccion logica
+
+        register_origin = string_to_register(parameter);
+        register_destination = string_to_register(parameter2);
+
+        dir_logica_origin = atoi(parameter);
+        dir_logica_destination = atoi(parameter2);
+
+        dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, OUT);
+        dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, OUT);
 
         dir_fisica_destination = dir_fisica_origin;
         break;
