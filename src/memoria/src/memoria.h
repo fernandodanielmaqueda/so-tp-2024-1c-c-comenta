@@ -109,4 +109,9 @@ void listen_cpu(int socket);
  */
 void listen_kernel(int socket);
 
+/**
+ * @brief Crea los marcos e inicializa la lista de los mismos
+ */
+void create_marcos();
+
 #endif /* MEMORIA_H */

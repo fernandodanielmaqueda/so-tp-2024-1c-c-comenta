@@ -39,7 +39,7 @@ int module(int argc, char* argv[]) {
     memoria_principal = (void*) malloc(TAM_MEMORIA);
     memset(memoria_principal, (u_int32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
     lista_procesos = list_create();
-    lista_marcos = list_create();
+    create_marcos();
 
     initialize_sockets();
 
@@ -187,7 +187,7 @@ void listen_kernel(int fd_kernel) {
 
 void create_process(int socketRecibido) {
 
-    t_process* nuevo_proceso // = malloc(sizeof(t_process));
+    t_process* nuevo_proceso; // = malloc(sizeof(t_process));
     t_list* lista_instrucciones = list_create();
     t_list* tabla_paginas = list_create();
 
@@ -317,4 +317,20 @@ void seek_instruccion(int socketRecibido) {
 
     send_instruccion(instruccionBuscada, FD_CLIENT_CPU);
     log_info(MODULE_LOGGER, "Instruccion enviada.");
+}
+
+void create_marcos(){
+    int cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
+    
+    lista_marcos = list_create();
+
+    for (size_t i = 0; i < cantidad_marcos; i++)
+    {
+        t_marco* marcoNuevo = malloc(sizeof(t_marco));
+        marcoNuevo->marco_id=i;
+        marcoNuevo->pagina_asignada=NULL;
+        marcoNuevo->pid= -1;
+        list_add(lista_marcos, marcoNuevo);
+    }
+    
 }
