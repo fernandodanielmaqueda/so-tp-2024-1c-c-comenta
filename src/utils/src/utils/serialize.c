@@ -643,6 +643,7 @@ void deserialize_pcb_2(t_pcb* pcb, void* stream) {
 }
 
 void receive_pcb(int socket, t_pcb *pcb) {
+  
     uint8_t header;
     uint32_t buffer_size;
 
@@ -663,4 +664,11 @@ void receive_pcb(int socket, t_pcb *pcb) {
 
     // Liberar la memoria del buffer
     free(buffer);
+}
+//PARA MEMORIA TLB
+int recv_int(int socket)
+{
+    int value;
+    recv(socket, &value, sizeof(int), 0);
+    return value;
 }
