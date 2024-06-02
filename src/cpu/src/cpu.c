@@ -20,6 +20,11 @@ Connection CONNECTION_MEMORY;
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
 
+int size_pag; //momentaneo hasta que me llegue de memoria la size_pagina
+long timestamp;
+int direccion_logica; //momentaneo hasta ver de donde la saco
+t_list  *tlb; //tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
+
 pthread_mutex_t sem_mutex_tlb;
 
 int module(int argc, char *argv[])
@@ -178,13 +183,30 @@ void instruction_cycle(void)
 {
 
     tlb = list_create();
-  
 
+    while(true){
 
-  
+        t_pcb *pcb = deserialize_pcb(FD_CLIENT_KERNEL_CPU_DISPATCH);
+        t_instruction_use *instruction = receive_instruccion(FD_CLIENT_KERNEL_CPU_DISPATCH);
+        t_instruction_use *instruction_get;
+        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando"  , pcb->pid);
+
+        //Ejecuta lo que tenga que hacer el proceso hasta que llegue la interrupcion
+        while(instruction->operation == TYPE_INTERRUPT_SIN_INT){
+
+            log_trace(MODULE_LOGGER, "Fetch de instruccion del proceso");
+            instruction_get = list_get(instruction->parameters, pcb->pc);
+
+            log_trace(MODULE_LOGGER,"Decode Y execute de instruccion del proceso");
+            decode_execute(instruction_get, pcb);
+            
+        }
+
+    }
+   
 }
 
-void execute(t_instruction_use *instruction, t_pcb *pcb)
+void decode_execute(t_instruction_use *instruction, t_pcb *pcb)
 {
     // size_t largo_nombre = 0;
     int nro_page = 0;
@@ -192,7 +214,7 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
     char *parameter = NULL;
     char *parameter2 = NULL;
     // char *recurso = NULL;
-    t_pcb new_pcb;
+   //no sirveaca me aprece--> t_pcb new_pcb;
     t_register register_origin;
     t_register register_destination;
 
@@ -204,8 +226,10 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
 
     uint32_t unit_work = 0;
     char *interfaz = NULL;
-    int size_pag = request_sizePag_memory(); // TODO: DESARROLLAR EN MEMORIA
-    int nro_frame_required = request_frame_memory(nro_page, pcb->pid);
+   // int size_pag = request_sizePag_memory(); // TODO: DESARROLLAR EN MEMORIA
+
+
+   //inncesario aca me parece---->int nro_frame_required = request_frame_memory(nro_page, pcb->pid);
 
     switch (instruction->operation)
     {
@@ -216,6 +240,7 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         register_destination = string_to_register(parameter);
         value = atoi(parameter2); // aca recibo el valor a asignarle al registro
         register_destination = value;
+        pcb->pc++;
         break;
 
     case MOV_IN:
@@ -233,6 +258,7 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, IN);
 
         dir_fisica_destination = dir_fisica_origin;
+    
         break;
 
     case MOV_OUT:
@@ -250,6 +276,7 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, OUT);
 
         dir_fisica_destination = dir_fisica_origin;
+   
         break;
 
     case SUM:
@@ -259,6 +286,7 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         register_destination = string_to_register(parameter);
         register_origin = string_to_register(parameter2);
         register_destination = register_destination + register_origin;
+        pcb->pc++;
         break;
 
     case SUB:
@@ -268,6 +296,7 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         register_destination = string_to_register(parameter);
         register_origin = string_to_register(parameter2);
         register_destination = register_destination - register_origin;
+        
         break;
 
     case JNZ:
@@ -280,6 +309,8 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         {
             pcb->pc = value;
         }
+        pcb->pc++;
+
         break;
 
     case IO_GEN_SLEEP:
@@ -287,13 +318,41 @@ void execute(t_instruction_use *instruction, t_pcb *pcb)
         interfaz = list_get(instruction->parameters, 0);
         unit_work = atoi(list_get(instruction->parameters, 1));
         usleep(unit_work);
+        pcb->pc++;
+
         break;
+
+    case EXIT:
+
+            pcb->current_state = EXIT;
+            //Saco de la TLB
+            for(int i= list_size(tlb)-1 ; i>=0; i--){
+                
+                t_tlb *delete_tlb_entry = list_get(tlb, i);
+                if(delete_tlb_entry->pid == pcb->pid){
+                    list_remove(tlb, i);
+                }
+            }
+            log_info(MODULE_LOGGER, "Proceso %i finalizado y en TLB", pcb->pid);
+            
+            break;
 
     default:
 
         log_error(MODULE_LOGGER, "Código %d desconocido.", instruction->operation);
         exit(EXIT_FAILURE);
     }
+
+
+/* CHEQUEAR EL TIPO DE INTERRUPCION  cuandoe ste todo desarrolado
+    if(operation != TYPE_INTERRUPT_SIN_INT){
+
+
+    }
+
+    */
+
+   //TODO:::: MANDAR POR PCB EL TIPO D EINTERRUPCION DEL PROCESO
 }
 
 int string_to_register(const char *string)
@@ -368,16 +427,19 @@ int mmu(uint32_t dir_logica, t_pcb *pcb, int tamanio_pagina, int register_otrigi
     int dir_fisica = 0;
 
     //CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
+    pthread_mutex_lock(&sem_mutex_tlb); //DUDA CONE ESTO!!
     int frame_tlb = check_tlb(pcb->pid, nro_page);
+    pthread_mutex_unlock(&sem_mutex_tlb); //DUDA CONE ESTO!!
+  
 
     if(frame_tlb != -1){
         nro_frame_required = frame_tlb;
-        log_info(MODULE_LOGGER,"PID: %i - TLB HIT - PAGINA: %i ", pcb->pid, nro_page, nro_frame_required);
+        log_info(MODULE_LOGGER,"PID: %i - TLB HIT - PAGINA: %i ", pcb->pid, nro_page);
         tlb_access(pcb, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
     }else{
-        nro_frame_required = request_frame_memory(nro_page, pcb->pid); // TODO: DESARROLLAR EN MEMORIA que me pase el frame faltante
-        log_info(MODULE_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->pid, nro_page, nro_frame_required);
+        nro_frame_required = request_frame_memory(nro_page, pcb->pid); 
+        log_info(MODULE_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->pid, nro_page);
     }
    
     dir_fisica = nro_frame_required * tamanio_pagina + offset;
@@ -438,4 +500,5 @@ int request_frame_memory(int page, int pid){
     package_add(package, &pid, sizeof(int));
     package_send(package, CONNECTION_MEMORY.fd_connection);
 
+    
 }

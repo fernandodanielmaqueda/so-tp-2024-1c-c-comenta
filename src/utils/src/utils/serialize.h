@@ -235,6 +235,6 @@ void free_package(Package* paquete);
 void send_pcb(int socket, t_pcb* pcb);
 void deserialize_pcb_2(t_pcb* pcb, void* stream);
 void receive_pcb(int socket, t_pcb *pcb);
-int recv_int(int socket);
+
 
 #endif // SERIALIZE_H

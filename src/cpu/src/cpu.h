@@ -26,11 +26,6 @@
 #include "utils/serialize.h"
 #include "utils/socket.h"
 
-int tamanio_pagina; //momentaneo hasta que me llegue de memoria
-long timestamp;
-int direccion_logica; //momentaneo hasta ver de donde la saco
-t_list  *tlb; //tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
-
 
 //Para el SET en el ciclo de instruccion verificar si es in o out
 typedef enum {
@@ -46,7 +41,7 @@ void finish_sockets(void);
 void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
-void execute(t_instruction_use *instruction, t_pcb *pcb);
+void decode_execute(t_instruction_use *instruction, t_pcb *pcb);
 int string_to_register(const char *string);
 int mmu(uint32_t dir_logica, t_pcb *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
 int check_tlb(int process_id, int nro_page);
