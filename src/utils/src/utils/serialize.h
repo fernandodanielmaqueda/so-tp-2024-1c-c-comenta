@@ -40,6 +40,7 @@ typedef enum HeaderCode {
     WRITE_REQUEST, //utilizado en MEMORIA-IO
     RESIZE_REQUEST,
     FRAME_ACCESS,    //PARA EMMORIA Y REVISAR LA TLB
+    FRAME_REQUEST,
     ///////////////////
     //IO - Memoria
     //Instrucciones

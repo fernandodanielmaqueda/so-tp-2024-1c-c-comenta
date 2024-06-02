@@ -53,7 +53,7 @@ int check_tlb(int process_id, int nro_page);
 void tlb_access(t_pcb *pcb, int nro_page, int nro_frame_required, int direc ,int register_origin, int register_destination,int in_out);
 void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
 void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
-
+int request_frame_memory(int page, int pid);
 
 
 #endif /* CPU_H */

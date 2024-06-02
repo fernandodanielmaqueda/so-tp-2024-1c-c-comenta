@@ -334,3 +334,15 @@ void create_marcos(){
     }
     
 }
+
+void free_marcos(){
+    int cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
+    t_marco* marco_liberar;
+
+    for (size_t i = cantidad_marcos; i == (-1); i--)
+    {
+        t_marco* marco_liberar = list_get(lista_marcos, i);
+        free(marco_liberar);
+    }
+
+}

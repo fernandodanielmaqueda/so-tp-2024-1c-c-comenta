@@ -114,4 +114,9 @@ void listen_kernel(int socket);
  */
 void create_marcos();
 
+/**
+ * @brief Libera el espacio reservado para los marcos
+ */
+void free_marcos();
+
 #endif /* MEMORIA_H */
