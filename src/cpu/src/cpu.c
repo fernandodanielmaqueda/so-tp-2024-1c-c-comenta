@@ -177,7 +177,11 @@ void *cpu_interrupt_start_server_for_kernel(void *server_parameter)
 void instruction_cycle(void)
 {
 
-    //   t_contexto* context = recibe_contexto(fd_kernel);
+    tlb = list_create();
+  
+
+
+  
 }
 
 void execute(t_instruction_use *instruction, t_pcb *pcb)
