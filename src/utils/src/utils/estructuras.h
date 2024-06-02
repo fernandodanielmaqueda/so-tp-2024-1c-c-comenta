@@ -35,7 +35,6 @@ typedef struct t_pcb {
 
     uint32_t quantum;
     enum Process_State current_state;
-    //int fd_conexion;
     double arrival_READY;
     double arrival_RUNNING;
 } t_pcb;
