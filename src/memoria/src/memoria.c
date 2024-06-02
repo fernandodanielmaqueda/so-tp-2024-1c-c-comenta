@@ -46,8 +46,8 @@ int module(int argc, char* argv[]) {
     log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
  
  /*   
-    pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)fd_cpu);
-    pthread_create(&hilo_kernel, NULL, (void *)listen_kernel, (void *)fd_kernel);
+    pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)FD_CLIENT_CPU);
+    pthread_create(&hilo_kernel, NULL, (void *)listen_kernel, (void *)FD_CLIENT_KERNEL);
     pthread_create(&hilo_io, NULL, (void *)listen_io, (void *)fd_io);
 
     pthread_join(hilo_cpu, NULL);
@@ -272,6 +272,11 @@ void listen_cpu(int fd_cpu) {
             case INSTUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(fd_cpu);
+                break;
+                
+            case FRAME_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
+                respond_frame_request(fd_cpu);
                 break;
 
             case DISCONNECTED:
