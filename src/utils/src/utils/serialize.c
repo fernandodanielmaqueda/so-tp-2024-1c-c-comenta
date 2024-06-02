@@ -10,6 +10,12 @@ void message_send(enum HeaderCode headerCode, char* message, int fd_socket) {
   package_destroy(package);
 }
 
+char* message_receive(int fd_socket) {
+  int size;
+  char* message = buffer_receive(&size, fd_socket);
+  return message;
+}
+
 enum HeaderCode receive_headerCode(int fd_socket) {
 
   enum HeaderCode headerCode;

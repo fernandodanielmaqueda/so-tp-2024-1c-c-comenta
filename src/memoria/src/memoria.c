@@ -18,6 +18,7 @@ pthread_t hilo_cpu;
 pthread_t hilo_io;
 t_list* lista_procesos;
 t_list* lista_marcos;
+t_list* lista_marcos_libres;
 
 Server COORDINATOR_MEMORY;
 int FD_CLIENT_KERNEL;
@@ -172,6 +173,11 @@ void listen_kernel(int fd_kernel) {
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
                 create_process(fd_kernel);
                 break;
+                
+            case PROCESS_FINALIZED:
+                log_info(MODULE_LOGGER, "KERNEL: Proceso finalizado recibido.");
+                kill_process(fd_kernel);
+                break;
 
             case DISCONNECTED:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
@@ -216,6 +222,22 @@ void create_process(int socketRecibido) {
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el pid del proceso origen
     message_send(PROCESS_CREATED, string_itoa(nuevo_proceso->pid), FD_CLIENT_KERNEL);
+    
+}
+
+void kill_process (int socketRecibido){
+    int pid = atoi(message_receive(socketRecibido));
+    t_process* proceso = seek_process_by_pid (pid);
+    t_page* paginaBuscada;
+    
+    int size = list_size(proceso->tabla_paginas);
+    for (size_t i = size; i == 0 ; i--)
+    {
+        paginaBuscada = list_get(proceso->tabla_paginas, i);
+        t_marco* marco = list_get(lista_marcos, paginaBuscada->marco_asignado);
+        list_add(lista_marcos_libres, marco);
+        free(paginaBuscada);
+    }
     
 }
 
@@ -329,6 +351,7 @@ void create_marcos(){
     int cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
     
     lista_marcos = list_create();
+    lista_marcos_libres = list_create();
 
     for (size_t i = 0; i < cantidad_marcos; i++)
     {
@@ -337,15 +360,16 @@ void create_marcos(){
         marcoNuevo->pagina_asignada=NULL;
         marcoNuevo->pid= -1;
         list_add(lista_marcos, marcoNuevo);
+        list_add(lista_marcos_libres, marcoNuevo);
     }
     
 }
 
 void free_marcos(){
-    int cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
+    int cantidad_marcos = list_size(lista_marcos);
     t_marco* marco_liberar;
 
-    for (size_t i = cantidad_marcos; i == (-1); i--)
+    for (size_t i = cantidad_marcos; i == 0; i--)
     {
         marco_liberar = list_get(lista_marcos, i);
         free(marco_liberar);

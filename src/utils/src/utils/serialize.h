@@ -187,6 +187,13 @@ void message_send(enum HeaderCode codigoOperacion, char* mensaje, int socket);
 
 
 /**
+ * @brief Recibe una cadena de caracteres (char*)
+ * @param socket Socket recibido
+ */
+char* message_receive(int socket);
+
+
+/**
  * @brief Obtiene el codigo de operacion de un paquete
  * @param package Paquete a enviar
  * @param socket Socket destino

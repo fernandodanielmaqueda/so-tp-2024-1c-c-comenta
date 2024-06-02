@@ -58,6 +58,13 @@ void listen_kernel(int fd_kernel);
  */
 void create_process(int socketRecibido);
 
+/**
+ * @brief Elimina el proceso, marca el marco como disponible y libera la pagina
+ * @param socketRecibido Socket desde donde se va a recibir el pcb.
+ */
+void kill_process (int socketRecibido);
+
+
 void create_instruction(FILE* file, t_list* list_instruction);
 void parser_file(char* path, t_list* list_instruction);
 void listen_cpu(int fd_cpu);
