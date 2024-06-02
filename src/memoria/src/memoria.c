@@ -315,6 +315,7 @@ void seek_instruccion(int socketRecibido) {
     //Suponemos que la instruccion es encontrada siempre
     t_instruction_use* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
 
+    usleep(RETARDO_RESPUESTA * 1000);
     send_instruccion(instruccionBuscada, FD_CLIENT_CPU);
     log_info(MODULE_LOGGER, "Instruccion enviada.");
 }
@@ -341,8 +342,45 @@ void free_marcos(){
 
     for (size_t i = cantidad_marcos; i == (-1); i--)
     {
-        t_marco* marco_liberar = list_get(lista_marcos, i);
+        marco_liberar = list_get(lista_marcos, i);
         free(marco_liberar);
     }
+
+}
+
+void respond_frame_request(int socketRecibido){
+//Recibir parametros
+  t_list *propiedadesPlanas = get_package_like_list(socketRecibido);
+  int cursor = 0;
+  int pageBuscada = *(int*)list_get(propiedadesPlanas, cursor);
+  int pidProceso = *(int*)list_get(propiedadesPlanas, cursor);
+  list_destroy_and_destroy_elements(propiedadesPlanas, &free);
+
+//Buscar frame
+    t_process* procesoBuscado = seek_process_by_pid(pidProceso);
+    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->tabla_paginas, pageBuscada);
+
+//Respuesta    
+    usleep(RETARDO_RESPUESTA * 1000);
+    Package* package = package_create(FRAME_REQUEST);
+    package_add(package, &pidProceso, sizeof(int));
+    package_add(package, &marcoEncontrado, sizeof(int));
+    package_send(package, FD_CLIENT_CPU);
+}
+
+int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina){
+    t_page* paginaBuscada;
+    int marcoObjetivo = -1;
+    int size= list_size(tablaPaginas);
+    for (size_t i = 0; i < size ; i++)
+    {
+        paginaBuscada=list_get(tablaPaginas, i);
+        if(paginaBuscada->nro_pagina == pagina){
+            marcoObjetivo = paginaBuscada->marco_asignado;
+            i= size+1;
+        }
+    }
+
+    return marcoObjetivo;
 
 }

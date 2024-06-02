@@ -34,7 +34,7 @@ typedef struct t_page {
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
-    void* marco_asignado;
+    int marco_asignado;
 } t_page;
 
 typedef struct t_marco {
@@ -118,5 +118,19 @@ void create_marcos();
  * @brief Libera el espacio reservado para los marcos
  */
 void free_marcos();
+
+
+/**
+ * @brief Recibe el pedido de busqueda de marco y responde el mismo
+ * @param socketRecibido Socket escuchado
+ */
+void respond_frame_request(int socketRecibido);
+
+/**
+ * @brief Busca el marco asociado a una pagina en especial de una tabla de paginas.
+ * @param tablaPaginas Tanla de paginas del proceso donde buscar la pagina.
+ * @param pagina Pagina buscada.
+ */
+int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina);
 
 #endif /* MEMORIA_H */
