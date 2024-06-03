@@ -140,25 +140,25 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             FD_CLIENT_KERNEL = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_kernel_client_connected);
-        break;
+            break;
         case CPU_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
             log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] %s", "CPU");
             FD_CLIENT_CPU = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_cpu_client_connected);
-        break;
+            break;
         case IO_TYPE:
             log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] %s", "Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             // Lógica de manejo de cliente Entrada/Salida
             free(fd_new_client);
-        break;
+            break;
         default:
             log_warning(CONNECTIONS_LOGGER, "Error Handshake con [Cliente] %s", "No reconocido");
             bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
             free(fd_new_client);
-        break;
+            break;
     }
 
     return NULL;
@@ -173,7 +173,7 @@ void listen_kernel(int fd_kernel) {
                 create_process(fd_kernel);
                 break;
 
-            case DISCONNECTED:
+            case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
                 log_destroy(MODULE_LOGGER);
                 return;
@@ -187,7 +187,7 @@ void listen_kernel(int fd_kernel) {
 
 void create_process(int socketRecibido) {
 
-    t_process* nuevo_proceso // = malloc(sizeof(t_process));
+    t_process* nuevo_proceso; // = malloc(sizeof(t_process));
     t_list* lista_instrucciones = list_create();
     t_list* tabla_paginas = list_create();
 
@@ -274,7 +274,7 @@ void listen_cpu(int fd_cpu) {
                 seek_instruccion(fd_cpu);
                 break;
 
-            case DISCONNECTED:
+            case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
                 return;

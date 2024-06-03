@@ -19,7 +19,7 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
-#include "utils/modules.h"
+#include "utils/module.h"
 #include "utils/socket.h"
 #include "kernel.h"
 #include "scheduler.h"

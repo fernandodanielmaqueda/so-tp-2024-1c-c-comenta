@@ -17,7 +17,7 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
-#include "utils/modules.h"
+#include "utils/module.h"
 #include "utils/serialize.h"
 #include "utils/socket.h"
 

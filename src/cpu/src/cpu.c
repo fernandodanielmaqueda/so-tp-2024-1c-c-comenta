@@ -20,8 +20,7 @@ Connection CONNECTION_MEMORY;
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
 
-int module(int argc, char *argv[])
-{
+int module(int argc, char *argv[]) {
 
     initialize_loggers();
     initialize_configs();

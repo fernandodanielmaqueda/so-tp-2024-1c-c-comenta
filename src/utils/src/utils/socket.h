@@ -16,7 +16,7 @@
 #include "commons/config.h"
 #include "commons/string.h"
 #include "estructuras.h"
-#include "modules.h"
+#include "module.h"
 
 #define RETRY_CONNECTION_IN_SECONDS 10
 #define MAX_CONNECTION_ATTEMPS 10
