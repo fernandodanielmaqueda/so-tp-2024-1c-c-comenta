@@ -305,6 +305,11 @@ void listen_cpu(int fd_cpu) {
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
                 return;
+                
+            case PAGE_SIZE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
+                message_send(PAGE_SIZE_REQUEST, string_itoa(TAM_PAGINA),FD_CLIENT_CPU);
+                break;
             
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
