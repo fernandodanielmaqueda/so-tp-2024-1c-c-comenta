@@ -416,5 +416,16 @@ int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina){
     }
 
     return marcoObjetivo;
+}
 
+void read_memory(int socketRecibido){
+    t_list* parametros = get_package_like_list(socketRecibido);
+    int dir_fisica = *(int *)list_get(parametros,0);
+    int pidBuscado = *(int *)list_get(parametros,1);
+
+}
+
+
+void write_memory(int socketRecibido){
+    
 }
