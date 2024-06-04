@@ -45,5 +45,6 @@ t_pcb *RR_scheduling_algorithm(void);
 void *receptor_mensajes_cpu(void*);
 int current_time(void);
 int asignar_PID();
+void* start_quantum(void* arg);
 
 #endif /* KERNEL_H */
