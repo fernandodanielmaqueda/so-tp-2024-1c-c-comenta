@@ -18,6 +18,7 @@ pthread_t hilo_cpu;
 pthread_t hilo_io;
 t_list* lista_procesos;
 t_list* lista_marcos;
+t_list* lista_marcos_libres;
 
 Server COORDINATOR_MEMORY;
 int FD_CLIENT_KERNEL;
@@ -39,15 +40,15 @@ int module(int argc, char* argv[]) {
     memoria_principal = (void*) malloc(TAM_MEMORIA);
     memset(memoria_principal, (u_int32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
     lista_procesos = list_create();
-    lista_marcos = list_create();
+    create_marcos();
 
     initialize_sockets();
 
     log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
  
  /*   
-    pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)fd_cpu);
-    pthread_create(&hilo_kernel, NULL, (void *)listen_kernel, (void *)fd_kernel);
+    pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)FD_CLIENT_CPU);
+    pthread_create(&hilo_kernel, NULL, (void *)listen_kernel, (void *)FD_CLIENT_KERNEL);
     pthread_create(&hilo_io, NULL, (void *)listen_io, (void *)fd_io);
 
     pthread_join(hilo_cpu, NULL);
@@ -140,6 +141,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             FD_CLIENT_KERNEL = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_kernel_client_connected);
+            // Lógica de manejo de cliente Kernel (crear un hilo para menejo de cliente Kernel)
             break;
         case CPU_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
@@ -147,11 +149,12 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             FD_CLIENT_CPU = *fd_new_client;
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             sem_post(&sem_coordinator_cpu_client_connected);
+            // Lógica de manejo de cliente CPU (crear un hilo para menejo de cliente CPU)
             break;
         case IO_TYPE:
             log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] %s", "Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
-            // Lógica de manejo de cliente Entrada/Salida
+            // Lógica de manejo de cliente Entrada/Salida (crear un hilo para menejo de cliente Entrada/Salida)
             free(fd_new_client);
             break;
         default:
@@ -171,6 +174,11 @@ void listen_kernel(int fd_kernel) {
             case PROCESS_NEW:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
                 create_process(fd_kernel);
+                break;
+                
+            case PROCESS_FINALIZED:
+                log_info(MODULE_LOGGER, "KERNEL: Proceso finalizado recibido.");
+                kill_process(fd_kernel);
                 break;
 
             case DISCONNECTION_HEADERCODE:
@@ -216,6 +224,22 @@ void create_process(int socketRecibido) {
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el pid del proceso origen
     message_send(PROCESS_CREATED, string_itoa(nuevo_proceso->pid), FD_CLIENT_KERNEL);
+    
+}
+
+void kill_process (int socketRecibido){
+    int pid = atoi(message_receive(socketRecibido));
+    t_process* proceso = seek_process_by_pid (pid);
+    t_page* paginaBuscada;
+    
+    int size = list_size(proceso->tabla_paginas);
+    for (size_t i = size; i == 0 ; i--)
+    {
+        paginaBuscada = list_get(proceso->tabla_paginas, i);
+        t_marco* marco = list_get(lista_marcos, paginaBuscada->marco_asignado);
+        list_add(lista_marcos_libres, marco);
+        free(paginaBuscada);
+    }
     
 }
 
@@ -273,6 +297,11 @@ void listen_cpu(int fd_cpu) {
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(fd_cpu);
                 break;
+                
+            case FRAME_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
+                respond_frame_request(fd_cpu);
+                break;
 
             case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
@@ -315,6 +344,74 @@ void seek_instruccion(int socketRecibido) {
     //Suponemos que la instruccion es encontrada siempre
     t_instruction_use* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
 
+    usleep(RETARDO_RESPUESTA * 1000);
     send_instruccion(instruccionBuscada, FD_CLIENT_CPU);
     log_info(MODULE_LOGGER, "Instruccion enviada.");
+}
+
+void create_marcos(){
+    int cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
+    
+    lista_marcos = list_create();
+    lista_marcos_libres = list_create();
+
+    for (size_t i = 0; i < cantidad_marcos; i++)
+    {
+        t_marco* marcoNuevo = malloc(sizeof(t_marco));
+        marcoNuevo->marco_id=i;
+        marcoNuevo->pagina_asignada=NULL;
+        marcoNuevo->pid= -1;
+        list_add(lista_marcos, marcoNuevo);
+        list_add(lista_marcos_libres, marcoNuevo);
+    }
+    
+}
+
+void free_marcos(){
+    int cantidad_marcos = list_size(lista_marcos);
+    t_marco* marco_liberar;
+
+    for (size_t i = cantidad_marcos; i == 0; i--)
+    {
+        marco_liberar = list_get(lista_marcos, i);
+        free(marco_liberar);
+    }
+
+}
+
+void respond_frame_request(int socketRecibido){
+//Recibir parametros
+  t_list *propiedadesPlanas = get_package_like_list(socketRecibido);
+  int cursor = 0;
+  int pageBuscada = *(int*)list_get(propiedadesPlanas, cursor);
+  int pidProceso = *(int*)list_get(propiedadesPlanas, cursor);
+  list_destroy_and_destroy_elements(propiedadesPlanas, &free);
+
+//Buscar frame
+    t_process* procesoBuscado = seek_process_by_pid(pidProceso);
+    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->tabla_paginas, pageBuscada);
+
+//Respuesta    
+    usleep(RETARDO_RESPUESTA * 1000);
+    Package* package = package_create_with_header(FRAME_REQUEST);
+    package_add(package, &pidProceso, sizeof(int));
+    package_add(package, &marcoEncontrado, sizeof(int));
+    package_send(package, FD_CLIENT_CPU);
+}
+
+int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina){
+    t_page* paginaBuscada;
+    int marcoObjetivo = -1;
+    int size= list_size(tablaPaginas);
+    for (size_t i = 0; i < size ; i++)
+    {
+        paginaBuscada=list_get(tablaPaginas, i);
+        if(paginaBuscada->nro_pagina == pagina){
+            marcoObjetivo = paginaBuscada->marco_asignado;
+            i= size+1;
+        }
+    }
+
+    return marcoObjetivo;
+
 }

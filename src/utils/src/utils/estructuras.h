@@ -32,9 +32,9 @@ typedef struct t_pcb {
     uint32_t SI;
     uint32_t DI;
 
+
     uint32_t quantum;
     enum Process_State current_state;
-    //int fd_conexion;
     double arrival_READY;
     double arrival_RUNNING;
 } t_pcb;
@@ -66,5 +66,15 @@ typedef enum t_register {
     DI
 
 } t_register;
+
+typedef struct {
+	int pid;
+	int nro_page;
+	int frame;
+    int time; //para el LRU
+	
+} t_tlb;
+
+
 
 #endif // ESTRUCTURAS_H

@@ -34,7 +34,7 @@ typedef struct t_page {
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
-    void* marco_asignado;
+    int marco_asignado;
 } t_page;
 
 typedef struct t_marco {
@@ -57,6 +57,13 @@ void listen_kernel(int fd_kernel);
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
 void create_process(int socketRecibido);
+
+/**
+ * @brief Elimina el proceso, marca el marco como disponible y libera la pagina
+ * @param socketRecibido Socket desde donde se va a recibir el pcb.
+ */
+void kill_process (int socketRecibido);
+
 
 void create_instruction(FILE* file, t_list* list_instruction);
 void parser_file(char* path, t_list* list_instruction);
@@ -108,5 +115,29 @@ void listen_cpu(int socket);
  * @param socket Socket escuchado
  */
 void listen_kernel(int socket);
+
+/**
+ * @brief Crea los marcos e inicializa la lista de los mismos
+ */
+void create_marcos();
+
+/**
+ * @brief Libera el espacio reservado para los marcos
+ */
+void free_marcos();
+
+
+/**
+ * @brief Recibe el pedido de busqueda de marco y responde el mismo
+ * @param socketRecibido Socket escuchado
+ */
+void respond_frame_request(int socketRecibido);
+
+/**
+ * @brief Busca el marco asociado a una pagina en especial de una tabla de paginas.
+ * @param tablaPaginas Tanla de paginas del proceso donde buscar la pagina.
+ * @param pagina Pagina buscada.
+ */
+int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina);
 
 #endif /* MEMORIA_H */

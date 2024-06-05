@@ -26,6 +26,14 @@
 #include "utils/serialize.h"
 #include "utils/socket.h"
 
+
+//Para el SET en el ciclo de instruccion verificar si es in o out
+typedef enum {
+	IN,
+	OUT
+} t_in_out;
+
+
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
 void initialize_sockets(void);
@@ -33,7 +41,14 @@ void finish_sockets(void);
 void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
-void execute(t_instruction_use *instruction, t_pcb *pcb);
+void decode_execute(t_instruction_use *instruction, t_pcb *pcb);
 int string_to_register(const char *string);
+int mmu(uint32_t dir_logica, t_pcb *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
+int check_tlb(int process_id, int nro_page);
+void tlb_access(t_pcb *pcb, int nro_page, int nro_frame_required, int direc ,int register_origin, int register_destination,int in_out);
+void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
+void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
+int request_frame_memory(int page, int pid);
+
 
 #endif /* CPU_H */

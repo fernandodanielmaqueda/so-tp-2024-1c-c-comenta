@@ -32,7 +32,16 @@ typedef struct t_instruction_use {
  * @param mensaje Mensaje a enviar
  * @param socket Socket destino
  */
-void message_send(enum HeaderCode codigoOperacion, char* mensaje, int socket);
+//void message_send(enum HeaderCode codigoOperacion, char* mensaje, int socket);
+
+
+/**
+ * @brief Recibe una cadena de caracteres (char*)
+ * @param socket Socket recibido
+ */
+//char* message_receive(int socket);
+
+void pcb_deserialize(Payload *payload);
 
 /**
  * @brief Eliminar pcb.
@@ -70,9 +79,9 @@ t_pcb* deserialize_pcb(int socketClient);
  */
 void send_pcb_to(t_pcb* pcbEnviado, int socket);
 
-
 /**
  * @brief Obtiene el codigo de operacion de un paquete
+>>>>>>> ec656e344885798c7674f812659b4bf99cc473c9
  * @param instruccion Instruccion a enviar
  * @param socket Socket destino
  */
@@ -96,5 +105,6 @@ void serialize_pcb_2(Package* paquete, t_pcb* pcb);
 void send_pcb(int socket, t_pcb* pcb);
 void deserialize_pcb_2(t_pcb* pcb, void* stream);
 void receive_pcb(int socket, t_pcb *pcb);
+
 
 #endif // SERIALIZE_H

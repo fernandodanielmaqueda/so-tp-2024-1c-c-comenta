@@ -30,12 +30,14 @@ typedef enum HeaderCode {
     READ_REQUEST, //utilizado en MEMORIA-IO
     WRITE_REQUEST, //utilizado en MEMORIA-IO
     RESIZE_REQUEST,
+    FRAME_ACCESS,    //PARA EMMORIA Y REVISAR LA TLB
+    FRAME_REQUEST,
     ///////////////////
     //IO - Memoria
     //Instrucciones
     SET,
-    MOVE_IN,
-    MOVE_OUT,
+    MOV_IN,
+    MOV_OUT,
     SUM,
     SUB,
     JNZ,
@@ -53,10 +55,10 @@ typedef enum HeaderCode {
     IO_FS_READ
 } HeaderCode;
 
-typedef uint32_t Size;
+typedef uint32_t PayloadSize;
 
 typedef struct Payload {
-    Size size; // Tamaño del payload
+    PayloadSize size; // Tamaño del payload
     // uint32_t offset; // Desplazamiento dentro del payload
     void* stream; // Payload
 } Payload;
@@ -68,29 +70,6 @@ typedef struct Package {
     Payload *payload;
 } Package;
 
-
-/**
- * @brief Obtiene el codigo de operacion de un paquete
- * @param package Paquete a enviar
- * @param socket Socket destino
- */
-void package_send(Package* package, int socket);
-
-
-/**
- * @brief Obtiene el codigo de operacion de un paquete
- * @param package Paquete a serializar
- * @param bytes Tamanio del paquete
- */
-void* package_serialize(Package* package, int bytes);
-
-/**
- * @brief Obtiene el codigo de operacion de un paquete
- * @param socket Package donde se creara el payload
- */
-enum HeaderCode receive_headerCode(int fd_socket);
-
-
 /**
  * @brief Crear paquete.
  */
@@ -98,29 +77,54 @@ Package *package_create(void);
 
 /**
  * @brief Crear paquete.
- * @param headerCode Codigo de operacion que tendra el paquete.
+ * @param header Codigo de operacion que tendra el paquete.
  */
-Package *package_create_with_headerCode(uint8_t headerCode);
+Package *package_create_with_header(Header header);
 
+/**
+ * @brief Eliminar paquete
+ * @param package Package a eliminar.
+ */
+void package_destroy(Package *package);
 
 /**
  * @brief Agregar dato a paquete
  * @param package Package a rellenar.
- * @param value Dato a agregar
- * @param size Tamaño del dato a agregar.
+ * @param data Datos a agregar
+ * @param dataSize Tamaño de los datos a agregar.
  */
-void package_add(Package *package, void *value, uint32_t size);
+void package_add(Package *package, void *data, size_t dataSize);
 
 /**
- * @brief Eliminar paquete
- * @param paquete Package a eliminar.
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param package Paquete a enviar
+ * @param fd_socket Socket destino
  */
-void package_destroy(Package *package);
+void package_send(Package *package, int fd_socket);
 
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param package Paquete a serializar
+ * @param bufferSize Tamanio del paquete
+ */
+void *package_serialize(Package *package, size_t bufferSize);
+
+Package *package_receive(int fd_socket);
+
+/**
+ * @brief Obtiene el codigo de operacion de un paquete
+ * @param package Paquete
+ * @param fd_socket Paquete donde se creara el payload
+ */
+void package_receive_header(Package *package, int fd_socket);
+
+void package_receive_payload(Package *package, int fd_socket);
+void package_deserialize(Package *package);
 Payload *payload_create(void);
 void payload_destroy(Payload *payload);
-void payload_add(Payload *payload, void *data, uint32_t dataSize);
-void payload_read(Payload *payload, void *data, uint32_t size);
+void payload_add(Payload *payload, void *data, size_t dataSize);
+size_t memcpy_offset(void *destination, size_t offset, void *source, size_t bytes);
+void payload_read(Payload *payload, void *data, size_t dataSize);
 void payload_add_uint32(Payload *payload, uint32_t data);
 uint32_t payload_read_uint32(Payload *payload);
 void payload_add_uint8(Payload *payload, uint8_t data);
@@ -132,8 +136,10 @@ char *payload_read_string(Payload *payload, uint32_t *length);
  * @brief Recibe un paquete desde un socket, y transforma el contenido en una lista.
  * @param fd_client Socket desde donde se va a recibir el paquete.
  */
-t_list* get_package_like_list(int fd_client);
+// t_list* get_package_like_list(int fd_client);
 
 void free_string_element(void* element);
+
+#include "serialize.h"
 
 #endif // PACKAGE_H

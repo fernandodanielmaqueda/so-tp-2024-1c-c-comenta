@@ -22,11 +22,11 @@ void package_destroy(Package *package) {
   }
 }
 
-void package_add(Package *package, void *data, Size dataSize) {
+void package_add(Package *package, void *data, size_t dataSize) {
   payload_add(package->payload, data, dataSize);
 }
 
-void package_send(Package* package, int fd_socket) {
+void package_send(Package *package, int fd_socket) {
   size_t bufferSize = sizeof(package->header) + sizeof(package->payload->size) + (size_t) package->payload->size;
   void *buffer = package_serialize(package, bufferSize);
 
@@ -38,15 +38,11 @@ void package_send(Package* package, int fd_socket) {
 
 void *package_serialize(Package *package, size_t bufferSize) {
   void *buffer = malloc(bufferSize);
-  Size offset = 0;
+  size_t offset = 0;
 
-  memcpy((void*)(((uint8_t*) buffer) + offset), &(package->header), sizeof(package->header));
-  offset += sizeof(package->header);
-
-  memcpy((void*)(((uint8_t*) buffer) + offset), &(package->payload->size), sizeof(package->payload->size));
-  offset += sizeof(package->payload->size);
-
-  memcpy((void*)(((uint8_t*) buffer) + offset), package->payload->stream, package->payload->size);
+  offset = memcpy_offset(buffer, offset, &(package->header), sizeof(package->header));
+  offset = memcpy_offset(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
+  offset = memcpy_offset(buffer, offset, package->payload->stream, (size_t) package->payload->size);
 
   return buffer;
 }
@@ -55,6 +51,7 @@ Package *package_receive(int fd_socket) {
   Package *package = package_create();
   package_receive_header(package, fd_socket);
   package_receive_payload(package, fd_socket);
+  return package;
 }
 
 void package_receive_header(Package *package, int fd_socket) {
@@ -62,7 +59,7 @@ void package_receive_header(Package *package, int fd_socket) {
 }
 
 void package_receive_payload(Package *package, int fd_socket) {
-  recv(fd_socket, (void *) &(package->payload->size), sizeof(Size), 0); // MSG_WAITALL
+  recv(fd_socket, &(package->payload->size), sizeof(PayloadSize), 0); // MSG_WAITALL
   if(package->payload->size == 0) return;
   package->payload->stream = malloc(package->payload->size);
   recv(fd_socket, package->payload->stream, (size_t) package->payload->size, 0); // MSG_WAITALL
@@ -98,15 +95,21 @@ void payload_destroy(Payload *payload) {
 }
 
 // Agrega un stream al payload en la posición actual y avanza el offset
-void payload_add(Payload *payload, void *data, Size dataSize) {
+void payload_add(Payload *payload, void *data, size_t dataSize) {
   payload->stream = realloc(payload->stream, (size_t) (payload->size + dataSize));
   memcpy((void*)(((uint8_t*) payload->stream) + payload->size), data, dataSize);
-  payload->size += dataSize;
+  payload->size += (PayloadSize) dataSize;
 }
 
 // Guarda size bytes del principio del payload en la dirección data y avanza el offset
-void payload_read(Payload *payload, void *data, uint32_t size) {
+size_t memcpy_offset(void *destination, size_t offset, void *source, size_t bytes) {
+  memcpy((void*)(((uint8_t*) destination) + offset), source, bytes);
+  offset += bytes;
+  return offset;
+}
 
+void payload_read(Payload *payload, void *data, size_t dataSize) {
+  
 }
 
 // Agrega un uint32_t al payload
@@ -121,7 +124,7 @@ uint32_t payload_read_uint32(Payload *payload) {
 
 // Agrega un uint8_t al payload
 void payload_add_uint8(Payload *payload, uint8_t data) {
-  payload_add(payload, (void*) &data, (Size) sizeof(uint8_t));
+  payload_add(payload, (void*) &data, (PayloadSize) sizeof(uint8_t));
 }
 
 // Lee un uint8_t del payload y avanza el offset
@@ -140,32 +143,32 @@ char *payload_read_string(Payload *payload, uint32_t *length) {
 
 }
 
-//
-
+/*
 t_list* get_package_like_list(int fd_client) {
-  int payload_size;
+  int buffer_size;
   int tamanioContenido;
   int offset = 0;
 
   t_list *contenido = list_create();
-  void *payload = payload_receive(&payload_size, fd_client);
+  void *buffer = buffer_receive(&buffer_size, fd_client);
 
-  while (offset < payload_size)
+  while (offset < buffer_size)
   {
-    memcpy((void*) &tamanioContenido, (void*)(((uint8_t*) payload) + offset), sizeof(int));
+    memcpy((void*) &tamanioContenido, (void*)(((uint8_t*) buffer) + offset), sizeof(int));
     offset += sizeof(int);
 
     void *valor = malloc(tamanioContenido);
-    memcpy(valor, (void*)(((uint8_t*) payload) + offset), tamanioContenido);
+    memcpy(valor, (void*)(((uint8_t*) buffer) + offset), tamanioContenido);
     offset += tamanioContenido;
 
     list_add(contenido, valor);
   }
 
-  free(payload);
+  free(buffer);
   return contenido;
 }
+*/
 
-void free_string_element(void* element) {
-    free((char*) element);
+void free_string_element(void *element) {
+    free((char *) element);
 }

@@ -38,6 +38,7 @@ pthread_t thread_interrupt;
 sem_t sem_long_term_scheduler;
 sem_t sem_short_term_scheduler;
 sem_t sem_multiprogramming_level;
+sem_t process_ready;
 
 Server COORDINATOR_IO;
 Connection CONNECTION_MEMORY;
@@ -79,7 +80,6 @@ int module(int argc, char *argv[]) {
         .DI = 600,
         .quantum = 2,
         .current_state = NEW,
-        //.fd_conexion = 2,
         .arrival_READY = 123.456,
         .arrival_RUNNING = 789.012
     };
@@ -252,7 +252,7 @@ void *short_term_scheduler(void *parameter) {
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
 			pcb = FIFO_scheduling_algorithm();
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
-			//pcb = RR_scheduling_algorithm();
+		//	pcb = RR_scheduling_algorithm();
 
 	    	//pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
 			//pthread_join(&thread_interrupt, NULL);
@@ -277,38 +277,37 @@ t_pcb *FIFO_scheduling_algorithm(void) {
 	return pcb;
 }
 
-/*t_pcb *RR_scheduling_algorithm(void* arg)
-{
-    t_args_hilo* arg_h = (t_args_hilo*) arg;
+t_pcb *RR_scheduling_algorithm(void ){
+   // t_args_hilo* arg_h = (t_args_hilo*) arg;
 	
     pthread_t generador_de_interrupciones;
     while(1)
     {
-        sem_wait(&procesos_en_ready);
-        sem_wait(&planificacion_corto_plazo);
-        sem_post(&planificacion_corto_plazo);
+        sem_wait(&process_ready);
+        sem_wait(&sem_short_term_scheduler);
+        sem_post(&sem_short_term_scheduler);
         //log_info(logger,"Hice wait del gdmp");
-        sem_wait(&mutex_LISTA_READY);
+        sem_wait(&mutex_LIST_READY);
         //log_info(logger,"Hice wait de la cola de new: %i",cola_new);
 
-        t_pcb *pcb = (t_pcb *)list_remove(LISTA_EXEC, 0);
-        sem_post(&mutex_LISTA_READY);
+        t_pcb *pcb = (t_pcb *)list_remove(LIST_EXECUTING, 0);
+        sem_post(&mutex_LIST_READY);
         
 		return pcb;
 
-        log_info(logger, "PID: %i - Estado Anterior: READY - Estado Actual: EXEC", execute->pid);
+        log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXEC", pcb->current_state);
   
-        send(arg_h->socket_dispatch, &(execute->pid), sizeof(uint32_t), 0);
+       // send(arg_h->socket_dispatch, &(execute->pid), sizeof(uint32_t), 0);
         //log_info(logger, "Envié %i a %i", execute->pid, arg_h->socket_dispatch);
-        enviar_contexto_de_ejecucion(execute->contexto, arg_h->socket_dispatch);
+       // enviar_contexto_de_ejecucion(execute->contexto, arg_h->socket_dispatch);
 
-        execute->contexto = recibir_contexto_de_ejecucion(arg_h->socket_dispatch);
-        motivo = recibir_motivo_desalojo(arg_h->socket_dispatch);
-        evaluar_motivo_desalojo(logger, motivo, arg);
+       // execute->contexto = recibir_contexto_de_ejecucion(arg_h->socket_dispatch);
+      //  motivo = recibir_motivo_desalojo(arg_h->socket_dispatch);
+      //  evaluar_motivo_desalojo(MODULE_LOGGER, motivo, arg);
                 
     }
 }
-*/
+
 
 void *receptor_mensajes_cpu(void *parameter) {
 	// Package *package;
@@ -456,12 +455,14 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			break;
 		}
 		}
+
+
 	switch(new_state){ // ! ESTADO NUEVO
 		case NEW:
 		{
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_add(LIST_NEW, pcb);
-			// log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->pid);
+			log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->pid);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 	
 			sem_post(&sem_long_term_scheduler);
@@ -472,7 +473,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			pcb -> arrival_READY = current_time();
 
 			pthread_mutex_lock(&mutex_LIST_READY);
-			// log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_previous_state);
+			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_previous_state);
 			list_add(LIST_READY, pcb);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			sem_post(&sem_short_term_scheduler);
@@ -486,7 +487,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
 			list_add(LIST_EXECUTING, pcb);
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
-			// log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->pid, global_previous_state);
+			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->pid, global_previous_state);
 	
 			break;
 		}
@@ -496,7 +497,8 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			list_add(LIST_BLOCKED, pcb);
 			pthread_mutex_unlock(&mutex_LIST_BLOCKED);
 
-			// log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_previous_state);
+		
+			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_previous_state);
 
 			break;
 		}
@@ -504,7 +506,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		case EXIT:
 		{
 			
-			// log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
+			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
 
 			sem_post(&sem_multiprogramming_level);
 
@@ -543,6 +545,9 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		}
 		*/
 	}
+
+
+
 }
 
 //POR REVISAR
@@ -603,12 +608,20 @@ int asignar_PID(void) {
     return value_pid;
 }
 
-/*
+
+void send_interrupt(int socket)
+{
+    int dummy = 1;
+    send(socket, &dummy, sizeof(dummy), 0);
+}
+
 void* start_quantum(void* arg)
 {
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(QUANTUM * 1000); //en milisegundos
-    send_interrupt(thread_cpu_interrupt_start_server_for_kernel); //PREGUNTAR
+    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
 }
-*/
+
+
+

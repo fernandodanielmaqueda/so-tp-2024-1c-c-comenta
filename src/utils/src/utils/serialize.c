@@ -3,11 +3,23 @@
 
 #include "serialize.h"
 
+/*
 void message_send(enum HeaderCode headerCode, char* message, int fd_socket) {
   Package *package = package_create(headerCode);
   package_add(package, message, strlen(message) + 1);
   package_send(package, fd_socket);
   package_destroy(package);
+}
+
+char* message_receive(int fd_socket) {
+  int size;
+  char* message = buffer_receive(&size, fd_socket);
+  return message;
+}
+*/
+
+void pcb_deserialize(Payload *payload) {
+
 }
 
 /*  LIBERA ESPACIO
@@ -134,7 +146,8 @@ void serialize_pcb(Package *package, t_pcb *pcb) {
 t_pcb *deserialize_pcb(int socketCliente) {
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_pcb( ) [...]\n"); }
 
-  t_list *lista_elememtos = get_package_like_list(socketCliente);
+  t_list *lista_elememtos = NULL;
+  //t_list *lista_elememtos = get_package_like_list(socketCliente);
   t_pcb *pcb = malloc(sizeof(t_pcb));
   int cursor = 0;
 
@@ -219,7 +232,7 @@ t_pcb *deserialize_pcb(int socketCliente) {
 }
 
 void send_pcb_to(t_pcb* pcbEnviado, int socket){
-  Package* pack = package_create(PCB);
+  Package* pack = package_create_with_header(PCB_HEADERCODE);
   serialize_pcb(pack, pcbEnviado);
   package_send(pack, socket);
   package_destroy(pack);
@@ -237,7 +250,7 @@ void instruction_delete(t_instruction_use *lineaInstruccion) {
 
 void send_instruccion(t_instruction_use* instruccion, int socket) {
   
-  Package* package = package_create(INSTUCTION_REQUEST);
+  Package* package = package_create_with_header(INSTUCTION_REQUEST);
   { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [...]\n"); }
   
   int cursor = 0;
@@ -273,7 +286,8 @@ void send_instruccion(t_instruction_use* instruccion, int socket) {
 t_instruction_use* receive_instruccion(int socket) {
   { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_instruccion( ) [...]\n"); }
 
-  t_list *propiedadesPlanas = get_package_like_list(socket);
+  t_list *propiedadesPlanas = NULL;
+  //t_list *propiedadesPlanas = get_package_like_list(socket);
   t_instruction_use* instruccionRecibida = malloc(sizeof(t_instruction_use));
   int cursor = 0;
 
@@ -468,6 +482,7 @@ void deserialize_pcb_2(t_pcb* pcb, void* stream) {
 }
 
 void receive_pcb(int socket, t_pcb *pcb) {
+  
     uint8_t header;
     uint32_t payload_size;
 
