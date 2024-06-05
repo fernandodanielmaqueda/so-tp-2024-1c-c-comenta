@@ -252,9 +252,9 @@ void *short_term_scheduler(void *parameter) {
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
 			pcb = FIFO_scheduling_algorithm();
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
-		//	pcb = RR_scheduling_algorithm();
+			pcb = RR_scheduling_algorithm();
 
-	    	//pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
+	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
 			//pthread_join(&thread_interrupt, NULL);
 		} else {
 			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
@@ -278,34 +278,23 @@ t_pcb *FIFO_scheduling_algorithm(void) {
 }
 
 t_pcb *RR_scheduling_algorithm(void ){
-   // t_args_hilo* arg_h = (t_args_hilo*) arg;
 	
-    pthread_t generador_de_interrupciones;
+	t_pcb *pcb;
+
     while(1)
     {
-        sem_wait(&process_ready);
-        sem_wait(&sem_short_term_scheduler);
-        sem_post(&sem_short_term_scheduler);
-        //log_info(logger,"Hice wait del gdmp");
-        sem_wait(&mutex_LIST_READY);
-        //log_info(logger,"Hice wait de la cola de new: %i",cola_new);
-
-        t_pcb *pcb = (t_pcb *)list_remove(LIST_EXECUTING, 0);
-        sem_post(&mutex_LIST_READY);
-        
-		return pcb;
-
-        log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXEC", pcb->current_state);
-  
-       // send(arg_h->socket_dispatch, &(execute->pid), sizeof(uint32_t), 0);
-        //log_info(logger, "Envié %i a %i", execute->pid, arg_h->socket_dispatch);
-       // enviar_contexto_de_ejecucion(execute->contexto, arg_h->socket_dispatch);
-
-       // execute->contexto = recibir_contexto_de_ejecucion(arg_h->socket_dispatch);
-      //  motivo = recibir_motivo_desalojo(arg_h->socket_dispatch);
-      //  evaluar_motivo_desalojo(MODULE_LOGGER, motivo, arg);
-                
+		
+       if(list_size(LIST_READY) > 0) {
+            pcb = (t_pcb*)list_get(LIST_READY, 0);
+            //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
+        }
+        else if(list_size(LIST_NEW) > 0) {
+            pcb = (t_pcb*)list_get(LIST_NEW, 0);
+           // log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: NEW - Estado Actual: READY", pcb->id);
+            //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
+        }
     }
+		return pcb;
 }
 
 
@@ -621,6 +610,8 @@ void* start_quantum(void* arg)
     usleep(QUANTUM * 1000); //en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+
+	return NULL;
 }
 
 

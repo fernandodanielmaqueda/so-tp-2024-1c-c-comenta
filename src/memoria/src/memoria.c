@@ -307,6 +307,11 @@ void listen_cpu(int fd_cpu) {
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
                 return;
+                
+            case PAGE_SIZE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
+                message_send(PAGE_SIZE_REQUEST, string_itoa(TAM_PAGINA),FD_CLIENT_CPU);
+                break;
             
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
@@ -413,5 +418,16 @@ int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina){
     }
 
     return marcoObjetivo;
+}
 
+void read_memory(int socketRecibido){
+    t_list* parametros = get_package_like_list(socketRecibido);
+    int dir_fisica = *(int *)list_get(parametros,0);
+    int pidBuscado = *(int *)list_get(parametros,1);
+
+}
+
+
+void write_memory(int socketRecibido){
+    
 }

@@ -32,6 +32,7 @@ typedef enum HeaderCode {
     RESIZE_REQUEST,
     FRAME_ACCESS,    //PARA EMMORIA Y REVISAR LA TLB
     FRAME_REQUEST,
+    PAGE_SIZE_REQUEST,
     ///////////////////
     //IO - Memoria
     //Instrucciones
