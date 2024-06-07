@@ -21,11 +21,13 @@ typedef enum PortType {
 
 extern char *MODULE_NAME;
 extern char *MODULE_LOG_PATHNAME;
-extern char *CONNECTIONS_LOG_PATHNAME;
+extern char *SOCKET_LOG_PATHNAME;
+extern char *SERIALIZE_LOG_PATHNAME;
 extern char *MODULE_CONFIG_PATHNAME;
 
 extern t_log *MODULE_LOGGER;
-extern t_log *CONNECTIONS_LOGGER;
+extern t_log *SOCKET_LOGGER;
+extern t_log *SERIALIZE_LOGGER;
 extern t_config *MODULE_CONFIG;
 
 void initialize_loggers(void);

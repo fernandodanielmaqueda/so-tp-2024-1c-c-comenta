@@ -3,17 +3,22 @@
 
 #include "module.h"
 
-t_log *CONNECTIONS_LOGGER;
-char *CONNECTIONS_LOG_PATHNAME = "connections.log";
+t_log *SOCKET_LOGGER;
+char *SOCKET_LOG_PATHNAME = "socket.log";
+
+t_log *SERIALIZE_LOGGER;
+char *SERIALIZE_LOG_PATHNAME = "socket.log";
 
 void initialize_loggers(void) {
 	MODULE_LOGGER = log_create(MODULE_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
-	CONNECTIONS_LOGGER = log_create(CONNECTIONS_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
+	SOCKET_LOGGER = log_create(SOCKET_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
+	SERIALIZE_LOGGER = log_create(SERIALIZE_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
 }
 
 void finish_loggers(void) {
 	log_destroy(MODULE_LOGGER);
-	log_destroy(CONNECTIONS_LOGGER);
+	log_destroy(SOCKET_LOGGER);
+	log_destroy(SERIALIZE_LOGGER);
 }
 
 void initialize_configs(void) {
