@@ -105,5 +105,6 @@ void pcb_print(t_PCB *pcb) {
     pcb->quantum,
     pcb->current_state,
     pcb->arrival_READY,
-    pcb->arrival_RUNNING);
+    pcb->arrival_RUNNING
+    );
 }

@@ -22,7 +22,7 @@ void package_destroy(Package *package) {
 }
 
 void package_send(Package *package, int fd_socket) {
-  size_t bufferSize = sizeof(package->header) + sizeof(package->payload->size) + (size_t) package->payload->size;
+  size_t bufferSize = sizeof(Header_Serialized) + sizeof(package->payload->size) + (size_t) package->payload->size;
   void *buffer = package_serialize(package, bufferSize);
 
   send(fd_socket, buffer, bufferSize, 0);
@@ -34,7 +34,8 @@ void *package_serialize(Package *package, size_t bufferSize) {
   void *buffer = malloc(bufferSize);
   size_t offset = 0;
 
-  offset = memcpy_destination_offset(buffer, offset, &(package->header), sizeof(package->header));
+  Header_Serialized header_serialized = (Header_Serialized) package->header;
+  offset = memcpy_destination_offset(buffer, offset, &(header_serialized), sizeof(header_serialized));
   offset = memcpy_destination_offset(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
   offset = memcpy_destination_offset(buffer, offset, package->payload->stream, (size_t) package->payload->size);
 
@@ -49,7 +50,9 @@ Package *package_receive(int fd_socket) {
 }
 
 void package_receive_header(Package *package, int fd_socket) {
-  recv(fd_socket, (void *) &(package->header), sizeof(Header), 0); // MSG_WAITALL
+  Header_Serialized header_serialized;
+  recv(fd_socket, (void *) &(header_serialized), sizeof(Header_Serialized), 0); // MSG_WAITALL
+  package->header = (Header) header_serialized;
 }
 
 void package_receive_payload(Package *package, int fd_socket) {

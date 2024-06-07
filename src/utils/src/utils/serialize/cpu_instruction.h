@@ -18,11 +18,6 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
-typedef struct t_CPU_Instruction {
-	uint8_t opcode;
-	t_list *parameters;
-} t_CPU_Instruction;
-
 typedef enum t_CPU_Opcode {
     SET_OPCODE,
     MOV_IN_OPCODE,
@@ -44,6 +39,11 @@ typedef enum t_CPU_Opcode {
     IO_FS_WRITE_OPCODE,
     IO_FS_READ_OPCODE
 } t_CPU_Opcode;
+
+typedef struct t_CPU_Instruction {
+	enum t_CPU_Opcode opcode;
+	t_list *parameters;
+} t_CPU_Instruction;
 
 
 /**

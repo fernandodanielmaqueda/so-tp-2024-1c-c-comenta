@@ -11,7 +11,7 @@
 #include "commons/config.h"
 #include "utils/payload.h"
 
-typedef enum HeaderCode {
+typedef enum Header {
     DISCONNECTION_HEADERCODE = -1,
     PCB_HEADERCODE,
     CPU_MEMORY_REQUEST_HEADERCODE,
@@ -26,12 +26,12 @@ typedef enum HeaderCode {
     ///////////////////
     //IO - Memoria
     //Instrucciones
-} HeaderCode;
+} Header;
 
-typedef uint8_t Header;
+typedef uint8_t Header_Serialized;
 
 typedef struct Package {
-    Header header;
+    enum Header header;
     Payload *payload;
 } Package;
 

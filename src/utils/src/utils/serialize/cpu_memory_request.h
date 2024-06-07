@@ -34,7 +34,7 @@ typedef enum t_CPU_Memory_Request {
  * @param pcb t_PCB a enviar.
  * @param fd_socket Socket desde donde se va a recibir el pcb.
  */
-void cpu_memory_request_send(enum t_CPU_Memory_Request *instruction, int socket) ;
+void cpu_memory_request_send(enum t_CPU_Memory_Request *memory_request, int socket) ;
 
 
 /**
@@ -42,7 +42,7 @@ void cpu_memory_request_send(enum t_CPU_Memory_Request *instruction, int socket)
  * @param package Package a rellenar.
  * @param pcb Pcb a serializar
  */
-void cpu_memory_request_serialize(Payload *payload, enum t_CPU_Memory_Request *instruction) ;
+void cpu_memory_request_serialize(Payload *payload, enum t_CPU_Memory_Request *memory_request) ;
 
 
 /**
@@ -51,6 +51,6 @@ void cpu_memory_request_serialize(Payload *payload, enum t_CPU_Memory_Request *i
  */
 enum t_CPU_Memory_Request *cpu_memory_request_deserialize(Payload *payload);
 
-void cpu_memory_request_print(enum t_CPU_Memory_Request *instruction);
+void cpu_memory_request_print(enum t_CPU_Memory_Request *memory_request);
 
 #endif // SERIALIZE_CPU_MEMORY_REQUEST_H
