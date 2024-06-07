@@ -50,6 +50,8 @@ void tlb_access(t_PCB *pcb, int nro_page, int nro_frame_required, int direc ,int
 void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
 void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
 int request_frame_memory(int page, int pid);
+t_PCB cpu_receive_pcb(PACKAGE *package, t_PCB *pcb);
+t_CPU_Instruction cpu_receive_cpu_instruction(PACKAGE *package, t_CPU_Instruction *instruction);
 
 
 #endif /* CPU_H */
