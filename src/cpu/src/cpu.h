@@ -22,6 +22,8 @@
 #include "commons/collections/queue.h"
 #include "utils/estructuras.h"
 #include "utils/module.h"
+#include "utils/serialize/cpu_instruction.h"
+#include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
 
@@ -40,7 +42,7 @@ void finish_sockets(void);
 void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
-void decode_execute(t_instruction_use *instruction, t_PCB *pcb);
+void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb);
 int string_to_register(const char *string);
 int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
 int check_tlb(int process_id, int nro_page);

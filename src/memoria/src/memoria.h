@@ -18,6 +18,8 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "utils/module.h"
+#include "utils/serialize/cpu_instruction.h"
+#include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
 

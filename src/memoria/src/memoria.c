@@ -245,7 +245,7 @@ void kill_process (int socketRecibido){
 
 void create_instruction(FILE* file, t_list* list_instruction) {
 
-    t_instruction_use* nueva_instruccion = malloc(sizeof(t_instruction_use));
+    t_CPU_Instruction* nueva_instruccion = malloc(sizeof(t_CPU_Instruction));
     char *linea = string_new();
     int tamanio_buffer = 0;
  
@@ -255,7 +255,7 @@ void create_instruction(FILE* file, t_list* list_instruction) {
   
     char** campos = string_split(linea," ");
 
-    nueva_instruccion->operation = (enum HeaderCode)(campos[0]);
+    nueva_instruccion->opcode = (enum HeaderCode)(campos[0]);
     nueva_instruccion->parameters = list_create();
 
     int numero_elementos= 0;
@@ -291,9 +291,9 @@ void parser_file(char* path, t_list* list_instruction) {
 
 void listen_cpu(int fd_cpu) {
     while(1) {
-        enum HeaderCode headerCode = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
+        enum t_CPU_Memory_Request headerCode = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
         switch (headerCode) {
-            case INSTUCTION_REQUEST:
+            case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(fd_cpu);
                 break;
@@ -303,10 +303,12 @@ void listen_cpu(int fd_cpu) {
                 respond_frame_request(fd_cpu);
                 break;
 
+            /*
             case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
                 return;
+            */
                 
             case PAGE_SIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
@@ -347,10 +349,10 @@ void seek_instruccion(int socketRecibido) {
     
     t_process* procesoBuscado = seek_process_by_pid(pid);
     //Suponemos que la instruccion es encontrada siempre
-    t_instruction_use* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
+    t_CPU_Instruction* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
 
     usleep(RETARDO_RESPUESTA * 1000);
-    instruction_send(instruccionBuscada, FD_CLIENT_CPU);
+    cpu_instruction_send(instruccionBuscada, FD_CLIENT_CPU);
     log_info(MODULE_LOGGER, "Instruccion enviada.");
 }
 
