@@ -20,7 +20,7 @@ Connection CONNECTION_MEMORY;
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
 
-int size_pag; //momentaneo hasta que me llegue de memoria la size_pagina
+int size_pag;
 long timestamp;
 int direccion_logica; //momentaneo hasta ver de donde la saco
 t_list  *tlb; //tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
@@ -250,9 +250,15 @@ void decode_execute(t_instruction_use *instruction, t_pcb *pcb)
 
         register_origin = string_to_register(parameter);
         register_destination = string_to_register(parameter2);
-
+        
+       
         dir_logica_origin = atoi(parameter);
         dir_logica_destination = atoi(parameter2);
+
+        //preguntar a fer
+        message_send(PAGE_SIZE_REQUEST,"Tamanio Pag",FD_CLIENT_KERNEL_CPU_DISPATCH);
+        size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
+
 
         dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, IN);
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, IN);
@@ -271,6 +277,10 @@ void decode_execute(t_instruction_use *instruction, t_pcb *pcb)
 
         dir_logica_origin = atoi(parameter);
         dir_logica_destination = atoi(parameter2);
+
+        //preguntar a fer
+        message_send(PAGE_SIZE_REQUEST,"Tamanio Pag",FD_CLIENT_KERNEL_CPU_DISPATCH);
+        size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
 
         dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, OUT);
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, OUT);
@@ -420,6 +430,8 @@ int string_to_register(const char *string)
 
 int mmu(uint32_t dir_logica, t_pcb *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out)
 {
+
+
 
     int nro_page = floor(dir_logica / tamanio_pagina);
     int offset = dir_logica - nro_page * tamanio_pagina;
