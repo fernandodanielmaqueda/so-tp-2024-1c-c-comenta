@@ -11,11 +11,11 @@ t_log *MODULE_LOGGER;
 extern t_log *SOCKET_LOGGER;
 t_config *MODULE_CONFIG;
 
-Server COORDINATOR_CPU_DISPATCH;
+t_Server COORDINATOR_CPU_DISPATCH;
 int FD_CLIENT_KERNEL_CPU_DISPATCH;
-Server COORDINATOR_CPU_INTERRUPT;
+t_Server COORDINATOR_CPU_INTERRUPT;
 int FD_CLIENT_KERNEL_CPU_INTERRUPT;
-Connection CONNECTION_MEMORY;
+t_Connection CONNECTION_MEMORY;
 
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
@@ -48,9 +48,9 @@ int module(int argc, char *argv[])
 
 void read_module_config(t_config *MODULE_CONFIG)
 {
-    CONNECTION_MEMORY = (struct Connection){.client_type = CPU_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    COORDINATOR_CPU_DISPATCH = (struct Server){.server_type = CPU_DISPATCH_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")};
-    COORDINATOR_CPU_INTERRUPT = (struct Server){.server_type = CPU_INTERRUPT_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")};
+    CONNECTION_MEMORY = (t_Connection) {.client_type = CPU_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+    COORDINATOR_CPU_DISPATCH = (t_Server) {.server_type = CPU_DISPATCH_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")};
+    COORDINATOR_CPU_INTERRUPT = (t_Server) {.server_type = CPU_INTERRUPT_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")};
     CANTIDAD_ENTRADAS_TLB = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
     ALGORITMO_TLB = config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB");
 }
@@ -85,7 +85,7 @@ void finish_sockets(void)
 
 void *cpu_dispatch_start_server_for_kernel(void *server_parameter)
 {
-    Server *server = (Server *)server_parameter;
+    t_Server *server = (t_Server *)server_parameter;
 
     size_t bytes;
 
@@ -114,7 +114,7 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter)
 
         bytes = recv(FD_CLIENT_KERNEL_CPU_DISPATCH, &handshake, sizeof(int32_t), MSG_WAITALL);
 
-        if ((enum PortType)handshake == server->clients_type)
+        if ((e_PortType) handshake == server->clients_type)
             break;
         else
         {
@@ -132,7 +132,7 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter)
 
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter)
 {
-    Server *server = (Server *)server_parameter;
+    t_Server *server = (t_Server *)server_parameter;
 
     size_t bytes;
 
@@ -161,7 +161,7 @@ void *cpu_interrupt_start_server_for_kernel(void *server_parameter)
 
         bytes = recv(FD_CLIENT_KERNEL_CPU_INTERRUPT, &handshake, sizeof(int32_t), MSG_WAITALL);
 
-        if ((enum PortType)handshake == server->clients_type)
+        if ((e_PortType)handshake == server->clients_type)
             break;
         else
         {
@@ -181,18 +181,15 @@ void *cpu_interrupt_start_server_for_kernel(void *server_parameter)
 void instruction_cycle(void)
 {
 
-    Package *package;
     t_PCB *pcb;
     t_CPU_Instruction *instruction;
 
     tlb = list_create();
 
-    while (1)
-    {
+    while(1) {
 
-        pcb = cpu_receive_pcb(package, pcb);
-
-        instruction = cpu_receive_cpu_instruction(package, instruction);
+        pcb = cpu_receive_pcb();
+        instruction = cpu_receive_cpu_instruction();
 
         t_CPU_Instruction *instruction_get;
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", pcb->PID);
@@ -221,8 +218,8 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
     char *parameter2 = NULL;
     // char *recurso = NULL;
     // no sirveaca me aprece--> t_PCB new_pcb;
-    t_register register_origin;
-    t_register register_destination;
+    e_Register register_origin;
+    e_Register register_destination;
 
     int dir_logica_origin = 0;
     int dir_logica_destination = 0;
@@ -236,7 +233,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
 
     // inncesario aca me parece---->int nro_frame_required = request_frame_memory(nro_page, pcb->PID);
 
-    switch ((enum t_CPU_Opcode)instruction->opcode)
+    switch ((e_CPU_Opcode) instruction->opcode)
     {
     case SET_OPCODE:
 
@@ -260,8 +257,8 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         dir_logica_destination = atoi(parameter2);
 
         // preguntar a fer
-        message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
-        size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
+        //message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
+        //size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
 
         dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, IN);
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, IN);
@@ -282,8 +279,8 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         dir_logica_destination = atoi(parameter2);
 
         // preguntar a fer
-        message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
-        size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
+        //message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
+        //size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
 
         dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, OUT);
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, OUT);
@@ -342,7 +339,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         for (int i = list_size(tlb) - 1; i >= 0; i--)
         {
 
-            t_tlb *delete_tlb_entry = list_get(tlb, i);
+            t_TLB *delete_tlb_entry = list_get(tlb, i);
             if (delete_tlb_entry->PID == pcb->PID)
             {
                 list_remove(tlb, i);
@@ -464,7 +461,7 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
 int check_tlb(int process_id, int nro_page)
 {
 
-    t_tlb *tlb_entry = NULL;
+    t_TLB *tlb_entry = NULL;
     int nro_frame = -1;
     for (int i = 0; i < list_size(tlb); i++)
     {
@@ -511,15 +508,15 @@ void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int 
 {
 }
 
-t_PCB cpu_receive_pcb(PACKAGE *package, t_PCB *pcb)
+t_PCB *cpu_receive_pcb(void)
 {
+    t_PCB *pcb;
 
-    package = package_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
-    switch ((enum HeaderCode)package->header)
+    t_Package *package = package_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
+    switch (package->header)
     {
-    case PCB_HEADERCODE:
+    case PCB_HEADER:
         pcb = pcb_deserialize(package->payload);
-        pcb_print(pcb);
         break;
     default:
         log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
@@ -531,18 +528,18 @@ t_PCB cpu_receive_pcb(PACKAGE *package, t_PCB *pcb)
     return pcb;
 }
 
-t_CPU_Instruction cpu_receive_cpu_instruction(PACKAGE *package, t_CPU_Instruction *instruction)
+t_CPU_Instruction *cpu_receive_cpu_instruction(void)
 {
+    t_CPU_Instruction *instruction;
 
-    package = package_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
-    switch ((enum HeaderCode)package->header)
+    t_Package *package = package_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
+    switch (package->header)
     {
-    case CPU_INSTRUCTION_HEADERCODE:
+    case CPU_INSTRUCTION_HEADER:
         instruction = cpu_instruction_deserialize(package->payload);
-        cpu_instruction_print(instruction);
         break;
     default:
-        log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
+        log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
         exit(1);
         break;
     }
@@ -551,12 +548,9 @@ t_CPU_Instruction cpu_receive_cpu_instruction(PACKAGE *package, t_CPU_Instructio
     return instruction;
 }
 
-
-
-
 int request_frame_memory(int page, int pid)
 {
-    Package *package = package_create_with_header(FRAME_REQUEST);
+    t_Package *package = package_create_with_header(FRAME_REQUEST);
     payload_add(package->payload, &page, sizeof(int));
     payload_add(package->payload, &pid, sizeof(int));
     package_send(package, CONNECTION_MEMORY.fd_connection);

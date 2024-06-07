@@ -11,11 +11,11 @@
 #include "commons/config.h"
 #include "utils/payload.h"
 
-typedef enum Header {
-    DISCONNECTION_HEADERCODE = -1,
-    PCB_HEADERCODE,
-    CPU_MEMORY_REQUEST_HEADERCODE,
-    CPU_INSTRUCTION_HEADERCODE,
+typedef enum e_Header {
+    DISCONNECTION_HEADER = -1,
+    PCB_HEADER,
+    CPU_MEMORY_REQUEST_HEADER,
+    CPU_INSTRUCTION_HEADER,
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_NEW,
@@ -26,55 +26,55 @@ typedef enum Header {
     ///////////////////
     //IO - Memoria
     //Instrucciones
-} Header;
+} e_Header;
 
-typedef uint8_t Header_Serialized;
+typedef uint8_t t_Header_Serialized;
 
-typedef struct Package {
-    enum Header header;
-    Payload *payload;
-} Package;
+typedef struct t_Package {
+    enum e_Header header;
+    t_Payload *payload;
+} t_Package;
 
 /**
  * @brief Crear paquete.
  */
-Package *package_create(void);
+t_Package *package_create(void);
 
 /**
  * @brief Crear paquete.
  * @param header Codigo de operacion que tendra el paquete.
  */
-Package *package_create_with_header(Header header);
+t_Package *package_create_with_header(e_Header header);
 
 /**
  * @brief Eliminar paquete
- * @param package Package a eliminar.
+ * @param package t_Package a eliminar.
  */
-void package_destroy(Package *package);
+void package_destroy(t_Package *package);
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
  * @param package Paquete a enviar
  * @param fd_socket Socket destino
  */
-void package_send(Package *package, int fd_socket);
+void package_send(t_Package *package, int fd_socket);
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
  * @param package Paquete a serializar
  * @param bufferSize Tamanio del paquete
  */
-void *package_serialize(Package *package, size_t bufferSize);
+void *package_serialize(t_Package *package, size_t bufferSize);
 
-Package *package_receive(int fd_socket);
+t_Package *package_receive(int fd_socket);
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
  * @param package Paquete
  * @param fd_socket Paquete donde se creara el payload
  */
-void package_receive_header(Package *package, int fd_socket);
+void package_receive_header(t_Package *package, int fd_socket);
 
-void package_receive_payload(Package *package, int fd_socket);
+void package_receive_payload(t_Package *package, int fd_socket);
 
 #endif // PACKAGE_H

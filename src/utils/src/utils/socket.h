@@ -24,24 +24,24 @@
 extern const char *PORT_NAMES[PortType_Count];
 //extern const int32_t HANDSHAKES[PortType_Count];
 
-typedef struct Connection {
+typedef struct t_Connection {
     int fd_connection;
-    enum PortType client_type;
-    enum PortType server_type;
+    enum e_PortType client_type;
+    enum e_PortType server_type;
     char *ip;
     char *port;
-} Connection;
+} t_Connection;
 
-typedef struct Server {
+typedef struct t_Server {
     int fd_listen;
-    enum PortType server_type;
-    enum PortType clients_type;
+    enum e_PortType server_type;
+    enum e_PortType clients_type;
     char *port;
-} Server;
+} t_Server;
 
 void *client_thread_connect_to_server(void *connection_parameter);
 int client_start_try(char* ip, char* port);
-void server_start(Server *server);
+void server_start(t_Server *server);
 int server_start_try(char* port);
 int server_accept(int socket_servidor);
 

@@ -18,11 +18,11 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
-typedef enum t_Interrupt {
+typedef enum e_Interrupt {
     TYPE_INTERRUPT_SIN_INT,
     TYPE_INTERRUPT_FIN_PROCESO,
     TYPE_INTERRUPT_FIN_QUANTUM
-} t_Interrupt;
+} e_Interrupt;
 
 
 /**
@@ -30,7 +30,7 @@ typedef enum t_Interrupt {
  * @param interrupt t_Interrupt a enviar.
  * @param fd_socket Socket desde donde se va a recibir el interrupt.
  */
-void interrupt_send(enum t_Interrupt *interrupt, int fd_socket);
+void interrupt_send(e_Interrupt *interrupt, int fd_socket);
 
 
 /**
@@ -38,16 +38,16 @@ void interrupt_send(enum t_Interrupt *interrupt, int fd_socket);
  * @param package Package a rellenar.
  * @param interrupt interrupt a serializar
  */
-void interrupt_serialize(Payload *payload, enum t_Interrupt *interrupt);
+void interrupt_serialize(t_Payload *payload, e_Interrupt *interrupt);
 
 
 /**
  * @brief Deserializacion del t_Interrupt para ser enviada.
  * @param Payload Payload.
  */
-enum t_Interrupt *interrupt_deserialize(Payload *payload);
+e_Interrupt *interrupt_deserialize(t_Payload *payload);
 
 
-void interrupt_print(enum t_Interrupt *interrupt);
+void interrupt_print(e_Interrupt *interrupt);
 
 #endif // SERIALIZE_interrupt_H

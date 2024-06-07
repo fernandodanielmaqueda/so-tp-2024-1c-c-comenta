@@ -8,7 +8,7 @@
 #include "commons/log.h"
 #include "commons/config.h"
 
-typedef enum PortType {
+typedef enum e_PortType {
     KERNEL_TYPE,
     CPU_TYPE,
     CPU_DISPATCH_TYPE,
@@ -16,7 +16,7 @@ typedef enum PortType {
     MEMORY_TYPE,
     IO_TYPE,
     TO_BE_DEFINED_TYPE
-} PortType;
+} e_PortType;
 #define PortType_Count 7
 
 extern char *MODULE_NAME;

@@ -3,33 +3,33 @@
 
 #include "utils/serialize/interrupt.h"
 
-void interrupt_send(enum t_Interrupt *interrupt, int fd_socket) {
-  Package *package = package_create_with_header(PCB_HEADERCODE);
+void interrupt_send(e_Interrupt *interrupt, int fd_socket) {
+  t_Package *package = package_create_with_header(PCB_HEADER);
   interrupt_serialize(package->payload, interrupt);
   package_send(package, fd_socket);
   package_destroy(package);
 }
 
-void interrupt_serialize(Payload *payload, enum t_Interrupt *interrupt) {
+void interrupt_serialize(t_Payload *payload, e_Interrupt *interrupt) {
   uint8_t conversion = (uint8_t) *interrupt;
   
   payload_add(payload, &(conversion), sizeof(conversion));
 }
 
-enum t_Interrupt *interrupt_deserialize(Payload *payload) {
-  enum t_Interrupt *interrupt = malloc(sizeof(enum t_Interrupt));
+e_Interrupt *interrupt_deserialize(t_Payload *payload) {
+  e_Interrupt *interrupt = malloc(sizeof(e_Interrupt));
 
   uint32_t offset = 0;
 
   uint8_t conversion;
 
   offset = memcpy_source_offset(&(conversion), payload->stream, offset, sizeof(uint8_t));
-  *interrupt = (enum t_Interrupt) conversion;
+  *interrupt = (e_Interrupt) conversion;
 
   return interrupt;
 }
 
-void interrupt_print(enum t_Interrupt *interrupt) {
+void interrupt_print(e_Interrupt *interrupt) {
   /* 
   log_info(SERIALIZE_LOGGER,
     "t_Interrupt[%p]:\n"

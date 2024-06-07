@@ -18,7 +18,7 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
-typedef enum t_CPU_Opcode {
+typedef enum e_CPU_Opcode {
     SET_OPCODE,
     MOV_IN_OPCODE,
     MOV_OUT_OPCODE,
@@ -38,10 +38,10 @@ typedef enum t_CPU_Opcode {
     IO_FS_TRUNCATE_OPCODE,
     IO_FS_WRITE_OPCODE,
     IO_FS_READ_OPCODE
-} t_CPU_Opcode;
+} e_CPU_Opcode;
 
 typedef struct t_CPU_Instruction {
-	enum t_CPU_Opcode opcode;
+	enum e_CPU_Opcode opcode;
 	t_list *parameters;
 } t_CPU_Instruction;
 
@@ -59,14 +59,14 @@ void cpu_instruction_send(t_CPU_Instruction *instruction, int fd_socket);
  * @param package Package a rellenar.
  * @param instruction instruction a serializar
  */
-void cpu_instruction_serialize(Payload *payload, t_CPU_Instruction *instruction);
+void cpu_instruction_serialize(t_Payload *payload, t_CPU_Instruction *instruction);
 
 
 /**
  * @brief Deserializacion del t_CPU_Instruction para ser enviada.
  * @param Payload Payload.
  */
-t_CPU_Instruction *cpu_instruction_deserialize(Payload *payload);
+t_CPU_Instruction *cpu_instruction_deserialize(t_Payload *payload);
 
 
 void cpu_instruction_print(t_CPU_Instruction *instruction);

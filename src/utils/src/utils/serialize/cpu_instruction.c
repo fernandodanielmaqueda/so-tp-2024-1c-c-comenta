@@ -4,13 +4,13 @@
 #include "utils/serialize/cpu_instruction.h"
 
 void cpu_instruction_send(t_CPU_Instruction *instruction, int fd_socket) {
-  Package *package = package_create_with_header(CPU_INSTRUCTION_HEADERCODE);
+  t_Package *package = package_create_with_header(CPU_INSTRUCTION_HEADER);
   cpu_instruction_serialize(package->payload, instruction);
   package_send(package, fd_socket);
   package_destroy(package);
 }
 
-void cpu_instruction_serialize(Payload *payload, t_CPU_Instruction *instruction) {
+void cpu_instruction_serialize(t_Payload *payload, t_CPU_Instruction *instruction) {
     /*
     payload_add(payload, &(instruction->opcode), sizeof(instruction->opcode));
     payload_add(payload, &(), sizeof());
@@ -33,7 +33,7 @@ void cpu_instruction_serialize(Payload *payload, t_CPU_Instruction *instruction)
     */
 }
 
-t_CPU_Instruction *cpu_instruction_deserialize(Payload *payload) {
+t_CPU_Instruction *cpu_instruction_deserialize(t_Payload *payload) {
   t_CPU_Instruction *instruction = malloc(sizeof(t_CPU_Instruction));
 
   uint32_t offset = 0;
@@ -60,7 +60,8 @@ t_CPU_Instruction *cpu_instruction_deserialize(Payload *payload) {
   
   */
 
-  //return instruction;
+  cpu_instruction_print(instruction);
+  return instruction;
 }
 
 void cpu_instruction_print(t_CPU_Instruction *instruction) {

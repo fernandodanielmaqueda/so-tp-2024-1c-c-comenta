@@ -8,23 +8,23 @@
 #include <netdb.h>
 #include <string.h>
 
-typedef uint32_t PayloadSize;
+typedef uint32_t t_PayloadSize;
 
-typedef struct Payload {
-    PayloadSize size; // Tamaño del payload
+typedef struct t_Payload {
+    t_PayloadSize size; // Tamaño del payload
     void* stream; // Payload
-} Payload;
+} t_Payload;
 
-Payload *payload_create(void);
-void payload_destroy(Payload *payload);
+t_Payload *payload_create(void);
+void payload_destroy(t_Payload *payload);
 
 /**
  * @brief Agregar dato a paquete
- * @param payload Payload a rellenar.
+ * @param payload t_Payload a rellenar.
  * @param data Datos a agregar
  * @param dataSize Tamaño de los datos a agregar.
  */
-void payload_add(Payload *payload, void *data, size_t dataSize);
+void payload_add(t_Payload *payload, void *data, size_t dataSize);
 
 size_t memcpy_destination_offset(void *destination, size_t offset, void *source, size_t bytes);
 size_t memcpy_source_offset(void *destination, void *source, size_t offset, size_t bytes);

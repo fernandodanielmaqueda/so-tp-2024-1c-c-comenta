@@ -4,15 +4,15 @@
 #include "payload.h"
 
 // Crea un payload vacío de tamaño size y offset 0
-Payload *payload_create(void) {
-  Payload *payload = malloc(sizeof(Payload));
+t_Payload *payload_create(void) {
+  t_Payload *payload = malloc(sizeof(t_Payload));
   payload->size = 0;
   payload->stream = NULL;
   return payload;
 }
 
 // Libera la memoria asociada al payload
-void payload_destroy(Payload *payload) {
+void payload_destroy(t_Payload *payload) {
   if(payload == NULL) return;
   if(payload->size != 0) {
     // TODO: Verificar si es necesario liberar el stream caso por caso (creo que no)
@@ -22,10 +22,10 @@ void payload_destroy(Payload *payload) {
 }
 
 // Agrega un stream al payload en la posición actual y avanza el offset
-void payload_add(Payload *payload, void *data, size_t dataSize) {
+void payload_add(t_Payload *payload, void *data, size_t dataSize) {
   payload->stream = realloc(payload->stream, (size_t) (payload->size + dataSize));
   memcpy((void*)(((uint8_t*) payload->stream) + payload->size), data, dataSize);
-  payload->size += (PayloadSize) dataSize;
+  payload->size += (t_PayloadSize) dataSize;
 }
 
 size_t memcpy_destination_offset(void *destination, size_t offset, void *source, size_t bytes) {

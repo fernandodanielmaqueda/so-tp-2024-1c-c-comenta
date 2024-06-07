@@ -7,7 +7,7 @@ const char *PORT_NAMES[PortType_Count] = {[KERNEL_TYPE] = "Kernel", [CPU_TYPE] =
 // const int32_t HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [TO_BE_DEFINED_TYPE] = -1};
 
 void *client_thread_connect_to_server(void *connection_parameter) {
-  Connection *connection = (Connection*) connection_parameter;
+  t_Connection *connection = (t_Connection*) connection_parameter;
 
   size_t bytes;
 
@@ -91,7 +91,7 @@ int client_start_try(char *ip, char *port) {
   return fd_client;
 }
 
-void server_start(Server *server) {
+void server_start(t_Server *server) {
 
   while(1) {
     log_info(SOCKET_LOGGER, "Intentando iniciar [Servidor] %s en Puerto: %s...", PORT_NAMES[server->server_type], server->port);

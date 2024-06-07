@@ -4,13 +4,13 @@
 #include "utils/serialize/pcb.h"
 
 void pcb_send(t_PCB *pcb, int fd_socket) {
-  Package *package = package_create_with_header(PCB_HEADERCODE);
+  t_Package *package = package_create_with_header(PCB_HEADER);
   pcb_serialize(package->payload, pcb);
   package_send(package, fd_socket);
   package_destroy(package);
 }
 
-void pcb_serialize(Payload *payload, t_PCB *pcb) {
+void pcb_serialize(t_Payload *payload, t_PCB *pcb) {
   payload_add(payload, &(pcb->PID), sizeof(pcb->PID));
   payload_add(payload, &(pcb->PC), sizeof(pcb->PC));
   payload_add(payload, &(pcb->AX), sizeof(pcb->AX));
@@ -33,7 +33,7 @@ void pcb_serialize(Payload *payload, t_PCB *pcb) {
   payload_add(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
 }
 
-t_PCB *pcb_deserialize(Payload *payload) {
+t_PCB *pcb_deserialize(t_Payload *payload) {
   t_PCB *pcb = malloc(sizeof(t_PCB));
 
   uint32_t offset = 0;
@@ -59,6 +59,7 @@ t_PCB *pcb_deserialize(Payload *payload) {
   offset = memcpy_source_offset(&(pcb->arrival_READY), payload->stream, offset, sizeof(pcb->arrival_READY));
   offset = memcpy_source_offset(&(pcb->arrival_RUNNING), payload->stream, offset, sizeof(pcb->arrival_RUNNING));
 
+  pcb_print(pcb);
   return pcb;
 }
 

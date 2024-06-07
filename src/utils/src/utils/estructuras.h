@@ -5,16 +5,16 @@
 #define ESTRUCTURAS_H
 
 #include <stdint.h>
-typedef enum Process_State {
+typedef enum e_Process_State {
     NEW,
     READY,
     EXECUTING,
     BLOCKED, 
 	EXIT
-} Process_State;
+} e_Process_State;
 
 //Estructuras que necesita la consola para entender las palabras
-typedef enum t_funcion {
+typedef enum e_Function {
     INICIAR_PROCESO,
     FINALIZAR_PROCESO,
     DETENER_PLANIFICACION,
@@ -22,9 +22,9 @@ typedef enum t_funcion {
     MULTIPROGRAMACION,
     PROCESO_ESTADO,
     EJECUTAR_SCRIPT
-} t_funcion;
+} e_Function;
 
-typedef enum t_register {
+typedef enum e_Register {
 	AX,
 	BX,
 	CX,
@@ -38,16 +38,15 @@ typedef enum t_register {
     RCX,
     SI,
     DI
+} e_Register;
 
-} t_register;
-
-typedef struct t_tlb {
+typedef struct t_TLB {
 	int PID;
 	int nro_page;
 	int frame;
     int time; //para el LRU
 	
-} t_tlb;
+} t_TLB;
 
 
 

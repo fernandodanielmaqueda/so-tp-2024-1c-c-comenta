@@ -14,8 +14,8 @@ t_config* MODULE_CONFIG;
 char *TIPO_INTERFAZ;
 int TIEMPO_UNIDAD_TRABAJO;
 
-Connection CONNECTION_KERNEL;
-Connection CONNECTION_MEMORY;
+t_Connection CONNECTION_KERNEL;
+t_Connection CONNECTION_MEMORY;
 
 char *PATH_BASE_DIALFS;
 int BLOCK_SIZE;
@@ -40,8 +40,8 @@ int module(int argc, char* argv[]) {
 void read_module_config(t_config* MODULE_CONFIG) {
     TIPO_INTERFAZ = config_get_string_value(MODULE_CONFIG, "TIPO_INTERFAZ");
     TIEMPO_UNIDAD_TRABAJO = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
-    CONNECTION_KERNEL = (struct Connection) {.client_type = IO_TYPE, .server_type = KERNEL_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
-    CONNECTION_MEMORY = (struct Connection) {.client_type = IO_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+    CONNECTION_KERNEL = (t_Connection) {.client_type = IO_TYPE, .server_type = KERNEL_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
+    CONNECTION_MEMORY = (t_Connection) {.client_type = IO_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
     PATH_BASE_DIALFS = config_get_string_value(MODULE_CONFIG, "PATH_BASE_DIALFS");
     BLOCK_SIZE = config_get_int_value(MODULE_CONFIG, "BLOCK_SIZE");
     BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");

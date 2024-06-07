@@ -40,10 +40,10 @@ sem_t sem_short_term_scheduler;
 sem_t sem_multiprogramming_level;
 sem_t process_ready;
 
-Server COORDINATOR_IO;
-Connection CONNECTION_MEMORY;
-Connection CONNECTION_CPU_DISPATCH;
-Connection CONNECTION_CPU_INTERRUPT;
+t_Server COORDINATOR_IO;
+t_Connection CONNECTION_MEMORY;
+t_Connection CONNECTION_CPU_DISPATCH;
+t_Connection CONNECTION_CPU_INTERRUPT;
 
 char *SCHEDULING_ALGORITHM;
 int QUANTUM;
@@ -114,10 +114,10 @@ int module(int argc, char *argv[]) {
 }
 
 void read_module_config(t_config *MODULE_CONFIG) {
-	COORDINATOR_IO = (struct Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
-	CONNECTION_MEMORY = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-	CONNECTION_CPU_DISPATCH = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_DISPATCH")};
-	CONNECTION_CPU_INTERRUPT = (struct Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_INTERRUPT")};
+	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_DISPATCH")};
+	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_INTERRUPT")};
 	SCHEDULING_ALGORITHM = config_get_string_value(MODULE_CONFIG, "ALGORITMO_PLANIFICACION");
 	QUANTUM = config_get_int_value(MODULE_CONFIG, "QUANTUM");
 	RESOURCES = config_get_array_value(MODULE_CONFIG, "RECURSOS");
@@ -154,7 +154,7 @@ void finish_sockets(void) {
 }
 
 void *kernel_start_server_for_io(void *server_parameter) {
-	Server *server = (Server*) server_parameter;
+	t_Server *server = (t_Server *) server_parameter;
 
 	int *fd_new_client;
 	pthread_t thread_new_client;
@@ -191,7 +191,7 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 
     bytes = recv(*fd_new_client, &handshake, sizeof(int32_t), MSG_WAITALL);
 
-    switch((enum PortType) handshake) {
+    switch((e_PortType) handshake) {
         case IO_TYPE:
             log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
@@ -410,7 +410,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	pcb->current_state = new_state;
 	char* global_previous_state;
 	
-	Package* package;
+	t_Package* package;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_PCB*)elemento)->PID == pcb->PID);

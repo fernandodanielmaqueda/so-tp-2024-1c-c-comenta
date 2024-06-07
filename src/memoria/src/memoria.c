@@ -20,7 +20,7 @@ t_list* lista_procesos;
 t_list* lista_marcos;
 t_list* lista_marcos_libres;
 
-Server COORDINATOR_MEMORY;
+t_Server COORDINATOR_MEMORY;
 int FD_CLIENT_KERNEL;
 int FD_CLIENT_CPU;
 
@@ -66,7 +66,7 @@ int module(int argc, char* argv[]) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (struct Server) {.server_type = MEMORY_TYPE, .clients_type = TO_BE_DEFINED_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_TYPE, .clients_type = TO_BE_DEFINED_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
     TAM_MEMORIA = config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
@@ -96,7 +96,7 @@ void finish_sockets(void) {
 }
 
 void *memory_start_server(void *server_parameter) {
-	Server *server = (Server*) server_parameter;
+	t_Server *server = (t_Server *) server_parameter;
 
 	int *fd_new_client;
 	pthread_t thread_new_client;
@@ -134,7 +134,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
 
     bytes = recv(*fd_new_client, &handshake, sizeof(int32_t), MSG_WAITALL);
 
-    switch((enum PortType) handshake) {
+    switch((e_PortType) handshake) {
         case KERNEL_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
             log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] %s", "Kernel");
@@ -169,8 +169,8 @@ void *memory_client_handler(void *fd_new_client_parameter) {
 
 void listen_kernel(int fd_kernel) {
     while(1) {
-        enum HeaderCode headerCode = 0; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
-        switch (headerCode) {
+        e_Header header = 0; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
+        switch(header) {
             case PROCESS_NEW:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
                 create_process(fd_kernel);
@@ -181,7 +181,7 @@ void listen_kernel(int fd_kernel) {
                 kill_process(fd_kernel);
                 break;
 
-            case DISCONNECTION_HEADERCODE:
+            case DISCONNECTION_HEADER:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
                 log_destroy(MODULE_LOGGER);
                 return;
@@ -255,7 +255,7 @@ void create_instruction(FILE* file, t_list* list_instruction) {
   
     char** campos = string_split(linea," ");
 
-    nueva_instruccion->opcode = (enum HeaderCode)(campos[0]);
+    nueva_instruccion->opcode = (e_Header)(campos[0]);
     nueva_instruccion->parameters = list_create();
 
     int numero_elementos= 0;
@@ -291,8 +291,8 @@ void parser_file(char* path, t_list* list_instruction) {
 
 void listen_cpu(int fd_cpu) {
     while(1) {
-        enum t_CPU_Memory_Request headerCode = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
-        switch (headerCode) {
+        e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
+        switch (memory_request) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(fd_cpu);
@@ -400,7 +400,7 @@ void respond_frame_request(int socketRecibido){
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
-    Package* package = package_create_with_header(FRAME_REQUEST);
+    t_Package* package = package_create_with_header(FRAME_REQUEST);
     payload_add(package->payload, &pidProceso, sizeof(int));
     payload_add(package->payload, &marcoEncontrado, sizeof(int));
     package_send(package, FD_CLIENT_CPU);

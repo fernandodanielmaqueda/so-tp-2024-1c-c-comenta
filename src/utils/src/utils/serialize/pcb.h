@@ -56,14 +56,14 @@ void pcb_send(t_PCB *pcb, int fd_socket);
  * @param package Package a rellenar.
  * @param pcb Pcb a serializar
  */
-void pcb_serialize(Payload *payload, t_PCB *pcb);
+void pcb_serialize(t_Payload *payload, t_PCB *pcb);
 
 
 /**
  * @brief Deserializacion del t_PCB para ser enviada.
  * @param Payload Payload.
  */
-t_PCB *pcb_deserialize(Payload *payload);
+t_PCB *pcb_deserialize(t_Payload *payload);
 
 
 void pcb_print(t_PCB *pcb);

@@ -3,26 +3,26 @@
 
 #include "package.h"
 
-Package *package_create(void) {
-  Package *package = malloc(sizeof(Package));
+t_Package *package_create(void) {
+  t_Package *package = malloc(sizeof(t_Package));
   package->payload = payload_create();
   return package;
 }
 
-Package *package_create_with_header(Header header) {
-  Package *package = package_create();
+t_Package *package_create_with_header(e_Header header) {
+  t_Package *package = package_create();
   package->header = header;
   return package;
 }
 
-void package_destroy(Package *package) {
+void package_destroy(t_Package *package) {
   if (package == NULL) return;
   payload_destroy(package->payload);
   free(package);
 }
 
-void package_send(Package *package, int fd_socket) {
-  size_t bufferSize = sizeof(Header_Serialized) + sizeof(package->payload->size) + (size_t) package->payload->size;
+void package_send(t_Package *package, int fd_socket) {
+  size_t bufferSize = sizeof(t_Header_Serialized) + sizeof(package->payload->size) + (size_t) package->payload->size;
   void *buffer = package_serialize(package, bufferSize);
 
   send(fd_socket, buffer, bufferSize, 0);
@@ -30,11 +30,11 @@ void package_send(Package *package, int fd_socket) {
   free(buffer);
 }
 
-void *package_serialize(Package *package, size_t bufferSize) {
+void *package_serialize(t_Package *package, size_t bufferSize) {
   void *buffer = malloc(bufferSize);
   size_t offset = 0;
 
-  Header_Serialized header_serialized = (Header_Serialized) package->header;
+  t_Header_Serialized header_serialized = (t_Header_Serialized) package->header;
   offset = memcpy_destination_offset(buffer, offset, &(header_serialized), sizeof(header_serialized));
   offset = memcpy_destination_offset(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
   offset = memcpy_destination_offset(buffer, offset, package->payload->stream, (size_t) package->payload->size);
@@ -42,21 +42,21 @@ void *package_serialize(Package *package, size_t bufferSize) {
   return buffer;
 }
 
-Package *package_receive(int fd_socket) {
-  Package *package = package_create();
+t_Package *package_receive(int fd_socket) {
+  t_Package *package = package_create();
   package_receive_header(package, fd_socket);
   package_receive_payload(package, fd_socket);
   return package;
 }
 
-void package_receive_header(Package *package, int fd_socket) {
-  Header_Serialized header_serialized;
-  recv(fd_socket, (void *) &(header_serialized), sizeof(Header_Serialized), 0); // MSG_WAITALL
-  package->header = (Header) header_serialized;
+void package_receive_header(t_Package *package, int fd_socket) {
+  t_Header_Serialized header_serialized;
+  recv(fd_socket, (void *) &(header_serialized), sizeof(t_Header_Serialized), 0); // MSG_WAITALL
+  package->header = (e_Header) header_serialized;
 }
 
-void package_receive_payload(Package *package, int fd_socket) {
-  recv(fd_socket, &(package->payload->size), sizeof(PayloadSize), 0); // MSG_WAITALL
+void package_receive_payload(t_Package *package, int fd_socket) {
+  recv(fd_socket, &(package->payload->size), sizeof(t_PayloadSize), 0); // MSG_WAITALL
   if(package->payload->size == 0) return;
   package->payload->stream = malloc(package->payload->size);
   recv(fd_socket, package->payload->stream, (size_t) package->payload->size, 0); // MSG_WAITALL

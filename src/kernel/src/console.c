@@ -34,7 +34,7 @@ bool validate_command_console(char* leido){
     bool result_validation = false;
 
     char** command_console = string_split(leido, " ");
-    t_funcion funcion = pedir_enum_funcion(command_console);
+    e_Function funcion = pedir_enum_funcion(command_console);
    
 
     switch (funcion)
@@ -94,7 +94,7 @@ bool validate_command_console(char* leido){
 //RECIBO EL COMANDO DE LA CONSOLA Y EJECUTO SEGUN LO PEDIDO
 void attend_command_console(char* leido){
     char** command_console = string_split(leido, " ");
-    t_funcion funcion = pedir_enum_funcion(command_console);
+    e_Function funcion = pedir_enum_funcion(command_console);
 
     switch (funcion)
     {
