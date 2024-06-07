@@ -21,8 +21,8 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
-#include "utils/modules.h"
-#include "utils/serialize.h"
+#include "utils/module.h"
+#include "utils/serialize/pcb.h"
 #include "utils/socket.h"
 #include "console.h"
 
@@ -32,18 +32,19 @@ void initialize_sockets(void);
 void finish_sockets(void);
 void *kernel_start_server_for_io(void *server_parameter);
 void *kernel_client_handler_for_io(void *fd_new_client_parameter);
-void switch_process_state(t_pcb* pcb, int new_state);
-t_pcb *create_pcb();
+void switch_process_state(t_PCB* pcb, int new_state);
+t_PCB *create_pcb();
 void initialize_long_term_scheduler(void);
 void initialize_short_term_scheduler(void);
 void initialize_cpu_command_line_interface(void);
 void *long_term_scheduler(void*);
 void *short_term_scheduler(void*);
-t_pcb *FIFO_scheduling_algorithm(void);
-t_pcb *RR_scheduling_algorithm(void);
-//t_pcb *VRR_scheduling_algorithm(void* arg);
+t_PCB *FIFO_scheduling_algorithm(void);
+t_PCB *RR_scheduling_algorithm(void);
+//t_PCB *VRR_scheduling_algorithm(void* arg);
 void *receptor_mensajes_cpu(void*);
 int current_time(void);
 int asignar_PID();
+void* start_quantum(void* arg);
 
 #endif /* KERNEL_H */

@@ -8,7 +8,7 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
 t_log *MODULE_LOGGER;
-extern t_log *CONNECTIONS_LOGGER;
+extern t_log *SOCKET_LOGGER;
 t_config *MODULE_CONFIG;
 
 // Listas globales de estados
@@ -61,9 +61,9 @@ int module(int argc, char *argv[]) {
 	initialize_sockets();
 	pidContador = 0;
 	
-	t_pcb pcb = {
-        .pid = 1234,
-        .pc = 5678,
+	t_PCB pcb = {
+        .PID = 1234,
+        .PC = 5678,
         .AX = 1,
         .BX = 2,
         .CX = 3,
@@ -83,7 +83,9 @@ int module(int argc, char *argv[]) {
         .arrival_READY = 123.456,
         .arrival_RUNNING = 789.012
     };
-	send_pcb(CONNECTION_CPU_DISPATCH.fd_connection, &pcb);
+
+	pcb_print(&pcb);
+	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 	log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	initialize_interactive_console();
@@ -161,16 +163,16 @@ void *kernel_start_server_for_io(void *server_parameter) {
 
 	while(1) {
 		fd_new_client = malloc(sizeof(int));
-		log_info(CONNECTIONS_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_info(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		*fd_new_client = server_accept(server->fd_listen);
 
 		if(*fd_new_client == -1) {
-			log_warning(CONNECTIONS_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+			log_warning(SOCKET_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 			free(fd_new_client);
 			continue;
 		}
 
-		log_info(CONNECTIONS_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_info(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		pthread_create(&thread_new_client, NULL, kernel_client_handler_for_io, (void*) fd_new_client);
 		pthread_detach(thread_new_client);
 	}
@@ -191,13 +193,13 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 
     switch((enum PortType) handshake) {
         case IO_TYPE:
-            log_info(CONNECTIONS_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
+            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
             bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
             // Lógica de manejo de cliente Entrada/Salida
             free(fd_new_client);
         break;
         default:
-            log_warning(CONNECTIONS_LOGGER, "Error Handshake con [Cliente] No reconocido");
+            log_warning(SOCKET_LOGGER, "Error Handshake con [Cliente] No reconocido");
             bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
             free(fd_new_client);
         break;
@@ -229,7 +231,7 @@ void *long_term_scheduler(void *parameter) {
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
 		sem_wait(&sem_multiprogramming_level);
-		t_pcb *pcb = list_get(LIST_NEW, 0);
+		t_PCB *pcb = list_get(LIST_NEW, 0);
 
 		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
 
@@ -242,7 +244,7 @@ void *long_term_scheduler(void *parameter) {
 
 void *short_term_scheduler(void *parameter) {
 
-	t_pcb* pcb;
+	t_PCB* pcb;
 
 	while(1) {
 		sem_wait(&sem_short_term_scheduler);	
@@ -252,9 +254,9 @@ void *short_term_scheduler(void *parameter) {
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
 			pcb = FIFO_scheduling_algorithm();
 		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
-		//	pcb = RR_scheduling_algorithm();
+			pcb = RR_scheduling_algorithm();
 
-	    	//pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
+	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
 			//pthread_join(&thread_interrupt, NULL);
 		} else {
 			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
@@ -269,43 +271,32 @@ void *short_term_scheduler(void *parameter) {
 	return NULL;
 }
 
-t_pcb *FIFO_scheduling_algorithm(void) {
+t_PCB *FIFO_scheduling_algorithm(void) {
 	pthread_mutex_lock(&mutex_LIST_READY);
-		t_pcb *pcb = (t_pcb *) list_remove(LIST_READY, 0);
+		t_PCB *pcb = (t_PCB *) list_remove(LIST_READY, 0);
 	pthread_mutex_unlock(&mutex_LIST_READY);
 
 	return pcb;
 }
 
-t_pcb *RR_scheduling_algorithm(void ){
-   // t_args_hilo* arg_h = (t_args_hilo*) arg;
+t_PCB *RR_scheduling_algorithm(void ){
 	
-    pthread_t generador_de_interrupciones;
+	t_PCB *pcb;
+
     while(1)
     {
-        sem_wait(&process_ready);
-        sem_wait(&sem_short_term_scheduler);
-        sem_post(&sem_short_term_scheduler);
-        //log_info(logger,"Hice wait del gdmp");
-        sem_wait(&mutex_LIST_READY);
-        //log_info(logger,"Hice wait de la cola de new: %i",cola_new);
-
-        t_pcb *pcb = (t_pcb *)list_remove(LIST_EXECUTING, 0);
-        sem_post(&mutex_LIST_READY);
-        
-		return pcb;
-
-        log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXEC", pcb->current_state);
-  
-       // send(arg_h->socket_dispatch, &(execute->pid), sizeof(uint32_t), 0);
-        //log_info(logger, "Envié %i a %i", execute->pid, arg_h->socket_dispatch);
-       // enviar_contexto_de_ejecucion(execute->contexto, arg_h->socket_dispatch);
-
-       // execute->contexto = recibir_contexto_de_ejecucion(arg_h->socket_dispatch);
-      //  motivo = recibir_motivo_desalojo(arg_h->socket_dispatch);
-      //  evaluar_motivo_desalojo(MODULE_LOGGER, motivo, arg);
-                
+		
+       if(list_size(LIST_READY) > 0) {
+            pcb = (t_PCB*)list_get(LIST_READY, 0);
+            //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
+        }
+        else if(list_size(LIST_NEW) > 0) {
+            pcb = (t_PCB*)list_get(LIST_NEW, 0);
+           // log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: NEW - Estado Actual: READY", pcb->id);
+            //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
+        }
     }
+		return pcb;
 }
 
 
@@ -414,7 +405,7 @@ void *receptor_mensajes_cpu(void *parameter) {
 	return NULL;
 }
 
-void switch_process_state(t_pcb* pcb, int new_state) {
+void switch_process_state(t_PCB* pcb, int new_state) {
 	int previous_state = pcb->current_state;
 	pcb->current_state = new_state;
 	char* global_previous_state;
@@ -422,7 +413,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 	Package* package;
 	
 	bool _remover_por_pid(void* elemento) {
-			return (((t_pcb*)elemento)->pid == pcb->pid);
+			return (((t_PCB*)elemento)->PID == pcb->PID);
 	}
 
 	switch (previous_state){ //! ESTADO ANTERIOR
@@ -462,7 +453,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		{
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_add(LIST_NEW, pcb);
-			log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->pid);
+			log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 	
 			sem_post(&sem_long_term_scheduler);
@@ -473,7 +464,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			pcb -> arrival_READY = current_time();
 
 			pthread_mutex_lock(&mutex_LIST_READY);
-			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->pid, global_previous_state);
+			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->PID, global_previous_state);
 			list_add(LIST_READY, pcb);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			sem_post(&sem_short_term_scheduler);
@@ -487,7 +478,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
 			list_add(LIST_EXECUTING, pcb);
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
-			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->pid, global_previous_state);
+			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->PID, global_previous_state);
 	
 			break;
 		}
@@ -498,7 +489,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 			pthread_mutex_unlock(&mutex_LIST_BLOCKED);
 
 		
-			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->pid, global_previous_state);
+			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->PID, global_previous_state);
 
 			break;
 		}
@@ -506,7 +497,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		case EXIT:
 		{
 			
-			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->pid);
+			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
 
 			sem_post(&sem_multiprogramming_level);
 
@@ -520,7 +511,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		/*
 		case INVALID_RESOURCE:{
 			
-			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->pid);
+			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->PID);
 			
 
 			sem_post(&sem_multiprogramming_level);
@@ -533,7 +524,7 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 		}
 		case INVALID_WRITE:{
 			
-			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_WRITE>", pcb->pid);
+			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_WRITE>", pcb->PID);
 		
 			sem_post(&sem_multiprogramming_level);
 
@@ -551,13 +542,13 @@ void switch_process_state(t_pcb* pcb, int new_state) {
 }
 
 //POR REVISAR
-t_pcb *create_pcb() {
+t_PCB *create_pcb() {
 	//FALTA AGREGAR ATRIBUTOS AL PCB
 
-	t_pcb *nuevoPCB = malloc(sizeof(t_pcb));
+	t_PCB *nuevoPCB = malloc(sizeof(t_PCB));
 
-	nuevoPCB->pid = pidContador++;
-    nuevoPCB->pc = 0; 
+	nuevoPCB->PID = pidContador++;
+    nuevoPCB->PC = 0; 
     nuevoPCB->AX = 0;
     nuevoPCB->BX = 0;
     nuevoPCB->CX = 0;
@@ -621,6 +612,8 @@ void* start_quantum(void* arg)
     usleep(QUANTUM * 1000); //en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+
+	return NULL;
 }
 
 

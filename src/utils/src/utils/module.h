@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef MODULES_H
-#define MODULES_H
+#ifndef MODULE_H
+#define MODULE_H
 
 #include <stdlib.h>
 #include "commons/log.h"
@@ -21,11 +21,13 @@ typedef enum PortType {
 
 extern char *MODULE_NAME;
 extern char *MODULE_LOG_PATHNAME;
-extern char *CONNECTIONS_LOG_PATHNAME;
+extern char *SOCKET_LOG_PATHNAME;
+extern char *SERIALIZE_LOG_PATHNAME;
 extern char *MODULE_CONFIG_PATHNAME;
 
 extern t_log *MODULE_LOGGER;
-extern t_log *CONNECTIONS_LOGGER;
+extern t_log *SOCKET_LOGGER;
+extern t_log *SERIALIZE_LOGGER;
 extern t_config *MODULE_CONFIG;
 
 void initialize_loggers(void);

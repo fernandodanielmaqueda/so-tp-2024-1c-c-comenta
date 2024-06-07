@@ -17,13 +17,35 @@ Algunas de las cosas que se listan también sirven para poder trabajar sobre el 
 
 -----------------------------
 
-## 1. Descargar VirtualBox
+# Al entrar
+
+## 1. Encender e iniciar sesión en la computadora
+
+Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
+- **Usuario**: alumno
+- **Contraseña**: alumno
+
+-----------------------------
+
+## 2. Descargar Git Bash Portable
+
+-----------------------------
+
+## 3. Iniciar sesión en Git Bash
+
+-----------------------------
+
+## 4. Clonar este repositorio
+
+-----------------------------
+
+## 5. Descargar VirtualBox
 
 - https://www.virtualbox.org/wiki/Downloads
 
 -----------------------------
 
-## 2. Descargar la VM de Ubuntu Server
+## 6. Descargar la VM de Ubuntu Server
 
 Página oficial
 - https://docs.utnso.com.ar/recursos/vms
@@ -44,13 +66,13 @@ Gestor de descargas (Ubuntu)
 
 -----------------------------
 
-## 3. Características de Windows
+## 7. Características de Windows
 
 - Desactivar `Plataforma de Hipervisor de Windows`
 
 -----------------------------
 
-## 4. Configuración de la VM (Ubuntu Server) en VirtualBox
+## 8. Configuración de la VM (Ubuntu Server) en VirtualBox
 
 - General
 	- Básico
@@ -172,7 +194,7 @@ Gestor de descargas (Ubuntu)
 		- [X] .
 
 -----------------------------
-## 5. Actualizar el índice de paquetes local en la VM
+## 9. Actualizar el índice de paquetes local en la VM
 
 ```bash
 sudo apt update
@@ -219,7 +241,7 @@ init 6
 
 -----------------------------
 
-## 6. Instalar VirtualBox Guest Additions (para las carpetas compartidas)
+## 10. Instalar VirtualBox Guest Additions (para las carpetas compartidas)
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
@@ -246,7 +268,7 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 7. Montar carpeta compartida de VirtualBox en la VM
+## 11. Montar carpeta compartida de VirtualBox en la VM
 
 1. Crear el directorio donde montaremos la carpeta compartida en la VM
 ```bash
@@ -271,7 +293,7 @@ sudo vi /etc/fstab
 Agregarle la siguiente línea al final de dicho archivo.
 Nótese el uso de tabulaciones en lugar de espacios para separar las columnas de la línea.
 ```output
-Compartida	/home/utnso/Compartida	vboxsf	uid=1000,gid=1000	0	0
+Compartida	/home/utnso/vboxsfCompartida	vboxsf	rw,exec,uid=1000,gid=1000	0	0
 ```
 
 5. Para arrancar el servicio de carpetas compartidas de VirtualBox cada vez que iniciemos la VM, editar el archivo `/etc/modules`:
@@ -304,17 +326,17 @@ sudo apt install cifs-utils
 
 2. Crear el directorio donde montaremos la carpeta compartida en la VM
 ```bash
-mkdir /home/utnso/smb
+mkdir /home/utnso/smbCompartida
 ```
 
 3. Montar manualmente la carpeta compartida en la VM
 ```bash
-sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smb -o username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777
+sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida -o username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777
 ```
 
 4. Verificar que la carpeta compartida se haya montado correctamente en la VM
 ```bash
-ls /home/utnso/smb
+ls /home/utnso/smbCompartida
 ```
 
 5. Para que la carpeta compartida se monte automáticamente cada vez que iniciemos la VM, editar el archivo `/etc/fstab`:
@@ -324,14 +346,14 @@ sudo vi /etc/fstab
 
 Agregarle la siguiente línea al final de dicho archivo.
 ```output
-//NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smb cifs username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777 0 0
+//NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida cifs username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777 0 0
 ```
 
 Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cambiarse a 2.0, por ejemplo, de ser necesario
 
 -----------------------------
 
-## 8. Configurar SSH en la VM
+## 12. Configurar SSH en la VM
 
 1. Descargar e instalar openssh-server
 ```bash
@@ -430,7 +452,7 @@ less /var/log/auth.log
 
 -----------------------------
 
-## 9. Conectarse por SSH a la VM
+## 13. Conectarse por SSH a la VM
 
 ### En Windows (PowerShell):
 
@@ -447,7 +469,7 @@ Nota: el puerto por lo general es 22
 
 -----------------------------
 
-## 10. Configurar VSCode
+## 14. Configurar VSCode
 
 ### Extensiones:
 	Remote - SSH
@@ -544,7 +566,7 @@ Host NúmeroIP
 
 -----------------------------
 
-## 11. Configurar Git en la VM
+## 15. Configurar Git en la VM
 
 1. Generar un token en GitHub
 	- Tokens (classic)
@@ -575,7 +597,7 @@ git config --global user.name "FDM"
 
 -----------------------------
 
-## 12. Instalar la versión más reciente de CMake
+## 16. Instalar la versión más reciente de CMake
 
 https://cmake.org/download/
 
@@ -698,6 +720,13 @@ tmux kill -t 'NombreDeSesion'
 - Para finalizar el modo desplazamiento por la ventana, presione <kbd>q</kbd>
 
 -----------------------------
+
 ## Anexo 3: Opciones importantes de gcc
 
 `-DDEBUG -fdiagnostics-color=always -lcommons -lpthread -lreadline -lm`
+
+-----------------------------
+
+# Al salir
+
+## 1. Desloguearse de Git, sacar las credenciales de Windows

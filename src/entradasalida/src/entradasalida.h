@@ -17,7 +17,7 @@
 #include "commons/config.h"
 #include "commons/string.h"
 #include "commons/collections/list.h"
-#include "utils/modules.h"
+#include "utils/module.h"
 #include "utils/socket.h"
 
 int module(int, char*[]);

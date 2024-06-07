@@ -16,17 +16,17 @@ void *client_thread_connect_to_server(void *connection_parameter) {
 
   while(1) {
     while(1) {
-      log_info(CONNECTIONS_LOGGER, "Intentando conectar con [Servidor] %s en IP: %s - Puerto: %s...", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+      log_info(SOCKET_LOGGER, "Intentando conectar con [Servidor] %s en IP: %s - Puerto: %s...", PORT_NAMES[connection->server_type], connection->ip, connection->port);
       connection->fd_connection = client_start_try(connection->ip, connection->port);
 
       if(connection->fd_connection != -1) break;
       else {
-        log_warning(CONNECTIONS_LOGGER, "No se pudo conectar con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+        log_warning(SOCKET_LOGGER, "No se pudo conectar con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
         sleep(RETRY_CONNECTION_IN_SECONDS);
       }
     }
 
-    log_info(CONNECTIONS_LOGGER, "Conectado con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+    log_info(SOCKET_LOGGER, "Conectado con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
 
     // Handshake
 
@@ -36,7 +36,7 @@ void *client_thread_connect_to_server(void *connection_parameter) {
     if(result == 0) break;
     else {
       close(connection->fd_connection);
-      log_warning(CONNECTIONS_LOGGER, "Error Handshake con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+      log_warning(SOCKET_LOGGER, "Error Handshake con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
       sleep(RETRY_CONNECTION_IN_SECONDS);
     }
   }
@@ -55,7 +55,7 @@ int client_start_try(char *ip, char *port) {
 
 	int exit_code = getaddrinfo(ip, port, &hints, &result);
   if (exit_code != 0) {
-    log_warning(CONNECTIONS_LOGGER, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
+    log_warning(SOCKET_LOGGER, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
     return -1;
   }
 
@@ -70,13 +70,13 @@ int client_start_try(char *ip, char *port) {
     );
 
     if(fd_client == -1) {
-      log_warning(CONNECTIONS_LOGGER, "Funcion socket: %s\n", strerror(errno));
+      log_warning(SOCKET_LOGGER, "Funcion socket: %s\n", strerror(errno));
       continue; /* This one failed */
     }
 
     if(connect(fd_client, rp->ai_addr, rp->ai_addrlen) == 0) break; /* Until one succeeds */
     else {
-      log_warning(CONNECTIONS_LOGGER, "Funcion connect: %s\n", strerror(errno));
+      log_warning(SOCKET_LOGGER, "Funcion connect: %s\n", strerror(errno));
     }
 
     close(fd_client);
@@ -94,17 +94,17 @@ int client_start_try(char *ip, char *port) {
 void server_start(Server *server) {
 
   while(1) {
-    log_info(CONNECTIONS_LOGGER, "Intentando iniciar [Servidor] %s en Puerto: %s...", PORT_NAMES[server->server_type], server->port);
+    log_info(SOCKET_LOGGER, "Intentando iniciar [Servidor] %s en Puerto: %s...", PORT_NAMES[server->server_type], server->port);
     server->fd_listen = server_start_try(server->port);
 
     if(server->fd_listen != -1) break;
     else {
-      log_warning(CONNECTIONS_LOGGER, "No se pudo iniciar [Servidor] %s en Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[server->server_type], server->port, RETRY_CONNECTION_IN_SECONDS);
+      log_warning(SOCKET_LOGGER, "No se pudo iniciar [Servidor] %s en Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[server->server_type], server->port, RETRY_CONNECTION_IN_SECONDS);
       sleep(RETRY_CONNECTION_IN_SECONDS);
     }
   }
 
-  log_info(CONNECTIONS_LOGGER, "Escuchando [Servidor] %s en Puerto: %s", PORT_NAMES[server->server_type], server->port);
+  log_info(SOCKET_LOGGER, "Escuchando [Servidor] %s en Puerto: %s", PORT_NAMES[server->server_type], server->port);
 }
 
 int server_start_try(char* port) {
@@ -119,7 +119,7 @@ int server_start_try(char* port) {
 
 	int exit_code = getaddrinfo(NULL, port, &hints, &result);
   if (exit_code != 0) {
-    log_warning(CONNECTIONS_LOGGER, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
+    log_warning(SOCKET_LOGGER, "Funcion getaddrinfo: %s\n", gai_strerror(exit_code));
     return -1;
   }
 
@@ -133,13 +133,13 @@ int server_start_try(char* port) {
     );
 
     if(fd_server == -1) {
-      log_warning(CONNECTIONS_LOGGER, "Funcion socket: %s\n", strerror(errno));
+      log_warning(SOCKET_LOGGER, "Funcion socket: %s\n", strerror(errno));
       continue; /* This one failed */
     }
 
     if(bind(fd_server, rp->ai_addr, rp->ai_addrlen) == 0) break; /* Until one succeeds */
     else {
-      log_warning(CONNECTIONS_LOGGER, "Funcion bind: %s\n", strerror(errno));
+      log_warning(SOCKET_LOGGER, "Funcion bind: %s\n", strerror(errno));
       continue;
     }
 
@@ -154,7 +154,7 @@ int server_start_try(char* port) {
 
 	// Escuchamos las conexiones entrantes
 	if (listen(fd_server, SOMAXCONN) == -1) {
-		log_warning(CONNECTIONS_LOGGER, "Funcion listen: %s\n", strerror(errno));
+		log_warning(SOCKET_LOGGER, "Funcion listen: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -166,7 +166,7 @@ int server_accept(int fd_server) {
 	int fd_client = accept(fd_server, NULL, NULL);
 
 	if(fd_client == -1) {
-      log_warning(CONNECTIONS_LOGGER, "Funcion accept: %s\n", strerror(errno));
+      log_warning(SOCKET_LOGGER, "Funcion accept: %s\n", strerror(errno));
   }
 
 	return fd_client;

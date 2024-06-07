@@ -8,7 +8,7 @@ char *MODULE_LOG_PATHNAME = "entradasalida.log";
 char *MODULE_CONFIG_PATHNAME = "entradasalida.config";
 
 t_log* MODULE_LOGGER;
-extern t_log *CONNECTIONS_LOGGER;
+extern t_log *SOCKET_LOGGER;
 t_config* MODULE_CONFIG;
 
 char *TIPO_INTERFAZ;
@@ -17,7 +17,7 @@ int TIEMPO_UNIDAD_TRABAJO;
 Connection CONNECTION_KERNEL;
 Connection CONNECTION_MEMORY;
 
-char* PATH_BASE_DIALFS;
+char *PATH_BASE_DIALFS;
 int BLOCK_SIZE;
 int BLOCK_COUNT;
 

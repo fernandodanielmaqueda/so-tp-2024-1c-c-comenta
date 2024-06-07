@@ -17,13 +17,13 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
-#include "utils/modules.h"
-#include "utils/serialize.h"
+#include "utils/module.h"
+#include "utils/serialize/pcb.h"
 #include "utils/socket.h"
 
 typedef struct t_process {
     char* nombre;
-    int pid;
+    int PID;
     int cantidadInstrucciones;
     t_list* lista_instrucciones;
     t_list* tabla_paginas;
@@ -38,7 +38,7 @@ typedef struct t_page {
 } t_page;
 
 typedef struct t_marco {
-    int pid;
+    int PID;
     int marco_id;
     t_page* pagina_asignada;
 } t_marco;
@@ -96,7 +96,7 @@ void parser_file(char* path, t_list* list_instruction);
 
 
 /**
- * @brief Busca el proceso asociado al pid de interes.
+ * @brief Busca el proceso asociado al PID de interes.
  * @param pidBuscado Pid de la lista de instrucciones asociada
  */
 t_process* seek_process_by_pid(int pidBuscado);
