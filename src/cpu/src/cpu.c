@@ -35,22 +35,7 @@ int module(int argc, char *argv[]) {
 
     log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
-    Package *pcb_package = package_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
-    switch((enum HeaderCode) pcb_package->header) {
-        case DISCONNECTION_HEADERCODE:
-            break;
-        case PCB_HEADERCODE:
-            {
-                t_PCB *pcb = pcb_deserialize(pcb_package->payload);
-                pcb_print(pcb);
-            }
-            break;
-        default:
-            break;
-    }
-    package_destroy(pcb_package);
-
-    //instruction_cycle();
+    instruction_cycle();
 
     // finish_threads();
     finish_sockets();
@@ -180,17 +165,51 @@ void *cpu_interrupt_start_server_for_kernel(void *server_parameter) {
 
 void instruction_cycle(void) {
 
+    Package *package;
+    t_PCB *pcb;
+    t_CPU_Instruction *instruction;
+
     tlb = list_create();
 
-    while(true){
+    while(1) {
 
-        t_PCB *pcb = NULL; // t_PCB *pcb = pcb_deserialize(FD_CLIENT_KERNEL_CPU_DISPATCH);
-        t_instruction_use *instruction = instruction_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
-        t_instruction_use *instruction_get;
-        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando"  , pcb->PID);
+        // 
+        package = package_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
+        switch((enum HeaderCode) package->header) {
+            case PCB_HEADERCODE:
+                pcb = pcb_deserialize(package->payload);
+                pcb_print(pcb);
+                break;
+            default:
+                log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
+                exit(1);
+                break;
+        }
+        package_destroy(package);
+        //
+
+        
+        // 
+        package = package_receive(FD_CLIENT_KERNEL_CPU_DISPATCH);
+        switch((enum HeaderCode) package->header) {
+            case CPU_INSTRUCTION_HEADERCODE:
+                    instruction = cpu_instruction_deserialize(package->payload);
+                    cpu_instruction_print(instruction);
+                break;
+            default:
+                log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
+                exit(1);
+                break;
+        }
+        package_destroy(package);
+        //
+
+        t_CPU_Instruction *instruction_get;
+        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", pcb->PID);
 
         //Ejecuta lo que tenga que hacer el proceso hasta que llegue la interrupcion
-        while(instruction->operation == TYPE_INTERRUPT_SIN_INT){
+        /*
+        while(instruction->opcode == TYPE_INTERRUPT_SIN_INT){
 
             log_trace(MODULE_LOGGER, "Fetch de instruccion del proceso");
             instruction_get = list_get(instruction->parameters, pcb->PC);
@@ -199,12 +218,13 @@ void instruction_cycle(void) {
             decode_execute(instruction_get, pcb);
             
         }
+        */
 
     }
    
 }
 
-void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
+void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb) {
     // size_t largo_nombre = 0;
     int nro_page = 0;
     uint32_t value = 0;
@@ -228,9 +248,9 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
 
    //inncesario aca me parece---->int nro_frame_required = request_frame_memory(nro_page, pcb->PID);
 
-    switch (instruction->operation)
+    switch ((enum t_CPU_Opcode) instruction->opcode)
     {
-    case SET:
+    case SET_OPCODE:
 
         parameter = list_get(instruction->parameters, 0);  // acarecibo el registro
         parameter2 = list_get(instruction->parameters, 1); // acarecibo el valor a asignarle al registro
@@ -240,7 +260,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
         pcb->PC++;
         break;
 
-    case MOV_IN:
+    case MOV_IN_OPCODE:
 
         parameter = list_get(instruction->parameters, 0);  // de este registro debo saber la direccion logica
         parameter2 = list_get(instruction->parameters, 1); // de este registro debo saber la direccion logica
@@ -264,7 +284,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
     
         break;
 
-    case MOV_OUT:
+    case MOV_OUT_OPCODE:
 
         parameter = list_get(instruction->parameters, 0);  // de este registro debo saber la direccion logica
         parameter2 = list_get(instruction->parameters, 1); // de este registro debo saber la direccion logica
@@ -286,7 +306,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
    
         break;
 
-    case SUM:
+    case SUM_OPCODE:
 
         parameter = list_get(instruction->parameters, 0);
         parameter2 = list_get(instruction->parameters, 1);
@@ -296,7 +316,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
         pcb->PC++;
         break;
 
-    case SUB:
+    case SUB_OPCODE:
 
         parameter = list_get(instruction->parameters, 0);
         parameter2 = list_get(instruction->parameters, 1);
@@ -306,7 +326,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
         
         break;
 
-    case JNZ:
+    case JNZ_OPCODE:
 
         parameter = list_get(instruction->parameters, 0);
         parameter2 = list_get(instruction->parameters, 1);
@@ -320,7 +340,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
 
         break;
 
-    case IO_GEN_SLEEP:
+    case IO_GEN_SLEEP_OPCODE:
 
         interfaz = list_get(instruction->parameters, 0);
         unit_work = atoi(list_get(instruction->parameters, 1));
@@ -329,7 +349,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
 
         break;
 
-    case EXIT:
+    case EXIT_OPCODE:
 
             pcb->current_state = EXIT;
             //Saco de la TLB
@@ -346,7 +366,7 @@ void decode_execute(t_instruction_use *instruction, t_PCB *pcb) {
 
     default:
 
-        log_error(MODULE_LOGGER, "Código %d desconocido.", instruction->operation);
+        log_error(MODULE_LOGGER, "Código %d desconocido.", instruction->opcode);
         exit(EXIT_FAILURE);
     }
 

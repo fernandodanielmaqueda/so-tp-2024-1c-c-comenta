@@ -13,6 +13,9 @@
 
 typedef enum HeaderCode {
     DISCONNECTION_HEADERCODE = -1,
+    PCB_HEADERCODE,
+    CPU_MEMORY_REQUEST_HEADERCODE,
+    CPU_INSTRUCTION_HEADERCODE,
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_NEW,
@@ -20,40 +23,9 @@ typedef enum HeaderCode {
     PROCESS_FINALIZED,
     //Kernel - IO
     //Kernel - CPU
-    TYPE_INTERRUPT_SIN_INT,
-    TYPE_INTERRUPT_FIN_PROCESO,
-    TYPE_INTERRUPT_FIN_QUANTUM,
-    PCB_HEADERCODE,
-    ///////////////
-    //CPU - Memoria////
-    INSTUCTION_REQUEST,
-    READ_REQUEST, //utilizado en MEMORIA-IO
-    WRITE_REQUEST, //utilizado en MEMORIA-IO
-    RESIZE_REQUEST,
-    FRAME_ACCESS,    //PARA EMMORIA Y REVISAR LA TLB
-    FRAME_REQUEST,
-    PAGE_SIZE_REQUEST,
     ///////////////////
     //IO - Memoria
     //Instrucciones
-    SET,
-    MOV_IN,
-    MOV_OUT,
-    SUM,
-    SUB,
-    JNZ,
-    RESIZE,
-    COPY_STRING,
-    WAIT,
-    SIGNAL,
-    IO_GEN_SLEEP,
-    IO_STDIN_READ,
-    IO_STDOUT_WRITE,
-    IO_FS_CREATE,
-    IO_FS_DELETE,
-    IO_FS_TRUNCATE,
-    IO_FS_WRITE,
-    IO_FS_READ
 } HeaderCode;
 
 typedef uint8_t Header;

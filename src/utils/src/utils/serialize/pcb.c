@@ -63,142 +63,47 @@ t_PCB *pcb_deserialize(Payload *payload) {
 }
 
 void pcb_print(t_PCB *pcb) {
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: PID: %" PRIu32, (void *) pcb, pcb->PID);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: PC: %" PRIu32, (void *) pcb, pcb->PC);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: AX: %" PRIu8, (void *) pcb, pcb->AX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: BX: %" PRIu8, (void *) pcb, pcb->BX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: CX: %" PRIu8, (void *) pcb, pcb->CX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: DX: %" PRIu8, (void *) pcb, pcb->DX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: EAX: %" PRIu32, (void *) pcb, pcb->EAX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: EBX: %" PRIu32, (void *) pcb, pcb->EBX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: ECX: %" PRIu32, (void *) pcb, pcb->ECX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: EDX: %" PRIu32, (void *) pcb, pcb->EDX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: RAX: %" PRIu32, (void *) pcb, pcb->RAX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: RBX: %" PRIu32, (void *) pcb, pcb->RBX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: RCX: %" PRIu32, (void *) pcb, pcb->RCX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: RDX: %" PRIu32, (void *) pcb, pcb->RDX);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: SI: %" PRIu32, (void *) pcb, pcb->SI);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: DI: %" PRIu32, (void *) pcb, pcb->DI);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: quantum: %" PRIu32, (void *) pcb, pcb->quantum);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: current_state: %" PRIu8, (void *) pcb, pcb->current_state);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: arrival_READY: %g", (void *) pcb, pcb->arrival_READY);
-  log_info(SERIALIZE_LOGGER, "t_PCB[%p]: arrival_RUNNING: %g", (void *) pcb, pcb->arrival_RUNNING);
-}
-
-void instruction_send(t_instruction_use* instruccion, int socket) {
-  
-  Package* package = package_create_with_header(INSTUCTION_REQUEST);
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [...]\n"); }
-  
-  int cursor = 0;
-  int cantidad_parametros= list_size(instruccion->parameters);
-
-
-    payload_add(package->payload, &instruccion->operation, sizeof(enum HeaderCode));
-    DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Identificador instruccion = %d\n", cursor, instruccion->operation);
-    cursor++;
-
-  //PARAMETROS
-  payload_add(package->payload, &cantidad_parametros, sizeof(int));
-  { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Cantidad de parametros = %d\n", cursor, cantidad_parametros); }
-  cursor++;
-
-  char* parametro;
-  for (int i = 0; i < cantidad_parametros; i++)
-  {
-    parametro = list_get(instruccion->parameters, i);
-
-    payload_add(package->payload, parametro, strlen(parametro) + 1);
-    { DEBUGGING_SERIALIZATION printf("\n[Serializar] package[%d]: Parametro = %s\n", cursor, parametro); }
-    cursor++;
-  }
-
-  DEBUGGING_SERIALIZATION printf("\n[Serializar] serializar_instruccion( ) [END]\n");
-
-  package_send(package, socket);
-
-  package_destroy(package);
-}
-
-t_instruction_use* instruction_receive(int socket) {
-  { DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_instruccion( ) [...]\n"); }
-
-  t_list *propiedadesPlanas = NULL;
-  //t_list *propiedadesPlanas = get_package_like_list(socket);
-  t_instruction_use* instruccionRecibida = malloc(sizeof(t_instruction_use));
-  int cursor = 0;
-
-  instruccionRecibida->operation = *(enum HeaderCode*)list_get(propiedadesPlanas, cursor);
-  DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, instruccionRecibida->operation );
-  
-  int cantidadParametros = *(int*)list_get(propiedadesPlanas, cursor);
-  DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: instruccionRecibida->operation  = %d\n", cursor, cantidadParametros );
-  
-  for (size_t i = 0; i < cantidadParametros; i++)
-  {
-    char* parametro = string_new();
-    parametro = string_duplicate(list_get(propiedadesPlanas, ++cursor));
-    DEBUGGING_SERIALIZATION printf("\n[Deserializar] package[%d]: parametro = %s \n", cursor, parametro);
-    list_add(instruccionRecibida->parameters, parametro);
-  }
-  
-  list_destroy_and_destroy_elements(propiedadesPlanas, &free);
-
-  DEBUGGING_SERIALIZATION printf("\n[Deserializar] deserializar_instruccion( ) [END]\n");
-
-  return instruccionRecibida;
-}
-
-void instruction_delete(t_instruction_use *lineaInstruccion) {
-  
-    if (lineaInstruccion->parameters != NULL) {
-        list_iterate(lineaInstruccion->parameters, free_string_element);
-        list_destroy(lineaInstruccion->parameters);
-    }
-  free(lineaInstruccion);
-}
-
-/*
-void message_send(enum HeaderCode headerCode, char* message, int fd_socket) {
-  Package *package = package_create(headerCode);
-  package_add(package, message, strlen(message) + 1);
-  package_send(package, fd_socket);
-  package_destroy(package);
-}
-
-char* message_receive(int fd_socket) {
-  int size;
-  char* message = buffer_receive(&size, fd_socket);
-  return message;
-}
-*/
-
-/*
-t_list* get_package_like_list(int fd_client) {
-  int buffer_size;
-  int tamanioContenido;
-  int offset = 0;
-
-  t_list *contenido = list_create();
-  void *buffer = buffer_receive(&buffer_size, fd_client);
-
-  while (offset < buffer_size)
-  {
-    memcpy((void*) &tamanioContenido, (void*)(((uint8_t*) buffer) + offset), sizeof(int));
-    offset += sizeof(int);
-
-    void *valor = malloc(tamanioContenido);
-    memcpy(valor, (void*)(((uint8_t*) buffer) + offset), tamanioContenido);
-    offset += tamanioContenido;
-
-    list_add(contenido, valor);
-  }
-
-  free(buffer);
-  return contenido;
-}
-*/
-
-void free_string_element(void *element) {
-    free((char *) element);
+  log_info(SERIALIZE_LOGGER,
+    "t_PCB[%p]:\n"
+    "* PID: %" PRIu32 "\n"
+    "* PC: %" PRIu32 "\n"
+    "* AX: %" PRIu8 "\n"
+    "* BX: %" PRIu8 "\n"
+    "* CX: %" PRIu8 "\n"
+    "* DX: %" PRIu8 "\n"
+    "* EAX: %" PRIu32 "\n"
+    "* EBX: %" PRIu32 "\n"
+    "* ECX: %" PRIu32 "\n"
+    "* EDX: %" PRIu32 "\n"
+    "* RAX: %" PRIu32 "\n"
+    "* RBX: %" PRIu32 "\n"
+    "* RCX: %" PRIu32 "\n"
+    "* RDX: %" PRIu32 "\n"
+    "* SI: %" PRIu32 "\n"
+    "* DI: %" PRIu32 "\n"
+    "* quantum: %" PRIu32 "\n"
+    "* current_state: %" PRIu8 "\n"
+    "* arrival_READY: %g\n"
+    "* arrival_RUNNING: %g"
+    ,(void *) pcb,
+    pcb->PID,
+    pcb->PC,
+    pcb->AX,
+    pcb->BX,
+    pcb->CX,
+    pcb->DX,
+    pcb->EAX,
+    pcb->EBX,
+    pcb->ECX,
+    pcb->EDX,
+    pcb->RAX,
+    pcb->RBX,
+    pcb->RCX,
+    pcb->RDX,
+    pcb->SI,
+    pcb->DI,
+    pcb->quantum,
+    pcb->current_state,
+    pcb->arrival_READY,
+    pcb->arrival_RUNNING);
 }
