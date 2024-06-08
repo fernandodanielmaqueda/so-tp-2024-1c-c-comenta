@@ -42,10 +42,9 @@ typedef enum e_Register {
 
 typedef struct t_TLB {
 	int PID;
-	int nro_page;
+	int page_number;
 	int frame;
     int time; //para el LRU
-	
 } t_TLB;
 
 

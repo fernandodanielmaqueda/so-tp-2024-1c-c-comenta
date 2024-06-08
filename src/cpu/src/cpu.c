@@ -161,7 +161,7 @@ void *cpu_interrupt_start_server_for_kernel(void *server_parameter)
 
         bytes = recv(FD_CLIENT_KERNEL_CPU_INTERRUPT, &handshake, sizeof(int32_t), MSG_WAITALL);
 
-        if ((e_PortType)handshake == server->clients_type)
+        if ((e_PortType) handshake == server->clients_type)
             break;
         else
         {
@@ -458,18 +458,18 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
     return dir_fisica;
 }
 
-int check_tlb(int process_id, int nro_page)
+int check_tlb(int process_id, int page_number)
 {
 
     t_TLB *tlb_entry = NULL;
-    int nro_frame = -1;
+    int frame_number = -1;
     for (int i = 0; i < list_size(tlb); i++)
     {
 
         tlb_entry = list_get(tlb, i);
-        if (tlb_entry->PID == process_id && tlb_entry->nro_page == nro_page)
+        if (tlb_entry->PID == process_id && tlb_entry->page_number == page_number)
         {
-            nro_frame = tlb_entry->frame;
+            frame_number = tlb_entry->frame;
 
             // ==============TODO:FALTA ALGORITMO FIFO ===============//
 
@@ -480,31 +480,31 @@ int check_tlb(int process_id, int nro_page)
             }
         }
     }
-    return nro_frame;
+    return frame_number;
 }
 
-void tlb_access(t_PCB *pcb, int nro_page, int nro_frame_required, int direc, int register_origin, int register_destination, int in_out)
+void tlb_access(t_PCB *pcb, int nro_page, int frame_number_required, int direc, int register_origin, int register_destination, int in_out)
 {
 
     if (in_out == IN)
     {
 
         // TODO : CON BRIAN PEDIR A MEMORIA QUE HAGA ESTAS FUNCIONES..
-        request_data_in_memory(nro_frame_required, pcb->PID, nro_page, direc, register_origin, register_destination);
-        log_info(MODULE_LOGGER, "PID: %i -Accion:LEER - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, nro_frame_required, direc);
+        request_data_in_memory(frame_number_required, pcb->PID, nro_page, direc, register_origin, register_destination);
+        log_info(MODULE_LOGGER, "PID: %i -Accion:LEER - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
     }
     else
     {
-        request_data_out_memory(nro_frame_required, pcb->PID, nro_page, direc, register_origin, register_destination);
-        log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, nro_frame_required, direc);
+        request_data_out_memory(frame_number_required, pcb->PID, nro_page, direc, register_origin, register_destination);
+        log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
     }
 }
 
-void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination)
+void request_data_in_memory(int frame_number_required, int pid, int nro_page, int direc, int register_origin, int register_destination)
 {
 }
 
-void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination)
+void request_data_out_memory(int frame_number_required, int pid, int nro_page, int direc, int register_origin, int register_destination)
 {
 }
 

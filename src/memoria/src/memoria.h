@@ -23,27 +23,27 @@
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
 
-typedef struct t_process {
-    char* nombre;
+typedef struct t_Process {
+    char* name;
     int PID;
-    int cantidadInstrucciones;
-    t_list* lista_instrucciones;
-    t_list* tabla_paginas;
-} t_process;
+    int number_of_instructions;
+    t_list* instructions_list;
+    t_list* pages_table;
+} t_Process;
 
-typedef struct t_page {
-    int nro_pagina;
+typedef struct t_Page {
+    int number;
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
-    int marco_asignado;
-} t_page;
+    int assigned_frame;
+} t_Page;
 
-typedef struct t_marco {
+typedef struct t_Frame {
     int PID;
-    int marco_id;
-    t_page* pagina_asignada;
-} t_marco;
+    int id;
+    t_Page* assigned_page;
+} t_Frame;
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
@@ -70,7 +70,7 @@ void kill_process (int socketRecibido);
 void create_instruction(FILE* file, t_list* list_instruction);
 void parser_file(char* path, t_list* list_instruction);
 void listen_cpu(int fd_cpu);
-t_process* seek_process_by_pid(int pidBuscado);
+t_Process* seek_process_by_pid(int pidBuscado);
 
 /**
  * @brief Busca la lista de instruccion y devuelve la instruccion buscada
@@ -101,7 +101,7 @@ void parser_file(char* path, t_list* list_instruction);
  * @brief Busca el proceso asociado al PID de interes.
  * @param pidBuscado Pid de la lista de instrucciones asociada
  */
-t_process* seek_process_by_pid(int pidBuscado);
+t_Process* seek_process_by_pid(int pidBuscado);
 
 
 
