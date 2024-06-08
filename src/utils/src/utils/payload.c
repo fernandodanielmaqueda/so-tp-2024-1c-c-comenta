@@ -22,7 +22,7 @@ void payload_destroy(t_Payload *payload) {
 }
 
 // Agrega un stream al payload en la posición actual y avanza el offset
-void payload_add(t_Payload *payload, void *data, size_t dataSize) {
+void payload_enqueue(t_Payload *payload, void *data, size_t dataSize) {
   payload->stream = realloc(payload->stream, (size_t) (payload->size + dataSize));
   memcpy((void*)(((uint8_t*) payload->stream) + payload->size), data, dataSize);
   payload->size += (t_PayloadSize) dataSize;

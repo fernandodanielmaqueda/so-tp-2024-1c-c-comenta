@@ -21,9 +21,10 @@
 #define RETRY_CONNECTION_IN_SECONDS 10
 #define MAX_CONNECTION_ATTEMPS 10
 
+typedef uint32_t t_Handshake;
+
 extern const char *PORT_NAMES[PortType_Count];
 //extern const int32_t HANDSHAKES[PortType_Count];
-
 typedef struct t_Connection {
     int fd_connection;
     enum e_PortType client_type;
@@ -32,12 +33,22 @@ typedef struct t_Connection {
     char *port;
 } t_Connection;
 
+typedef struct t_Client {
+    int fd_client;
+    enum e_PortType client_type;
+} t_Client;
+
 typedef struct t_Server {
     int fd_listen;
     enum e_PortType server_type;
     enum e_PortType clients_type;
     char *port;
 } t_Server;
+
+typedef struct t_Single_Client_Server {
+    t_Server server;
+    t_Client client;
+} t_Single_Client_Server;
 
 void *client_thread_connect_to_server(void *connection_parameter);
 int client_start_try(char* ip, char* port);

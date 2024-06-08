@@ -4,22 +4,21 @@
 #include "socket.h"
 
 const char *PORT_NAMES[PortType_Count] = {[KERNEL_TYPE] = "Kernel", [CPU_TYPE] = "CPU", [CPU_DISPATCH_TYPE] = "CPU (Dispatch)", [CPU_INTERRUPT_TYPE] = "CPU (Interrupt)", [MEMORY_TYPE] = "Memoria", [IO_TYPE] = "Entrada/Salida", [TO_BE_DEFINED_TYPE] = "A identificar"};
-// const int32_t HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [TO_BE_DEFINED_TYPE] = -1};
+// const t_Handshake HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [TO_BE_DEFINED_TYPE] = -1};
 
 void *client_thread_connect_to_server(void *connection_parameter) {
   t_Connection *connection = (t_Connection*) connection_parameter;
 
-  size_t bytes;
-
-  int32_t handshake = (int32_t) connection->client_type;
-  int32_t result;
+  ssize_t bytes;
+  t_Handshake handshake;
 
   while(1) {
     while(1) {
       log_info(SOCKET_LOGGER, "Intentando conectar con [Servidor] %s en IP: %s - Puerto: %s...", PORT_NAMES[connection->server_type], connection->ip, connection->port);
       connection->fd_connection = client_start_try(connection->ip, connection->port);
 
-      if(connection->fd_connection != -1) break;
+      if(connection->fd_connection != -1)
+        break;
       else {
         log_warning(SOCKET_LOGGER, "No se pudo conectar con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
         sleep(RETRY_CONNECTION_IN_SECONDS);
@@ -30,14 +29,45 @@ void *client_thread_connect_to_server(void *connection_parameter) {
 
     // Handshake
 
-    bytes = send(connection->fd_connection, &handshake, sizeof(int32_t), 0);
-    bytes = recv(connection->fd_connection, &result, sizeof(int32_t), MSG_WAITALL);
+    handshake = (t_Handshake) connection->client_type;
+    bytes = send(connection->fd_connection, &handshake, sizeof(t_Handshake), 0);
 
-    if(result == 0) break;
+    if (bytes == -1) {
+        log_error(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
+        close(connection->fd_connection);
+        continue;
+    }
+    if (bytes != sizeof(t_Handshake)) {
+        log_error(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
+        close(connection->fd_connection);
+        continue;
+    }
+
+    bytes = recv(connection->fd_connection, &handshake, sizeof(t_Handshake), MSG_WAITALL);
+
+    if (bytes == 0) {
+        log_error(SOCKET_LOGGER, "Desconectado [Servidor] %s en IP: %s - Puerto: %s\n", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+        close(connection->fd_connection);
+        continue;
+    }
+    if (bytes == -1) {
+        log_error(SOCKET_LOGGER, "Funcion recv: %s\n", strerror(errno));
+        close(connection->fd_connection);
+        continue;
+    }
+    if (bytes != sizeof(t_Handshake)) {
+        log_error(SOCKET_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_Handshake), bytes);
+        close(connection->fd_connection);
+        continue;
+    }
+
+    if(handshake == 0)
+      break;
     else {
-      close(connection->fd_connection);
       log_warning(SOCKET_LOGGER, "Error Handshake con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+      close(connection->fd_connection);
       sleep(RETRY_CONNECTION_IN_SECONDS);
+      continue;
     }
   }
 

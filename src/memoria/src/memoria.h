@@ -22,6 +22,7 @@
 #include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
+#include "socket.h"
 
 typedef struct t_Process {
     char* name;
@@ -47,10 +48,6 @@ typedef struct t_Frame {
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
-void initialize_sockets(void);
-void finish_sockets(void);
-void *memory_start_server(void *server_parameter);
-void *memory_client_handler(void *fd_new_client_parameter);
 
 void listen_kernel(int fd_kernel);
 

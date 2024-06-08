@@ -8,14 +8,18 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <string.h>
+#include <errno.h>
 #include "commons/config.h"
+#include "commons/log.h"
 #include "utils/payload.h"
+#include "utils/module.h"
 
 typedef enum e_Header {
     DISCONNECTION_HEADER = -1,
     PCB_HEADER,
     CPU_MEMORY_REQUEST_HEADER,
     CPU_INSTRUCTION_HEADER,
+    INTERRUPT_HEADER,
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_NEW,

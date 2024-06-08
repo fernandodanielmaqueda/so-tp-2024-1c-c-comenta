@@ -22,10 +22,23 @@ void package_destroy(t_Package *package) {
 }
 
 void package_send(t_Package *package, int fd_socket) {
+  ssize_t bytes;
+
   size_t bufferSize = sizeof(t_Header_Serialized) + sizeof(package->payload->size) + (size_t) package->payload->size;
   void *buffer = package_serialize(package, bufferSize);
 
-  send(fd_socket, buffer, bufferSize, 0);
+  bytes = send(fd_socket, buffer, bufferSize, 0);
+
+  if (bytes == -1) {
+      log_error(SERIALIZE_LOGGER, "Funcion send: %s\n", strerror(errno));
+      close(fd_socket);
+      exit(1);
+  }
+  if (bytes != bufferSize) {
+      log_error(SERIALIZE_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", bufferSize, bytes);
+      close(fd_socket);
+      exit(1);
+  }
 
   free(buffer);
 }
@@ -50,14 +63,69 @@ t_Package *package_receive(int fd_socket) {
 }
 
 void package_receive_header(t_Package *package, int fd_socket) {
+  ssize_t bytes;
+
   t_Header_Serialized header_serialized;
-  recv(fd_socket, (void *) &(header_serialized), sizeof(t_Header_Serialized), 0); // MSG_WAITALL
+  bytes = recv(fd_socket, (void *) &(header_serialized), sizeof(t_Header_Serialized), 0); // MSG_WAITALL
+
+  if (bytes == 0) {
+      log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
+      close(fd_socket);
+      exit(1);
+  }
+  if (bytes == -1) {
+      log_error(SERIALIZE_LOGGER, "Funcion recv: %s\n", strerror(errno));
+      close(fd_socket);
+      exit(1);
+  }
+  if (bytes != sizeof(t_Header_Serialized)) {
+      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_Header_Serialized), bytes);
+      close(fd_socket);
+      exit(1);
+  }
+
   package->header = (e_Header) header_serialized;
 }
 
 void package_receive_payload(t_Package *package, int fd_socket) {
-  recv(fd_socket, &(package->payload->size), sizeof(t_PayloadSize), 0); // MSG_WAITALL
+  ssize_t bytes;
+
+  bytes = recv(fd_socket, &(package->payload->size), sizeof(t_PayloadSize), 0); // MSG_WAITALL
+
+  if (bytes == 0) {
+      log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
+      close(fd_socket);
+      exit(1);
+  }
+  if (bytes == -1) {
+      log_error(SERIALIZE_LOGGER, "Funcion recv: %s\n", strerror(errno));
+      close(fd_socket);
+      exit(1);
+  }
+  if (bytes != sizeof(t_PayloadSize)) {
+      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_PayloadSize), bytes);
+      close(fd_socket);
+      exit(1);
+  }
+
   if(package->payload->size == 0) return;
   package->payload->stream = malloc(package->payload->size);
-  recv(fd_socket, package->payload->stream, (size_t) package->payload->size, 0); // MSG_WAITALL
+  bytes = recv(fd_socket, package->payload->stream, (size_t) package->payload->size, 0); // MSG_WAITALL
+
+  if (bytes == 0) {
+      log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
+      close(fd_socket);
+      exit(1);
+  }
+  if (bytes == -1) {
+      log_error(SERIALIZE_LOGGER, "Funcion recv: %s\n", strerror(errno));
+      close(fd_socket);
+      exit(1);
+  }
+  if (bytes != (size_t) package->payload->size) {
+      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", (size_t) package->payload->size, bytes);
+      close(fd_socket);
+      exit(1);
+  }
+
 }

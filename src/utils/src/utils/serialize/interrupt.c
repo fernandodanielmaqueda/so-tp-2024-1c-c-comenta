@@ -4,7 +4,7 @@
 #include "utils/serialize/interrupt.h"
 
 void interrupt_send(e_Interrupt *interrupt, int fd_socket) {
-  t_Package *package = package_create_with_header(PCB_HEADER);
+  t_Package *package = package_create_with_header(INTERRUPT_HEADER);
   interrupt_serialize(package->payload, interrupt);
   package_send(package, fd_socket);
   package_destroy(package);
@@ -13,7 +13,7 @@ void interrupt_send(e_Interrupt *interrupt, int fd_socket) {
 void interrupt_serialize(t_Payload *payload, e_Interrupt *interrupt) {
   uint8_t conversion = (uint8_t) *interrupt;
   
-  payload_add(payload, &(conversion), sizeof(conversion));
+  payload_enqueue(payload, &(conversion), sizeof(conversion));
 }
 
 e_Interrupt *interrupt_deserialize(t_Payload *payload) {

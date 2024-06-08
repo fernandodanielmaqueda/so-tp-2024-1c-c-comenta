@@ -11,9 +11,10 @@ void cpu_memory_request_send(e_CPU_Memory_Request *memory_request, int fd_socket
 }
 
 void cpu_memory_request_serialize(t_Payload *payload, e_CPU_Memory_Request *memory_request) {
-  uint8_t conversion_uint8_t = (uint8_t) *memory_request;
+  uint8_t conversion_uint8_t;
   
-  payload_add(payload, &(conversion_uint8_t), sizeof(conversion_uint8_t));
+  conversion_uint8_t = (uint8_t) *memory_request;
+  payload_enqueue(payload, &(conversion_uint8_t), sizeof(conversion_uint8_t));
 }
 
 e_CPU_Memory_Request *cpu_memory_request_deserialize(t_Payload *payload) {
