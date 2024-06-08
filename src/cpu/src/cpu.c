@@ -17,6 +17,9 @@ t_Server COORDINATOR_CPU_INTERRUPT;
 int FD_CLIENT_KERNEL_CPU_INTERRUPT;
 t_Connection CONNECTION_MEMORY;
 
+// Tipos de interrupciones para el ciclo
+int interruption_io = ;
+
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
 
@@ -48,9 +51,9 @@ int module(int argc, char *argv[])
 
 void read_module_config(t_config *MODULE_CONFIG)
 {
-    CONNECTION_MEMORY = (t_Connection) {.client_type = CPU_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    COORDINATOR_CPU_DISPATCH = (t_Server) {.server_type = CPU_DISPATCH_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")};
-    COORDINATOR_CPU_INTERRUPT = (t_Server) {.server_type = CPU_INTERRUPT_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")};
+    CONNECTION_MEMORY = (t_Connection){.client_type = CPU_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+    COORDINATOR_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")};
+    COORDINATOR_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")};
     CANTIDAD_ENTRADAS_TLB = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
     ALGORITMO_TLB = config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB");
 }
@@ -114,7 +117,7 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter)
 
         bytes = recv(FD_CLIENT_KERNEL_CPU_DISPATCH, &handshake, sizeof(int32_t), MSG_WAITALL);
 
-        if ((e_PortType) handshake == server->clients_type)
+        if ((e_PortType)handshake == server->clients_type)
             break;
         else
         {
@@ -177,35 +180,50 @@ void *cpu_interrupt_start_server_for_kernel(void *server_parameter)
     return NULL;
 }
 
-
 void instruction_cycle(void)
 {
 
     t_PCB *pcb;
     t_CPU_Instruction *instruction;
+    e_interrupt interrupt;
 
     tlb = list_create();
 
-    while(1) {
+    while (1)
+    {
 
         pcb = cpu_receive_pcb();
         instruction = cpu_receive_cpu_instruction();
+        e_interrupt interrupt = cpu_recive_interrupt_type();
 
         t_CPU_Instruction *instruction_get;
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", pcb->PID);
 
         // Ejecuta lo que tenga que hacer el proceso hasta que llegue la interrupcion
-        /*
-        while(instruction->opcode == TYPE_INTERRUPT_SIN_INT){
+
+        while (e_interrupt == TYPE_INTERRUPT_SIN_INT)
+        {
 
             log_trace(MODULE_LOGGER, "Fetch de instruccion del proceso");
             instruction_get = list_get(instruction->parameters, pcb->PC);
 
-            log_trace(MODULE_LOGGER,"Decode Y execute de instruccion del proceso");
+            log_trace(MODULE_LOGGER, "Decode Y execute de instruccion del proceso");
             decode_execute(instruction_get, pcb);
 
+            log_trace(MODULE_LOGGER, "Chequeo si llego interrupion del kernel");
+
+            // CHEQUEAR EL TIPO DE INTERRUPCION
+
+            /*
+                    if(interrupt != TYPE_INTERRUPT_SIN_INT){
+
+                        if()
+
+                    }
+            */
         }
-        */
+
+        // TODO :: MANDO PCB CON LA INFO DEL FIN DE PROCESO
     }
 }
 
@@ -230,10 +248,9 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
     uint32_t unit_work = 0;
     char *interfaz = NULL;
     // int size_pag = request_sizePag_memory(); // TODO: DESARROLLAR EN MEMORIA
-
     // inncesario aca me parece---->int nro_frame_required = request_frame_memory(nro_page, pcb->PID);
 
-    switch ((e_CPU_Opcode) instruction->opcode)
+    switch ((e_CPU_Opcode)instruction->opcode)
     {
     case SET_OPCODE:
 
@@ -241,6 +258,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         parameter2 = list_get(instruction->parameters, 1); // acarecibo el valor a asignarle al registro
         register_destination = string_to_register(parameter);
         value = atoi(parameter2); // aca recibo el valor a asignarle al registro
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], t_register_string[register_destination], parameter2);
         register_destination = value;
         pcb->PC++;
         break;
@@ -256,9 +274,11 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         dir_logica_origin = atoi(parameter);
         dir_logica_destination = atoi(parameter2);
 
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", pcb->PID, t_instruction_type_string[instruction->opcode], t_register_string[register_origin], t_register_string[register_destination]);
+
         // preguntar a fer
-        //message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
-        //size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
+        // message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
+        // size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
 
         dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, IN);
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, IN);
@@ -278,9 +298,11 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         dir_logica_origin = atoi(parameter);
         dir_logica_destination = atoi(parameter2);
 
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", pcb->PID, t_instruction_type_string[instruction->opcode], t_register_string[register_origin], t_register_string[register_destination]);
+
         // preguntar a fer
-        //message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
-        //size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
+        // message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
+        // size_pag = atoi(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH));
 
         dir_fisica_origin = mmu(dir_logica_origin, pcb, size_pag, register_origin, register_destination, OUT);
         dir_fisica_destination = mmu(dir_logica_destination, pcb, size_pag, register_origin, register_destination, OUT);
@@ -295,6 +317,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         parameter2 = list_get(instruction->parameters, 1);
         register_destination = string_to_register(parameter);
         register_origin = string_to_register(parameter2);
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", pcb->PID, t_instruction_type_string[instruction->opcode], t_register_string[register_destination], t_register_string[register_origin]);
         register_destination = register_destination + register_origin;
         pcb->PC++;
         break;
@@ -305,6 +328,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         parameter2 = list_get(instruction->parameters, 1);
         register_destination = string_to_register(parameter);
         register_origin = string_to_register(parameter2);
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", pcb->PID, t_instruction_type_string[instruction->opcode], t_register_string[register_destination], t_register_string[register_origin]);
         register_destination = register_destination - register_origin;
 
         break;
@@ -315,6 +339,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         parameter2 = list_get(instruction->parameters, 1);
         register_destination = string_to_register(parameter);
         value = atoi(parameter2);
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], t_register_string[register_destination], value);
         if (register_destination != 0)
         {
             pcb->PC = value;
@@ -323,10 +348,50 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
 
         break;
 
+   
+
+    case RESIZE_OPCODE:
+
+        parameter = list_get(instruction->parameters, 0);
+        value = atoi(parameter);
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], value);
+        // TODO: BRIAAN PEDIR A MEMORIA QUE HAGA ESTA FUNCION    
+        /*
+        message_send(RESIZE_REQUEST, "Tamanio Pag", FD_CLIENT_KERNEL_CPU_DISPATCH);
+
+        if(message_receive(FD_CLIENT_KERNEL_CPU_DISPATCH) == "Out of Memory"){
+
+            //devuelvo contexto ejecucion a kernel
+
+          
+        }              
+        */
+
+        pcb->PC++;  
+        break;
+
+        //COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
+
+    case COPY_STRING_OPCODE:
+            
+            parameter = list_get(instruction->parameters, 0);
+            value = atoi(parameter);
+            log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], value);
+
+        /*TODO:: DESARROLLAR*/
+
+        break;
+    case WAIT_OPCODE:
+
+        
+    
+
+
     case IO_GEN_SLEEP_OPCODE:
 
         interfaz = list_get(instruction->parameters, 0);
         unit_work = atoi(list_get(instruction->parameters, 1));
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Interfaz: %s - Unidad de trabajo: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], interfaz, unit_work);
         usleep(unit_work);
         pcb->PC++;
 
@@ -354,14 +419,6 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         log_error(MODULE_LOGGER, "Código %d desconocido.", instruction->opcode);
         exit(EXIT_FAILURE);
     }
-
-    /* CHEQUEAR EL TIPO DE INTERRUPCION  cuandoe ste todo desarrolado
-        if(operation != TYPE_INTERRUPT_SIN_INT){
-
-
-        }
-
-        */
 
     // TODO:::: MANDAR POR PCB EL TIPO D EINTERRUPCION DEL PROCESO
 }
@@ -519,7 +576,7 @@ t_PCB *cpu_receive_pcb(void)
         pcb = pcb_deserialize(package->payload);
         break;
     default:
-        log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
+        log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
         exit(1);
         break;
     }
@@ -548,7 +605,29 @@ t_CPU_Instruction *cpu_receive_cpu_instruction(void)
     return instruction;
 }
 
+e_Interrupt cpu_recive_interrupt_type(void)
+{
+
+    e_Interrupt interrupt;
+
+    t_Package *package = package_receive(FD_CLIENT_KERNEL_CPU_INTERRUPT);
+    switch (package->header)
+    {
+    case INTERRUPT_HEADER:
+        interrupt = interrupt_deserialize(package->payload);
+        break;
+    default:
+        log_error(SERIALIZE_LOGGER, "Header interrupt %d desconocido", package->header);
+        exit(1);
+        break;
+    }
+    package_destroy(package);
+
+    return interrupt;
+}
+
 int request_frame_memory(int page, int pid)
+
 {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
     payload_add(package->payload, &page, sizeof(int));

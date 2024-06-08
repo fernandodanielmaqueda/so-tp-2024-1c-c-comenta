@@ -35,6 +35,56 @@ typedef enum {
 } t_in_out;
 
 
+
+const char * const t_instruction_type_string[] = {
+    [SET] = "SET",
+    [MOV_IN] = "MOV_IN",
+    [MOV_OUT] = "MOV_OUT",
+    [SUM] = "SUM",
+    [SUB] = "SUB",
+    [JNZ] = "JNZ",
+    [RESIZE] = "RESIZE",
+    [COPY_STRING] = "COPY_STRING",
+    [WAIT] = "WAIT",
+    [SIGNAL] = "SIGNAL",
+    [IO_GEN_SLEEP] = "IO_GEN_SLEEP",
+    [EXIT]= "EXIT",
+    [IO_STDIN_READ] = "IO_STDIN_READ",
+    [IO_STDOUT_WRITE] = "IO_STDOUT_WRITE",
+    [IO_FS_CREATE] = "IO_FS_CREATE",`
+    [IO_FS_DELETE] = "IO_FS_DELETE",
+    [IO_FS_TRUNCATE] = "IO_FS_TRUNCATE",
+    [IO_FS_WRITE] = "IO_FS_WRITE",
+    [IO_FS_READ] = "IO_FS_READ"
+       
+   
+};
+const char * const t_register_string[] = {
+    [AX] = "AX",
+    [BX] = "BX",
+    [CX] = "CX",
+    [DX] = "DX"
+    [EAX] = "EAX",
+    [EBX] = "EBX",
+    [ECX] = "ECX",
+    [EDX] = "EDX",
+    [RAX] = "RAX",
+    [RBX] = "RBX",
+    [RCX] = "RCX",
+    [RDX] = "RDX",
+    [SI] = "SI",
+    [DI] = "DI"
+};
+
+const char * const t_interrupt_type_string[] = {
+    [TYPE_INTERRUPT_SIN_INT] = "SIN_INTERRUPCION",
+    [TYPE_INTERRUPT_FIN_PROCESO] = "INT_FIN_PROCESO",
+    [TYPE_INTERRUPT_FIN_QUANTUM] = "INT_FIN_QUANTUM",
+    
+};
+
+
+
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
 void initialize_sockets(void);
@@ -52,6 +102,7 @@ void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int 
 int request_frame_memory(int page, int pid);
 t_PCB *cpu_receive_pcb(void);
 t_CPU_Instruction *cpu_receive_cpu_instruction(void);
+e_Interrupt cpu_recive_interrupt_type(void);
 
 
 #endif /* CPU_H */
