@@ -381,6 +381,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
         /*TODO:: DESARROLLAR*/
 
         break;
+        
     case WAIT_OPCODE:
 
         

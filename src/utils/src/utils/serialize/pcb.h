@@ -46,7 +46,6 @@ typedef struct t_PCB {
     uint8_t current_state; //enum Process_State current_state;
     double arrival_READY;
     double arrival_RUNNING;
-    // enum e_Interruption_Cause;
 } t_PCB;
 
 
