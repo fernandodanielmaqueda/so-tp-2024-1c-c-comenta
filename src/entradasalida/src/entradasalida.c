@@ -8,7 +8,7 @@ char *MODULE_LOG_PATHNAME = "entradasalida.log";
 char *MODULE_CONFIG_PATHNAME = "entradasalida.config";
 
 t_log* MODULE_LOGGER;
-extern t_log *SOCKET_LOGGER;
+extern t_log *SOCKET_LOGGER;k
 t_config* MODULE_CONFIG;
 
 char *TIPO_INTERFAZ;
@@ -64,4 +64,78 @@ void initialize_sockets(void) {
 void finish_sockets(void) {
 	close(CONNECTION_KERNEL.fd_connection);
 	close(CONNECTION_MEMORY.fd_connection);
+}
+
+void* generic(t_config* config){
+	//conectar a kernel
+
+	//escuchar peticion siempre
+
+	//recibe peticion
+
+	//chequear si puede realizar instruccion
+
+		/* No puede realizar: 
+			Avisa a kernel y se hace cargo kernel
+		*/	
+	
+	//si es IO_GEN_SLEEP : gen_sleep()
+	gen_sleep(work_units, config->TIEMPO_UNIDAD_TRABAJO);
+	//avisar a kernel que ejecutó 
+
+}
+
+void gen_sleep(int work_units, int work_unit_time){
+	sleep(work_units * work_unit_time);
+}
+
+void* stdin(){
+	//conectar a kernel
+
+	//escuchar peticion siempre
+
+	//recibe peticion
+
+	//chequear si puede realizar instruccion
+
+		/* No puede realizar: 
+			Avisa a kernel y se hace cargo kernel
+		*/	
+
+	//si es IO_STDIN_READ realizarlo
+
+	//avisar a kernel
+}
+
+void IO_STDIN_READ(int direccionMemoria){
+
+	char text[30];
+	printf("Ingrese un texto: ");
+	scanf("%s",text);
+
+	//enviar el texto a memoria
+	//send_to_memory(text,direccionMemoria)
+}
+
+void* stdout(){
+	//conectar a kernel
+
+	//escuchar peticion siempre
+
+	//recibe peticion
+
+	//chequear si puede realizar instruccion
+
+		/* No puede realizar: 
+			Avisa a kernel y se hace cargo kernel
+		*/	
+
+	//si es IO_STDOUT_WRITE realizarlo
+
+	//avisar a kernel
+}
+
+void IO_STDOUT_WRITE(int direccionMemoria){
+	int dir_memoria = receive_from_memory(direccionMemoria);
+	printf("El valor hallado en la direccion de memoria es: %d", dir_memoria);
 }
