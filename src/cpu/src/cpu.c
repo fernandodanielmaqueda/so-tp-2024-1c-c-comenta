@@ -36,15 +36,14 @@ const char *t_instruction_type_string[] = {
     [WAIT_OPCODE] = "WAIT",
     [SIGNAL_OPCODE] = "SIGNAL",
     [IO_GEN_SLEEP_OPCODE] = "IO_GEN_SLEEP",
-    [EXIT_OPCODE]= "EXIT",
+    [EXIT_OPCODE] = "EXIT",
     [IO_STDIN_READ_OPCODE] = "IO_STDIN_READ",
     [IO_STDOUT_WRITE_OPCODE] = "IO_STDOUT_WRITE",
     [IO_FS_CREATE_OPCODE] = "IO_FS_CREATE",
     [IO_FS_DELETE_OPCODE] = "IO_FS_DELETE",
     [IO_FS_TRUNCATE_OPCODE] = "IO_FS_TRUNCATE",
     [IO_FS_WRITE_OPCODE] = "IO_FS_WRITE",
-    [IO_FS_READ_OPCODE] = "IO_FS_READ" 
-};
+    [IO_FS_READ_OPCODE] = "IO_FS_READ"};
 const char *t_register_string[] = {
     [AX_REGISTER] = "AX",
     [BX_REGISTER] = "BX",
@@ -59,14 +58,17 @@ const char *t_register_string[] = {
     [RCX_REGISTER] = "RCX",
     [RDX_REGISTER] = "RDX",
     [SI_REGISTER] = "SI",
-    [DI_REGISTER] = "DI"
-};
+    [DI_REGISTER] = "DI"};
+
+/*
 
 const char *t_interrupt_type_string[] = {
     [ERROR_CAUSE] = "ERROR_CAUSE",
     [SYSCALL_CAUSE] = "SYSCALL_CAUSE",
     [INTERRUPTION_CAUSE] = "INTERRUPTION_CAUSE"
 };
+
+*/
 
 int module(int argc, char *argv[])
 {
@@ -90,8 +92,8 @@ int module(int argc, char *argv[])
 void read_module_config(t_config *MODULE_CONFIG)
 {
     CONNECTION_MEMORY = (t_Connection){.client_type = CPU_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    SERVER_CPU_DISPATCH = (t_Single_Client_Server) {.server = (t_Server) {.server_type = CPU_DISPATCH_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")}};
-    SERVER_CPU_INTERRUPT = (t_Single_Client_Server) {.server = (t_Server) {.server_type = CPU_INTERRUPT_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")}};
+    SERVER_CPU_DISPATCH = (t_Single_Client_Server){.server = (t_Server){.server_type = CPU_DISPATCH_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")}};
+    SERVER_CPU_INTERRUPT = (t_Single_Client_Server){.server = (t_Server){.server_type = CPU_INTERRUPT_TYPE, .clients_type = KERNEL_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")}};
     CANTIDAD_ENTRADAS_TLB = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
     ALGORITMO_TLB = config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB");
 }
@@ -117,6 +119,8 @@ void instruction_cycle(void)
 
         // Ejecuta lo que tenga que hacer el proceso hasta que llegue la interrupcion
 
+        /*
+
         while(*interrupt == SYSCALL_CAUSE) // TYPE_INTERRUPT_SIN_INT
         {
 
@@ -130,22 +134,21 @@ void instruction_cycle(void)
 
             // CHEQUEAR EL TIPO DE INTERRUPCION
 
-            /*
+
                     if(interrupt != TYPE_INTERRUPT_SIN_INT){
 
                         if()
 
                     }
             */
-        }
-
-        // TODO :: MANDO PCB CON LA INFO DEL FIN DE PROCESO
-
-        t_Package *package = package_create_with_header(PCB_HEADER);
-        pcb_serialize(package->payload, pcb);
-        interrupt_serialize(package->payload, interrupt);
-        //package_send
     }
+
+    // TODO :: MANDO PCB CON LA INFO DEL FIN DE PROCESO
+
+    t_Package *package = package_create_with_header(PCB_HEADER);
+    pcb_serialize(package->payload, pcb);
+    interrupt_serialize(package->payload, interrupt);
+    // package_send
 }
 
 void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
@@ -269,14 +272,12 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
 
         break;
 
-   
-
     case RESIZE_OPCODE:
 
         parameter = list_get(instruction->parameters, 0);
         value = atoi(parameter);
         log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], value);
-        // TODO: BRIAAN PEDIR A MEMORIA QUE HAGA ESTA FUNCION    
+        // TODO: BRIAAN PEDIR A MEMORIA QUE HAGA ESTA FUNCION
         /*
         message_send(RESIZE_REQUEST, "Tamanio Pag", SERVER_CPU_DISPATCH.client.fd_client);
 
@@ -284,30 +285,26 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
 
             //devuelvo contexto ejecucion a kernel
 
-          
-        }              
+
+        }
         */
 
-        pcb->PC++;  
+        pcb->PC++;
         break;
 
-        //COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
+        // COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI.
 
     case COPY_STRING_OPCODE:
-            
-            parameter = list_get(instruction->parameters, 0);
-            value = atoi(parameter);
-            log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], value);
+
+        parameter = list_get(instruction->parameters, 0);
+        value = atoi(parameter);
+        log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %d ", pcb->PID, t_instruction_type_string[instruction->opcode], value);
 
         /*TODO:: DESARROLLAR*/
 
         break;
-        
+
     case WAIT_OPCODE:
-
-        
-    
-
 
     case IO_GEN_SLEEP_OPCODE:
 

@@ -43,41 +43,48 @@ bool validate_command_console(char* leido){
         case EJECUTAR_SCRIPT:
             if(strcmp(command_console[0], "EJECUTAR_SCRIPT") == 0 && string_is_empty(command_console[1]) == false){
                 result_validation = true;
+                add_history(EJECUTAR_SCRIPT);
             }
             break;
 
         case INICIAR_PROCESO:
             if(strcmp(command_console[0], "INICIAR_PROCESO") == 0  && string_is_empty(command_console[1]) == false){
                 result_validation = true;
+                add_history(INICIAR_PROCESO);
             }
             break;
 
         case FINALIZAR_PROCESO:
             if(strcmp(command_console[0], "FINALIZAR_PROCESO") == 0  && string_is_empty(command_console[1]) == false){
                 result_validation = true;
+                add_history(FINALIZAR_PROCESO);
             }
             break;
 
         case DETENER_PLANIFICACION:
             if(strcmp(command_console[0], "DETENER_PLANIFICACION") == 0 ) {
                 result_validation = true;
+                add_history(DETENER_PLANIFICACION);
             }
             break;
 
         case INICIAR_PLANIFICACION:
             if(strcmp(command_console[0], "INICIAR_PLANIFICACION") == 0 ){
                 result_validation = true;
+                add_history(INICIAR_PLANIFICACION);
             }
             break;
         case MULTIPROGRAMACION:
             if(strcmp(command_console[0], "MULTIPROGRAMACION") == 0  && string_is_empty(command_console[1]) == false){
                 result_validation = true;
+                add_history(MULTIPROGRAMACION);
             }
             break;
 
         case PROCESO_ESTADO:
             if(strcmp(command_console[0], "PROCESO_ESTADO") == 0  ){
                 result_validation = true;
+                add_history(PROCESO_ESTADO);
             }
             break;
 
