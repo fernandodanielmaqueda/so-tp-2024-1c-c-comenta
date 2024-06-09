@@ -18,11 +18,12 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
-typedef enum e_Interrupt {
-    TYPE_INTERRUPT_SIN_INT,
-    TYPE_INTERRUPT_FIN_PROCESO,
-    TYPE_INTERRUPT_FIN_QUANTUM
+typedef enum e_Interrupt { // CONTEXT_SWITCH_CAUSE
+    ERROR_CAUSE, // por ejemplo decode
+    SYSCALL_CAUSE, //incluye el EXIT
+    INTERRUPTION_CAUSE //Incluye el quantum
 } e_Interrupt;
+
 
 
 /**

@@ -60,15 +60,10 @@ const char *t_register_string[] = {
     [SI_REGISTER] = "SI",
     [DI_REGISTER] = "DI"};
 
-/*
-
 const char *t_interrupt_type_string[] = {
     [ERROR_CAUSE] = "ERROR_CAUSE",
     [SYSCALL_CAUSE] = "SYSCALL_CAUSE",
-    [INTERRUPTION_CAUSE] = "INTERRUPTION_CAUSE"
-};
-
-*/
+    [INTERRUPTION_CAUSE] = "INTERRUPTION_CAUSE"};
 
 int module(int argc, char *argv[])
 {
@@ -119,9 +114,7 @@ void instruction_cycle(void)
 
         // Ejecuta lo que tenga que hacer el proceso hasta que llegue la interrupcion
 
-        /*
-
-        while(*interrupt == SYSCALL_CAUSE) // TYPE_INTERRUPT_SIN_INT
+        while (*interrupt == SYSCALL_CAUSE) // TYPE_INTERRUPT_SIN_INT
         {
 
             log_trace(MODULE_LOGGER, "Fetch de instruccion del proceso");
@@ -134,21 +127,22 @@ void instruction_cycle(void)
 
             // CHEQUEAR EL TIPO DE INTERRUPCION
 
+            /*
+            if (interrupt != SYSCALL_CAUSE)
+            {
 
-                    if(interrupt != TYPE_INTERRUPT_SIN_INT){
-
-                        if()
-
-                    }
+                if ()
+            }
             */
+        }
+
+        // TODO :: MANDO PCB CON LA INFO DEL FIN DE PROCESO
+
+        t_Package *package = package_create_with_header(PCB_HEADER);
+        pcb_serialize(package->payload, pcb);
+        interrupt_serialize(package->payload, interrupt);
+        // package_send
     }
-
-    // TODO :: MANDO PCB CON LA INFO DEL FIN DE PROCESO
-
-    t_Package *package = package_create_with_header(PCB_HEADER);
-    pcb_serialize(package->payload, pcb);
-    interrupt_serialize(package->payload, interrupt);
-    // package_send
 }
 
 void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
