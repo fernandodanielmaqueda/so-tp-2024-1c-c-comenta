@@ -20,13 +20,6 @@ t_list* lista_procesos;
 t_list* lista_marcos;
 t_list* lista_marcos_libres;
 
-t_Server COORDINATOR_MEMORY;
-int FD_CLIENT_KERNEL;
-int FD_CLIENT_CPU;
-
-sem_t sem_coordinator_kernel_client_connected;
-sem_t sem_coordinator_cpu_client_connected;
-
 int TAM_MEMORIA;
 int TAM_PAGINA;
 char *PATH_INSTRUCCIONES;
@@ -73,100 +66,6 @@ void read_module_config(t_config* MODULE_CONFIG) {
     RETARDO_RESPUESTA = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
 }
 
-void initialize_sockets(void) {
-
-	pthread_t thread_memory_start_server;
-
-    sem_init(&sem_coordinator_kernel_client_connected, 0, 0);
-    sem_init(&sem_coordinator_cpu_client_connected, 0, 0);
-
-	// [Server] Memory <- [Cliente(s)] Entrada/Salida + Kernel + CPU
-	pthread_create(&thread_memory_start_server, NULL, memory_start_server, (void*) &COORDINATOR_MEMORY);
-
-	// Se bloquea hasta que se realicen todas las conexiones
-    sem_wait(&sem_coordinator_kernel_client_connected);
-    sem_wait(&sem_coordinator_cpu_client_connected);
-	
-}
-
-void finish_sockets(void) {
-	close(COORDINATOR_MEMORY.fd_listen);
-	close(FD_CLIENT_KERNEL);
-	close(FD_CLIENT_CPU);
-}
-
-void *memory_start_server(void *server_parameter) {
-	t_Server *server = (t_Server *) server_parameter;
-
-	int *fd_new_client;
-	pthread_t thread_new_client;
-
-	server_start(server);
-
-	while(1) {
-		fd_new_client = malloc(sizeof(int));
-		log_info(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
-		*fd_new_client = server_accept(server->fd_listen);
-
-		if(*fd_new_client == -1) {
-			log_warning(SOCKET_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
-			free(fd_new_client);
-            sleep(2);
-			continue;
-		}
-
-		log_info(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
-		pthread_create(&thread_new_client, NULL, memory_client_handler, (void*) fd_new_client);
-		pthread_detach(thread_new_client);
-	}
-
-	return NULL;
-}
-
-void *memory_client_handler(void *fd_new_client_parameter) {
-	int* fd_new_client = (int*) fd_new_client_parameter;
-
-    size_t bytes;
-
-    int32_t handshake;
-    int32_t resultOk = 0;
-    int32_t resultError = -1;
-
-    bytes = recv(*fd_new_client, &handshake, sizeof(int32_t), MSG_WAITALL);
-
-    switch((e_PortType) handshake) {
-        case KERNEL_TYPE:
-            // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
-            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] %s", "Kernel");
-            FD_CLIENT_KERNEL = *fd_new_client;
-            bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
-            sem_post(&sem_coordinator_kernel_client_connected);
-            // Lógica de manejo de cliente Kernel (crear un hilo para menejo de cliente Kernel)
-            break;
-        case CPU_TYPE:
-            // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
-            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] %s", "CPU");
-            FD_CLIENT_CPU = *fd_new_client;
-            bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
-            sem_post(&sem_coordinator_cpu_client_connected);
-            // Lógica de manejo de cliente CPU (crear un hilo para menejo de cliente CPU)
-            break;
-        case IO_TYPE:
-            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] %s", "Entrada/Salida");
-            bytes = send(*fd_new_client, &resultOk, sizeof(int32_t), 0);
-            // Lógica de manejo de cliente Entrada/Salida (crear un hilo para menejo de cliente Entrada/Salida)
-            free(fd_new_client);
-            break;
-        default:
-            log_warning(SOCKET_LOGGER, "Error Handshake con [Cliente] %s", "No reconocido");
-            bytes = send(*fd_new_client, &resultError, sizeof(int32_t), 0);
-            free(fd_new_client);
-            break;
-    }
-
-    return NULL;
-}
-
 void listen_kernel(int fd_kernel) {
     while(1) {
         e_Header header = 0; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
@@ -195,48 +94,48 @@ void listen_kernel(int fd_kernel) {
 
 void create_process(int socketRecibido) {
 
-    t_process* nuevo_proceso; // = malloc(sizeof(t_process));
-    t_list* lista_instrucciones = list_create();
-    t_list* tabla_paginas = list_create();
+    t_Process *new_process; // = malloc(sizeof(t_Process));
+    t_list* instructions_list = list_create();
+    t_list* pages_table = list_create();
 
     //Leo los valores recibidos por parametro
     t_list *lista_elememtos = NULL; //t_list *lista_elememtos = get_package_like_list(socketRecibido);
     int cursor = 0;
-    nuevo_proceso->nombre = string_duplicate(list_get(lista_elememtos, ++cursor));
-    nuevo_proceso->PID = *(int *)list_get(lista_elememtos, ++cursor);
+    new_process->name = string_duplicate(list_get(lista_elememtos, ++cursor));
+    new_process->PID = *(int *)list_get(lista_elememtos, ++cursor);
     list_destroy_and_destroy_elements(lista_elememtos, &free);
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
     string_append(&path_buscado, "/");
-    string_append(&path_buscado, nuevo_proceso->nombre);
+    string_append(&path_buscado, new_process->name);
     log_debug(MODULE_LOGGER, "Archivo Buscado: %s", path_buscado);
 
     //CREAR LISTA INST CON EL PARSER
-    parser_file(path_buscado,lista_instrucciones);
+    parser_file(path_buscado, instructions_list);
 
-    nuevo_proceso->cantidadInstrucciones = list_size(lista_instrucciones);
-    nuevo_proceso->lista_instrucciones = lista_instrucciones;
-    nuevo_proceso->tabla_paginas = tabla_paginas;
-    list_add(lista_procesos,nuevo_proceso);
+    new_process->number_of_instructions = list_size(instructions_list);
+    new_process->instructions_list = instructions_list;
+    new_process->pages_table = pages_table;
+    list_add(lista_procesos, new_process);
     
     log_debug(MODULE_LOGGER, "Archivo leido: %s", path_buscado);
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el PID del proceso origen
-    //message_send(PROCESS_CREATED, string_itoa(nuevo_proceso->PID), FD_CLIENT_KERNEL);
+    //message_send(PROCESS_CREATED, string_itoa(new_process->PID), FD_CLIENT_KERNEL);
     
 }
 
 void kill_process (int socketRecibido){
     int pid = 0; //int pid = atoi(message_receive(socketRecibido));
-    t_process* proceso = seek_process_by_pid(pid);
-    t_page* paginaBuscada;
+    t_Process* process = seek_process_by_pid(pid);
+    t_Page* paginaBuscada;
     
-    int size = list_size(proceso->tabla_paginas);
+    int size = list_size(process->pages_table);
     for (size_t i = size; i == 0 ; i--)
     {
-        paginaBuscada = list_get(proceso->tabla_paginas, i);
-        t_marco* marco = list_get(lista_marcos, paginaBuscada->marco_asignado);
+        paginaBuscada = list_get(process->pages_table, i);
+        t_Frame *marco = list_get(lista_marcos, paginaBuscada->assigned_frame);
         list_add(lista_marcos_libres, marco);
         free(paginaBuscada);
     }
@@ -322,9 +221,9 @@ void listen_cpu(int fd_cpu) {
     }
 }
 
-t_process* seek_process_by_pid(int pidBuscado) {
+t_Process* seek_process_by_pid(int pidBuscado) {
 
-    t_process* procesoBuscado;
+    t_Process* procesoBuscado;
     int size= list_size(lista_procesos);
 
     procesoBuscado = list_get(lista_procesos,0); //SUPONEMOS QUE SIEMPRE ENCUENTRA EL PID
@@ -347,9 +246,9 @@ void seek_instruccion(int socketRecibido) {
     list_destroy_and_destroy_elements(lista_elememtos, &free);
 
     
-    t_process* procesoBuscado = seek_process_by_pid(pid);
+    t_Process* procesoBuscado = seek_process_by_pid(pid);
     //Suponemos que la instruccion es encontrada siempre
-    t_CPU_Instruction* instruccionBuscada = list_get(procesoBuscado->lista_instrucciones,pc);
+    t_CPU_Instruction* instruccionBuscada = list_get(procesoBuscado->instructions_list, pc);
 
     usleep(RETARDO_RESPUESTA * 1000);
     cpu_instruction_send(instruccionBuscada, FD_CLIENT_CPU);
@@ -364,10 +263,10 @@ void create_marcos(){
 
     for (size_t i = 0; i < cantidad_marcos; i++)
     {
-        t_marco* marcoNuevo = malloc(sizeof(t_marco));
-        marcoNuevo->marco_id=i;
-        marcoNuevo->pagina_asignada=NULL;
-        marcoNuevo->PID= -1;
+        t_Frame *marcoNuevo = malloc(sizeof(t_Frame));
+        marcoNuevo->id = i;
+        marcoNuevo->assigned_page = NULL;
+        marcoNuevo->PID = -1;
         list_add(lista_marcos, marcoNuevo);
         list_add(lista_marcos_libres, marcoNuevo);
     }
@@ -376,7 +275,7 @@ void create_marcos(){
 
 void free_marcos(){
     int cantidad_marcos = list_size(lista_marcos);
-    t_marco* marco_liberar;
+    t_Frame *marco_liberar;
 
     for (size_t i = cantidad_marcos; i == 0; i--)
     {
@@ -395,38 +294,36 @@ void respond_frame_request(int socketRecibido){
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
 
 //Buscar frame
-    t_process* procesoBuscado = seek_process_by_pid(pidProceso);
-    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->tabla_paginas, pageBuscada);
+    t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
+    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
     t_Package* package = package_create_with_header(FRAME_REQUEST);
-    payload_add(package->payload, &pidProceso, sizeof(int));
-    payload_add(package->payload, &marcoEncontrado, sizeof(int));
+    payload_enqueue(package->payload, &pidProceso, sizeof(int));
+    payload_enqueue(package->payload, &marcoEncontrado, sizeof(int));
     package_send(package, FD_CLIENT_CPU);
 }
 
-int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina){
-    t_page* paginaBuscada;
+int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
+    t_Page* paginaBuscada;
     int marcoObjetivo = -1;
     int size= list_size(tablaPaginas);
-    for (size_t i = 0; i < size ; i++)
-    {
-        paginaBuscada=list_get(tablaPaginas, i);
-        if(paginaBuscada->nro_pagina == pagina){
-            marcoObjetivo = paginaBuscada->marco_asignado;
-            i= size+1;
+    for(size_t i = 0; i < size ; i++) {
+        paginaBuscada = list_get(tablaPaginas, i);
+        if(paginaBuscada->number == pagina) {
+            marcoObjetivo = paginaBuscada->assigned_frame;
+            i = size + 1;
         }
     }
 
     return marcoObjetivo;
 }
 
-void read_memory(int socketRecibido){
-    t_list* parametros = NULL; // t_list* parametros = get_package_like_list(socketRecibido);
-    int dir_fisica = *(int *)list_get(parametros,0);
-    int pidBuscado = *(int *)list_get(parametros,1);
-
+void read_memory(int socketRecibido) {
+    t_list *parametros = NULL; // t_list* parametros = get_package_like_list(socketRecibido);
+    int dir_fisica = *(int *) list_get(parametros,0);
+    int pidBuscado = *(int *) list_get(parametros,1);
 }
 
 

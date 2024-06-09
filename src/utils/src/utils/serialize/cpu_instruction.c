@@ -12,24 +12,24 @@ void cpu_instruction_send(t_CPU_Instruction *instruction, int fd_socket) {
 
 void cpu_instruction_serialize(t_Payload *payload, t_CPU_Instruction *instruction) {
     /*
-    payload_add(payload, &(instruction->opcode), sizeof(instruction->opcode));
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
-    payload_add(payload, &(), sizeof());
+    payload_enqueue(payload, &(instruction->opcode), sizeof(instruction->opcode));
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
+    payload_enqueue(payload, &(), sizeof());
     */
 }
 

@@ -18,12 +18,6 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
-typedef enum e_Interruption_Cause { // CONTEXT_SWITCH_CAUSE
-    ERROR_CAUSE, // por ejemplo decode 
-    SYSCALL_CAUSE, //incluye el EXIT
-    INTERRUPTION_CAUSE //Incluye el quantum
-} e_Interruption_Cause;
-
 typedef struct t_PCB {
     uint32_t PID;
     uint32_t PC;

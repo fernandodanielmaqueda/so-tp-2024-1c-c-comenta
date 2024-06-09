@@ -11,26 +11,26 @@ void pcb_send(t_PCB *pcb, int fd_socket) {
 }
 
 void pcb_serialize(t_Payload *payload, t_PCB *pcb) {
-  payload_add(payload, &(pcb->PID), sizeof(pcb->PID));
-  payload_add(payload, &(pcb->PC), sizeof(pcb->PC));
-  payload_add(payload, &(pcb->AX), sizeof(pcb->AX));
-  payload_add(payload, &(pcb->BX), sizeof(pcb->BX));
-  payload_add(payload, &(pcb->CX), sizeof(pcb->CX));
-  payload_add(payload, &(pcb->DX), sizeof(pcb->DX));
-  payload_add(payload, &(pcb->EAX), sizeof(pcb->EAX));
-  payload_add(payload, &(pcb->EBX), sizeof(pcb->EBX));
-  payload_add(payload, &(pcb->ECX), sizeof(pcb->ECX));
-  payload_add(payload, &(pcb->EDX), sizeof(pcb->EDX));
-  payload_add(payload, &(pcb->RAX), sizeof(pcb->RAX));
-  payload_add(payload, &(pcb->RBX), sizeof(pcb->RBX));
-  payload_add(payload, &(pcb->RCX), sizeof(pcb->RCX));
-  payload_add(payload, &(pcb->RDX), sizeof(pcb->RDX));
-  payload_add(payload, &(pcb->SI), sizeof(pcb->SI));
-  payload_add(payload, &(pcb->DI), sizeof(pcb->DI));
-  payload_add(payload, &(pcb->quantum), sizeof(pcb->quantum));
-  payload_add(payload, &(pcb->current_state), sizeof(pcb->current_state));
-  payload_add(payload, &(pcb->arrival_READY), sizeof(pcb->arrival_READY));
-  payload_add(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
+  payload_enqueue(payload, &(pcb->PID), sizeof(pcb->PID));
+  payload_enqueue(payload, &(pcb->PC), sizeof(pcb->PC));
+  payload_enqueue(payload, &(pcb->AX), sizeof(pcb->AX));
+  payload_enqueue(payload, &(pcb->BX), sizeof(pcb->BX));
+  payload_enqueue(payload, &(pcb->CX), sizeof(pcb->CX));
+  payload_enqueue(payload, &(pcb->DX), sizeof(pcb->DX));
+  payload_enqueue(payload, &(pcb->EAX), sizeof(pcb->EAX));
+  payload_enqueue(payload, &(pcb->EBX), sizeof(pcb->EBX));
+  payload_enqueue(payload, &(pcb->ECX), sizeof(pcb->ECX));
+  payload_enqueue(payload, &(pcb->EDX), sizeof(pcb->EDX));
+  payload_enqueue(payload, &(pcb->RAX), sizeof(pcb->RAX));
+  payload_enqueue(payload, &(pcb->RBX), sizeof(pcb->RBX));
+  payload_enqueue(payload, &(pcb->RCX), sizeof(pcb->RCX));
+  payload_enqueue(payload, &(pcb->RDX), sizeof(pcb->RDX));
+  payload_enqueue(payload, &(pcb->SI), sizeof(pcb->SI));
+  payload_enqueue(payload, &(pcb->DI), sizeof(pcb->DI));
+  payload_enqueue(payload, &(pcb->quantum), sizeof(pcb->quantum));
+  payload_enqueue(payload, &(pcb->current_state), sizeof(pcb->current_state));
+  payload_enqueue(payload, &(pcb->arrival_READY), sizeof(pcb->arrival_READY));
+  payload_enqueue(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
 }
 
 t_PCB *pcb_deserialize(t_Payload *payload) {

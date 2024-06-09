@@ -25,27 +25,27 @@ typedef enum e_Function {
 } e_Function;
 
 typedef enum e_Register {
-	AX,
-	BX,
-	CX,
-	DX,
-    EAX,
-    EBX,
-    ECX,
-    EDX,
-    RAX,
-    RBX,
-    RCX,
-    SI,
-    DI
+	AX_REGISTER,
+	BX_REGISTER,
+	CX_REGISTER,
+	DX_REGISTER,
+    EAX_REGISTER,
+    EBX_REGISTER,
+    ECX_REGISTER,
+    EDX_REGISTER,
+    RAX_REGISTER,
+    RBX_REGISTER,
+    RCX_REGISTER,
+    RDX_REGISTER,
+    SI_REGISTER,
+    DI_REGISTER
 } e_Register;
 
 typedef struct t_TLB {
 	int PID;
-	int nro_page;
+	int page_number;
 	int frame;
     int time; //para el LRU
-	
 } t_TLB;
 
 

@@ -18,6 +18,11 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
+typedef enum e_Interrupt {
+    TYPE_INTERRUPT_SIN_INT,
+    TYPE_INTERRUPT_FIN_PROCESO,
+    TYPE_INTERRUPT_FIN_QUANTUM
+} e_Interrupt;
 
 
 /**

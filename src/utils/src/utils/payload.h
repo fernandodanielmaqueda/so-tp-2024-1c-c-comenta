@@ -24,7 +24,7 @@ void payload_destroy(t_Payload *payload);
  * @param data Datos a agregar
  * @param dataSize Tamaño de los datos a agregar.
  */
-void payload_add(t_Payload *payload, void *data, size_t dataSize);
+void payload_enqueue(t_Payload *payload, void *data, size_t dataSize);
 
 size_t memcpy_destination_offset(void *destination, size_t offset, void *source, size_t bytes);
 size_t memcpy_source_offset(void *destination, void *source, size_t offset, size_t bytes);
