@@ -169,7 +169,7 @@ void *short_term_scheduler(void *parameter) {
 			pcb = RR_scheduling_algorithm();
 
 	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
-			//pthread_join(&thread_interrupt, NULL);
+			//pthread_detach(&thread_interrupt, NULL);
 		} else {
 			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
 		}
@@ -194,9 +194,6 @@ t_PCB *FIFO_scheduling_algorithm(void) {
 t_PCB *RR_scheduling_algorithm(void ){
 	
 	t_PCB *pcb;
-
-    while(1)
-    {
 		
        if(list_size(LIST_READY) > 0) {
             pcb = (t_PCB*)list_get(LIST_READY, 0);
@@ -207,10 +204,13 @@ t_PCB *RR_scheduling_algorithm(void ){
            // log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: NEW - Estado Actual: READY", pcb->id);
             //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
         }
-    }
+
 		return pcb;
 }
 
+t_PCB *VRR_scheduling_algorithm(void){
+
+}
 
 void *receptor_mensajes_cpu(void *parameter) {
 	// Package *package;
