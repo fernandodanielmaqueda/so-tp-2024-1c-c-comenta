@@ -73,7 +73,7 @@ extern int pidContador;
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
-void switch_process_state(t_PCB* pcb, int new_state);
+void switch_process_state(t_PCB* pcb, int new_state) ;
 t_PCB *create_pcb();
 void initialize_long_term_scheduler(void);
 void initialize_short_term_scheduler(void);
@@ -86,6 +86,8 @@ t_PCB *RR_scheduling_algorithm(void);
 void *receptor_mensajes_cpu(void*);
 int current_time(void);
 int asignar_PID();
-void* start_quantum(void* arg);
+void* start_quantum_VRR(t_PCB *pcb);
+void* start_quantum();
+void listen_cpu(int fd_cpu) ;
 
 #endif /* KERNEL_H */

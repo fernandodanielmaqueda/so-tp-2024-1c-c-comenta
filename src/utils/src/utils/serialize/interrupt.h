@@ -24,6 +24,8 @@ typedef enum e_Interrupt { // CONTEXT_SWITCH_CAUSE
     INTERRUPTION_CAUSE //Incluye el quantum
 } e_Interrupt;
 
+
+
 /**
  * @brief Enviar interrupt (incluye el serializado)
  * @param interrupt t_Interrupt a enviar.

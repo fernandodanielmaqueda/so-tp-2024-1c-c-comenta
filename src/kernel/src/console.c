@@ -77,7 +77,7 @@ int execute_line(char *line) {
 
         if(!line[i])
             break;
-        
+
         arg = line + i;
         argv[argc++] = arg;
 

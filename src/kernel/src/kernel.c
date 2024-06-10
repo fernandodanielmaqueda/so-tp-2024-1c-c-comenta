@@ -17,6 +17,7 @@ t_list *LIST_READY;
 t_list *LIST_EXECUTING;
 t_list *LIST_BLOCKED;
 t_list *LIST_EXIT;
+t_list *priority_list;
 
 pthread_mutex_t mutex_PID;
 pthread_mutex_t mutex_LIST_NEW;
@@ -91,6 +92,7 @@ int module(int argc, char *argv[]) {
 	LIST_EXECUTING = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
+	priority_list = list_create();
 
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();
@@ -170,7 +172,7 @@ void *short_term_scheduler(void *parameter) {
 			pcb = RR_scheduling_algorithm();
 
 	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
-			//pthread_join(&thread_interrupt, NULL);
+			//pthread_detach(&thread_interrupt, NULL);
 		} else {
 			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
 		}
@@ -195,9 +197,6 @@ t_PCB *FIFO_scheduling_algorithm(void) {
 t_PCB *RR_scheduling_algorithm(void ){
 	
 	t_PCB *pcb;
-
-    while(1)
-    {
 		
        if(list_size(LIST_READY) > 0) {
             pcb = (t_PCB*)list_get(LIST_READY, 0);
@@ -206,12 +205,55 @@ t_PCB *RR_scheduling_algorithm(void ){
         else if(list_size(LIST_NEW) > 0) {
             pcb = (t_PCB*)list_get(LIST_NEW, 0);
            // log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: NEW - Estado Actual: READY", pcb->id);
-            //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
+           //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
         }
-    }
+
 		return pcb;
 }
 
+t_PCB *VRR_scheduling_algorithm(void){
+  /*if(){
+	priority_list
+  }
+  else {
+	RR_scheduling_algorithm();
+  }
+  return pcb; */
+}
+
+/*
+void listen_cpu(int fd_cpu) {
+    while(1) {
+        e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
+        switch (memory_request) {
+            case INSTRUCTION_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
+                seek_instruccion(fd_cpu);
+                break;
+                
+            case FRAME_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
+                respond_frame_request(fd_cpu);
+                break;
+
+            /*
+            case DISCONNECTION_HEADERCODE:
+                log_warning(MODULE_LOGGER, "Se desconecto CPU.");
+                log_destroy(MODULE_LOGGER);
+                return;
+            
+                
+            case PAGE_SIZE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
+                //message_send(PAGE_SIZE_REQUEST, string_itoa(TAM_PAGINA),FD_CLIENT_CPU);
+                break;
+            
+            default:
+                log_warning(MODULE_LOGGER, "Operacion desconocida..");
+                break;
+            }
+    }
+} */ //tomar como inspiración para la función de abajo
 
 void *receptor_mensajes_cpu(void *parameter) {
 	// Package *package;
@@ -519,7 +561,19 @@ void send_interrupt(int socket)
     send(socket, &dummy, sizeof(dummy), 0);
 }
 
-void* start_quantum(void* arg)
+
+void* start_quantum_VRR(t_PCB *pcb)
+{
+    log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
+    usleep(pcb->quantum * 1000); //en milisegundos
+    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+
+	return NULL;
+}
+
+
+void* start_quantum()
 {
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(QUANTUM * 1000); //en milisegundos
@@ -528,6 +582,4 @@ void* start_quantum(void* arg)
 
 	return NULL;
 }
-
-
 
