@@ -52,5 +52,9 @@ void cpu_memory_request_serialize(t_Payload *payload, e_CPU_Memory_Request *memo
 e_CPU_Memory_Request *cpu_memory_request_deserialize(t_Payload *payload);
 
 void cpu_memory_request_print(e_CPU_Memory_Request *memory_request);
+void send_string(char* mensaje, int socket, int opcod);
+void send_int(int nro, int socket, int opcod);
+void send_2int(int nro, int nro2, int socket, int opcod);
+void send_String_1int(int nro, char* mensaje, int socket, int opcod);
 
 #endif // SERIALIZE_CPU_MEMORY_REQUEST_H

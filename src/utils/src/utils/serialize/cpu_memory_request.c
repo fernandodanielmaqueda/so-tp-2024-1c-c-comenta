@@ -37,3 +37,36 @@ void cpu_memory_request_print(e_CPU_Memory_Request *memory_request) {
     *memory_request
   );
 }
+
+
+void send_string(char* mensaje, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, mensaje, strlen(mensaje)+1 );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+
+void send_int(int nro, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, nro, sizeof(int) );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+void send_2int(int nro, int nro2, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, nro, sizeof(int) );
+    payload_enqueue(package->payload, nro2, sizeof(int) );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+void send_String_1int(int nro, char* mensaje, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, strlen(mensaje)+1, sizeof(int) );
+    payload_enqueue(package->payload, mensaje, strlen(mensaje)+1 );
+    payload_enqueue(package->payload, nro, sizeof(int) );
+  package_send(package, socket);
+  package_destroy(package);
+}
