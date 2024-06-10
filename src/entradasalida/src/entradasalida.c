@@ -27,7 +27,7 @@ int module(int argc, char* argv[]) {
 	initialize_configs();
     initialize_sockets();
 
-    log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+    log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	//finish_threads();
 	finish_sockets();

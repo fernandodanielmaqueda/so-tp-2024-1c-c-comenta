@@ -22,12 +22,11 @@
 #include "utils/module.h"
 #include "utils/socket.h"
 
-#define MAX_CONSOLE_ARGS 3
+#define MAX_CONSOLE_ARGC 2 // 1 para el nombre del comando + 1 para el argumento
 
 typedef struct t_Command {
     char *name;
     int (*function) (int, char*[]);
-    char *explanation;
 } t_Command;
 
 extern t_Command CONSOLE_COMMANDS[];
@@ -36,8 +35,11 @@ extern t_log *CONSOLE_LOGGER;
 extern char *CONSOLE_LOG_PATHNAME;
 
 void *initialize_kernel_console(void *argument);
+void initialize_readline(void);
+char **console_completion(const char *text, int start, int end);
+char *command_generator(const char *text, int state);
 char *strip_whitespaces(char *string);
-int execute_line(char *line);
+void execute_line(char *line);
 t_Command *find_command (char *name);
 int kernel_command_run_script(int argc, char* argv[]);
 int kernel_command_start_process(int argc, char* argv[]);

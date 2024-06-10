@@ -53,7 +53,7 @@ int module(int argc, char *argv[]) {
 
 	initialize_loggers();
 	initialize_configs();
-	//initialize_sockets();
+	initialize_sockets();
 	pidContador = 0;
 	
 	t_PCB pcb = {
@@ -74,14 +74,14 @@ int module(int argc, char *argv[]) {
         .SI = 500,
         .DI = 600,
         .quantum = 2,
-        .current_state = NEW,
+        .current_state = NEW_STATE,
         .arrival_READY = 123.456,
         .arrival_RUNNING = 789.012
     };
 
-	//pcb_print(&pcb);
-	//pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
-	//log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+	pcb_print(&pcb);
+	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	
 	sem_init(&sem_long_term_scheduler, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);
@@ -150,7 +150,7 @@ void *long_term_scheduler(void *parameter) {
 
 		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
 
-	     switch_process_state(pcb, READY);
+	     switch_process_state(pcb, READY_STATE);
 		
 	}
 
@@ -177,7 +177,7 @@ void *short_term_scheduler(void *parameter) {
 			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
 		}
 
-		switch_process_state(pcb, EXECUTING);
+		switch_process_state(pcb, EXECUTING_STATE);
 
 		//FALTA SERIALIZAR PCB
 		//FALTA ENVIAR PAQUETE A CPU
@@ -372,19 +372,19 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	}
 
 	switch (previous_state){ //! ESTADO ANTERIOR
-		case NEW:
+		case NEW_STATE:
 			global_previous_state="NEW";
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_remove_by_condition(LIST_NEW, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 			break;
-		case READY:
+		case READY_STATE:
 			global_previous_state="READY";
 			pthread_mutex_lock(&mutex_LIST_READY);
 			list_remove_by_condition(LIST_READY, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			break;
-		case EXECUTING:
+		case EXECUTING_STATE:
 		{
 			global_previous_state="EXECUTING";
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
@@ -392,7 +392,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
 			break;
 		}
-		case BLOCKED:
+		case BLOCKED_STATE:
 		{
 			global_previous_state="BLOCKED";
 			pthread_mutex_lock(&mutex_LIST_BLOCKED);
@@ -404,7 +404,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 
 
 	switch(new_state){ // ! ESTADO NUEVO
-		case NEW:
+		case NEW_STATE:
 		{
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_add(LIST_NEW, pcb);
@@ -414,7 +414,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			sem_post(&sem_long_term_scheduler);
 			break;
 		}
-		case READY:
+		case READY_STATE:
 		{
 			pcb -> arrival_READY = current_time();
 
@@ -426,7 +426,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			
 			break;
 		}
-		case EXECUTING:
+		case EXECUTING_STATE:
 		{
 			pcb -> arrival_RUNNING = current_time();
 			
@@ -437,7 +437,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	
 			break;
 		}
-		case BLOCKED:
+		case BLOCKED_STATE:
 		{
 			pthread_mutex_lock(&mutex_LIST_BLOCKED);
 			list_add(LIST_BLOCKED, pcb);
@@ -449,7 +449,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			break;
 		}
 		//Todos los casos de salida de un proceso.
-		case EXIT:
+		case EXIT_STATE:
 		{
 			
 			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);

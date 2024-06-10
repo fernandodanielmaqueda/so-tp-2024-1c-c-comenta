@@ -37,7 +37,7 @@ int module(int argc, char* argv[]) {
 
     initialize_sockets();
 
-    log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+    log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
  
  /*   
     pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)FD_CLIENT_CPU);

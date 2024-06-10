@@ -51,7 +51,7 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter)
 
     while (1) {
         while (1) {
-            log_info(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+            log_trace(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
             client->fd_client = server_accept(server->fd_listen);
 
             if (client->fd_client != -1)
@@ -63,7 +63,7 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter)
             }
         }
 
-        log_info(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+        log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 
         bytes = recv(client->fd_client, &handshake, sizeof(t_Handshake), MSG_WAITALL);
 
@@ -103,7 +103,7 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter)
         }
     }
 
-    log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] %s", "Kernel");
+    log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
     handshake = 0;
     bytes = send(client->fd_client, &handshake, sizeof(t_Handshake), 0);
 

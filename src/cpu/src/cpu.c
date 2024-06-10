@@ -72,7 +72,7 @@ int module(int argc, char *argv[])
     initialize_configs();
     initialize_sockets();
 
-    log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+    log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
     instruction_cycle();
 
@@ -312,7 +312,7 @@ void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
 
     case EXIT_OPCODE:
 
-        pcb->current_state = EXIT;
+        pcb->current_state = EXIT_STATE;
         // Saco de la TLB
         for (int i = list_size(tlb) - 1; i >= 0; i--)
         {

@@ -6,11 +6,11 @@
 
 #include <stdint.h>
 typedef enum e_Process_State {
-    NEW,
-    READY,
-    EXECUTING,
-    BLOCKED, 
-	EXIT
+    NEW_STATE,
+    READY_STATE,
+    EXECUTING_STATE,
+    BLOCKED_STATE, 
+	EXIT_STATE
 } e_Process_State;
 
 typedef enum e_Register {

@@ -42,7 +42,7 @@ void *memory_start_server(void *server_parameter) {
 
 	while(1) {
 		fd_new_client = malloc(sizeof(int));
-		log_info(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_trace(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		*fd_new_client = server_accept(server->fd_listen);
 
 		if(*fd_new_client == -1) {
@@ -51,7 +51,7 @@ void *memory_start_server(void *server_parameter) {
 			continue;
 		}
 
-		log_info(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		pthread_create(&thread_new_client, NULL, memory_client_handler, (void*) fd_new_client);
 		pthread_detach(thread_new_client);
 	}
@@ -89,7 +89,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
     switch((e_PortType) handshake) {
         case KERNEL_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
-            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
+            log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
             handshake = 0;
             bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
 
@@ -112,7 +112,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             return NULL;
         case CPU_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
-            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
+            log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
             handshake = 0;
             bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
 
@@ -134,7 +134,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             // Lógica de manejo de cliente CPU (crear un hilo para menejo de cliente CPU)
             return NULL;
         case IO_TYPE:
-            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
+            log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
             handshake = 0;
             bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
 
