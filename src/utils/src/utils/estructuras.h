@@ -13,17 +13,6 @@ typedef enum e_Process_State {
 	EXIT
 } e_Process_State;
 
-//Estructuras que necesita la consola para entender las palabras
-typedef enum e_Function {
-    INICIAR_PROCESO,
-    FINALIZAR_PROCESO,
-    DETENER_PLANIFICACION,
-    INICIAR_PLANIFICACION,
-    MULTIPROGRAMACION,
-    PROCESO_ESTADO,
-    EJECUTAR_SCRIPT
-} e_Function;
-
 typedef enum e_Register {
 	AX_REGISTER,
 	BX_REGISTER,

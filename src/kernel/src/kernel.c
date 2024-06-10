@@ -4,12 +4,12 @@
 #include "kernel.h"
 
 char *MODULE_NAME = "kernel";
-char *MODULE_LOG_PATHNAME = "kernel.log";
-char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
 t_log *MODULE_LOGGER;
-extern t_log *SOCKET_LOGGER;
+char *MODULE_LOG_PATHNAME = "kernel.log";
+
 t_config *MODULE_CONFIG;
+char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
 // Listas globales de estados
 t_list *LIST_NEW;
@@ -27,9 +27,10 @@ pthread_mutex_t mutex_LIST_EXIT;
 
 //consola interactiva
 pthread_mutex_t mutex_pid_detected;
-int identifier_pid=1;
+int identifier_pid = 1;
 //
 
+pthread_t THREAD_CONSOLE;
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
@@ -47,13 +48,11 @@ char **RESOURCE_INSTANCES;
 int MULTIPROGRAMMING_LEVEL;
 int pidContador;
 
-size_t bytes;
-
 int module(int argc, char *argv[]) {
 
 	initialize_loggers();
 	initialize_configs();
-	initialize_sockets();
+	//initialize_sockets();
 	pidContador = 0;
 	
 	t_PCB pcb = {
@@ -79,11 +78,9 @@ int module(int argc, char *argv[]) {
         .arrival_RUNNING = 789.012
     };
 
-	pcb_print(&pcb);
-	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
-	log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
-
-	initialize_interactive_console();
+	//pcb_print(&pcb);
+	//pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+	//log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	
 	sem_init(&sem_long_term_scheduler, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);
@@ -99,6 +96,10 @@ int module(int argc, char *argv[]) {
 	initialize_long_term_scheduler();
 	initialize_short_term_scheduler();
 	initialize_cpu_command_line_interface();
+
+	initialize_kernel_console(NULL);
+	//pthread_create(&THREAD_CONSOLE, NULL, initialize_kernel_console, NULL);
+	//pthread_join(THREAD_CONSOLE, NULL);
 
 	//finish_threads();
 	finish_sockets();
