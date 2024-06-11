@@ -7,8 +7,7 @@ t_Single_Client_Server SERVER_CPU_DISPATCH;
 t_Single_Client_Server SERVER_CPU_INTERRUPT;
 t_Connection CONNECTION_MEMORY;
 
-void initialize_sockets(void)
-{
+void initialize_sockets(void) {
     pthread_t thread_cpu_dispatch_start_server_for_kernel;
     pthread_t thread_cpu_interrupt_start_server_for_kernel;
     pthread_t thread_cpu_connect_to_memory;
@@ -26,8 +25,7 @@ void initialize_sockets(void)
     pthread_join(thread_cpu_connect_to_memory, NULL);
 }
 
-void finish_sockets(void)
-{
+void finish_sockets(void) {
     close(SERVER_CPU_DISPATCH.server.fd_listen);
     close(SERVER_CPU_DISPATCH.client.fd_client);
 
@@ -37,8 +35,7 @@ void finish_sockets(void)
     close(CONNECTION_MEMORY.fd_connection);
 }
 
-void *cpu_start_server_for_kernel(void *single_client_server_parameter)
-{
+void *cpu_start_server_for_kernel(void *single_client_server_parameter) {
     t_Single_Client_Server *single_client_server = (t_Single_Client_Server *) single_client_server_parameter;
     t_Server *server = &(single_client_server->server);
     t_Client *client = &(single_client_server->client);

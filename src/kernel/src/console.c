@@ -169,8 +169,6 @@ t_Command *find_command (char *name) {
     return NULL;
 }
 
-//initialize_readline
-
 int kernel_command_run_script(int argc, char* argv[]) {
 
     if(argc != 2) {
@@ -179,6 +177,8 @@ int kernel_command_run_script(int argc, char* argv[]) {
     }
 
     log_trace(CONSOLE_LOGGER, "EJECUTAR_SCRIPT %s", argv[1]);
+
+    // TODO: Implementación
 
     return 0;    
 }
@@ -192,6 +192,8 @@ int kernel_command_start_process(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
 
+    // TODO: Implementación
+
     return 0;
 }
 
@@ -203,6 +205,8 @@ int kernel_command_kill_process(int argc, char* argv[]) {
     }
 
     log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
+
+    // TODO: Implementación
 
     return 0;
 }
@@ -216,6 +220,8 @@ int kernel_command_stop_scheduling(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION");
 
+    // TODO: Implementación
+
     return 0;
 }
 
@@ -227,6 +233,8 @@ int kernel_command_start_scheduling(int argc, char* argv[]) {
     }
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION");
+
+    // TODO: Implementación
 
     return 0;
 }
@@ -240,6 +248,8 @@ int kernel_command_multiprogramming(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "MULTIPROGRAMACION %s", argv[1]);
 
+    // TODO: Implementación
+
     return 0;
 }
 
@@ -251,6 +261,8 @@ int kernel_command_process_states(int argc, char* argv[]) {
     }
 
     log_trace(CONSOLE_LOGGER, "PROCESO_ESTADO");
+
+    // TODO: Implementación
 
     return 0;
 }
