@@ -21,6 +21,7 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
+#include <commons/temporal.h>
 #include "utils/module.h"
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
@@ -82,7 +83,9 @@ void *long_term_scheduler(void*);
 void *short_term_scheduler(void*);
 t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
-//t_PCB *VRR_scheduling_algorithm(void* arg);
+t_PCB *VRR_scheduling_algorithm(void);
+t_PCB *kernel_get_normal_list(void);
+t_PCB *kernel_get_priority_list(void);
 void *receptor_mensajes_cpu(void*);
 int current_time(void);
 int asignar_PID();

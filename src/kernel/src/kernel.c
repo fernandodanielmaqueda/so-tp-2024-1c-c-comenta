@@ -11,7 +11,7 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
-//t_temporal *var_temp_quantum = NULL;
+t_temporal *var_temp_quantum = NULL;
 
 // Listas globales de estados
 t_list *LIST_NEW;
@@ -221,25 +221,22 @@ PROBLEMAS.
 
 1- EN QUE MOMENTO SE ACTUALIZA EL QUANTUM
 2- EL PCB DONDE SE LO PASO?
-
-
-
 */
-/*
 
-pcb *kernel_get_priority_list(void) { //como sacar el pcb de las listas?
+
+t_PCB *kernel_get_priority_list(void) { //como sacar el pcb de las listas?
 	// ponele que puede ser un list_get
 }
 
-pcb *kernel_get_normal_list(void) {
+t_PCB *kernel_get_normal_list(void) {
 	
 }
-*/
-/*
+
+
 t_PCB *VRR_scheduling_algorithm(void){
 	t_PCB *pcb;
 
-	sem_wait(process_ready);
+	sem_wait(&process_ready);
 
 	pcb = kernel_get_priority_list();
 
@@ -247,10 +244,12 @@ t_PCB *VRR_scheduling_algorithm(void){
 
 		pcb = kernel_get_normal_list();
 	}
+	
 
 	// Mandar el PCB a CPU
 
 //ACA CREAR  UN HILO... REVISDR
+/*
 	switch(pcb->interrupt_cause) {
 		case INTERRUPT_CAUSE:
 			if(pcb->quantum > 0) {
@@ -258,17 +257,18 @@ t_PCB *VRR_scheduling_algorithm(void){
 			} else {
 				list_add(normal_list, pcb);
 			}
-			sem_post(process_ready);
+			sem_post(&process_ready);
 	}
 
-  /*if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
+  if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
 		list_add(priority_list, pcb);
   }
   else {
 	RR_scheduling_algorithm();
   }
-  return pcb; 
+  return pcb; */
 }
+
 /*
 void update_pcb_q(t_pcb *pcb)
 {
@@ -295,6 +295,7 @@ void update_pcb_q(t_pcb *pcb)
 
 DESCOMENTAR
 */ 
+
 /*
 void listen_cpu(int fd_cpu) {
     while(1) {
@@ -639,7 +640,7 @@ void send_interrupt(int socket)
 void* start_quantum_VRR(t_PCB *pcb)
 {
 	
-    //var_temp_quantum = temporal_create();
+    var_temp_quantum = temporal_create();
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(pcb->quantum * 1000); //en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
