@@ -18,7 +18,7 @@ t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	{ .name = NULL, .function = NULL }
 };
 
-//t_temporal *var_temp_quantum = NULL;
+t_temporal *VAR_TEMP_QUANTUM = NULL;
 
 // Listas globales de estados
 t_list *LIST_NEW;
@@ -182,20 +182,6 @@ void *short_term_scheduler(void *parameter) {
 
 		pcb = SCHEDULING_ALGORITHM->function();
 
-		if(!strcmp(SCHEDULING_ALGORITHM, "VRR")) {
-			//pcb = VRR_scheduling_algorithm();
-			//pthread_create(&thread_interrupt, NULL, start_quantum_VRR, NULL);
-		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
-			pcb = FIFO_scheduling_algorithm();
-		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
-			pcb = RR_scheduling_algorithm();
-
-	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
-			//pthread_detach(&thread_interrupt, NULL);
-		} else {
-			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
-		}
-
 		switch_process_state(pcb, EXECUTING_STATE);
 
 		//FALTA SERIALIZAR PCB
@@ -241,21 +227,20 @@ PROBLEMAS.
 
 
 */
-/*
 
-pcb *kernel_get_priority_list(void) { //como sacar el pcb de las listas?
+
+t_PCB *kernel_get_priority_list(void) { //como sacar el pcb de las listas?
 	// ponele que puede ser un list_get
 }
 
-pcb *kernel_get_normal_list(void) {
+t_PCB *kernel_get_normal_list(void) {
 	
 }
-*/
-/*
+
 t_PCB *VRR_scheduling_algorithm(void){
 	t_PCB *pcb;
 
-	sem_wait(process_ready);
+	sem_wait(&process_ready);
 
 	pcb = kernel_get_priority_list();
 
@@ -267,24 +252,27 @@ t_PCB *VRR_scheduling_algorithm(void){
 	// Mandar el PCB a CPU
 
 //ACA CREAR  UN HILO... REVISDR
+/*
 	switch(pcb->interrupt_cause) {
 		case INTERRUPT_CAUSE:
 			if(pcb->quantum > 0) {
 				list_add(LIST_READY_PLUS, pcb);
 			} else {
-				list_add(normal_list, pcb);
+				list_add(LIST_READY, pcb);
 			}
-			sem_post(process_ready);
+			sem_post(&process_ready);
 	}
 
-  /*if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
+  if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
 		list_add(LIST_READY_PLUS, pcb);
   }
   else {
 	RR_scheduling_algorithm();
   }
-  return pcb; 
+  return pcb;
+*/
 }
+
 /*
 void update_pcb_q(t_pcb *pcb)
 {
@@ -294,10 +282,10 @@ void update_pcb_q(t_pcb *pcb)
         return;
     }
 
-    temporal_stop(var_temp_quantum);
-    int time_elapsed = (int)temporal_gettime(var_temp_quantum);
+    temporal_stop(VAR_TEMP_QUANTUM);
+    int time_elapsed = (int)temporal_gettime(VAR_TEMP_QUANTUM);
     int time_remaining = pcb->quantum - time_elapsed;
-    temporal_destroy(var_temp_quantum);
+    temporal_destroy(VAR_TEMP_QUANTUM);
 
     log_trace(get_logger(), "PCB_Q (%i) - TIME_ELAPSED (%i) = time_remaining %i", pcb->quantum, time_elapsed,
               time_remaining);
@@ -310,7 +298,8 @@ void update_pcb_q(t_pcb *pcb)
  }
 
 DESCOMENTAR
-*/ 
+*/
+
 /*
 void listen_cpu(int fd_cpu) {
     while(1) {
@@ -326,7 +315,7 @@ void listen_cpu(int fd_cpu) {
                 respond_frame_request(fd_cpu);
                 break;
 
-            /*
+            
             case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
@@ -654,8 +643,7 @@ void send_interrupt(int socket)
 
 void* start_quantum_VRR(t_PCB *pcb)
 {
-	
-    //var_temp_quantum = temporal_create();
+    VAR_TEMP_QUANTUM = temporal_create();
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(pcb->quantum * 1000); //en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
@@ -674,4 +662,3 @@ void* start_quantum()
 
 	return NULL;
 }
-
