@@ -220,7 +220,12 @@ void listen_cpu(int fd_cpu) {
                 
             case PAGE_SIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                //message_send(PAGE_SIZE_REQUEST, string_itoa(TAM_PAGINA),FD_CLIENT_CPU);
+                send_int(PAGE_SIZE_REQUEST, TAM_PAGINA,FD_CLIENT_CPU);
+                break;
+
+            case RESIZE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
+                resize_process(paquete->payload);
                 break;
             
             default:
@@ -331,7 +336,7 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
     int size= list_size(tablaPaginas);
     for(size_t i = 0; i < size ; i++) {
         paginaBuscada = list_get(tablaPaginas, i);
-        if(paginaBuscada->number == pagina) {
+        if(paginaBuscada->pagid == pagina) {
             marcoObjetivo = paginaBuscada->assigned_frame;
             i = size + 1;
         }
@@ -349,4 +354,40 @@ void read_memory(t_Payload* socketRecibido) {
 
 void write_memory(int socketRecibido){
     
+}
+
+
+void resize_process(t_Payload* socketRecibido){
+    int pid;
+    int paginas;
+    receive_2int(&pid,&paginas,socketRecibido);
+    t_Process* procesoBuscado = seek_process_by_pid(pid);
+
+    int size = list_size(procesoBuscado->pages_table);
+    if(size<paginas){//Agregar paginas
+
+        for (size_t i = size; i < paginas; i++)
+        {
+            t_Page* pagina = malloc(sizeof(t_Page));
+            pagina->assigned_frame = -1;
+            pagina->bit_modificado = false;
+            pagina->bit_presencia = false;
+            pagina->bit_uso = false;
+            pagina->pagid = i;
+
+            list_add(procesoBuscado->pages_table, pagina);
+        }
+        
+    }
+    if(size>paginas){ //Elimina paginas
+         
+        for (size_t i = size; i > paginas; i--)
+        {
+            t_Page* pagina = list_get(procesoBuscado->pages_table, i);
+            free(pagina);
+            list_remove(procesoBuscado->pages_table, i);
+        }
+        
+    }
+    //No hace falta el caso page == size ya que no sucederia nada
 }

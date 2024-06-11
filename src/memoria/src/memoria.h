@@ -33,7 +33,7 @@ typedef struct t_Process {
 } t_Process;
 
 typedef struct t_Page {
-    int number;
+    int pagid;
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
@@ -138,5 +138,7 @@ void respond_frame_request(t_Payload* socketRecibido);
  * @param pagina Pagina buscada.
  */
 int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina);
+
+void resize_process(t_Payload* payload);
 
 #endif /* MEMORIA_H */
