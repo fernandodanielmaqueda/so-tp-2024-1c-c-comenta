@@ -51,6 +51,18 @@ t_CPU_Instruction *cpu_instruction_deserialize(t_Payload *payload) {
   return instruction;
 }
 
+void delete_instruction(t_CPU_Instruction* instr){
+  int elementos = list_size(instr->parameters);
+  for (size_t i = 0; i < elementos; i++)
+  {
+    char* campo = list_get(instr->parameters,i);
+    free(campo);
+  }
+  
+  free(instr);
+
+}
+
 void cpu_instruction_print(t_CPU_Instruction *instruction) {
     log_info(SERIALIZE_LOGGER, "INSTRUCCION: %d\n", instruction->opcode);
     int size = list_size(instruction->parameters);

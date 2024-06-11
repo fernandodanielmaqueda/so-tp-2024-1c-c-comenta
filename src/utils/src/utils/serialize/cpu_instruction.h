@@ -70,5 +70,6 @@ t_CPU_Instruction *cpu_instruction_deserialize(t_Payload *payload);
 
 
 void cpu_instruction_print(t_CPU_Instruction *instruction);
+void delete_instruction(t_CPU_Instruction *instruction);
 
 #endif // SERIALIZE_CPU_INSTRUCTION_H
