@@ -68,16 +68,17 @@ void read_module_config(t_config* MODULE_CONFIG) {
 
 void listen_kernel(int fd_kernel) {
     while(1) {
-        e_Header header = 0; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
+        t_Package* paquete = package_receive(fd_kernel);
+        e_Header header = paquete->header; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
         switch(header) {
             case PROCESS_NEW:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
-                create_process(fd_kernel);
+                create_process(paquete->payload);
                 break;
                 
             case PROCESS_FINALIZED:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso finalizado recibido.");
-                kill_process(fd_kernel);
+                kill_process(paquete->payload);
                 break;
 
             case DISCONNECTION_HEADER:
@@ -89,21 +90,27 @@ void listen_kernel(int fd_kernel) {
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
         }
+        package_destroy(paquete);
     }
 }
 
-void create_process(int socketRecibido) {
+void create_process(t_Payload* socketRecibido) {
 
     t_Process *new_process; // = malloc(sizeof(t_Process));
     t_list* instructions_list = list_create();
     t_list* pages_table = list_create();
 
     //Leo los valores recibidos por parametro
-    t_list *lista_elememtos = NULL; //t_list *lista_elememtos = get_package_like_list(socketRecibido);
+    //t_list *lista_elememtos = NULL; //t_list *lista_elememtos = get_package_like_list(socketRecibido);
     int cursor = 0;
-    new_process->name = string_duplicate(list_get(lista_elememtos, ++cursor));
-    new_process->PID = *(int *)list_get(lista_elememtos, ++cursor);
-    list_destroy_and_destroy_elements(lista_elememtos, &free);
+    //new_process->name = string_duplicate(list_get(lista_elememtos, ++cursor));
+    //new_process->PID = *(int *)list_get(lista_elememtos, ++cursor);
+    int string_len = -1;   
+    memcpy(string_len, socketRecibido->stream, sizeof(int));
+    cursor += sizeof(int);
+    memcpy(new_process->name, (socketRecibido->stream + cursor), string_len);
+    cursor += string_len;
+    memcpy(new_process->PID,  (socketRecibido->stream + cursor), sizeof(int));
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
@@ -126,8 +133,9 @@ void create_process(int socketRecibido) {
     
 }
 
-void kill_process (int socketRecibido){
+void kill_process (t_Payload* socketRecibido){
     int pid = 0; //int pid = atoi(message_receive(socketRecibido));
+    memcpy(pid, socketRecibido->stream, sizeof(int));
     t_Process* process = seek_process_by_pid(pid);
     t_Page* paginaBuscada;
     
@@ -190,11 +198,13 @@ void parser_file(char* path, t_list* list_instruction) {
 
 void listen_cpu(int fd_cpu) {
     while(1) {
+        t_Package* paquete = package_receive(fd_cpu);
+        e_Header header = paquete->header;
         e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
-        switch (memory_request) {
+        switch (header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
-                seek_instruccion(fd_cpu);
+                seek_instruccion(paquete->payload);
                 break;
                 
             case FRAME_REQUEST:
@@ -238,12 +248,16 @@ t_Process* seek_process_by_pid(int pidBuscado) {
     return procesoBuscado;
 }
 
-void seek_instruccion(int socketRecibido) {
-    t_list *lista_elememtos = NULL; //t_list *lista_elememtos = get_package_like_list(socketRecibido);
-    int cursor = 0;
-    int pid = *(int *)list_get(lista_elememtos, ++cursor);
-    int pc = *(int *)list_get(lista_elememtos, ++cursor);
-    list_destroy_and_destroy_elements(lista_elememtos, &free);
+void seek_instruccion(t_Payload* socketRecibido) {
+    //t_list *lista_elememtos = NULL; //t_list *lista_elememtos = get_package_like_list(socketRecibido);
+    //int cursor = 0;
+    //int pid = *(int *)list_get(lista_elememtos, ++cursor);
+    int pid = -1;
+    memcpy(pid, socketRecibido->stream, sizeof(int));
+    int pc=-1;
+    memcpy(pc,( socketRecibido->stream + sizeof(int)), sizeof(int));
+    //int pc = *(int *)list_get(lista_elememtos, ++cursor);
+    //list_destroy_and_destroy_elements(lista_elememtos, &free);
 
     
     t_Process* procesoBuscado = seek_process_by_pid(pid);
@@ -285,24 +299,30 @@ void free_marcos(){
 
 }
 
-void respond_frame_request(int socketRecibido){
+void respond_frame_request(t_Payload* socketRecibido){
 //Recibir parametros
-  t_list *propiedadesPlanas = NULL; // t_list *propiedadesPlanas = get_package_like_list(socketRecibido);
+ /* t_list *propiedadesPlanas = NULL; // t_list *propiedadesPlanas = get_package_like_list(socketRecibido);
   int cursor = 0;
   int pageBuscada = *(int*)list_get(propiedadesPlanas, cursor);
   int pidProceso = *(int*)list_get(propiedadesPlanas, cursor);
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
-
+*/
+    int pageBuscada = -1;
+    memcpy(pageBuscada, socketRecibido->stream, sizeof(int));
+    int pidProceso = -1;
+    memcpy(pidProceso,( socketRecibido->stream + sizeof(int)), sizeof(int));
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
-    t_Package* package = package_create_with_header(FRAME_REQUEST);
+    send_2int(pidProceso,marcoEncontrado,FD_CLIENT_CPU,FRAME_REQUEST);
+   /* t_Package* package = package_create_with_header(FRAME_REQUEST);
     payload_enqueue(package->payload, &pidProceso, sizeof(int));
     payload_enqueue(package->payload, &marcoEncontrado, sizeof(int));
     package_send(package, FD_CLIENT_CPU);
+    */
 }
 
 int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
