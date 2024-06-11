@@ -11,15 +11,22 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
+t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
+	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
+	{ .name = "RR", .function = RR_scheduling_algorithm },
+	{ .name = "VRR", .function = VRR_scheduling_algorithm },
+	{ .name = NULL, .function = NULL }
+};
+
 //t_temporal *var_temp_quantum = NULL;
 
 // Listas globales de estados
 t_list *LIST_NEW;
 t_list *LIST_READY;
+t_list *LIST_READY_PLUS;
 t_list *LIST_EXECUTING;
 t_list *LIST_BLOCKED;
 t_list *LIST_EXIT;
-t_list *priority_list;
 
 pthread_mutex_t mutex_PID;
 pthread_mutex_t mutex_LIST_NEW;
@@ -31,9 +38,7 @@ pthread_mutex_t mutex_LIST_EXIT;
 //consola interactiva
 pthread_mutex_t mutex_pid_detected;
 int identifier_pid = 1;
-//
 
-pthread_t THREAD_CONSOLE;
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
@@ -44,7 +49,7 @@ sem_t sem_short_term_scheduler;
 sem_t sem_multiprogramming_level; // 20 procesos en sim
 sem_t process_ready; // Al principio en 0
 
-char *SCHEDULING_ALGORITHM;
+t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 int QUANTUM;
 char **RESOURCES;
 char **RESOURCE_INSTANCES;
@@ -91,10 +96,10 @@ int module(int argc, char *argv[]) {
 
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
+	LIST_READY_PLUS = list_create();
 	LIST_EXECUTING = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
-	priority_list = list_create();
 
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();
@@ -118,11 +123,20 @@ void read_module_config(t_config *MODULE_CONFIG) {
 	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
 	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_DISPATCH")};
 	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_INTERRUPT")};
-	SCHEDULING_ALGORITHM = config_get_string_value(MODULE_CONFIG, "ALGORITMO_PLANIFICACION");
+	SCHEDULING_ALGORITHM = find_scheduling_algorithm(config_get_string_value(MODULE_CONFIG, "ALGORITMO_PLANIFICACION"));
 	QUANTUM = config_get_int_value(MODULE_CONFIG, "QUANTUM");
 	RESOURCES = config_get_array_value(MODULE_CONFIG, "RECURSOS");
 	RESOURCE_INSTANCES = config_get_array_value(MODULE_CONFIG, "INSTANCIAS_RECURSOS");
 	MULTIPROGRAMMING_LEVEL = config_get_int_value(MODULE_CONFIG, "GRADO_MULTIPROGRAMACION");
+}
+
+t_Scheduling_Algorithm *find_scheduling_algorithm(char *name) {
+	for (register int i = 0; SCHEDULING_ALGORITHMS[i].name != NULL; i++) {
+		if (!strcmp(SCHEDULING_ALGORITHMS[i].name, name)) {
+			return (&SCHEDULING_ALGORITHMS[i]);
+		}
+	}
+	return NULL;
 }
 
 void initialize_long_term_scheduler(void) {
@@ -164,7 +178,9 @@ void *short_term_scheduler(void *parameter) {
 	t_PCB* pcb;
 
 	while(1) {
-		sem_wait(&sem_short_term_scheduler);	
+		sem_wait(&sem_short_term_scheduler);
+
+		pcb = SCHEDULING_ALGORITHM->function();
 
 		if(!strcmp(SCHEDULING_ALGORITHM, "VRR")) {
 			//pcb = VRR_scheduling_algorithm();
@@ -254,7 +270,7 @@ t_PCB *VRR_scheduling_algorithm(void){
 	switch(pcb->interrupt_cause) {
 		case INTERRUPT_CAUSE:
 			if(pcb->quantum > 0) {
-				list_add(priority_list, pcb);
+				list_add(LIST_READY_PLUS, pcb);
 			} else {
 				list_add(normal_list, pcb);
 			}
@@ -262,7 +278,7 @@ t_PCB *VRR_scheduling_algorithm(void){
 	}
 
   /*if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
-		list_add(priority_list, pcb);
+		list_add(LIST_READY_PLUS, pcb);
   }
   else {
 	RR_scheduling_algorithm();

@@ -27,6 +27,11 @@
 #include "console.h"
 #include "socket.h"
 
+typedef struct t_Scheduling_Algorithm {
+    char *name;
+    t_PCB *(*function) (void);
+} t_Scheduling_Algorithm;
+
 extern char *MODULE_NAME;
 
 extern t_log *MODULE_LOGGER;
@@ -73,6 +78,7 @@ extern int pidContador;
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
+t_Scheduling_Algorithm *find_scheduling_algorithm(char *name);
 void switch_process_state(t_PCB* pcb, int new_state) ;
 t_PCB *create_pcb();
 void initialize_long_term_scheduler(void);

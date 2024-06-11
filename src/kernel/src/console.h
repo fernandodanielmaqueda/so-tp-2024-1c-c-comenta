@@ -40,7 +40,7 @@ char **console_completion(const char *text, int start, int end);
 char *command_generator(const char *text, int state);
 char *strip_whitespaces(char *string);
 void execute_line(char *line);
-t_Command *find_command (char *name);
+t_Command *find_command(char *name);
 int kernel_command_run_script(int argc, char* argv[]);
 int kernel_command_start_process(int argc, char* argv[]);
 int kernel_command_kill_process(int argc, char* argv[]);

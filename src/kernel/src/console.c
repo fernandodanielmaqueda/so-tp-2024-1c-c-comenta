@@ -4,14 +4,14 @@ t_log *CONSOLE_LOGGER;
 char *CONSOLE_LOG_PATHNAME = "console.log";
 
 t_Command CONSOLE_COMMANDS[] = {
-  { "EJECUTAR_SCRIPT", kernel_command_run_script },
-  { "INICIAR_PROCESO", kernel_command_start_process },
-  { "FINALIZAR_PROCESO", kernel_command_kill_process },
-  { "DETENER_PLANIFICACION", kernel_command_stop_scheduling },
-  { "INICIAR_PLANIFICACION", kernel_command_start_scheduling },
-  { "MULTIPROGRAMACION", kernel_command_multiprogramming },
-  { "PROCESO_ESTADO", kernel_command_process_states },
-  { NULL, NULL }
+  { .name = "EJECUTAR_SCRIPT", .function = kernel_command_run_script },
+  { .name = "INICIAR_PROCESO", .function = kernel_command_start_process },
+  { .name = "FINALIZAR_PROCESO", .function = kernel_command_kill_process },
+  { .name = "DETENER_PLANIFICACION", .function = kernel_command_stop_scheduling },
+  { .name = "INICIAR_PLANIFICACION", .function = kernel_command_start_scheduling },
+  { .name = "MULTIPROGRAMACION", .function = kernel_command_multiprogramming },
+  { .name = "PROCESO_ESTADO", .function = kernel_command_process_states },
+  { .name = NULL, .function = NULL }
 };
 
 int EXIT_CONSOLE = 0;
@@ -160,10 +160,8 @@ void execute_line(char *line) {
 /* Look up NAME as the name of a command, and return a pointer to that
    command.  Return a NULL pointer if NAME isn't a command name. */
 t_Command *find_command (char *name) {
-    register int i;
-
-    for(i = 0; CONSOLE_COMMANDS[i].name != NULL; i++)
-        if(strcmp(name, CONSOLE_COMMANDS[i].name) == 0)
+    for(register int i = 0; CONSOLE_COMMANDS[i].name != NULL; i++)
+        if(!strcmp(CONSOLE_COMMANDS[i].name, name))
             return (&CONSOLE_COMMANDS[i]);
 
     return NULL;
