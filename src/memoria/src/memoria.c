@@ -96,7 +96,7 @@ void listen_kernel(int fd_kernel) {
 
 void create_process(t_Payload* socketRecibido) {
 
-    t_Process *new_process; // = malloc(sizeof(t_Process));
+    t_Process *new_process = malloc(sizeof(t_Process));
     t_list* instructions_list = list_create();
     t_list* pages_table = list_create();
 
@@ -106,11 +106,9 @@ void create_process(t_Payload* socketRecibido) {
     //new_process->name = string_duplicate(list_get(lista_elememtos, ++cursor));
     //new_process->PID = *(int *)list_get(lista_elememtos, ++cursor);
     int string_len = -1;   
-    memcpy(string_len, socketRecibido->stream, sizeof(int));
-    cursor += sizeof(int);
-    memcpy(new_process->name, (socketRecibido->stream + cursor), string_len);
-    cursor += string_len;
-    memcpy(new_process->PID,  (socketRecibido->stream + cursor), sizeof(int));
+    cursor = memcpy_source_offset(&(string_len), socketRecibido->stream, cursor, sizeof(int));
+    cursor = memcpy_source_offset(&(new_process->name), socketRecibido->stream, cursor, string_len);
+    cursor = memcpy_source_offset(&(new_process->PID), socketRecibido->stream, cursor, sizeof(int));
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
@@ -135,7 +133,7 @@ void create_process(t_Payload* socketRecibido) {
 
 void kill_process (t_Payload* socketRecibido){
     int pid = 0; //int pid = atoi(message_receive(socketRecibido));
-    memcpy(pid, socketRecibido->stream, sizeof(int));
+    memcpy(&pid, socketRecibido->stream, sizeof(int));
     t_Process* process = seek_process_by_pid(pid);
     t_Page* paginaBuscada;
     
@@ -147,6 +145,7 @@ void kill_process (t_Payload* socketRecibido){
         list_add(lista_marcos_libres, marco);
         free(paginaBuscada);
     }
+    free(process);
     
 }
 
@@ -200,7 +199,7 @@ void listen_cpu(int fd_cpu) {
     while(1) {
         t_Package* paquete = package_receive(fd_cpu);
         e_Header header = paquete->header;
-        e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
+        //e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
         switch (header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
@@ -209,7 +208,7 @@ void listen_cpu(int fd_cpu) {
                 
             case FRAME_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
-                respond_frame_request(fd_cpu);
+                respond_frame_request(paquete->payload);
                 break;
 
             /*
@@ -253,9 +252,11 @@ void seek_instruccion(t_Payload* socketRecibido) {
     //int cursor = 0;
     //int pid = *(int *)list_get(lista_elememtos, ++cursor);
     int pid = -1;
-    memcpy(pid, socketRecibido->stream, sizeof(int));
-    int pc=-1;
-    memcpy(pc,( socketRecibido->stream + sizeof(int)), sizeof(int));
+    int pc = -1;
+    
+    receive_2int(&pid,&pc,socketRecibido);
+    //memcpy(&pid, socketRecibido->stream, sizeof(int));
+    //memcpy(&pc,( socketRecibido->stream + sizeof(int)), sizeof(int));
     //int pc = *(int *)list_get(lista_elememtos, ++cursor);
     //list_destroy_and_destroy_elements(lista_elememtos, &free);
 
@@ -308,9 +309,8 @@ void respond_frame_request(t_Payload* socketRecibido){
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
 */
     int pageBuscada = -1;
-    memcpy(pageBuscada, socketRecibido->stream, sizeof(int));
     int pidProceso = -1;
-    memcpy(pidProceso,( socketRecibido->stream + sizeof(int)), sizeof(int));
+    receive_2int(&pageBuscada,&pidProceso,socketRecibido);
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
@@ -340,7 +340,7 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
     return marcoObjetivo;
 }
 
-void read_memory(int socketRecibido) {
+void read_memory(t_Payload* socketRecibido) {
     t_list *parametros = NULL; // t_list* parametros = get_package_like_list(socketRecibido);
     int dir_fisica = *(int *) list_get(parametros,0);
     int pidBuscado = *(int *) list_get(parametros,1);

@@ -62,6 +62,18 @@ void send_2int(int nro, int nro2, int socket, int opcod){
   package_destroy(package);
 }
 
+void receive_2int(int* nro1, int* nro2, t_Payload* payload){ //receive_2int(&n1,&n2,payload);
+    // Extrae el primer entero del payload
+    int offset = 0;
+    memcpy(nro1, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+
+    // Extrae el segundo entero del payload
+    memcpy(nro2, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+
+}
+
 void send_String_1int(int nro, char* mensaje, int socket, int opcod){
     t_Package* package = package_create_with_header(opcod);
     payload_enqueue(package->payload, strlen(mensaje)+1, sizeof(int) );
