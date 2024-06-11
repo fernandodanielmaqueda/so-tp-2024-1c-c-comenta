@@ -11,55 +11,42 @@ void cpu_instruction_send(t_CPU_Instruction *instruction, int fd_socket) {
 }
 
 void cpu_instruction_serialize(t_Payload *payload, t_CPU_Instruction *instruction) {
-    /*
-    payload_enqueue(payload, &(instruction->opcode), sizeof(instruction->opcode));
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    payload_enqueue(payload, &(), sizeof());
-    */
+    
+    payload_enqueue(payload, &(instruction->opcode), sizeof(e_CPU_Opcode));
+    int campos = list_size(instruction->parameters);
+    payload_enqueue(payload, &(campos), sizeof(int));
+
+    for (size_t i = 0; i < campos ; i++)
+    {
+      char *contenido = list_get(instruction->parameters, i);
+      int len = strlen(contenido);
+      payload_enqueue(payload, &(len), sizeof(int));
+      payload_enqueue(payload, &(contenido), len);
+    }
+  
 }
 
 t_CPU_Instruction *cpu_instruction_deserialize(t_Payload *payload) {
   t_CPU_Instruction *instruction = malloc(sizeof(t_CPU_Instruction));
 
   uint32_t offset = 0;
+  t_list* lista_campos = list_create();
 
-    /*
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
-  offset = memcpy_source_offset(&(), payload->stream, offset, sizeof());
+  offset = memcpy_source_offset(&(instruction->opcode), payload->stream, offset, sizeof(e_CPU_Opcode));
+  int elementos = 0;
+  offset = memcpy_source_offset(&(elementos), payload->stream, offset, sizeof(int));
+
+  for (size_t i = 0; i < elementos; i++)
+  {
+    char* campo = string_new();
+    int len=0;
+
+    offset = memcpy_source_offset(&(len), payload->stream, offset, sizeof(int));
+    offset = memcpy_source_offset(&(campo), payload->stream, offset, len);
+
+    list_add(lista_campos, campo);
+  }
   
-  */
-
   cpu_instruction_print(instruction);
   return instruction;
 }
