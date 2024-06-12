@@ -227,6 +227,16 @@ void listen_cpu(int fd_cpu) {
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
                 resize_process(paquete->payload);
                 break;
+                
+            case READ_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
+                read_memory(paquete->payload, FD_CLIENT_CPU);
+                break;
+                
+            case WRITE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
+                write_memory(paquete->payload, FD_CLIENT_CPU);
+                break;
             
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
@@ -345,14 +355,26 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
     return marcoObjetivo;
 }
 
-void read_memory(t_Payload* socketRecibido) {
-    t_list *parametros = NULL; // t_list* parametros = get_package_like_list(socketRecibido);
-    int dir_fisica = *(int *) list_get(parametros,0);
-    int pidBuscado = *(int *) list_get(parametros,1);
+void read_memory(t_Payload* socketRecibido, int socket) {
+    int dir_fisica = 0;
+    int pidBuscado = 0;
+    receive_2int(&dir_fisica,&pidBuscado,socketRecibido);
+
+    u_int32_t lectura;
+    memcpy(&lectura, memoria_principal + dir_fisica, sizeof(u_int32_t));
+
+    send_2int(pidBuscado,lectura, socket, READ_REQUEST);
+    
 }
 
 
-void write_memory(int socketRecibido){
+void write_memory(t_Payload* socketRecibido, int socket){
+    int dir_fisica = 0;
+    int pidBuscado = 0;
+    uint32_t contenido = 0;
+    receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
+    void* posicion = memoria_principal + dir_fisica;
+    memcpy(posicion, &contenido, sizeof(contenido));
     
 }
 
