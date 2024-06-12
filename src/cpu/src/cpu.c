@@ -114,7 +114,7 @@ void instruction_cycle(void)
 
         // Ejecuta lo que tenga que hacer el proceso hasta que llegue la interrupcion
 
-        while (*interrupt == SYSCALL_CAUSE) // TYPE_INTERRUPT_SIN_INT
+        while (interrupt == SYSCALL_CAUSE) // TYPE_INTERRUPT_SIN_INT
         {
 
             log_trace(MODULE_LOGGER, "Fetch de instruccion del proceso");
@@ -126,7 +126,6 @@ void instruction_cycle(void)
             log_trace(MODULE_LOGGER, "Chequeo si llego interrupion del kernel");
 
             // CHEQUEAR EL TIPO DE INTERRUPCION
-
             /*
             if (interrupt != SYSCALL_CAUSE)
             {
