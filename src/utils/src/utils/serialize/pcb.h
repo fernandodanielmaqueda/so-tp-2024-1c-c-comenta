@@ -83,6 +83,6 @@ void pcb_serialize(t_Payload *payload, t_PCB *pcb);
 t_PCB *pcb_deserialize(t_Payload *payload);
 
 
-void pcb_print(t_PCB *pcb);
+void pcb_log(t_PCB *pcb);
 
 #endif // SERIALIZE_PCB_H

@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef SERIALIZE_interrupt_H
-#define SERIALIZE_interrupt_H
+#ifndef SERIALIZE_HEADER_H
+#define SERIALIZE_HEADER_H
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -18,21 +18,12 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
-typedef uint8_t t_Interrupt_Serialized;
-typedef enum e_Interrupt { // CONTEXT_SWITCH_CAUSE
-    ERROR_CAUSE, // por ejemplo decode
-    SYSCALL_CAUSE, //incluye el EXIT
-    INTERRUPTION_CAUSE //Incluye el quantum
-} e_Interrupt;
-
-
-
 /**
  * @brief Enviar interrupt (incluye el serializado)
  * @param interrupt t_Interrupt a enviar.
  * @param fd_socket Socket desde donde se va a recibir el interrupt.
  */
-void interrupt_send(e_Interrupt *interrupt, int fd_socket);
+void header_send(e_Header *header, int fd_socket);
 
 
 /**
@@ -40,16 +31,16 @@ void interrupt_send(e_Interrupt *interrupt, int fd_socket);
  * @param package Package a rellenar.
  * @param interrupt interrupt a serializar
  */
-void interrupt_serialize(t_Payload *payload, e_Interrupt *interrupt);
+void header_serialize(t_Payload *payload, e_Header *header);
 
 
 /**
  * @brief Deserializacion del t_Interrupt para ser enviada.
  * @param Payload Payload.
  */
-e_Interrupt *interrupt_deserialize(t_Payload *payload);
+e_Header *header_deserialize(t_Payload *payload);
 
 
-void interrupt_log(e_Interrupt *interrupt);
+void header_log(e_Header *header);
 
-#endif // SERIALIZE_interrupt_H
+#endif // SERIALIZE_HEADER_H

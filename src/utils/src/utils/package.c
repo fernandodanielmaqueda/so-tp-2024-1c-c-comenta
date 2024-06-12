@@ -4,8 +4,15 @@
 #include "package.h"
 
 t_Package *package_create(void) {
+
   t_Package *package = malloc(sizeof(t_Package));
+  if(package == NULL) {
+    log_error(SERIALIZE_LOGGER, "No se pudo crear el package con malloc");
+    exit(1);
+  }
+
   package->payload = payload_create();
+
   return package;
 }
 
@@ -16,16 +23,33 @@ t_Package *package_create_with_header(e_Header header) {
 }
 
 void package_destroy(t_Package *package) {
-  if (package == NULL) return;
+  if (package == NULL)
+    return;
   payload_destroy(package->payload);
   free(package);
 }
 
 void package_send(t_Package *package, int fd_socket) {
+  
+  // Si el paquete es NULL, no se envia nada
+  if(package == NULL)
+    return;
+
   ssize_t bytes;
 
   size_t bufferSize = sizeof(t_Header_Serialized) + sizeof(package->payload->size) + (size_t) package->payload->size;
-  void *buffer = package_serialize(package, bufferSize);
+
+  void *buffer = malloc(bufferSize);
+  if(buffer == NULL) {
+    log_error(SERIALIZE_LOGGER, "No se pudo crear el buffer con malloc");
+    exit(1);
+  }
+
+  size_t offset = 0;
+
+  offset = memcpy_destination_offset(buffer, offset, &(package->header), sizeof(t_Header_Serialized));
+  offset = memcpy_destination_offset(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
+  offset = memcpy_destination_offset(buffer, offset, package->payload->stream, (size_t) package->payload->size);
 
   bytes = send(fd_socket, buffer, bufferSize, 0);
 
@@ -43,18 +67,6 @@ void package_send(t_Package *package, int fd_socket) {
   free(buffer);
 }
 
-void *package_serialize(t_Package *package, size_t bufferSize) {
-  void *buffer = malloc(bufferSize);
-  size_t offset = 0;
-
-  t_Header_Serialized header_serialized = (t_Header_Serialized) package->header;
-  offset = memcpy_destination_offset(buffer, offset, &(header_serialized), sizeof(header_serialized));
-  offset = memcpy_destination_offset(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
-  offset = memcpy_destination_offset(buffer, offset, package->payload->stream, (size_t) package->payload->size);
-
-  return buffer;
-}
-
 t_Package *package_receive(int fd_socket) {
   t_Package *package = package_create();
   package_receive_header(package, fd_socket);
@@ -63,6 +75,10 @@ t_Package *package_receive(int fd_socket) {
 }
 
 void package_receive_header(t_Package *package, int fd_socket) {
+
+  if(package == NULL)
+    return;
+
   ssize_t bytes;
 
   t_Header_Serialized header_serialized;
@@ -88,6 +104,10 @@ void package_receive_header(t_Package *package, int fd_socket) {
 }
 
 void package_receive_payload(t_Package *package, int fd_socket) {
+
+  if(package == NULL)
+    return;
+
   ssize_t bytes;
 
   bytes = recv(fd_socket, &(package->payload->size), sizeof(t_PayloadSize), 0); // MSG_WAITALL
@@ -108,8 +128,15 @@ void package_receive_payload(t_Package *package, int fd_socket) {
       exit(1);
   }
 
-  if(package->payload->size == 0) return;
+  if(package->payload->size == 0)
+    return;
+
   package->payload->stream = malloc(package->payload->size);
+  if(package->payload->stream == NULL) {
+    log_error(SERIALIZE_LOGGER, "No se pudo crear el stream con malloc");
+    exit(1);
+  }
+
   bytes = recv(fd_socket, package->payload->stream, (size_t) package->payload->size, 0); // MSG_WAITALL
 
   if (bytes == 0) {
@@ -127,5 +154,4 @@ void package_receive_payload(t_Package *package, int fd_socket) {
       close(fd_socket);
       exit(1);
   }
-
 }

@@ -31,6 +31,8 @@ void pcb_serialize(t_Payload *payload, t_PCB *pcb) {
   payload_enqueue(payload, &(pcb->current_state), sizeof(pcb->current_state));
   payload_enqueue(payload, &(pcb->arrival_READY), sizeof(pcb->arrival_READY));
   payload_enqueue(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
+
+  pcb_log(pcb);
 }
 
 t_PCB *pcb_deserialize(t_Payload *payload) {
@@ -59,11 +61,11 @@ t_PCB *pcb_deserialize(t_Payload *payload) {
   offset = memcpy_source_offset(&(pcb->arrival_READY), payload->stream, offset, sizeof(pcb->arrival_READY));
   offset = memcpy_source_offset(&(pcb->arrival_RUNNING), payload->stream, offset, sizeof(pcb->arrival_RUNNING));
 
-  pcb_print(pcb);
+  pcb_log(pcb);
   return pcb;
 }
 
-void pcb_print(t_PCB *pcb) {
+void pcb_log(t_PCB *pcb) {
   log_info(SERIALIZE_LOGGER,
     "t_PCB[%p]:\n"
     "* PID: %" PRIu32 "\n"
@@ -86,26 +88,26 @@ void pcb_print(t_PCB *pcb) {
     "* current_state: %" PRIu8 "\n"
     "* arrival_READY: %g\n"
     "* arrival_RUNNING: %g"
-    ,(void *) pcb,
-    pcb->PID,
-    pcb->PC,
-    pcb->AX,
-    pcb->BX,
-    pcb->CX,
-    pcb->DX,
-    pcb->EAX,
-    pcb->EBX,
-    pcb->ECX,
-    pcb->EDX,
-    pcb->RAX,
-    pcb->RBX,
-    pcb->RCX,
-    pcb->RDX,
-    pcb->SI,
-    pcb->DI,
-    pcb->quantum,
-    pcb->current_state,
-    pcb->arrival_READY,
-    pcb->arrival_RUNNING
+    , (void *) pcb
+    , pcb->PID
+    , pcb->PC
+    , pcb->AX
+    , pcb->BX
+    , pcb->CX
+    , pcb->DX
+    , pcb->EAX
+    , pcb->EBX
+    , pcb->ECX
+    , pcb->EDX
+    , pcb->RAX
+    , pcb->RBX
+    , pcb->RCX
+    , pcb->RDX
+    , pcb->SI
+    , pcb->DI
+    , pcb->quantum
+    , pcb->current_state
+    , pcb->arrival_READY
+    , pcb->arrival_RUNNING
     );
 }

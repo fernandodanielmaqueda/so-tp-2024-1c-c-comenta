@@ -86,7 +86,7 @@ int module(int argc, char *argv[]) {
         .arrival_RUNNING = 789.012
     };
 
-	pcb_print(&pcb);
+	pcb_log(&pcb);
 	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	

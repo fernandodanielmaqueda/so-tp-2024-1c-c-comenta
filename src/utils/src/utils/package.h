@@ -14,8 +14,10 @@
 #include "utils/payload.h"
 #include "utils/module.h"
 
+typedef uint8_t t_Header_Serialized;
 typedef enum e_Header {
     DISCONNECTION_HEADER,
+    SUBHEADER_HEADER,
     ARGUMENTS_HEADER,
     PCB_HEADER,
     CPU_MEMORY_REQUEST_HEADER,
@@ -32,8 +34,6 @@ typedef enum e_Header {
     //IO - Memoria
     //Instrucciones
 } e_Header;
-
-typedef uint8_t t_Header_Serialized;
 
 typedef struct t_Package {
     enum e_Header header;
@@ -63,13 +63,6 @@ void package_destroy(t_Package *package);
  * @param fd_socket Socket destino
  */
 void package_send(t_Package *package, int fd_socket);
-
-/**
- * @brief Obtiene el codigo de operacion de un paquete
- * @param package Paquete a serializar
- * @param bufferSize Tamanio del paquete
- */
-void *package_serialize(t_Package *package, size_t bufferSize);
 
 t_Package *package_receive(int fd_socket);
 
