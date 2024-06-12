@@ -96,7 +96,7 @@ void listen_kernel(int fd_kernel) {
 
 void create_process(t_Payload* socketRecibido) {
 
-    t_Process *new_process; // = malloc(sizeof(t_Process));
+    t_Process *new_process = malloc(sizeof(t_Process));
     t_list* instructions_list = list_create();
     t_list* pages_table = list_create();
 
@@ -106,11 +106,9 @@ void create_process(t_Payload* socketRecibido) {
     //new_process->name = string_duplicate(list_get(lista_elememtos, ++cursor));
     //new_process->PID = *(int *)list_get(lista_elememtos, ++cursor);
     int string_len = -1;   
-    memcpy(string_len, socketRecibido->stream, sizeof(int));
-    cursor += sizeof(int);
-    memcpy(new_process->name, (socketRecibido->stream + cursor), string_len);
-    cursor += string_len;
-    memcpy(new_process->PID,  (socketRecibido->stream + cursor), sizeof(int));
+    cursor = memcpy_source_offset(&(string_len), socketRecibido->stream, cursor, sizeof(int));
+    cursor = memcpy_source_offset(&(new_process->name), socketRecibido->stream, cursor, string_len);
+    cursor = memcpy_source_offset(&(new_process->PID), socketRecibido->stream, cursor, sizeof(int));
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
@@ -135,7 +133,7 @@ void create_process(t_Payload* socketRecibido) {
 
 void kill_process (t_Payload* socketRecibido){
     int pid = 0; //int pid = atoi(message_receive(socketRecibido));
-    memcpy(pid, socketRecibido->stream, sizeof(int));
+    memcpy(&pid, socketRecibido->stream, sizeof(int));
     t_Process* process = seek_process_by_pid(pid);
     t_Page* paginaBuscada;
     
@@ -147,6 +145,7 @@ void kill_process (t_Payload* socketRecibido){
         list_add(lista_marcos_libres, marco);
         free(paginaBuscada);
     }
+    free(process);
     
 }
 
@@ -200,7 +199,7 @@ void listen_cpu(int fd_cpu) {
     while(1) {
         t_Package* paquete = package_receive(fd_cpu);
         e_Header header = paquete->header;
-        e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
+        //e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
         switch (header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
@@ -209,7 +208,7 @@ void listen_cpu(int fd_cpu) {
                 
             case FRAME_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
-                respond_frame_request(fd_cpu);
+                respond_frame_request(paquete->payload);
                 break;
 
             /*
@@ -221,7 +220,22 @@ void listen_cpu(int fd_cpu) {
                 
             case PAGE_SIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                //message_send(PAGE_SIZE_REQUEST, string_itoa(TAM_PAGINA),FD_CLIENT_CPU);
+                send_int(PAGE_SIZE_REQUEST, TAM_PAGINA,FD_CLIENT_CPU);
+                break;
+
+            case RESIZE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
+                resize_process(paquete->payload);
+                break;
+                
+            case READ_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
+                //read_memory(paquete->payload, FD_CLIENT_CPU);
+                break;
+                
+            case WRITE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
+                //write_memory(paquete->payload, FD_CLIENT_CPU);
                 break;
             
             default:
@@ -253,9 +267,11 @@ void seek_instruccion(t_Payload* socketRecibido) {
     //int cursor = 0;
     //int pid = *(int *)list_get(lista_elememtos, ++cursor);
     int pid = -1;
-    memcpy(pid, socketRecibido->stream, sizeof(int));
-    int pc=-1;
-    memcpy(pc,( socketRecibido->stream + sizeof(int)), sizeof(int));
+    int pc = -1;
+    
+    receive_2int(&pid,&pc,socketRecibido);
+    //memcpy(&pid, socketRecibido->stream, sizeof(int));
+    //memcpy(&pc,( socketRecibido->stream + sizeof(int)), sizeof(int));
     //int pc = *(int *)list_get(lista_elememtos, ++cursor);
     //list_destroy_and_destroy_elements(lista_elememtos, &free);
 
@@ -308,9 +324,8 @@ void respond_frame_request(t_Payload* socketRecibido){
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
 */
     int pageBuscada = -1;
-    memcpy(pageBuscada, socketRecibido->stream, sizeof(int));
     int pidProceso = -1;
-    memcpy(pidProceso,( socketRecibido->stream + sizeof(int)), sizeof(int));
+    receive_2int(&pageBuscada,&pidProceso,socketRecibido);
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
@@ -331,7 +346,7 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
     int size= list_size(tablaPaginas);
     for(size_t i = 0; i < size ; i++) {
         paginaBuscada = list_get(tablaPaginas, i);
-        if(paginaBuscada->number == pagina) {
+        if(paginaBuscada->pagid == pagina) {
             marcoObjetivo = paginaBuscada->assigned_frame;
             i = size + 1;
         }
@@ -340,13 +355,115 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
     return marcoObjetivo;
 }
 
-void read_memory(int socketRecibido) {
-    t_list *parametros = NULL; // t_list* parametros = get_package_like_list(socketRecibido);
-    int dir_fisica = *(int *) list_get(parametros,0);
-    int pidBuscado = *(int *) list_get(parametros,1);
+void read_memory(t_Payload* socketRecibido, int socket) {
+    int dir_fisica = 0;
+    int pidBuscado = 0;
+    receive_2int(&dir_fisica,&pidBuscado,socketRecibido);
+
+    u_int32_t lectura;
+    void* posicion = memoria_principal + dir_fisica;
+    memcpy(&lectura, posicion, sizeof(u_int32_t));
+
+    send_2int(pidBuscado,lectura, socket, READ_REQUEST);
+    
 }
 
 
-void write_memory(int socketRecibido){
+void write_memory(t_Payload* socketRecibido, int socket){
+    int dir_fisica = 0;
+    int pidBuscado = 0;
+    uint32_t contenido = 0;
     
+    receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
+
+    int pages = sizeof(contenido)/TAM_PAGINA;
+    int resto = sizeof(contenido) % TAM_PAGINA;
+    if (resto != 0) pages += 1;
+    void* posicion = memoria_principal + dir_fisica;
+    
+    //int current_frame = dir_fisica / TAM_PAGINA;
+
+    if(pages < 2){//En caso de que sea menor a 2 pagina
+         memcpy(posicion, &contenido, sizeof(contenido));
+         //Actualizar pagina/TDP
+    }
+    else{//En caso de que el contenido supere a 1 pagina
+        //int page_id = 0;
+
+        
+         //Actualizar pagina/TDP
+    }
+}
+
+//Actualizar page y TDP
+void update_page_TDP(){
+
+}
+//En caso de varias paginas
+void get_next_page(int current_frame, int pid){
+    t_Frame* marco = list_get(lista_marcos, current_frame);
+    t_Page* current_page = marco->assigned_page;
+    int pagid = current_page->pagid;
+    t_Process* proceso = seek_process_by_pid(pid);
+
+    int count = list_size(proceso->pages_table);
+    for (size_t i = 0; i < count; i++)
+    {
+        current_page = list_get (proceso->pages_table,i);
+        if (current_page->pagid == pagid)
+        {
+            
+        }
+        
+    }
+    /*   
+    int nro_page = floor(dir_logica / tamanio_pagina);
+    int offset = dir_logica - nro_page * tamanio_pagina; 
+    dir_fisica = nro_frame_required * tamanio_pagina + offset;
+*/
+}
+
+
+void resize_process(t_Payload* socketRecibido){
+    int pid;
+    int paginas;
+    receive_2int(&pid,&paginas,socketRecibido);
+    t_Process* procesoBuscado = seek_process_by_pid(pid);
+
+    int size = list_size(procesoBuscado->pages_table);
+    if(size<paginas){//Agregar paginas
+
+        for (size_t i = size; i < paginas; i++)
+        {
+            t_Page* pagina = malloc(sizeof(t_Page));
+            t_Frame* marcoLibre = list_get(lista_marcos_libres,0);
+            list_remove(lista_marcos_libres,0);
+            pagina->assigned_frame = marcoLibre->id;
+            pagina->bit_modificado = false;
+            pagina->bit_presencia = false;
+            pagina->bit_uso = false;
+            pagina->pagid = i;
+
+            //Actualizo el marco asignado
+            marcoLibre->PID= pid;
+            marcoLibre->assigned_page = pagina;
+
+            list_add(procesoBuscado->pages_table, pagina);
+        }
+        
+    }
+    if(size>paginas){ //Elimina paginas
+         
+        for (size_t i = size; i > paginas; i--)
+        {
+            t_Page* pagina = list_get(procesoBuscado->pages_table, i);
+            list_remove(procesoBuscado->pages_table, i);
+            t_Frame* marco = list_get(lista_marcos, pagina->assigned_frame);
+            list_add(lista_marcos_libres,marco);
+
+            free(pagina);
+        }
+        
+    }
+    //No hace falta el caso page == size ya que no sucederia nada
 }
