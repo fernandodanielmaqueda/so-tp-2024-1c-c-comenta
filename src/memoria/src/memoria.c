@@ -230,12 +230,12 @@ void listen_cpu(int fd_cpu) {
                 
             case READ_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                read_memory(paquete->payload, FD_CLIENT_CPU);
+                //read_memory(paquete->payload, FD_CLIENT_CPU);
                 break;
                 
             case WRITE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                write_memory(paquete->payload, FD_CLIENT_CPU);
+                //write_memory(paquete->payload, FD_CLIENT_CPU);
                 break;
             
             default:
@@ -361,7 +361,8 @@ void read_memory(t_Payload* socketRecibido, int socket) {
     receive_2int(&dir_fisica,&pidBuscado,socketRecibido);
 
     u_int32_t lectura;
-    memcpy(&lectura, memoria_principal + dir_fisica, sizeof(u_int32_t));
+    void* posicion = memoria_principal + dir_fisica;
+    memcpy(&lectura, posicion, sizeof(u_int32_t));
 
     send_2int(pidBuscado,lectura, socket, READ_REQUEST);
     
@@ -372,10 +373,54 @@ void write_memory(t_Payload* socketRecibido, int socket){
     int dir_fisica = 0;
     int pidBuscado = 0;
     uint32_t contenido = 0;
-    receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
-    void* posicion = memoria_principal + dir_fisica;
-    memcpy(posicion, &contenido, sizeof(contenido));
     
+    receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
+
+    int pages = sizeof(contenido)/TAM_PAGINA;
+    int resto = sizeof(contenido) % TAM_PAGINA;
+    if (resto != 0) pages += 1;
+    void* posicion = memoria_principal + dir_fisica;
+    
+    //int current_frame = dir_fisica / TAM_PAGINA;
+
+    if(pages < 2){//En caso de que sea menor a 2 pagina
+         memcpy(posicion, &contenido, sizeof(contenido));
+         //Actualizar pagina/TDP
+    }
+    else{//En caso de que el contenido supere a 1 pagina
+        //int page_id = 0;
+
+        
+         //Actualizar pagina/TDP
+    }
+}
+
+//Actualizar page y TDP
+void update_page_TDP(){
+
+}
+//En caso de varias paginas
+void get_next_page(int current_frame, int pid){
+    t_Frame* marco = list_get(lista_marcos, current_frame);
+    t_Page* current_page = marco->assigned_page;
+    int pagid = current_page->pagid;
+    t_Process* proceso = seek_process_by_pid(pid);
+
+    int count = list_size(proceso->pages_table);
+    for (size_t i = 0; i < count; i++)
+    {
+        current_page = list_get (proceso->pages_table,i);
+        if (current_page->pagid == pagid)
+        {
+            
+        }
+        
+    }
+    /*   
+    int nro_page = floor(dir_logica / tamanio_pagina);
+    int offset = dir_logica - nro_page * tamanio_pagina; 
+    dir_fisica = nro_frame_required * tamanio_pagina + offset;
+*/
 }
 
 
@@ -391,11 +436,17 @@ void resize_process(t_Payload* socketRecibido){
         for (size_t i = size; i < paginas; i++)
         {
             t_Page* pagina = malloc(sizeof(t_Page));
-            pagina->assigned_frame = -1;
+            t_Frame* marcoLibre = list_get(lista_marcos_libres,0);
+            list_remove(lista_marcos_libres,0);
+            pagina->assigned_frame = marcoLibre->id;
             pagina->bit_modificado = false;
             pagina->bit_presencia = false;
             pagina->bit_uso = false;
             pagina->pagid = i;
+
+            //Actualizo el marco asignado
+            marcoLibre->PID= pid;
+            marcoLibre->assigned_page = pagina;
 
             list_add(procesoBuscado->pages_table, pagina);
         }
@@ -406,8 +457,11 @@ void resize_process(t_Payload* socketRecibido){
         for (size_t i = size; i > paginas; i--)
         {
             t_Page* pagina = list_get(procesoBuscado->pages_table, i);
-            free(pagina);
             list_remove(procesoBuscado->pages_table, i);
+            t_Frame* marco = list_get(lista_marcos, pagina->assigned_frame);
+            list_add(lista_marcos_libres,marco);
+
+            free(pagina);
         }
         
     }
