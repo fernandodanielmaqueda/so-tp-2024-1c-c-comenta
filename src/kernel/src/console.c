@@ -1,187 +1,266 @@
 #include "console.h"
 
-t_log *module_logger_consola;
+t_log *CONSOLE_LOGGER;
+char *CONSOLE_LOG_PATHNAME = "console.log";
 
-void initialize_interactive_console(void) {
+t_Command CONSOLE_COMMANDS[] = {
+  { .name = "EJECUTAR_SCRIPT", .function = kernel_command_run_script },
+  { .name = "INICIAR_PROCESO", .function = kernel_command_start_process },
+  { .name = "FINALIZAR_PROCESO", .function = kernel_command_kill_process },
+  { .name = "DETENER_PLANIFICACION", .function = kernel_command_stop_scheduling },
+  { .name = "INICIAR_PLANIFICACION", .function = kernel_command_start_scheduling },
+  { .name = "MULTIPROGRAMACION", .function = kernel_command_multiprogramming },
+  { .name = "PROCESO_ESTADO", .function = kernel_command_process_states },
+  { .name = NULL, .function = NULL }
+};
 
-    module_logger_consola = log_create("consola.log", "Consola", true, LOG_LEVEL_TRACE);
+int EXIT_CONSOLE = 0;
 
-    char* leido;
-    leido = readline("> ");
-    bool validate_lecture;
+void *initialize_kernel_console(void *argument) {
 
-    while(strcmp(leido, "\0 ") != 0){
- 
-         validate_lecture = validate_command_console(leido);
-         if(validate_lecture){
-             log_error(module_logger_consola, "Comando de CONSOLA invalido");
-             free(leido);
-             leido = readline("> ");
-    continue;
-    }
- 
- else{
-    log_info(module_logger_consola, "Comando de CONSOLA valido");
-    attend_command_console(leido);
-    free(leido);
-    leido = readline("> ");
-     }
-}
+    CONSOLE_LOGGER = log_create(CONSOLE_LOG_PATHNAME, "Console", true, LOG_LEVEL_TRACE);
 
-}
+    char *line, *subline;
 
-bool validate_command_console(char* leido){
-    bool result_validation = false;
+    initialize_readline();	/* Bind our completer. */
 
-    char** command_console = string_split(leido, " ");
-    e_Function funcion = pedir_enum_funcion(command_console);
-   
+    while(!EXIT_CONSOLE) {
+        line = readline("> ");
 
-    switch (funcion)
-    {
-        
-        case EJECUTAR_SCRIPT:
-            if(strcmp(command_console[0], "EJECUTAR_SCRIPT") == 0 && string_is_empty(command_console[1]) == false){
-                result_validation = true;
-               
-            }
-            break;
+        if(line == NULL)
+            continue;
 
-        case INICIAR_PROCESO:
-            if(strcmp(command_console[0], "INICIAR_PROCESO") == 0  && string_is_empty(command_console[1]) == false){
-                result_validation = true;
-                
-            }
-            break;
+        subline = strip_whitespaces(line);
 
-        case FINALIZAR_PROCESO:
-            if(strcmp(command_console[0], "FINALIZAR_PROCESO") == 0  && string_is_empty(command_console[1]) == false){
-                result_validation = true;
-              
-            }
-            break;
+        if(*subline) {
+            add_history(subline);
+            execute_line(subline);
+        }
 
-        case DETENER_PLANIFICACION:
-            if(strcmp(command_console[0], "DETENER_PLANIFICACION") == 0 ) {
-                result_validation = true;
-            
-            }
-            break;
-
-        case INICIAR_PLANIFICACION:
-            if(strcmp(command_console[0], "INICIAR_PLANIFICACION") == 0 ){
-                result_validation = true;
-               
-            }
-            break;
-        case MULTIPROGRAMACION:
-            if(strcmp(command_console[0], "MULTIPROGRAMACION") == 0  && string_is_empty(command_console[1]) == false){
-                result_validation = true;
-              
-            }
-            break;
-
-        case PROCESO_ESTADO:
-            if(strcmp(command_console[0], "PROCESO_ESTADO") == 0  ){
-                result_validation = true;
-                
-            }
-            break;
-
-        default:
-            result_validation = false;
-            break;
-
+        free(line);
     }
 
-    return result_validation;
+    clear_history();
+    return NULL;
 }
 
+/* Tell the GNU Readline library how to complete.  We want to try to complete on command names if this is the first word in the line, or on filenames if not. */
+void initialize_readline(void) {
+  /* Tell the completer that we want a crack first. */
+  rl_attempted_completion_function = console_completion;
+}
 
-//RECIBO EL COMANDO DE LA CONSOLA Y EJECUTO SEGUN LO PEDIDO
-void attend_command_console(char* leido){
-    char** command_console = string_split(leido, " ");
-    e_Function funcion = pedir_enum_funcion(command_console);
+/* Attempt to complete on the contents of TEXT.  START and END show the
+   region of TEXT that contains the word to complete.  We can use the
+   entire line in case we want to do some simple parsing.  Return the
+   array of matches, or NULL if there aren't any. */
+char **console_completion(const char *text, int start, int end) {
+    char **matches = NULL;
 
-    switch (funcion)
-    {
-        case EJECUTAR_SCRIPT:
-        {
-            char* path_script = strdup(command_console[1]);
-            log_trace(module_logger_consola, "Se va a ejecutar el script %s", path_script);
-            //TODO: ejecutar_script(path);==========================//
-            break;
-        }
-        case INICIAR_PROCESO:
-        {
-            // strdup: duplica la cadena de caracteres y le asigna memoria sufuente
-            char* path = strdup(command_console[1]);
-            log_trace(module_logger_consola, "Se va a iniciar el proceso %s", path);
+    /* If this word is at the start of the line, then it is a command
+        to complete.  Otherwise it is the name of a file in the current
+        directory. */
+    if(start == 0)
+        matches = rl_completion_matches(text, command_generator);
 
-            //TODO: iniciar_proceso(path);==========================//
-            break;
-        }
+    return (matches);
+}
 
-        //usar
-        case FINALIZAR_PROCESO:
-        {
-         int pid = atoi(command_console[1]);
-         //NECESITO EL PCB PARA SEGUIR ACA =-=======================//
-         log_trace(module_logger_consola, "Se fianlizo el proceso %d", pid);
-          break;
-        }
-        //usar
-        case DETENER_PLANIFICACION:
-        {
-          log_trace(module_logger_consola, "Se  detuvo la planificacion");
-          stop_planificacion();
-          break;
-        }
-        //usar
-        case INICIAR_PLANIFICACION:
-        {
-         log_trace(module_logger_consola, "Se  inicio la planificacion");
-         init_planificacion();
-         break;
-        }
-         case MULTIPROGRAMACION:
-         {
-          int nuevo_grado = atoi(command_console[1]);
-        log_trace(module_logger_consola, " Grado Actual: %d",  nuevo_grado);   
-        //TODO:crear_nuevo_semaforo_multiprog==========================// 
-         break;
-        }
-        //usar
-        //necesito el PCB
-        case PROCESO_ESTADO:
-        // listState();
-        break;
+/* Generator function for command completion.  STATE lets us know whether
+   to start from scratch; without any state (i.e. STATE == 0), then we
+   start at the top of the list. */
+char *command_generator(const char *text, int state) {
+    static int list_index, length;
+    char *name;
 
-        default:
-            log_error(module_logger_consola, "Comando de CONSOLA invalido");
-            break;
+    /* If this is a new word to complete, initialize now.  This includes
+        saving the length of TEXT for efficiency, and initializing the index
+        variable to 0. */
+    if(!state) {
+        list_index = 0;
+        length = strlen(text);
     }
 
-    
-    free_strv(command_console);
+    /* Return the next name which partially matches from the command list. */
+    while ((name = CONSOLE_COMMANDS[list_index].name) != NULL) {
+        list_index++;
+
+        if(strncmp(name, text, length) == 0)
+            return(strdup(name));
+    }
+
+    /* If no names matched, then return NULL. */
+    return NULL;
 }
 
-int pedir_enum_funcion(char** sublinea)
-{
-	if(strcmp(sublinea[0], "INICIAR_PROCESO") == 0)
-		return INICIAR_PROCESO;
-       else if(strcmp(sublinea[0], "EJECUTAR_SCRIPT") == 0)
-        return EJECUTAR_SCRIPT;
-	else if(strcmp(sublinea[0], "FINALIZAR_PROCESO") == 0)
-		return FINALIZAR_PROCESO;
-	else if(strcmp(sublinea[0], "DETENER_PLANIFICACION") == 0)		
-		return DETENER_PLANIFICACION;
-	else if(strcmp(sublinea[0], "INICIAR_PLANIFICACION") == 0)
-		return INICIAR_PLANIFICACION;
-	else if(strcmp(sublinea[0], "MULTIPROGRAMACION") == 0)
-		return MULTIPROGRAMACION;
-	else if(strcmp(sublinea[0], "PROCESO_ESTADO") == 0)
-		return PROCESO_ESTADO;
-	else
-		return -1;
+/* Strip whitespace from the start and end of STRING.  Return a pointer into STRING. */
+char *strip_whitespaces(char *string) {
+  register char *start, *end;
+
+  // Recorre el inicio de cadena hasta encontrar un caracter que no sea un espacio
+  for (start = string; whitespace(*start); start++);
+
+  if (*start == '\0')
+    return (start);
+
+  // Busca el fin de la cadena arrancando desde s para mayor optimización por menor recorrido
+  end = start + strlen(start) - 1;
+
+  while (end > start && whitespace(*end))
+    end--;
+
+  *++end = '\0';
+
+  return start;
+}
+
+/* Execute a command line. */
+void execute_line(char *line) {
+    register int i = 0;
+    char *arg;
+    int argc = 0;
+    char *argv[MAX_CONSOLE_ARGC] = {NULL};
+    t_Command *command;
+
+    while(line[i]) {
+        while(line[i] && whitespace(line[i]))
+            i++;
+
+        if(!line[i])
+            break;
+
+        if(argc == MAX_CONSOLE_ARGC) {
+            log_warning(CONSOLE_LOGGER, "Demasiados argumentos.");
+            return;
+        }
+
+        arg = line + i;
+        argv[argc++] = arg;
+
+        while(line[i] && !whitespace(line[i]))
+            i++;
+
+        if(line[i])
+            line[i++] = '\0';
+    }
+
+    command = find_command(argv[0]);
+
+    if (command == NULL) {
+        log_warning(CONSOLE_LOGGER, "%s: No existe el comando especificado.", argv[0]);
+        return;
+    }
+
+    /* Call the function. */
+    ((*(command->function)) (argc, argv));
+
+    return;
+}
+
+/* Look up NAME as the name of a command, and return a pointer to that
+   command.  Return a NULL pointer if NAME isn't a command name. */
+t_Command *find_command (char *name) {
+    for(register int i = 0; CONSOLE_COMMANDS[i].name != NULL; i++)
+        if(!strcmp(CONSOLE_COMMANDS[i].name, name))
+            return (&CONSOLE_COMMANDS[i]);
+
+    return NULL;
+}
+
+int kernel_command_run_script(int argc, char* argv[]) {
+
+    if(argc != 2) {
+        log_warning(CONSOLE_LOGGER, "Uso: EJECUTAR_SCRIPT <PATH>");
+        return 1;
+    }
+
+    log_trace(CONSOLE_LOGGER, "EJECUTAR_SCRIPT %s", argv[1]);
+
+    // TODO: Implementación
+
+    return 0;    
+}
+
+int kernel_command_start_process(int argc, char* argv[]) {
+
+    if(argc != 2) {
+        log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PROCESO <PATH>");
+        return 1;
+    }
+
+    log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
+
+    // TODO: Implementación
+
+    return 0;
+}
+
+int kernel_command_kill_process(int argc, char* argv[]) {
+
+    if(argc != 2) {
+        log_warning(CONSOLE_LOGGER, "Uso: FINALIZAR_PROCESO <PID>");
+        return 1;
+    }
+
+    log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
+
+    // TODO: Implementación
+
+    return 0;
+}
+
+int kernel_command_stop_scheduling(int argc, char* argv[]) {
+
+    if(argc != 1) {
+        log_warning(CONSOLE_LOGGER, "Uso: DETENER_PLANIFICACION");
+        return 1;
+    }
+
+    log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION");
+
+    // TODO: Implementación
+
+    return 0;
+}
+
+int kernel_command_start_scheduling(int argc, char* argv[]) {
+
+    if(argc != 1) {
+        log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PLANIFICACION");
+        return 1;
+    }
+
+    log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION");
+
+    // TODO: Implementación
+
+    return 0;
+}
+
+int kernel_command_multiprogramming(int argc, char* argv[]) {
+
+    if(argc != 2) {
+        log_warning(CONSOLE_LOGGER, "Uso: MULTIPROGRAMACION <VALOR>");
+        return 1;
+    }
+
+    log_trace(CONSOLE_LOGGER, "MULTIPROGRAMACION %s", argv[1]);
+
+    // TODO: Implementación
+
+    return 0;
+}
+
+int kernel_command_process_states(int argc, char* argv[]) {
+
+    if(argc != 1) {
+        log_warning(CONSOLE_LOGGER, "Uso: PROCESO_ESTADO");
+        return 1;
+    }
+
+    log_trace(CONSOLE_LOGGER, "PROCESO_ESTADO");
+
+    // TODO: Implementación
+
+    return 0;
 }

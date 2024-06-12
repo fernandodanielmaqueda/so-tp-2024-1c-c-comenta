@@ -21,19 +21,65 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
+#include <commons/temporal.h>
 #include "utils/module.h"
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
 #include "console.h"
 #include "socket.h"
 
-extern t_Server COORDINATOR_IO;
-extern t_Connection CONNECTION_MEMORY;
-extern t_Connection CONNECTION_CPU_DISPATCH;
-extern t_Connection CONNECTION_CPU_INTERRUPT;
+typedef struct t_Scheduling_Algorithm {
+    char *name;
+    t_PCB *(*function) (void);
+} t_Scheduling_Algorithm;
+
+extern char *MODULE_NAME;
+
+extern t_log *MODULE_LOGGER;
+extern char *MODULE_LOG_PATHNAME;
+
+extern t_config *MODULE_CONFIG;
+extern char *MODULE_CONFIG_PATHNAME;
+
+// Listas globales de estados
+extern t_list *LIST_NEW;
+extern t_list *LIST_READY;
+extern t_list *LIST_EXECUTING;
+extern t_list *LIST_BLOCKED;
+extern t_list *LIST_EXIT;
+
+extern pthread_mutex_t mutex_PID;
+extern pthread_mutex_t mutex_LIST_NEW;
+extern pthread_mutex_t mutex_LIST_READY;
+extern pthread_mutex_t mutex_LIST_BLOCKED;
+extern pthread_mutex_t mutex_LIST_EXECUTING;
+extern pthread_mutex_t mutex_LIST_EXIT;
+
+//consola interactiva
+extern pthread_mutex_t mutex_pid_detected;
+extern int identifier_pid;
+//
+
+extern pthread_t hilo_largo_plazo;
+extern pthread_t hilo_corto_plazo;
+extern pthread_t hilo_mensajes_cpu;
+extern pthread_t thread_interrupt;
+
+extern sem_t sem_long_term_scheduler;
+extern sem_t sem_short_term_scheduler;
+extern sem_t sem_multiprogramming_level;
+extern sem_t process_ready;
+
+extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
+extern int QUANTUM;
+extern char **RESOURCES;
+extern char **RESOURCE_INSTANCES;
+extern int MULTIPROGRAMMING_LEVEL;
+extern int pidContador;
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
+t_Scheduling_Algorithm *find_scheduling_algorithm(char *name);
 void switch_process_state(t_PCB* pcb, int new_state) ;
 t_PCB *create_pcb();
 void initialize_long_term_scheduler(void);
@@ -43,7 +89,9 @@ void *long_term_scheduler(void*);
 void *short_term_scheduler(void*);
 t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
-//t_PCB *VRR_scheduling_algorithm(void* arg);
+t_PCB *VRR_scheduling_algorithm(void);
+t_PCB *kernel_get_normal_list(void);
+t_PCB *kernel_get_priority_list(void);
 void *receptor_mensajes_cpu(void*);
 int current_time(void);
 int asignar_PID();

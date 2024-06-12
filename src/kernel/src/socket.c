@@ -46,7 +46,7 @@ void *kernel_start_server_for_io(void *server_parameter) {
 
 	while(1) {
 		fd_new_client = malloc(sizeof(int));
-		log_info(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_trace(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		*fd_new_client = server_accept(server->fd_listen);
 
 		if(*fd_new_client == -1) {
@@ -55,7 +55,7 @@ void *kernel_start_server_for_io(void *server_parameter) {
 			continue;
 		}
 
-		log_info(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		pthread_create(&thread_new_client, NULL, kernel_client_handler_for_io, (void*) fd_new_client);
 		pthread_detach(thread_new_client);
 	}
@@ -89,7 +89,7 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 
     switch((e_PortType) handshake) {
         case IO_TYPE:
-            log_info(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
+            log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
 			handshake = 0;
             bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
 

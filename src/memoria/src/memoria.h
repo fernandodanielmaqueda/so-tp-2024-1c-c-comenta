@@ -33,7 +33,7 @@ typedef struct t_Process {
 } t_Process;
 
 typedef struct t_Page {
-    int number;
+    int pagid;
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
@@ -55,13 +55,13 @@ void listen_kernel(int fd_kernel);
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
-void create_process(int socketRecibido);
+void create_process(t_Payload* socketRecibido);
 
 /**
  * @brief Elimina el proceso, marca el marco como disponible y libera la pagina
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
-void kill_process (int socketRecibido);
+void kill_process (t_Payload* socketRecibido);
 
 
 void create_instruction(FILE* file, t_list* list_instruction);
@@ -74,7 +74,7 @@ t_Process* seek_process_by_pid(int pidBuscado);
  * @param pid Program counter requerido.
  * @param pc Program counter requerido.
  */
-void seek_instruccion(int socketRecibido);
+void seek_instruccion(t_Payload* socketRecibido);
 
 
 
@@ -130,7 +130,7 @@ void free_marcos();
  * @brief Recibe el pedido de busqueda de marco y responde el mismo
  * @param socketRecibido Socket escuchado
  */
-void respond_frame_request(int socketRecibido);
+void respond_frame_request(t_Payload* socketRecibido);
 
 /**
  * @brief Busca el marco asociado a una pagina en especial de una tabla de paginas.
@@ -138,5 +138,7 @@ void respond_frame_request(int socketRecibido);
  * @param pagina Pagina buscada.
  */
 int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina);
+
+void resize_process(t_Payload* payload);
 
 #endif /* MEMORIA_H */

@@ -25,7 +25,7 @@ void *client_thread_connect_to_server(void *connection_parameter) {
       }
     }
 
-    log_info(SOCKET_LOGGER, "Conectado con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+    log_trace(SOCKET_LOGGER, "Conectado con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
 
     // Handshake
 
@@ -61,8 +61,10 @@ void *client_thread_connect_to_server(void *connection_parameter) {
         continue;
     }
 
-    if(handshake == 0)
+    if(handshake == 0) {
+      log_debug(SOCKET_LOGGER, "OK Handshake con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
       break;
+    }
     else {
       log_warning(SOCKET_LOGGER, "Error Handshake con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
       close(connection->fd_connection);
@@ -134,7 +136,7 @@ void server_start(t_Server *server) {
     }
   }
 
-  log_info(SOCKET_LOGGER, "Escuchando [Servidor] %s en Puerto: %s", PORT_NAMES[server->server_type], server->port);
+  log_trace(SOCKET_LOGGER, "Escuchando [Servidor] %s en Puerto: %s", PORT_NAMES[server->server_type], server->port);
 }
 
 int server_start_try(char* port) {

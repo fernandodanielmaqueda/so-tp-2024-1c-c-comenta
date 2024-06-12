@@ -7,12 +7,12 @@ t_log *SOCKET_LOGGER;
 char *SOCKET_LOG_PATHNAME = "socket.log";
 
 t_log *SERIALIZE_LOGGER;
-char *SERIALIZE_LOG_PATHNAME = "socket.log";
+char *SERIALIZE_LOG_PATHNAME = "serialize.log";
 
 void initialize_loggers(void) {
-	MODULE_LOGGER = log_create(MODULE_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
-	SOCKET_LOGGER = log_create(SOCKET_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
-	SERIALIZE_LOGGER = log_create(SERIALIZE_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_INFO);
+	MODULE_LOGGER = log_create(MODULE_LOG_PATHNAME, MODULE_NAME, true, LOG_LEVEL_TRACE);
+	SOCKET_LOGGER = log_create(SOCKET_LOG_PATHNAME, "Socket", true, LOG_LEVEL_TRACE);
+	SERIALIZE_LOGGER = log_create(SERIALIZE_LOG_PATHNAME, "Serialize", true, LOG_LEVEL_TRACE);
 }
 
 void finish_loggers(void) {

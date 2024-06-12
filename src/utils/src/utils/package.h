@@ -15,7 +15,8 @@
 #include "utils/module.h"
 
 typedef enum e_Header {
-    DISCONNECTION_HEADER = -1,
+    DISCONNECTION_HEADER,
+    ARGUMENTS_HEADER,
     PCB_HEADER,
     CPU_MEMORY_REQUEST_HEADER,
     CPU_INSTRUCTION_HEADER,

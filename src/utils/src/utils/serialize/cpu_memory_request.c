@@ -37,3 +37,48 @@ void cpu_memory_request_print(e_CPU_Memory_Request *memory_request) {
     *memory_request
   );
 }
+
+
+void send_string(char* mensaje, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, mensaje, strlen(mensaje)+1 );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+
+void send_int(int nro, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, nro, sizeof(int) );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+void send_2int(int nro, int nro2, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, nro, sizeof(int) );
+    payload_enqueue(package->payload, nro2, sizeof(int) );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+void receive_2int(int* nro1, int* nro2, t_Payload* payload){ //receive_2int(&n1,&n2,payload);
+    // Extrae el primer entero del payload
+    int offset = 0;
+    memcpy(nro1, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+
+    // Extrae el segundo entero del payload
+    memcpy(nro2, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+
+}
+
+void send_String_1int(int nro, char* mensaje, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, strlen(mensaje)+1, sizeof(int) );
+    payload_enqueue(package->payload, mensaje, strlen(mensaje)+1 );
+    payload_enqueue(package->payload, nro, sizeof(int) );
+  package_send(package, socket);
+  package_destroy(package);
+}

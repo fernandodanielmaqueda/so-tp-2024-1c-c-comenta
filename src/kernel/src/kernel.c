@@ -4,20 +4,29 @@
 #include "kernel.h"
 
 char *MODULE_NAME = "kernel";
-char *MODULE_LOG_PATHNAME = "kernel.log";
-char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
 t_log *MODULE_LOGGER;
-extern t_log *SOCKET_LOGGER;
+char *MODULE_LOG_PATHNAME = "kernel.log";
+
 t_config *MODULE_CONFIG;
+char *MODULE_CONFIG_PATHNAME = "kernel.config";
+
+t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
+	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
+	{ .name = "RR", .function = RR_scheduling_algorithm },
+	{ .name = "VRR", .function = VRR_scheduling_algorithm },
+	{ .name = NULL, .function = NULL }
+};
+
+t_temporal *VAR_TEMP_QUANTUM = NULL;
 
 // Listas globales de estados
 t_list *LIST_NEW;
 t_list *LIST_READY;
+t_list *LIST_READY_PLUS;
 t_list *LIST_EXECUTING;
 t_list *LIST_BLOCKED;
 t_list *LIST_EXIT;
-t_list *priority_list;
 
 pthread_mutex_t mutex_PID;
 pthread_mutex_t mutex_LIST_NEW;
@@ -28,8 +37,7 @@ pthread_mutex_t mutex_LIST_EXIT;
 
 //consola interactiva
 pthread_mutex_t mutex_pid_detected;
-int identifier_pid=1;
-//
+int identifier_pid = 1;
 
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
@@ -38,17 +46,15 @@ pthread_t thread_interrupt;
 
 sem_t sem_long_term_scheduler;
 sem_t sem_short_term_scheduler;
-sem_t sem_multiprogramming_level;
-sem_t process_ready;
+sem_t sem_multiprogramming_level; // 20 procesos en sim
+sem_t process_ready; // Al principio en 0
 
-char *SCHEDULING_ALGORITHM;
+t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 int QUANTUM;
 char **RESOURCES;
 char **RESOURCE_INSTANCES;
 int MULTIPROGRAMMING_LEVEL;
 int pidContador;
-
-size_t bytes;
 
 int module(int argc, char *argv[]) {
 
@@ -75,16 +81,14 @@ int module(int argc, char *argv[]) {
         .SI = 500,
         .DI = 600,
         .quantum = 2,
-        .current_state = NEW,
+        .current_state = NEW_STATE,
         .arrival_READY = 123.456,
         .arrival_RUNNING = 789.012
     };
 
 	pcb_print(&pcb);
 	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
-	log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
-
-	initialize_interactive_console();
+	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	
 	sem_init(&sem_long_term_scheduler, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);
@@ -92,15 +96,19 @@ int module(int argc, char *argv[]) {
 
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
+	LIST_READY_PLUS = list_create();
 	LIST_EXECUTING = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
-	priority_list = list_create();
 
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();
 	initialize_short_term_scheduler();
 	initialize_cpu_command_line_interface();
+
+	initialize_kernel_console(NULL);
+	//pthread_create(&THREAD_CONSOLE, NULL, initialize_kernel_console, NULL);
+	//pthread_join(THREAD_CONSOLE, NULL);
 
 	//finish_threads();
 	finish_sockets();
@@ -115,11 +123,20 @@ void read_module_config(t_config *MODULE_CONFIG) {
 	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
 	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_DISPATCH")};
 	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_INTERRUPT")};
-	SCHEDULING_ALGORITHM = config_get_string_value(MODULE_CONFIG, "ALGORITMO_PLANIFICACION");
+	SCHEDULING_ALGORITHM = find_scheduling_algorithm(config_get_string_value(MODULE_CONFIG, "ALGORITMO_PLANIFICACION"));
 	QUANTUM = config_get_int_value(MODULE_CONFIG, "QUANTUM");
 	RESOURCES = config_get_array_value(MODULE_CONFIG, "RECURSOS");
 	RESOURCE_INSTANCES = config_get_array_value(MODULE_CONFIG, "INSTANCIAS_RECURSOS");
 	MULTIPROGRAMMING_LEVEL = config_get_int_value(MODULE_CONFIG, "GRADO_MULTIPROGRAMACION");
+}
+
+t_Scheduling_Algorithm *find_scheduling_algorithm(char *name) {
+	for (register int i = 0; SCHEDULING_ALGORITHMS[i].name != NULL; i++) {
+		if (!strcmp(SCHEDULING_ALGORITHMS[i].name, name)) {
+			return (&SCHEDULING_ALGORITHMS[i]);
+		}
+	}
+	return NULL;
 }
 
 void initialize_long_term_scheduler(void) {
@@ -149,7 +166,7 @@ void *long_term_scheduler(void *parameter) {
 
 		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
 
-	     switch_process_state(pcb, READY);
+	     switch_process_state(pcb, READY_STATE);
 		
 	}
 
@@ -161,22 +178,11 @@ void *short_term_scheduler(void *parameter) {
 	t_PCB* pcb;
 
 	while(1) {
-		sem_wait(&sem_short_term_scheduler);	
+		sem_wait(&sem_short_term_scheduler);
 
-		if(!strcmp(SCHEDULING_ALGORITHM, "VRR")) {
-			//pcb = algoritmo_VRR();
-		} else if (!strcmp(SCHEDULING_ALGORITHM, "FIFO")){
-			pcb = FIFO_scheduling_algorithm();
-		} else if (!strcmp(SCHEDULING_ALGORITHM, "RR")){
-			pcb = RR_scheduling_algorithm();
+		pcb = SCHEDULING_ALGORITHM->function();
 
-	    	pthread_create(&thread_interrupt, NULL, start_quantum, NULL); // thread interrupt
-			//pthread_detach(&thread_interrupt, NULL);
-		} else {
-			// log_error(MODULE_LOGGER, "El algoritmo de planificacion ingresado no existe\n");
-		}
-
-		switch_process_state(pcb, EXECUTING);
+		switch_process_state(pcb, EXECUTING_STATE);
 
 		//FALTA SERIALIZAR PCB
 		//FALTA ENVIAR PAQUETE A CPU
@@ -192,6 +198,8 @@ t_PCB *FIFO_scheduling_algorithm(void) {
 
 	return pcb;
 }
+
+
 
 t_PCB *RR_scheduling_algorithm(void ){
 	
@@ -210,15 +218,87 @@ t_PCB *RR_scheduling_algorithm(void ){
 		return pcb;
 }
 
+/* 
+PROBLEMAS.
+
+1- EN QUE MOMENTO SE ACTUALIZA EL QUANTUM
+2- EL PCB DONDE SE LO PASO?
+
+
+
+*/
+
+
+t_PCB *kernel_get_priority_list(void) { //como sacar el pcb de las listas?
+	// ponele que puede ser un list_get
+}
+
+t_PCB *kernel_get_normal_list(void) {
+	
+}
+
 t_PCB *VRR_scheduling_algorithm(void){
-  /*if(){
-	priority_list
+	t_PCB *pcb;
+
+	sem_wait(&process_ready);
+
+	pcb = kernel_get_priority_list();
+
+	if(pcb == NULL) {
+
+		pcb = kernel_get_normal_list();
+	}
+
+	// Mandar el PCB a CPU
+
+//ACA CREAR  UN HILO... REVISDR
+/*
+	switch(pcb->interrupt_cause) {
+		case INTERRUPT_CAUSE:
+			if(pcb->quantum > 0) {
+				list_add(LIST_READY_PLUS, pcb);
+			} else {
+				list_add(LIST_READY, pcb);
+			}
+			sem_post(&process_ready);
+	}
+
+  if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
+		list_add(LIST_READY_PLUS, pcb);
   }
   else {
 	RR_scheduling_algorithm();
   }
-  return pcb; */
+  return pcb;
+*/
 }
+
+/*
+void update_pcb_q(t_pcb *pcb)
+{
+    t_config_kernel *cfg = get_config();
+    if (!!strcmp(cfg->ALGORITMO_PLANIFICACION, "VRR"))
+    {
+        return;
+    }
+
+    temporal_stop(VAR_TEMP_QUANTUM);
+    int time_elapsed = (int)temporal_gettime(VAR_TEMP_QUANTUM);
+    int time_remaining = pcb->quantum - time_elapsed;
+    temporal_destroy(VAR_TEMP_QUANTUM);
+
+    log_trace(get_logger(), "PCB_Q (%i) - TIME_ELAPSED (%i) = time_remaining %i", pcb->quantum, time_elapsed,
+              time_remaining);
+
+    if (time_remaining > 0)
+    {
+        pcb->quantum = time_remaining;
+    }
+        pcb->quantum = cfg->QUANTUM;
+ }
+
+DESCOMENTAR
+*/
 
 /*
 void listen_cpu(int fd_cpu) {
@@ -235,7 +315,7 @@ void listen_cpu(int fd_cpu) {
                 respond_frame_request(fd_cpu);
                 break;
 
-            /*
+            
             case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
@@ -371,19 +451,19 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	}
 
 	switch (previous_state){ //! ESTADO ANTERIOR
-		case NEW:
+		case NEW_STATE:
 			global_previous_state="NEW";
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_remove_by_condition(LIST_NEW, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 			break;
-		case READY:
+		case READY_STATE:
 			global_previous_state="READY";
 			pthread_mutex_lock(&mutex_LIST_READY);
 			list_remove_by_condition(LIST_READY, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			break;
-		case EXECUTING:
+		case EXECUTING_STATE:
 		{
 			global_previous_state="EXECUTING";
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
@@ -391,7 +471,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
 			break;
 		}
-		case BLOCKED:
+		case BLOCKED_STATE:
 		{
 			global_previous_state="BLOCKED";
 			pthread_mutex_lock(&mutex_LIST_BLOCKED);
@@ -403,7 +483,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 
 
 	switch(new_state){ // ! ESTADO NUEVO
-		case NEW:
+		case NEW_STATE:
 		{
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_add(LIST_NEW, pcb);
@@ -413,7 +493,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			sem_post(&sem_long_term_scheduler);
 			break;
 		}
-		case READY:
+		case READY_STATE:
 		{
 			pcb -> arrival_READY = current_time();
 
@@ -425,7 +505,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			
 			break;
 		}
-		case EXECUTING:
+		case EXECUTING_STATE:
 		{
 			pcb -> arrival_RUNNING = current_time();
 			
@@ -436,7 +516,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	
 			break;
 		}
-		case BLOCKED:
+		case BLOCKED_STATE:
 		{
 			pthread_mutex_lock(&mutex_LIST_BLOCKED);
 			list_add(LIST_BLOCKED, pcb);
@@ -448,7 +528,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			break;
 		}
 		//Todos los casos de salida de un proceso.
-		case EXIT:
+		case EXIT_STATE:
 		{
 			
 			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
@@ -563,6 +643,7 @@ void send_interrupt(int socket)
 
 void* start_quantum_VRR(t_PCB *pcb)
 {
+    VAR_TEMP_QUANTUM = temporal_create();
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(pcb->quantum * 1000); //en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
@@ -581,4 +662,3 @@ void* start_quantum()
 
 	return NULL;
 }
-

@@ -26,6 +26,13 @@
 #include "utils/socket.h"
 #include "console.h"
 
+extern t_log *SOCKET_LOGGER;
+
+extern t_Server COORDINATOR_IO;
+extern t_Connection CONNECTION_MEMORY;
+extern t_Connection CONNECTION_CPU_DISPATCH;
+extern t_Connection CONNECTION_CPU_INTERRUPT;
+
 void initialize_sockets(void);
 void finish_sockets(void);
 void *kernel_start_server_for_io(void *server_parameter);

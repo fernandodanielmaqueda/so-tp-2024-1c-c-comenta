@@ -18,6 +18,23 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
+typedef struct t_CPU_Registers {
+    uint8_t AX;
+    uint8_t BX;
+    uint8_t CX; 
+    uint8_t DX;
+    uint32_t EAX;
+    uint32_t EBX;
+    uint32_t ECX;
+    uint32_t EDX;
+    uint32_t RAX;
+    uint32_t RBX;
+    uint32_t RCX;
+    uint32_t RDX;
+    uint32_t SI;
+    uint32_t DI;
+} t_CPU_Registers;
+
 typedef struct t_PCB {
     uint32_t PID;
     uint32_t PC;
@@ -38,8 +55,8 @@ typedef struct t_PCB {
     uint32_t DI;
     uint32_t quantum; //remanente del quantum
     uint8_t current_state; //enum Process_State current_state;
-    double arrival_READY;
-    double arrival_RUNNING;
+    double arrival_READY; // che llego en t=5s
+    double arrival_RUNNING; // che corrio en runnign t=20seg 
 } t_PCB;
 
 
