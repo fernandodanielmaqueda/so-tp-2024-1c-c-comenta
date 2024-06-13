@@ -306,22 +306,11 @@ void listen_cpu(int fd_cpu) {
         e_Header header = paquete->header;
         //e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
         switch (header) {
-            case INSTRUCTION_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
-                seek_instruccion(paquete->payload);
-                break;
-                
-            case FRAME_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
-                respond_frame_request(paquete->payload);
-                break;
-
             
             case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
                 return;
-            
                 
             case PAGE_SIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
@@ -332,17 +321,7 @@ void listen_cpu(int fd_cpu) {
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
                 resize_process(paquete->payload);
                 break;
-                
-            case READ_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                //read_memory(paquete->payload, FD_CLIENT_CPU);
-                break;
-                
-            case WRITE_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                //write_memory(paquete->payload, FD_CLIENT_CPU);
-                break;
-            
+
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
