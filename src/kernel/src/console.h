@@ -29,7 +29,7 @@ typedef struct t_Command {
     int (*function) (int, char*[]);
 } t_Command;
 
-extern t_Command CONSOLE_COMMANDS[];
+extern const t_Command CONSOLE_COMMANDS[];
 
 extern t_log *CONSOLE_LOGGER;
 extern char *CONSOLE_LOG_PATHNAME;

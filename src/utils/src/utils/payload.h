@@ -10,6 +10,7 @@
 #include "commons/log.h"
 
 typedef uint32_t t_PayloadSize;
+typedef uint32_t t_StringLength;
 
 typedef struct t_Payload {
     t_PayloadSize size; // Tamaño del payload
@@ -21,34 +22,57 @@ extern t_log *SERIALIZE_LOGGER;
 t_Payload *payload_create(void);
 void payload_destroy(t_Payload *payload);
 
+
 /**
  * Enqueues data into the payload.
  * @param payload A pointer to the payload structure.
- * @param data A pointer to the data to be enqueued.
- * @param dataSize The size of the data to be enqueued.
- * @return An integer status code (0 for success, non-zero for failure).
+ * @param source A pointer to the source buffer.
+ * @param sourceSize The size of the source buffer.
  */
 void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize);
 void payload_enqueue_uint8_t(t_Payload *payload, uint8_t *source);
 void payload_enqueue_uint32_t(t_Payload *payload, uint32_t *source);
+void payload_enqueue_string(t_Payload *payload, char *source);
+
 
 /**
  * Dequeues data from the payload.
  * @param payload A pointer to the payload structure.
- * @param dataSize The size of the buffer to be dequeued.
- * @return A pointer to the dequeued data. NULL if the operation fails.
- *         The caller is responsible for freeing this memory.
+ * @param destination A pointer to the destination buffer.
+ * @param destinationSize The size of the destination buffer.
+ * @return An integer status code (0 for success, non-zero for failure).
  */
 void payload_dequeue(t_Payload *payload, void *destination, size_t destinationSize);
 void payload_dequeue_uint8_t(t_Payload *payload, uint8_t *destination);
 void payload_dequeue_uint32_t(t_Payload *payload, uint32_t *destination);
+void payload_dequeue_string(t_Payload *payload, char **destination);
 
-size_t memcpy_destination_offset(void *destination, size_t offset_destination, void *source, size_t bytes);
-size_t memcpy_destination_offset_uint8_t(uint8_t *destination, size_t offset_destination, uint8_t *source);
-size_t memcpy_destination_offset_uint32_t(uint32_t *destination, size_t offset_destination, uint32_t *source);
 
-size_t memcpy_source_offset(void *destination, void *source, size_t offset_source, size_t bytes);
-size_t memcpy_source_offset_uint8_t(uint8_t *destination, uint8_t *source, size_t offset_source);
-size_t memcpy_source_offset_uint32_t(uint32_t *destination, uint32_t *source, size_t offset_source);
+/**
+ * Copies data from source to destination.
+ * @param destination A pointer to the destination buffer.
+ * @param offset_destination The offset in the destination buffer.
+ * @param source A pointer to the source buffer.
+ * @param bytes The number of bytes to copy.
+ * @return The new offset in the destination buffer.
+ */
+size_t memcpy_serialize(void *destination, size_t offset_destination, void *source, size_t bytes);
+size_t memcpy_serialize_uint8_t(void *destination, size_t offset_destination, uint8_t *source);
+size_t memcpy_serialize_uint32_t(void *destination, size_t offset_destination, uint32_t *source);
+size_t memcpy_serialize_string(void *destination, size_t offset_destination, char *source);
+
+
+/**
+ * Copies data from source to destination.
+ * @param destination A pointer to the destination buffer.
+ * @param source A pointer to the source buffer.
+ * @param offset_source The offset in the source buffer.
+ * @param bytes The number of bytes to copy.
+ * @return The new offset in the source buffer.
+ */
+size_t memcpy_deserialize(void *destination, void *source, size_t offset_source, size_t bytes);
+size_t memcpy_deserialize_uint8_t(uint8_t *destination, void *source, size_t offset_source);
+size_t memcpy_deserialize_uint32_t(uint32_t *destination, void *source, size_t offset_source);
+size_t memcpy_deserialize_string(char **destination, void *source, size_t offset_source);
 
 #endif // PAYLOAD_H

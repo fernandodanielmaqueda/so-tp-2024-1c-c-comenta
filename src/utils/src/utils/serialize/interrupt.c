@@ -21,7 +21,7 @@ e_Interrupt *interrupt_deserialize(t_Payload *payload) {
 
   uint32_t offset = 0;
 
-  offset = memcpy_source_offset(interrupt, payload->stream, offset, sizeof(t_Interrupt_Serialized));
+  offset = memcpy_deserialize(interrupt, payload->stream, offset, sizeof(t_Interrupt_Serialized));
 
   interrupt_log(interrupt);
   return interrupt;

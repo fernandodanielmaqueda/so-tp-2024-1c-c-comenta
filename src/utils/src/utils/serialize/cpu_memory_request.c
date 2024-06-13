@@ -24,7 +24,7 @@ e_CPU_Memory_Request *cpu_memory_request_deserialize(t_Payload *payload) {
 
   uint8_t conversion_uint8_t;
 
-  offset = memcpy_source_offset(&(conversion_uint8_t), payload->stream, offset, sizeof(uint8_t));
+  offset = memcpy_deserialize(&(conversion_uint8_t), payload->stream, offset, sizeof(uint8_t));
   *memory_request = (e_CPU_Memory_Request) conversion_uint8_t;
 
   return memory_request;

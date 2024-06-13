@@ -38,28 +38,26 @@ void pcb_serialize(t_Payload *payload, t_PCB *pcb) {
 t_PCB *pcb_deserialize(t_Payload *payload) {
   t_PCB *pcb = malloc(sizeof(t_PCB));
 
-  uint32_t offset = 0;
-
-  offset = memcpy_source_offset(&(pcb->PID), payload->stream, offset, sizeof(pcb->PID));
-  offset = memcpy_source_offset(&(pcb->PC), payload->stream, offset, sizeof(pcb->PC));
-  offset = memcpy_source_offset(&(pcb->AX), payload->stream, offset, sizeof(pcb->AX));
-  offset = memcpy_source_offset(&(pcb->BX), payload->stream, offset, sizeof(pcb->BX));
-  offset = memcpy_source_offset(&(pcb->CX), payload->stream, offset, sizeof(pcb->CX));
-  offset = memcpy_source_offset(&(pcb->DX), payload->stream, offset, sizeof(pcb->DX));
-  offset = memcpy_source_offset(&(pcb->EAX), payload->stream, offset, sizeof(pcb->EAX));
-  offset = memcpy_source_offset(&(pcb->EBX), payload->stream, offset, sizeof(pcb->EBX));
-  offset = memcpy_source_offset(&(pcb->ECX), payload->stream, offset, sizeof(pcb->ECX));
-  offset = memcpy_source_offset(&(pcb->EDX), payload->stream, offset, sizeof(pcb->EDX));
-  offset = memcpy_source_offset(&(pcb->RAX), payload->stream, offset, sizeof(pcb->RAX));
-  offset = memcpy_source_offset(&(pcb->RBX), payload->stream, offset, sizeof(pcb->RBX));
-  offset = memcpy_source_offset(&(pcb->RCX), payload->stream, offset, sizeof(pcb->RCX));
-  offset = memcpy_source_offset(&(pcb->RDX), payload->stream, offset, sizeof(pcb->RDX));
-  offset = memcpy_source_offset(&(pcb->SI), payload->stream, offset, sizeof(pcb->SI));
-  offset = memcpy_source_offset(&(pcb->DI), payload->stream, offset, sizeof(pcb->DI));
-  offset = memcpy_source_offset(&(pcb->quantum), payload->stream, offset, sizeof(pcb->quantum));
-  offset = memcpy_source_offset(&(pcb->current_state), payload->stream, offset, sizeof(pcb->current_state));
-  offset = memcpy_source_offset(&(pcb->arrival_READY), payload->stream, offset, sizeof(pcb->arrival_READY));
-  offset = memcpy_source_offset(&(pcb->arrival_RUNNING), payload->stream, offset, sizeof(pcb->arrival_RUNNING));
+  payload_dequeue(payload, &(pcb->PID), sizeof(pcb->PID));
+  payload_dequeue(payload, &(pcb->PC), sizeof(pcb->PC));
+  payload_dequeue(payload, &(pcb->AX), sizeof(pcb->AX));
+  payload_dequeue(payload, &(pcb->BX), sizeof(pcb->BX));
+  payload_dequeue(payload, &(pcb->CX), sizeof(pcb->CX));
+  payload_dequeue(payload, &(pcb->DX), sizeof(pcb->DX));
+  payload_dequeue(payload, &(pcb->EAX), sizeof(pcb->EAX));
+  payload_dequeue(payload, &(pcb->EBX), sizeof(pcb->EBX));
+  payload_dequeue(payload, &(pcb->ECX), sizeof(pcb->ECX));
+  payload_dequeue(payload, &(pcb->EDX), sizeof(pcb->EDX));
+  payload_dequeue(payload, &(pcb->RAX), sizeof(pcb->RAX));
+  payload_dequeue(payload, &(pcb->RBX), sizeof(pcb->RBX));
+  payload_dequeue(payload, &(pcb->RCX), sizeof(pcb->RCX));
+  payload_dequeue(payload, &(pcb->RDX), sizeof(pcb->RDX));
+  payload_dequeue(payload, &(pcb->SI), sizeof(pcb->SI));
+  payload_dequeue(payload, &(pcb->DI), sizeof(pcb->DI));
+  payload_dequeue(payload, &(pcb->quantum), sizeof(pcb->quantum));
+  payload_dequeue(payload, &(pcb->current_state), sizeof(pcb->current_state));
+  payload_dequeue(payload, &(pcb->arrival_READY), sizeof(pcb->arrival_READY));
+  payload_dequeue(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
 
   pcb_log(pcb);
   return pcb;

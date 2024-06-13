@@ -11,7 +11,7 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
-t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
+const t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
 	{ .name = "RR", .function = RR_scheduling_algorithm },
 	{ .name = "VRR", .function = VRR_scheduling_algorithm },
@@ -62,7 +62,7 @@ int module(int argc, char *argv[]) {
 	initialize_configs();
 	initialize_sockets();
 	pidContador = 0;
-	
+
 	t_PCB pcb = {
         .PID = 1234,
         .PC = 5678,
@@ -86,7 +86,6 @@ int module(int argc, char *argv[]) {
         .arrival_RUNNING = 789.012
     };
 
-	pcb_log(&pcb);
 	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	

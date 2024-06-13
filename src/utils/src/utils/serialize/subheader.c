@@ -19,9 +19,7 @@ void header_serialize(t_Payload *payload, e_Header *header) {
 e_Header *header_deserialize(t_Payload *payload) {
   e_Header *header = malloc(sizeof(e_Header));
 
-  uint32_t offset = 0;
-
-  offset = memcpy_source_offset(header, payload->stream, offset, sizeof(t_Header_Serialized));
+  payload_dequeue(payload, header, sizeof(t_Header_Serialized));
 
   header_log(header);
   return header;

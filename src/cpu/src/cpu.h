@@ -26,8 +26,10 @@
 #include "utils/serialize/cpu_instruction.h"
 #include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/pcb.h"
+#include "utils/serialize/arguments.h"
 #include "utils/socket.h"
 #include "socket.h"
+#include "opcodes.h"
 
 #include "utils/estructuras.h"
 
@@ -36,6 +38,49 @@ typedef enum {
 	IN,
 	OUT
 } t_in_out;
+
+extern char *MODULE_NAME;
+extern char *MODULE_LOG_PATHNAME;
+extern char *MODULE_CONFIG_PATHNAME;
+
+extern t_log *MODULE_LOGGER;
+extern t_log *SOCKET_LOGGER;
+extern t_config *MODULE_CONFIG;
+
+// Tipos de interrupciones para el ciclo
+extern int interruption_io;
+
+extern int CANTIDAD_ENTRADAS_TLB;
+extern char *ALGORITMO_TLB;
+
+extern int size_pag;
+extern long timestamp;
+extern int direccion_logica; // momentaneo hasta ver de donde la saco
+extern t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
+
+// Variables para trabajar con las instrucciones
+extern int nro_page;
+extern uint32_t value;
+
+extern t_PCB *PCB;
+extern e_Register register_origin;
+extern e_Register register_destination;
+
+extern e_Interrupt INTERRUPT;
+
+extern int dir_logica_origin;
+extern int dir_logica_destination;
+
+extern int dir_fisica_origin;
+extern int dir_fisica_destination;
+
+extern uint32_t unit_work;
+extern char *interfaz;
+
+extern pthread_mutex_t sem_mutex_tlb;
+
+extern const char *t_register_string[];
+extern const char *t_interrupt_type_string[];
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
@@ -51,9 +96,9 @@ int check_tlb(int process_id, int nro_page);
 void tlb_access(t_PCB *pcb, int nro_page, int nro_frame_required, int direc ,int register_origin, int register_destination,int in_out);
 void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
 void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
-int request_frame_memory(int page, int pid);
+void request_frame_memory(int page, int pid);
 t_PCB *cpu_receive_pcb(void);
-t_CPU_Instruction *cpu_receive_cpu_instruction(void);
+t_Arguments *cpu_receive_cpu_instruction(void);
 e_Interrupt *cpu_receive_interrupt_type(void);
 
 #endif /* CPU_H */

@@ -19,7 +19,7 @@
 #include "utils/module.h"
 
 typedef struct t_Arguments {
-    uint32_t argc;
+    uint8_t argc;
     char *argv[];
 } t_Arguments;
 
@@ -47,6 +47,6 @@ void arguments_serialize(t_Payload *payload, t_Arguments *arguments);
 t_Arguments *arguments_deserialize(t_Payload *payload);
 
 
-void arguments_print(t_Arguments *arguments);
+void arguments_log(t_Arguments *arguments);
 
 #endif // SERIALIZE_ARGUMENTS_H
