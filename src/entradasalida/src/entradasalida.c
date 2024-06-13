@@ -8,7 +8,7 @@ char *MODULE_LOG_PATHNAME = "entradasalida.log";
 char *MODULE_CONFIG_PATHNAME = "entradasalida.config";
 
 t_log* MODULE_LOGGER;
-extern t_log *SOCKET_LOGGER;k
+extern t_log *SOCKET_LOGGER;
 t_config* MODULE_CONFIG;
 
 char *TIPO_INTERFAZ;
@@ -24,15 +24,49 @@ int BLOCK_COUNT;
 int module(int argc, char* argv[]) {
 
 	initialize_loggers();
-	initialize_configs();
-    initialize_sockets();
+	
+	//obtengo parametro 1
+ 	char* parametro1 = argv[1];
+	log_info(MODULE_LOGGER, "el parametro 1 es: %s", parametro1);
+	
+	char* parametro2 = argv[2];
+	initialize_configs_io(argv[2]);
+	log_info(MODULE_LOGGER, "el parametro 2 es: %s", parametro2);
+
+	initialize_sockets();
+	
+	log_info(MODULE_LOGGER, "El tipo del modulo es: %s",TIPO_INTERFAZ);
+ 	if(strcmp(TIPO_INTERFAZ, "GENERIC") == 0)
+	{
+		log_info(MODULE_LOGGER, "ES el generico");
+		generic_function();
+
+	}
+	else if(strcmp(TIPO_INTERFAZ, "STDIN") == 0)
+	{
+		log_info(MODULE_LOGGER, "Es STDIN");
+		stdin_function();
+	}
+	else if(strcmp(TIPO_INTERFAZ, "STDOUT") == 0)
+	{
+		log_info(MODULE_LOGGER, "Es STDOUT");
+		stdout_function();
+	}else
+	{
+		log_info(MODULE_LOGGER, "No reconozco el tipo interfaz");
+		char* mensaje = "No reconozco esta interfaz";
+		send(CONNECTION_KERNEL.fd_connection, mensaje, strlen(mensaje), 0);
+
+	}
+
+
 
     log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	//finish_threads();
 	finish_sockets();
 	//finish_configs();
-	finish_loggers();
+	finish_loggers(); 
    
     return EXIT_SUCCESS;
 }
@@ -47,18 +81,20 @@ void read_module_config(t_config* MODULE_CONFIG) {
     BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");
 }
 
-void initialize_sockets(void) {
+void initialize_sockets() {
 	pthread_t thread_io_connect_to_memory;
 	pthread_t thread_io_connect_to_kernel;
 
-	// [Client] Entrada/Salida -> [Server] Memoria
+	/* // [Client] Entrada/Salida -> [Server] Memoria
 	pthread_create(&thread_io_connect_to_memory, NULL, client_thread_connect_to_server, (void*) &CONNECTION_MEMORY);
 	// [Client] Entrada/Salida -> [Server] Kernel
 	pthread_create(&thread_io_connect_to_kernel, NULL, client_thread_connect_to_server, (void*) &CONNECTION_KERNEL);
 
 	// Se bloquea hasta que se realicen todas las conexiones
 	pthread_join(thread_io_connect_to_memory, NULL);
-	pthread_join(thread_io_connect_to_kernel, NULL);
+	pthread_join(thread_io_connect_to_kernel, NULL); */
+	client_thread_connect_to_server(&CONNECTION_MEMORY);
+	client_thread_connect_to_server(&CONNECTION_KERNEL);
 }
 
 void finish_sockets(void) {
@@ -66,22 +102,32 @@ void finish_sockets(void) {
 	close(CONNECTION_MEMORY.fd_connection);
 }
 
-void* generic(t_config* config){
-	//conectar a kernel
+void generic_function(){
 
 	//escuchar peticion siempre
 
 	//recibe peticion
+/* 	while(1){
+		int err = recv()
 
+	}; */
 	//chequear si puede realizar instruccion
-
-		/* No puede realizar: 
+	/* if(strcmp(nombre_instruccion, "IO_GEN_SLEEP") =! 0){
+		log_info(MODULE_LOGGER, "No puedo realizar esa instruccion");
+		 No puede realizar: 
 			Avisa a kernel y se hace cargo kernel
-		*/	
-	
+		 }
+		else{ */
+
+	int work_units = 1;
 	//si es IO_GEN_SLEEP : gen_sleep()
-	gen_sleep(work_units, config->TIEMPO_UNIDAD_TRABAJO);
+	instruction_package = package_receive(CONNECTION_KERNEL);
+	
+	gen_sleep(work_units, TIEMPO_UNIDAD_TRABAJO);
+	log_info(MODULE_LOGGER, "Ya ejecuté la instrucción");
+	//}
 	//avisar a kernel que ejecutó 
+
 
 }
 
@@ -89,35 +135,38 @@ void gen_sleep(int work_units, int work_unit_time){
 	sleep(work_units * work_unit_time);
 }
 
-void* stdin(){
-	//conectar a kernel
+void* stdin_function(){
 
 	//escuchar peticion siempre
 
 	//recibe peticion
 
 	//chequear si puede realizar instruccion
-
-		/* No puede realizar: 
+	/* if(strcmp(nombre_instruccion, "IO_GEN_SLEEP") =! 0){
+		log_info(MODULE_LOGGER, "No puedo realizar esa instruccion");
+		 No puede realizar: 
 			Avisa a kernel y se hace cargo kernel
-		*/	
+		 }
+		else{ */
+
 
 	//si es IO_STDIN_READ realizarlo
 
 	//avisar a kernel
 }
 
-void IO_STDIN_READ(int direccionMemoria){
+void IO_STDIN_READ(void* registroDireccion, void* registroTamanio){
 
-	char text[30];
+	
+	char* text = malloc(sizeof(registroTamanio));
 	printf("Ingrese un texto: ");
 	scanf("%s",text);
 
 	//enviar el texto a memoria
-	//send_to_memory(text,direccionMemoria)
+	//send_to_memory(text,registroDireccion);
 }
 
-void* stdout(){
+void* stdout_function(){
 	//conectar a kernel
 
 	//escuchar peticion siempre
@@ -135,7 +184,22 @@ void* stdout(){
 	//avisar a kernel
 }
 
-void IO_STDOUT_WRITE(int direccionMemoria){
+/* void IO_STDOUT_WRITE(void* registroDireccion, void* direccionTamanio){
 	int dir_memoria = receive_from_memory(direccionMemoria);
 	printf("El valor hallado en la direccion de memoria es: %d", dir_memoria);
-}
+} */
+
+/* int receive_from_memory(void* direccionMemoria){
+	recv(CONNECTION_MEMORY.fd_connection,,,MSG_WAITALL);
+} */
+
+void initialize_configs_io(char* path) {
+	MODULE_CONFIG = config_create(path);
+
+	if(MODULE_CONFIG == NULL) {
+		log_error(MODULE_LOGGER, "No se pudo abrir el archivo config del modulo %s: %s", MODULE_NAME, MODULE_CONFIG_PATHNAME);
+        exit(EXIT_FAILURE);
+	}
+
+	read_module_config(MODULE_CONFIG);
+};

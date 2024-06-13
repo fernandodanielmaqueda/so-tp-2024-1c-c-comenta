@@ -39,16 +39,16 @@ int module(int argc, char* argv[]) {
 
     log_info(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
  
- /*   
+    
     pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)FD_CLIENT_CPU);
     pthread_create(&hilo_kernel, NULL, (void *)listen_kernel, (void *)FD_CLIENT_KERNEL);
-    pthread_create(&hilo_io, NULL, (void *)listen_io, (void *)fd_io);
+/*     pthread_create(&hilo_io, NULL, (void *)listen_io, (void *)fd_io); */
 
     pthread_join(hilo_cpu, NULL);
     pthread_join(hilo_kernel, NULL);
     pthread_join(hilo_io, NULL);
 
-    */
+    
 
 	//finish_threads();
 	finish_sockets();

@@ -7,9 +7,11 @@
 t_Server COORDINATOR_MEMORY;
 int FD_CLIENT_KERNEL;
 int FD_CLIENT_CPU;
+int FD_CLIENT_IO;
 
 sem_t sem_coordinator_kernel_client_connected;
 sem_t sem_coordinator_cpu_client_connected;
+sem_t sem_coordinator_io_client_connected;
 
 void initialize_sockets(void) {
 
@@ -17,6 +19,8 @@ void initialize_sockets(void) {
 
     sem_init(&sem_coordinator_kernel_client_connected, 0, 0);
     sem_init(&sem_coordinator_cpu_client_connected, 0, 0);
+    sem_init(&sem_coordinator_io_client_connected, 0, 0);
+
 
 	// [Server] Memory <- [Cliente(s)] Entrada/Salida + Kernel + CPU
 	pthread_create(&thread_memory_start_server, NULL, memory_start_server, (void*) &COORDINATOR_MEMORY);
@@ -24,6 +28,7 @@ void initialize_sockets(void) {
 	// Se bloquea hasta que se realicen todas las conexiones
     sem_wait(&sem_coordinator_kernel_client_connected);
     sem_wait(&sem_coordinator_cpu_client_connected);
+    sem_wait(&sem_coordinator_io_client_connected);
 }
 
 void finish_sockets(void) {
@@ -151,6 +156,8 @@ void *memory_client_handler(void *fd_new_client_parameter) {
                 return NULL;
             }
 
+            FD_CLIENT_IO = *fd_new_client;
+            sem_post(&sem_coordinator_io_client_connected);
             // Lógica de manejo de cliente Entrada/Salida (crear un hilo para menejo de cliente Entrada/Salida)
             close(*fd_new_client);
             free(fd_new_client);

@@ -24,5 +24,12 @@ int module(int, char*[]);
 void read_module_config(t_config *module_config);
 void initialize_sockets(void);
 void finish_sockets(void);
+void* generic();
+void gen_sleep(int work_units, int work_unit_time);
+void* stdin_function();
+void IO_STDIN_READ(void* registroDireccion, void* direccionTamanio);
+void* stdout_function();
+void IO_STDOUT_WRITE(int direccionMemoria);
+int receive_from_memory(int direccionMemoria);
 
 #endif /* ENTRADASALIDA_H */
