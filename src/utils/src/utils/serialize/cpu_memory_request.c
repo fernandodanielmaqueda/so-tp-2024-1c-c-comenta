@@ -99,9 +99,9 @@ void receive_2int_1uint32(int* nro1, int* nro2, u_int32_t* contenido, t_Payload*
 
 void send_String_1int(int nro, char* mensaje, int socket, int opcod){
     t_Package* package = package_create_with_header(opcod);
-    payload_enqueue(package->payload, strlen(mensaje)+1, sizeof(int) );
+    payload_enqueue(package->payload, (void*)(strlen(mensaje)+1), sizeof(int) );
     payload_enqueue(package->payload, mensaje, strlen(mensaje)+1 );
-    payload_enqueue(package->payload, nro, sizeof(int) );
+    payload_enqueue(package->payload, (void*) nro, sizeof(int) );
   package_send(package, socket);
   package_destroy(package);
 }
