@@ -93,8 +93,8 @@ void read_module_config(t_config *MODULE_CONFIG)
     ALGORITMO_TLB = config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB");
 }
 
-void instruction_cycle(void)
-{
+void instruction_cycle(void){
+
     t_Arguments *IR;
     t_CPU_OpCode *opcode;
 
@@ -109,16 +109,12 @@ void instruction_cycle(void)
         while(1)
         {
 
-            // FETCH
-
-            // FALTA ENVIAR A MEMORIA UNA SOLICITUD DE INSTRUCCION (PC)
-            // cpu_request_next_instruction();
-            IR = cpu_receive_cpu_instruction();
+            // FETCH                   
+            IR = cpu_fetch_next_instruction();
 
             // DECODE
             opcode = decode_instruction(IR->argv[0]);
-            if (opcode == NULL)
-            {
+            if (opcode == NULL) {
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", IR->argv[0]);
                 exit(EXIT_FAILURE);
             }
@@ -128,13 +124,14 @@ void instruction_cycle(void)
 
             // CHECK INTERRUPT
             
-
             //INTERRUPT = cpu_receive_interrupt_type();
             if(INTERRUPT == SYSCALL_CAUSE)
                 break; // DESALOJO
         }
 
         // CHEQUEAR EL TIPO DE INTERRUPCION
+        
+
 
         /*
         if (interrupt != SYSCALL_CAUSE)
@@ -150,19 +147,13 @@ void instruction_cycle(void)
         pcb_serialize(package->payload, PCB);
         interrupt_serialize(package->payload, &INTERRUPT);
         arguments_serialize(package->payload, IR);
-        // package_send
+        package_send(package, SERVER_CPU_DISPATCH.client.fd_client);
+        package_destroy(package);
+        // pcb_free(PCB);
+        // arguments_free(IR);
     }
 }
 
-void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb)
-{
-    // size_t largo_nombre = 0;
-
-    // int size_pag = request_sizePag_memory(); // TODO: DESARROLLAR EN MEMORIA
-    // inncesario aca me parece---->int nro_frame_required = request_frame_memory(nro_page, pcb->PID);
-
-    // TODO:::: MANDAR POR PCB EL TIPO D EINTERRUPCION DEL PROCESO
-}
 
 int string_to_register(const char *string)
 {
@@ -301,26 +292,6 @@ t_PCB *cpu_receive_pcb(void)
     return pcb;
 }
 
-t_Arguments *cpu_receive_cpu_instruction(void)
-{
-    t_Arguments *instruction;
-
-    t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
-    switch (package->header)
-    {
-    case CPU_INSTRUCTION_HEADER:
-        instruction = arguments_deserialize(package->payload);
-        break;
-    default:
-        log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
-        exit(EXIT_FAILURE);
-        break;
-    }
-    package_destroy(package);
-
-    return instruction;
-}
-
 e_Interrupt *cpu_receive_interrupt_type(void)
 {
 
@@ -347,4 +318,33 @@ void request_frame_memory(int page, int pid) {
     payload_enqueue(package->payload, &page, sizeof(int));
     payload_enqueue(package->payload, &pid, sizeof(int));
     package_send(package, CONNECTION_MEMORY.fd_connection);
+}
+
+t_Arguments *cpu_fetch_next_instruction(void)
+{
+    t_Package *package;
+
+    // Request
+    package = package_create_with_header(CPU_MEMORY_FETCH_HEADER);
+    payload_enqueue(package->payload, PCB->PC, sizeof(PCB->PC));
+    package_send(package, CONNECTION_MEMORY.fd_connection);
+    package_destroy(package);
+
+    // Receive
+
+    t_Arguments *instruction;
+
+    package = package_receive(CONNECTION_MEMORY.fd_connection);
+    switch (package->header) {
+    case CPU_INSTRUCTION_HEADER:
+        instruction = arguments_deserialize(package->payload);
+        break;
+    default:
+        log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
+        exit(EXIT_FAILURE);
+        break;
+    }
+    package_destroy(package);
+
+    return instruction;
 }
