@@ -137,10 +137,24 @@ void gen_sleep(int work_units, int work_unit_time){
 
 void* stdin_function(){
 
+
+	t_Package* instruction_package;
+	t_Arguments* instruction_arguments;
 	//escuchar peticion siempre
+	while(1){
+		//recibe peticion
+		instruction_package = package_receive(CONNECTION_KERNEL);
+		instruction_arguments = arguments_deserialize(instruction_package->payload);
+		
+		package_destroy(instruction_package);
+		//Chequear si puede realizar esta instruccion
+		if(strcmp(instruction_arguments.argv[0],"IO_STDIN_READ") == 0){
+			//si la puede realizar entonces hace el STDIN READ
+			IO_STDIN_READ(2, instruction_arguments.argv[]);
 
-	//recibe peticion
-
+			//arguments_free(instruction_arguments);
+			//Avisar a kernel que la hizo
+			instruction_made* REALIZADA;
 	//chequear si puede realizar instruccion
 	/* if(strcmp(nombre_instruccion, "IO_GEN_SLEEP") =! 0){
 		log_info(MODULE_LOGGER, "No puedo realizar esa instruccion");
@@ -155,7 +169,7 @@ void* stdin_function(){
 	//avisar a kernel
 }
 
-void IO_STDIN_READ(void* registroDireccion, void* registroTamanio){
+int IO_STDIN_READ(int argc, char* argv[]){
 
 	
 	char* text = malloc(sizeof(registroTamanio));
