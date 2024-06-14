@@ -161,6 +161,7 @@ void initialize_cpu_command_line_interface(void) {
 
 void *long_term_scheduler(void *parameter) {
 
+    t_Package* package;
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
 		sem_wait(&sem_multiprogramming_level);
@@ -171,15 +172,13 @@ void *long_term_scheduler(void *parameter) {
 	
 		// ? Inicializa esctructuras del proceso
 		pcb_send(pcb, CONNECTION_MEMORY.fd_connection);
-		// ? Recibimos la tabla de paginas 
-		//paquete = recibir_paquete(conexion_memoria);
-		//t_tabla_segmentos* tabla = deserializar_tabla_segmentos(paquete->buffer);
+		// Recibo paquete de memoria
+		package = package_receive(CONNECTION_MEMORY.fd_connection);
+		//t_pages_table* table = deserializar_tabla_paginas(paquete->buffer);
 		
 		//pcb->tabla_paginas = tabla->paginas;
 
 	
-		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
-
 	     switch_process_state(pcb, READY_STATE);
 		
 	}
