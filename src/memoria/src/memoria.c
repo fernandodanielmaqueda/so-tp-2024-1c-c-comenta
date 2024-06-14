@@ -433,22 +433,30 @@ void resize_process(t_Payload* socketRecibido){
     int size = list_size(procesoBuscado->pages_table);
     if(size<paginas){//Agregar paginas
 
-        for (size_t i = size; i < paginas; i++)
+    
+        if (list_size(lista_marcos_libres) < (paginas - size))
         {
-            t_Page* pagina = malloc(sizeof(t_Page));
-            t_Frame* marcoLibre = list_get(lista_marcos_libres,0);
-            list_remove(lista_marcos_libres,0);
-            pagina->assigned_frame = marcoLibre->id;
-            pagina->bit_modificado = false;
-            pagina->bit_presencia = false;
-            pagina->bit_uso = false;
-            pagina->pagid = i;
+            send_int(pid, FD_CLIENT_CPU, OUT_OF_MEMORY);
+        }
+        else{
 
-            //Actualizo el marco asignado
-            marcoLibre->PID= pid;
-            marcoLibre->assigned_page = pagina;
+                for (size_t i = size; i < paginas; i++)
+                {
+                    t_Page* pagina = malloc(sizeof(t_Page));
+                    t_Frame* marcoLibre = list_get(lista_marcos_libres,0);
+                    list_remove(lista_marcos_libres,0);
+                    pagina->assigned_frame = marcoLibre->id;
+                    pagina->bit_modificado = false;
+                    pagina->bit_presencia = false;
+                    pagina->bit_uso = false;
+                    pagina->pagid = i;
 
-            list_add(procesoBuscado->pages_table, pagina);
+                    //Actualizo el marco asignado
+                    marcoLibre->PID= pid;
+                    marcoLibre->assigned_page = pagina;
+
+                    list_add(procesoBuscado->pages_table, pagina);
+                }
         }
         
     }
