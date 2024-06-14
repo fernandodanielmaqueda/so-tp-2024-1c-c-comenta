@@ -43,9 +43,4 @@ typedef struct t_pages_table{
 	int frame;
 }t_pages_table;
 
-
-    /* data */
-;
-
-
 #endif // ESTRUCTURAS_H

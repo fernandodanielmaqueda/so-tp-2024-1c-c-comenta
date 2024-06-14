@@ -1,6 +1,6 @@
 
-#ifndef SCHEDULER_H_
-#define SCHEDULER_H_
+#ifndef KERNEL_SCHEDULER_H
+#define KERNEL_SCHEDULER_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,9 +21,79 @@
 #include "commons/collections/dictionary.h"
 #include "utils/module.h"
 #include "utils/socket.h"
+#include "kernel.h"
 
-void stop_planificacion();
-void init_planificacion();
+typedef struct t_Scheduling_Algorithm {
+    char *name;
+    t_PCB *(*function) (void);
+} t_Scheduling_Algorithm;
+
+extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
+
+extern t_list *START_PROCESS;
+extern pthread_mutex_t MUTEX_LIST_START_PROCESS;
+
+// Listas globales de estados
+extern t_list *LIST_NEW;
+extern t_list *LIST_READY;
+extern t_list *LIST_READY_PRIORITARY;
+extern t_list *LIST_EXECUTING;
+extern t_list *LIST_BLOCKED;
+extern t_list *LIST_EXIT;
+
+extern pthread_mutex_t mutex_PID;
+extern pthread_mutex_t mutex_LIST_NEW;
+extern pthread_mutex_t mutex_LIST_READY;
+extern pthread_mutex_t mutex_LIST_BLOCKED;
+extern pthread_mutex_t mutex_LIST_EXECUTING;
+extern pthread_mutex_t mutex_LIST_EXIT;
+
+extern sem_t sem_detener_execute;
+extern sem_t sem_detener_new_ready;
+extern sem_t sem_detener_block_ready;
+extern sem_t sem_detener_block;
+extern sem_t sem_detener_planificacion;
+
+extern pthread_t THREAD_LONG_TERM_SCHEDULER;
+extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
+extern pthread_t hilo_mensajes_cpu;
+extern pthread_t THREAD_INTERRUPT;
+
+extern sem_t SEM_LONG_TERM_SCHEDULER;
+extern sem_t SEM_SHORT_TERM_SCHEDULER;
+extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
+extern sem_t SEM_PROCESS_READY;
+
+extern int QUANTUM;
+extern int MULTIPROGRAMMING_LEVEL;
+
+extern t_temporal *VAR_TEMP_QUANTUM;
+
+//consola interactiva
+extern pthread_mutex_t MUTEX_PID_DETECTED;
+extern int IDENTIFIER_PID;
+//
+
+extern int PID_COUNTER;
+
+t_Scheduling_Algorithm *find_scheduling_algorithm(char *name);
+void initialize_long_term_scheduler(void);
+void initialize_short_term_scheduler(void);
+void *long_term_scheduler(void*);
+void *short_term_scheduler(void*);
+t_PCB *FIFO_scheduling_algorithm(void);
+t_PCB *RR_scheduling_algorithm(void);
+t_PCB *VRR_scheduling_algorithm(void);
+t_PCB *kernel_get_normal_list(void);
+t_PCB *kernel_get_priority_list(void);
+void switch_process_state(t_PCB* pcb, int new_state);
+t_PCB *pcb_create();
+int current_time(void);
+int asignar_PID();
+void* start_quantum_VRR(t_PCB *pcb);
+void* start_quantum();
+void stop_planificacion(void);
+void init_planificacion(void);
 void free_strv(char** array);
 
-#endif /* SCHEDULER_H_ */
+#endif // KERNEL_SCHEDULER_H
