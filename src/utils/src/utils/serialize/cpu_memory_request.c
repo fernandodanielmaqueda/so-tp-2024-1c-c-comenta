@@ -73,6 +73,13 @@ void receive_2int(int* nro1, int* nro2, t_Payload* payload){ //receive_2int(&n1,
     offset += sizeof(int);
 }
 
+void receive_int(int* nro, t_Payload* payload){ //receive_int(&n1,payload);
+    // Extrae el primer entero del payload
+    int offset = 0;
+    memcpy(nro, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+}
+
 void send_2int_1uint32(int nro, int nro2, u_int32_t contenido, int socket, int opcod){
     t_Package* package = package_create_with_header(opcod);
     payload_enqueue(package->payload, nro, sizeof(int) );

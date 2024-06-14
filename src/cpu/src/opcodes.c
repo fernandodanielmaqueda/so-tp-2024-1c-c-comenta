@@ -71,7 +71,7 @@ int mov_in_cpu_opcode(int argc, char *argv[]) {
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB->PID, argv[0], argv[1], argv[2]);
 
-   
+    
     // message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", SERVER_CPU_DISPATCH.client.fd_client);
     // size_pag = atoi(message_receive(SERVER_CPU_DISPATCH.client.fd_client));
 
@@ -186,17 +186,27 @@ int resize_cpu_opcode(int argc, char *argv[]) {
     value = atoi(argv[2]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB->PID, argv[0], argv[1]);
     // TODO: BRIAAN PEDIR A MEMORIA QUE HAGA ESTA FUNCION
-    /*
-    message_send(RESIZE_REQUEST, "Tamanio Pag", CONNECTION_MEMORY.fd_connection);
 
-    if(message_receive(CONNECTION_MEMORY.fd_connection) == "Out of Memory"){
-
-        //devuelvo contexto ejecucion a kernel
-
-s
+    send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
+    
+    t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+    if(package == NULL){
+        log_error(MODULE_LOGGER, "Error al recibir el paquete");
+        exit(EXIT_FAILURE);
     }
-    */
 
+    if (package->header == RESIZE_REQUEST)
+    {
+        log_info(MODULE_LOGGER, "Se redimensiono correctamente");
+    }
+    else if (package->header == OUT_OF_MEMORY)
+    {
+        //COMUNICAR CON KERNEL QUE NO HAY MAS MEMORIA
+
+    }
+       
+    package_destroy(package);
+    
     PCB->PC++;
 
     return EXIT_SUCCESS;

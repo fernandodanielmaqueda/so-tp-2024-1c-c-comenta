@@ -438,13 +438,13 @@ void resize_process(t_Payload* socketRecibido){
     int size = list_size(procesoBuscado->pages_table);
     if(size<paginas){//Agregar paginas
 
-    
+        //CASO: OUT OF MEMORY
         if (list_size(lista_marcos_libres) < (paginas - size))
         {
             send_int(pid, FD_CLIENT_CPU, OUT_OF_MEMORY);
         }
         else{
-
+                //CASO: HAY ESPACIO Y SUMA PAGINAS
                 for (size_t i = size; i < paginas; i++)
                 {
                     t_Page* pagina = malloc(sizeof(t_Page));
@@ -467,7 +467,7 @@ void resize_process(t_Payload* socketRecibido){
         }
         
     }
-    if(size>paginas){ //Elimina paginas
+    if(size>paginas){ //RESTA paginas
          
         for (size_t i = size; i > paginas; i--)
         {

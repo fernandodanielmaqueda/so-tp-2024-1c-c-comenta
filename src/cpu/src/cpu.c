@@ -213,9 +213,14 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
     }
     else
     {
-        request_frame_memory(nro_page, pcb->PID);
-        // FALTA nro_frame_required RECV
+        request_frame_memory(pcb->PID,nro_page);
+        t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+         int frame = 0;
+         int pidBuscado = 0;
+         receive_2int(&pidBuscado,&frame,package->payload);
+         //tlb access 
         log_info(MODULE_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->PID, nro_page);
+        package_destroy(package);
     }
 
     dir_fisica = nro_frame_required * tamanio_pagina + offset;
