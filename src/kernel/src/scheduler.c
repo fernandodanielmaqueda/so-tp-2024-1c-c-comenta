@@ -127,8 +127,7 @@ void *short_term_scheduler(void *parameter) {
 
 		switch_process_state(pcb, EXECUTING_STATE);
 
-		//FALTA SERIALIZAR PCB
-		//FALTA ENVIAR PAQUETE A CPU
+		pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 	}
 
 	return NULL;
