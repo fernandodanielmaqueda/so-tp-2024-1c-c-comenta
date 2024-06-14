@@ -168,6 +168,8 @@ void* stdin_function(){
 
 	//avisar a kernel
 }
+	}
+}
 
 int IO_STDIN_READ(int argc, char* argv[]){
 

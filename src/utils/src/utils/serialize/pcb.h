@@ -66,7 +66,7 @@ typedef struct t_PCB {
  * @param pcb t_PCB a enviar.
  * @param fd_socket Socket desde donde se va a recibir el pcb.
  */
-void pcb_send(t_PCB *pcb, int fd_socket);
+void pcb_send(t_PCB *pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
 
 
 /**
