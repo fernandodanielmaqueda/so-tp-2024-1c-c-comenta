@@ -21,6 +21,7 @@
 #include "commons/collections/dictionary.h"
 #include "utils/module.h"
 #include "utils/socket.h"
+#include "kernel.h"
 
 #define MAX_CONSOLE_ARGC 2 // 1 para el nombre del comando + 1 para el argumento
 
@@ -29,7 +30,7 @@ typedef struct t_Command {
     int (*function) (int, char*[]);
 } t_Command;
 
-extern const t_Command CONSOLE_COMMANDS[];
+extern t_Command CONSOLE_COMMANDS[];
 
 extern t_log *CONSOLE_LOGGER;
 extern char *CONSOLE_LOG_PATHNAME;
@@ -39,7 +40,7 @@ void initialize_readline(void);
 char **console_completion(const char *text, int start, int end);
 char *command_generator(const char *text, int state);
 char *strip_whitespaces(char *string);
-void execute_line(char *line);
+int execute_line(char *line);
 t_Command *find_command(char *name);
 int kernel_command_run_script(int argc, char* argv[]);
 int kernel_command_start_process(int argc, char* argv[]);

@@ -37,6 +37,10 @@ typedef struct t_TLB {
     int time; //para el LRU
 } t_TLB;
 
-
+typedef struct t_pages_table{
+    int PID;
+    int page_number;
+	int frame;
+}t_pages_table;
 
 #endif // ESTRUCTURAS_H

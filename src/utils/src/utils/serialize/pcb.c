@@ -31,6 +31,9 @@ void pcb_serialize(t_Payload *payload, t_PCB *pcb) {
   payload_enqueue(payload, &(pcb->current_state), sizeof(pcb->current_state));
   payload_enqueue(payload, &(pcb->arrival_READY), sizeof(pcb->arrival_READY));
   payload_enqueue(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
+  payload_enqueue(payload, &(pcb->pages_table), sizeof(pcb->pages_table));
+
+  
 
   pcb_log(pcb);
 }
@@ -58,6 +61,8 @@ t_PCB *pcb_deserialize(t_Payload *payload) {
   payload_dequeue(payload, &(pcb->current_state), sizeof(pcb->current_state));
   payload_dequeue(payload, &(pcb->arrival_READY), sizeof(pcb->arrival_READY));
   payload_dequeue(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
+  payload_dequeue(payload, &(pcb->pages_table), sizeof(pcb->pages_table));
+
 
   pcb_log(pcb);
   return pcb;
@@ -86,6 +91,7 @@ void pcb_log(t_PCB *pcb) {
     "* current_state: %" PRIu8 "\n"
     "* arrival_READY: %g\n"
     "* arrival_RUNNING: %g"
+    "* pages_table: %p\n"
     , (void *) pcb
     , pcb->PID
     , pcb->PC
@@ -107,5 +113,7 @@ void pcb_log(t_PCB *pcb) {
     , pcb->current_state
     , pcb->arrival_READY
     , pcb->arrival_RUNNING
+    , (void *) pcb->pages_table
+  
     );
 }

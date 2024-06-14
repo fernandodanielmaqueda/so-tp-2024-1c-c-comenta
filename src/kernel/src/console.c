@@ -3,7 +3,7 @@
 t_log *CONSOLE_LOGGER;
 char *CONSOLE_LOG_PATHNAME = "console.log";
 
-const t_Command CONSOLE_COMMANDS[] = {
+t_Command CONSOLE_COMMANDS[] = {
   { .name = "EJECUTAR_SCRIPT", .function = kernel_command_run_script },
   { .name = "INICIAR_PROCESO", .function = kernel_command_start_process },
   { .name = "FINALIZAR_PROCESO", .function = kernel_command_kill_process },
@@ -115,7 +115,7 @@ char *strip_whitespaces(char *string) {
 }
 
 /* Execute a command line. */
-void execute_line(char *line) {
+int execute_line(char *line) {
     register int i = 0;
     char *arg;
     int argc = 0;
@@ -131,7 +131,7 @@ void execute_line(char *line) {
 
         if(argc == MAX_CONSOLE_ARGC) {
             log_warning(CONSOLE_LOGGER, "Demasiados argumentos.");
-            return;
+            return EXIT_FAILURE;
         }
 
         arg = line + i;
@@ -148,17 +148,13 @@ void execute_line(char *line) {
 
     if (command == NULL) {
         log_warning(CONSOLE_LOGGER, "%s: No existe el comando especificado.", argv[0]);
-        return;
+        return EXIT_FAILURE;
     }
 
-    /* Call the function. */
-    ((*(command->function)) (argc, argv));
-
-    return;
+    // Call the function
+    return ((*(command->function)) (argc, argv));
 }
 
-/* Look up NAME as the name of a command, and return a pointer to that
-   command.  Return a NULL pointer if NAME isn't a command name. */
 t_Command *find_command (char *name) {
     for(register int i = 0; CONSOLE_COMMANDS[i].name != NULL; i++)
         if(!strcmp(CONSOLE_COMMANDS[i].name, name))
@@ -171,96 +167,136 @@ int kernel_command_run_script(int argc, char* argv[]) {
 
     if(argc != 2) {
         log_warning(CONSOLE_LOGGER, "Uso: EJECUTAR_SCRIPT <PATH>");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "EJECUTAR_SCRIPT %s", argv[1]);
 
-    // TODO: Implementación
+    FILE *script = fopen(argv[1], "r");
+    if(script == NULL) {
+        log_warning(CONSOLE_LOGGER, "%s: No se pudo abrir el <PATH>: %s", argv[1], strerror(errno));
+        return EXIT_FAILURE;
+    }
 
-    return 0;    
+    char *line = NULL;
+    size_t length;
+    ssize_t nread;
+    
+    while(1) {
+        nread = getline(&line, &length, script);
+
+        if(nread == -1) {
+            if(errno) {
+                log_warning(CONSOLE_LOGGER, "Funcion getline: %s", strerror(errno));
+                free(line);
+                return EXIT_FAILURE;
+            }
+
+            break;
+        }
+
+        if(execute_line(line))
+            break;
+    }
+
+    free(line);
+    fclose(script);
+
+    return EXIT_SUCCESS;
 }
 
 int kernel_command_start_process(int argc, char* argv[]) {
 
     if(argc != 2) {
         log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PROCESO <PATH>");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
 
-    // TODO: Implementación
+    char *abspath = realpath(argv[1], NULL);
+    if(abspath == NULL) {
+        log_warning(CONSOLE_LOGGER, "%s: No se pudo encontrar el <PATH>: %s", argv[1], strerror(errno));
+        return EXIT_FAILURE;
+    }
 
-    return 0;
+    log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", abspath);
+
+    pthread_mutex_lock(&MUTEX_LIST_START_PROCESS);
+        list_add(START_PROCESS, abspath);
+    pthread_mutex_unlock(&MUTEX_LIST_START_PROCESS);
+
+    sem_post(&SEM_LONG_TERM_SCHEDULER);
+
+    return EXIT_SUCCESS;
 }
 
 int kernel_command_kill_process(int argc, char* argv[]) {
 
     if(argc != 2) {
         log_warning(CONSOLE_LOGGER, "Uso: FINALIZAR_PROCESO <PID>");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
 
     // TODO: Implementación
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int kernel_command_stop_scheduling(int argc, char* argv[]) {
 
     if(argc != 1) {
         log_warning(CONSOLE_LOGGER, "Uso: DETENER_PLANIFICACION");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION");
 
     // TODO: Implementación
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int kernel_command_start_scheduling(int argc, char* argv[]) {
 
     if(argc != 1) {
         log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PLANIFICACION");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION");
 
     // TODO: Implementación
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int kernel_command_multiprogramming(int argc, char* argv[]) {
 
     if(argc != 2) {
         log_warning(CONSOLE_LOGGER, "Uso: MULTIPROGRAMACION <VALOR>");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "MULTIPROGRAMACION %s", argv[1]);
 
     // TODO: Implementación
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 int kernel_command_process_states(int argc, char* argv[]) {
 
     if(argc != 1) {
         log_warning(CONSOLE_LOGGER, "Uso: PROCESO_ESTADO");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "PROCESO_ESTADO");
 
     // TODO: Implementación
 
-    return 0;
+    return EXIT_SUCCESS;
 }
