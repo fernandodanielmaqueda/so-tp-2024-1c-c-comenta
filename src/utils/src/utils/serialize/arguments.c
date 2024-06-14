@@ -34,39 +34,79 @@ t_Arguments *arguments_deserialize(t_Payload *payload) {
   return arguments;
 }
 
-void arguments_log(t_Arguments *arguments) {
+void arguments_free(t_Arguments *arguments) {
+  // @
+}
 
+void arguments_log(t_Arguments *arguments) {
+  
   /*
+  char *newBuffer;
   char *buffer;
   size_t bufferSize = 0;
 
-      // Calcular el tamaño total necesario
-      for(int i = 0; i < arguments->argc; i++) {
-          bufferSize += strlen(argv[i]) + 1; // + 1 para el espacio ó para el \0
-      }
+  for(int i = 0; i < arguments->argc; i++) {
 
-      char *concatenated_args = (char *) malloc(bufferSize * sizeof(char));
-      if(concatenated_args == NULL) {
-        log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena concatenada de argumentos")
+    while(*(arguments->argv[i])) {
+
+      bufferSize += strlen(arguments->argv[i]) + 1;
+
+      newBuffer = (char *) realloc(buffer, bufferSize);
+      if(newBuffer == NULL) {
+        log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena concatenada de argumentos");
         exit(EXIT_FAILURE);
       }
+      buffer = newBuffer;
 
-      concatenated_args[0] = '\0';
+      buffer[bufferSize - 1] = *(arguments->argv[i]);
+    }
 
-      for(int i = 0; i < arguments->argc; i++) {
-        strcat(concatenated_args, argv[i]);
-        strcat(concatenated_args, " ");
-      }
+    bufferSize += 1;
+
+    newBuffer = realloc(bufferSize);
+    if(newBuffer == NULL) {
+      log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena concatenada de argumentos")
+      exit(EXIT_FAILURE);
+    }
+    buffer = newBuffer;
+
+    buffer[bufferSize - 1] = ' ';
+    
+
+  }
+
+  if((int i = arguments->argc) )
+
+
+
+  if(int i = (arguments->argc - 1)) {
+    bufferSize += 1;
+
+    newBuffer = realloc(bufferSize);
+    if(newBuffer == NULL) {
+      log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena concatenada de argumentos")
+      exit(EXIT_FAILURE);
+    }
+    buffer = newBuffer;
+
+    while(*(arguments->argv[i])) 
+      buffer[bufferSize - 1] = *(arguments->argv[i]);
+
+  }
+  bufferSize += 1;
+
 
   log_info(SERIALIZE_LOGGER,
     "t_Arguments[%p]:\n"
     "* argc: %" PRIu8 "\n"
     "* argv: %s"
-    ,(void *) arguments,
-    arguments->argc,
-    //pcb->arrival_RUNNING
+    , (void *) arguments,
+    , arguments->argc
+    , buffer
     );
 
-  free(concatenated_args);
+  free(buffer);
+
   */
+
 }

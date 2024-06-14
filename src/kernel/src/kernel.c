@@ -11,9 +11,7 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
-
-
-const t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
+t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
 	{ .name = "RR", .function = RR_scheduling_algorithm },
 	{ .name = "VRR", .function = VRR_scheduling_algorithm },
@@ -25,10 +23,13 @@ t_temporal *VAR_TEMP_QUANTUM = NULL;
 // Listas globales de estados
 t_list *LIST_NEW;
 t_list *LIST_READY;
+t_list *LIST_READY_PRIORITARY;
 t_list *LIST_EXECUTING;
 t_list *LIST_BLOCKED;
 t_list *LIST_EXIT;
-t_list *priority_list;
+
+t_list *START_PROCESS;
+pthread_mutex_t MUTEX_LIST_START_PROCESS;
 
 pthread_mutex_t mutex_PID;
 pthread_mutex_t mutex_LIST_NEW;
@@ -47,9 +48,9 @@ pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
 pthread_t thread_interrupt;
 
-sem_t sem_long_term_scheduler;
+sem_t SEM_LONG_TERM_SCHEDULER;
 sem_t sem_short_term_scheduler;
-sem_t sem_multiprogramming_level; // 20 procesos en sim
+sem_t SEM_MULTIPROGRAMMING_LEVEL; // 20 procesos en sim
 sem_t process_ready; // Al principio en 0
 
 t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
@@ -92,16 +93,18 @@ int module(int argc, char *argv[]) {
 	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	
-	sem_init(&sem_long_term_scheduler, 0, 0);
+	sem_init(&SEM_LONG_TERM_SCHEDULER, 0, 0);
 	sem_init(&sem_short_term_scheduler, 0, 0);
-	sem_init(&sem_multiprogramming_level, 0, MULTIPROGRAMMING_LEVEL);
+	sem_init(&SEM_MULTIPROGRAMMING_LEVEL, 0, MULTIPROGRAMMING_LEVEL);
 
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
+	LIST_READY_PRIORITARY = list_create();
 	LIST_EXECUTING = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
-	priority_list = list_create();
+
+	START_PROCESS = list_create();
 
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();
@@ -161,17 +164,33 @@ void initialize_cpu_command_line_interface(void) {
 
 void *long_term_scheduler(void *parameter) {
 
+	char *abspath;
+	t_PCB *pcb;
+
     t_Package* package;
 	while(1) {
-		sem_wait(&sem_long_term_scheduler);
-		sem_wait(&sem_multiprogramming_level);
+		sem_wait(&SEM_LONG_TERM_SCHEDULER);
+		sem_wait(&SEM_MULTIPROGRAMMING_LEVEL);
+
+		pthread_mutex_lock(&MUTEX_LIST_START_PROCESS);
+			abspath = (char *) list_remove(START_PROCESS, 0);
+		pthread_mutex_unlock(&MUTEX_LIST_START_PROCESS);
+
+		pcb = create_pcb();
 
 		pthread_mutex_lock(&mutex_LIST_NEW);
-		t_PCB* pcb = (t_PCB*) list_remove(LIST_NEW, 0);
+			list_add(LIST_NEW, pcb);
 		pthread_mutex_unlock(&mutex_LIST_NEW);
 	
-		// ? Inicializa esctructuras del proceso
-		pcb_send(pcb, CONNECTION_MEMORY.fd_connection);
+		
+		package = package_create_with_header(SUBHEADER_HEADER);
+		pcb_serialize(package->payload, pcb);
+		payload_enqueue_string(package->payload, abspath);
+		package_send(package, CONNECTION_MEMORY.fd_connection);
+		package_destroy(package);
+
+		free(abspath);
+
 		// Recibo paquete de memoria
 		package = package_receive(CONNECTION_MEMORY.fd_connection);
 		//t_pages_table* table = deserializar_tabla_paginas(paquete->buffer);
@@ -269,7 +288,7 @@ t_PCB *VRR_scheduling_algorithm(void){
 	switch(pcb->interrupt_cause) {
 		case INTERRUPT_CAUSE:
 			if(pcb->quantum > 0) {
-				list_add(priority_list, pcb);
+				list_add(LIST_READY_PRIORITARY, pcb);
 			} else {
 				list_add(LIST_READY, pcb);
 			}
@@ -277,7 +296,7 @@ t_PCB *VRR_scheduling_algorithm(void){
 	}
 
   if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
-		list_add(priority_list, pcb);
+		list_add(LIST_READY_PRIORITARY, pcb);
   }
   else {
 	RR_scheduling_algorithm();
@@ -452,7 +471,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	pcb->current_state = new_state;
 	char* global_previous_state;
 	
-	t_Package* package;
+	//t_Package* package;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_PCB*)elemento)->PID == pcb->PID);
@@ -498,7 +517,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 	
-			sem_post(&sem_long_term_scheduler);
+			sem_post(&SEM_LONG_TERM_SCHEDULER);
 			break;
 		}
 		case READY_STATE:
@@ -541,7 +560,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			
 			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
 
-			sem_post(&sem_multiprogramming_level);
+			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
 
 			pthread_mutex_lock(&mutex_LIST_EXIT);
 			list_add(LIST_EXIT, pcb);
@@ -556,7 +575,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->PID);
 			
 
-			sem_post(&sem_multiprogramming_level);
+			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
 
 			pthread_mutex_lock(&mutex_LIST_EXIT);
 			list_add(LIST_EXIT, pcb);
@@ -568,7 +587,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			
 			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_WRITE>", pcb->PID);
 		
-			sem_post(&sem_multiprogramming_level);
+			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
 
 			pthread_mutex_lock(&mutex_LIST_EXIT);
 			list_add(LIST_EXIT, pcb);
@@ -607,7 +626,6 @@ t_PCB *create_pcb() {
     nuevoPCB->DI = 0;
 	nuevoPCB->quantum = 0;
 	nuevoPCB->current_state = 0;
-    //nuevoPCB->fd_conexion = 0; //CORREGIR y agregar arg socket cliente en la definición
     nuevoPCB->arrival_READY = 0;
     nuevoPCB->arrival_RUNNING = 0;
 

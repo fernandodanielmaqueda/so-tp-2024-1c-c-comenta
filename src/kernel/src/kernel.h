@@ -44,9 +44,13 @@ extern char *MODULE_CONFIG_PATHNAME;
 // Listas globales de estados
 extern t_list *LIST_NEW;
 extern t_list *LIST_READY;
+extern t_list *LIST_READY_PRIORITARY;
 extern t_list *LIST_EXECUTING;
 extern t_list *LIST_BLOCKED;
 extern t_list *LIST_EXIT;
+
+extern t_list *START_PROCESS;
+extern pthread_mutex_t MUTEX_LIST_START_PROCESS;
 
 extern pthread_mutex_t mutex_PID;
 extern pthread_mutex_t mutex_LIST_NEW;
@@ -65,7 +69,7 @@ extern pthread_t hilo_corto_plazo;
 extern pthread_t hilo_mensajes_cpu;
 extern pthread_t thread_interrupt;
 
-extern sem_t sem_long_term_scheduler;
+extern sem_t SEM_LONG_TERM_SCHEDULER;
 extern sem_t sem_short_term_scheduler;
 extern sem_t sem_multiprogramming_level;
 extern sem_t process_ready;
