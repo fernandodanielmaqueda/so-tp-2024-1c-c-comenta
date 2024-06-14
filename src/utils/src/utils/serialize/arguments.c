@@ -11,65 +11,62 @@ void arguments_send(t_Arguments *arguments, int fd_socket) {
 }
 
 void arguments_serialize(t_Payload *payload, t_Arguments *arguments) {
+
   payload_enqueue(payload, &(arguments->argc), sizeof(arguments->argc));
+
+  for(int i = 0; i < arguments->argc; i++) {
+    payload_enqueue_string(payload, arguments->argv[i]);
+  }
+
+  arguments_log(arguments);
 }
 
 t_Arguments *arguments_deserialize(t_Payload *payload) {
   t_Arguments *arguments = malloc(sizeof(t_Arguments));
 
-  uint32_t offset = 0;
+  payload_dequeue(payload, &(arguments->argc), sizeof(arguments->argc));
 
-  offset = memcpy_source_offset(&(arguments->argc), payload->stream, offset, sizeof(arguments->argc));
+  for(int i = 0; i < arguments->argc; i++) {
+    payload_dequeue_string(payload, &(arguments->argv[i]));
+  }
 
-  arguments_print(arguments);
+  arguments_log(arguments);
   return arguments;
 }
 
-void arguments_print(t_Arguments *arguments) {
+void arguments_log(t_Arguments *arguments) {
+
   /*
+  char *buffer;
+  size_t bufferSize = 0;
+
+      // Calcular el tamaño total necesario
+      for(int i = 0; i < arguments->argc; i++) {
+          bufferSize += strlen(argv[i]) + 1; // + 1 para el espacio ó para el \0
+      }
+
+      char *concatenated_args = (char *) malloc(bufferSize * sizeof(char));
+      if(concatenated_args == NULL) {
+        log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena concatenada de argumentos")
+        exit(EXIT_FAILURE);
+      }
+
+      concatenated_args[0] = '\0';
+
+      for(int i = 0; i < arguments->argc; i++) {
+        strcat(concatenated_args, argv[i]);
+        strcat(concatenated_args, " ");
+      }
+
   log_info(SERIALIZE_LOGGER,
-    "t_PCB[%p]:\n"
-    "* PID: %" PRIu32 "\n"
-    "* PC: %" PRIu32 "\n"
-    "* AX: %" PRIu8 "\n"
-    "* BX: %" PRIu8 "\n"
-    "* CX: %" PRIu8 "\n"
-    "* DX: %" PRIu8 "\n"
-    "* EAX: %" PRIu32 "\n"
-    "* EBX: %" PRIu32 "\n"
-    "* ECX: %" PRIu32 "\n"
-    "* EDX: %" PRIu32 "\n"
-    "* RAX: %" PRIu32 "\n"
-    "* RBX: %" PRIu32 "\n"
-    "* RCX: %" PRIu32 "\n"
-    "* RDX: %" PRIu32 "\n"
-    "* SI: %" PRIu32 "\n"
-    "* DI: %" PRIu32 "\n"
-    "* quantum: %" PRIu32 "\n"
-    "* current_state: %" PRIu8 "\n"
-    "* arrival_READY: %g\n"
-    "* arrival_RUNNING: %g"
-    ,(void *) pcb,
-    pcb->PID,
-    pcb->PC,
-    pcb->AX,
-    pcb->BX,
-    pcb->CX,
-    pcb->DX,
-    pcb->EAX,
-    pcb->EBX,
-    pcb->ECX,
-    pcb->EDX,
-    pcb->RAX,
-    pcb->RBX,
-    pcb->RCX,
-    pcb->RDX,
-    pcb->SI,
-    pcb->DI,
-    pcb->quantum,
-    pcb->current_state,
-    pcb->arrival_READY,
-    pcb->arrival_RUNNING
+    "t_Arguments[%p]:\n"
+    "* argc: %" PRIu8 "\n"
+    "* argv: %s"
+    ,(void *) arguments,
+    arguments->argc,
+    //pcb->arrival_RUNNING
     );
+
+  free(concatenated_args);
   */
 }

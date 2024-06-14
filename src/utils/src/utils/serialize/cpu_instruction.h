@@ -40,6 +40,7 @@ typedef enum e_CPU_Opcode {
     IO_FS_READ_OPCODE
 } e_CPU_Opcode;
 
+/* */
 typedef struct t_CPU_Instruction {
 	enum e_CPU_Opcode opcode;
 	t_list *parameters;

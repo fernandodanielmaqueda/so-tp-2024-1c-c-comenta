@@ -140,5 +140,7 @@ void respond_frame_request(t_Payload* socketRecibido);
 int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina);
 
 void resize_process(t_Payload* payload);
+void write_memory(t_Payload* socketRecibido, int socket);
+void read_memory(t_Payload* socketRecibido, int socket);
 
 #endif /* MEMORIA_H */

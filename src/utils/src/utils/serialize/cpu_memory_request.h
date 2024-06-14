@@ -57,5 +57,8 @@ void send_int(int nro, int socket, int opcod);
 void send_2int(int nro, int nro2, int socket, int opcod);
 void receive_2int(int* nro1, int* nro2, t_Payload* payload);
 void send_String_1int(int nro, char* mensaje, int socket, int opcod);
+void receive_2int_1uint32(int* nro1, int* nro2,uint32_t* contenido, t_Payload* payload);
+void send_2int_1uint32(int nro1, int nro2,uint32_t contenido, int socket, int opcod);
+
 
 #endif // SERIALIZE_CPU_MEMORY_REQUEST_H

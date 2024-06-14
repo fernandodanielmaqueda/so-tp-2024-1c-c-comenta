@@ -11,7 +11,7 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
-t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
+const t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
 	{ .name = "RR", .function = RR_scheduling_algorithm },
 	{ .name = "VRR", .function = VRR_scheduling_algorithm },
@@ -62,7 +62,7 @@ int module(int argc, char *argv[]) {
 	initialize_configs();
 	initialize_sockets();
 	pidContador = 0;
-	
+
 	t_PCB pcb = {
         .PID = 1234,
         .PC = 5678,
@@ -86,7 +86,6 @@ int module(int argc, char *argv[]) {
         .arrival_RUNNING = 789.012
     };
 
-	pcb_print(&pcb);
 	pcb_send(&pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	
@@ -303,30 +302,26 @@ DESCOMENTAR
 /*
 void listen_cpu(int fd_cpu) {
     while(1) {
-        e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
-        switch (memory_request) {
-            case INSTRUCTION_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
-                seek_instruccion(fd_cpu);
-                break;
-                
-            case FRAME_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
-                respond_frame_request(fd_cpu);
-                break;
-
+        t_Package* paquete = package_receive(fd_cpu);
+        e_Header header = paquete->header;
+        //e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
+        switch (header) {
             
             case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
                 return;
-            
                 
             case PAGE_SIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                //message_send(PAGE_SIZE_REQUEST, string_itoa(TAM_PAGINA),FD_CLIENT_CPU);
+                send_int(PAGE_SIZE_REQUEST, TAM_PAGINA,FD_CLIENT_CPU);
                 break;
-            
+
+            case RESIZE_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
+                resize_process(paquete->payload);
+                break;
+
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;

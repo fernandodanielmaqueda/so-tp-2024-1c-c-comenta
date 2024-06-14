@@ -3,7 +3,7 @@
 t_log *CONSOLE_LOGGER;
 char *CONSOLE_LOG_PATHNAME = "console.log";
 
-t_Command CONSOLE_COMMANDS[] = {
+const t_Command CONSOLE_COMMANDS[] = {
   { .name = "EJECUTAR_SCRIPT", .function = kernel_command_run_script },
   { .name = "INICIAR_PROCESO", .function = kernel_command_start_process },
   { .name = "FINALIZAR_PROCESO", .function = kernel_command_kill_process },

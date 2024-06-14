@@ -11,9 +11,9 @@ void interrupt_send(e_Interrupt *interrupt, int fd_socket) {
 }
 
 void interrupt_serialize(t_Payload *payload, e_Interrupt *interrupt) {
-  uint8_t conversion = (uint8_t) *interrupt;
-  
-  payload_enqueue(payload, &(conversion), sizeof(conversion));
+  payload_enqueue(payload, interrupt, sizeof(t_Interrupt_Serialized));
+
+  interrupt_log(interrupt);
 }
 
 e_Interrupt *interrupt_deserialize(t_Payload *payload) {
@@ -21,59 +21,16 @@ e_Interrupt *interrupt_deserialize(t_Payload *payload) {
 
   uint32_t offset = 0;
 
-  uint8_t conversion;
+  offset = memcpy_deserialize(interrupt, payload->stream, offset, sizeof(t_Interrupt_Serialized));
 
-  offset = memcpy_source_offset(&(conversion), payload->stream, offset, sizeof(uint8_t));
-  *interrupt = (e_Interrupt) conversion;
-
+  interrupt_log(interrupt);
   return interrupt;
 }
 
-void interrupt_print(e_Interrupt *interrupt) {
-  /* 
+void interrupt_log(e_Interrupt *interrupt) {
   log_info(SERIALIZE_LOGGER,
-    "t_Interrupt[%p]:\n"
-    "* PID: %" PRIu32 "\n"
-    "* PC: %" PRIu32 "\n"
-    "* AX: %" PRIu8 "\n"
-    "* BX: %" PRIu8 "\n"
-    "* CX: %" PRIu8 "\n"
-    "* DX: %" PRIu8 "\n"
-    "* EAX: %" PRIu32 "\n"
-    "* EBX: %" PRIu32 "\n"
-    "* ECX: %" PRIu32 "\n"
-    "* EDX: %" PRIu32 "\n"
-    "* RAX: %" PRIu32 "\n"
-    "* RBX: %" PRIu32 "\n"
-    "* RCX: %" PRIu32 "\n"
-    "* RDX: %" PRIu32 "\n"
-    "* SI: %" PRIu32 "\n"
-    "* DI: %" PRIu32 "\n"
-    "* quantum: %" PRIu32 "\n"
-    "* current_state: %" PRIu8 "\n"
-    "* arrival_READY: %g\n"
-    "* arrival_RUNNING: %g"
-    ,(void *) interrupt,
-    interrupt->PID,
-    interrupt->PC,
-    interrupt->AX,
-    interrupt->BX,
-    interrupt->CX,
-    interrupt->DX,
-    interrupt->EAX,
-    interrupt->EBX,
-    interrupt->ECX,
-    interrupt->EDX,
-    interrupt->RAX,
-    interrupt->RBX,
-    interrupt->RCX,
-    interrupt->RDX,
-    interrupt->SI,
-    interrupt->DI,
-    interrupt->quantum,
-    interrupt->current_state,
-    interrupt->arrival_READY,
-    interrupt->arrival_RUNNING);
-
-    */
+    "e_Interrupt[%p]: %d"
+    , (void *) interrupt
+    , *interrupt
+  );
 }
