@@ -34,7 +34,10 @@ typedef struct t_Resource {
     long instances;
 } t_Resource;
 
+//extern t_Resource *TOTAL_RESOURCES;
+extern t_Resource *AVAILABLE_RESOURCES;
+
 void resources_read_module_config(t_config *module_config);
-t_Resource *find_resource (char *name);
+t_Resource *resource_find (char *name);
 
 #endif // KERNEL_RESOURCES_H

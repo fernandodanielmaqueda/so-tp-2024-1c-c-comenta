@@ -23,7 +23,7 @@ t_CPU_OpCode CPU_OPCODES[] = {
     {.name = "IO_FS_WRITE", .function = io_fs_write_cpu_opcode},
     {.name = "IO_FS_READ", .function = io_fs_read_cpu_opcode},
     {.name = "EXIT", .function = exit_cpu_opcode},
-    {.name = NULL, .function = NULL}
+    {.name = NULL}
 };
 
 t_CPU_OpCode *decode_instruction(char *name) {

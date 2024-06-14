@@ -61,6 +61,4 @@ int io_fs_write_cpu_opcode(int argc, char *argv[]);
 int io_fs_read_cpu_opcode(int argc, char *argv[]);
 int exit_cpu_opcode(int argc, char *argv[]);
 
-
-
 #endif // CPU_OPCODES_H

@@ -33,8 +33,6 @@ void pcb_serialize(t_Payload *payload, t_PCB *pcb) {
   payload_enqueue(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
   payload_enqueue(payload, &(pcb->pages_table), sizeof(pcb->pages_table));
 
-  
-
   pcb_log(pcb);
 }
 
@@ -62,7 +60,6 @@ t_PCB *pcb_deserialize(t_Payload *payload) {
   payload_dequeue(payload, &(pcb->arrival_READY), sizeof(pcb->arrival_READY));
   payload_dequeue(payload, &(pcb->arrival_RUNNING), sizeof(pcb->arrival_RUNNING));
   payload_dequeue(payload, &(pcb->pages_table), sizeof(pcb->pages_table));
-
 
   pcb_log(pcb);
   return pcb;

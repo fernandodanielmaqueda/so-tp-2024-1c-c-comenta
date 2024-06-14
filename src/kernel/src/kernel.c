@@ -24,14 +24,14 @@ int module(int argc, char *argv[]) {
 	sem_init(&SEM_SHORT_TERM_SCHEDULER, 0, 0);
 	sem_init(&SEM_MULTIPROGRAMMING_LEVEL, 0, MULTIPROGRAMMING_LEVEL);
 
+	START_PROCESS = list_create();
+
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
 	LIST_READY_PRIORITARY = list_create();
 	LIST_EXECUTING = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
-
-	START_PROCESS = list_create();
 
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();

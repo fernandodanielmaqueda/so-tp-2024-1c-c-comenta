@@ -11,7 +11,7 @@ void interrupt_send(e_Interrupt *interrupt, int fd_socket) {
 }
 
 void interrupt_serialize(t_Payload *payload, e_Interrupt *interrupt) {
-  payload_enqueue(payload, interrupt, sizeof(t_Interrupt_Serialized));
+  payload_enqueue(payload, interrupt, sizeof(uint8_t));
 
   interrupt_log(interrupt);
 }
@@ -19,9 +19,7 @@ void interrupt_serialize(t_Payload *payload, e_Interrupt *interrupt) {
 e_Interrupt *interrupt_deserialize(t_Payload *payload) {
   e_Interrupt *interrupt = malloc(sizeof(e_Interrupt));
 
-  uint32_t offset = 0;
-
-  offset = memcpy_deserialize(interrupt, payload->stream, offset, sizeof(t_Interrupt_Serialized));
+  payload_dequeue(payload, interrupt, sizeof(uint8_t));
 
   interrupt_log(interrupt);
   return interrupt;
