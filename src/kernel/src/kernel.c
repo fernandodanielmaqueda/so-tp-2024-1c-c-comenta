@@ -11,6 +11,8 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
+
+
 const t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
 	{ .name = "RR", .function = RR_scheduling_algorithm },
@@ -164,16 +166,16 @@ void *long_term_scheduler(void *parameter) {
 		sem_wait(&sem_multiprogramming_level);
 
 		pthread_mutex_lock(&mutex_LIST_NEW);
-		t_PCB* pcb = (t_pcb*) list_remove(LIST_NEW, 0);
+		t_PCB* pcb = (t_PCB*) list_remove(LIST_NEW, 0);
 		pthread_mutex_unlock(&mutex_LIST_NEW);
 	
 		// ? Inicializa esctructuras del proceso
-		pcb_send(pcb, CONNECTION_MEMORY->fd_connection);
+		pcb_send(pcb, CONNECTION_MEMORY.fd_connection);
 		// ? Recibimos la tabla de paginas 
-		paquete = recibir_paquete(conexion_memoria);
-		t_tabla_segmentos* tabla = deserializar_tabla_segmentos(paquete->buffer);
+		//paquete = recibir_paquete(conexion_memoria);
+		//t_tabla_segmentos* tabla = deserializar_tabla_segmentos(paquete->buffer);
 		
-		pcb->tabla_segmentos = tabla->segmentos;
+		//pcb->tabla_paginas = tabla->paginas;
 
 	
 		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
