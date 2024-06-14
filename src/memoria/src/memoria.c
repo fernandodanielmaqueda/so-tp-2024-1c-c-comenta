@@ -457,6 +457,8 @@ void resize_process(t_Payload* socketRecibido){
 
                     list_add(procesoBuscado->pages_table, pagina);
                 }
+                
+            send_int(pid, FD_CLIENT_CPU, RESIZE_REQUEST);
         }
         
     }
@@ -471,6 +473,8 @@ void resize_process(t_Payload* socketRecibido){
 
             free(pagina);
         }
+        
+            send_int(pid, FD_CLIENT_CPU, RESIZE_REQUEST);
         
     }
     //No hace falta el caso page == size ya que no sucederia nada
