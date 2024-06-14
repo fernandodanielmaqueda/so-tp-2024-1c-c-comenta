@@ -426,9 +426,14 @@ void get_next_page(int current_frame, int pid){
 
 void resize_process(t_Payload* socketRecibido){
     int pid;
-    int paginas;
-    receive_2int(&pid,&paginas,socketRecibido);
+    int bytes;
+    receive_2int(&pid,&bytes,socketRecibido);
     t_Process* procesoBuscado = seek_process_by_pid(pid);
+
+    int paginas = bytes / TAM_PAGINA;
+    int resto = bytes % TAM_PAGINA;
+    if (resto == 0) paginas += 1;
+    
 
     int size = list_size(procesoBuscado->pages_table);
     if(size<paginas){//Agregar paginas
