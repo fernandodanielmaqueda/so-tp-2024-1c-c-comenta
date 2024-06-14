@@ -155,8 +155,6 @@ int execute_line(char *line) {
     return ((*(command->function)) (argc, argv));
 }
 
-/* Look up NAME as the name of a command, and return a pointer to that
-   command.  Return a NULL pointer if NAME isn't a command name. */
 t_Command *find_command (char *name) {
     for(register int i = 0; CONSOLE_COMMANDS[i].name != NULL; i++)
         if(!strcmp(CONSOLE_COMMANDS[i].name, name))

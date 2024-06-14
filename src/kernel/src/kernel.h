@@ -28,6 +28,7 @@
 #include "console.h"
 #include "socket.h"
 #include "scheduler.h"
+#include "resources.h"
 
 extern char *MODULE_NAME;
 
@@ -37,19 +38,9 @@ extern char *MODULE_LOG_PATHNAME;
 extern t_config *MODULE_CONFIG;
 extern char *MODULE_CONFIG_PATHNAME;
 
-//consola interactiva
-extern pthread_mutex_t MUTEX_PID_DETECTED;
-extern int IDENTIFIER_PID;
-//
-
-extern char **RESOURCES;
-extern char **RESOURCE_INSTANCES;
-extern int PID_COUNTER;
-
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
-void switch_process_state(t_PCB* pcb, int new_state) ;
-t_PCB *pcb_create();
+void initialize_cpu_command_line_interface(void);
 void *receptor_mensajes_cpu(void*);
 void listen_cpu(int fd_cpu) ;
 

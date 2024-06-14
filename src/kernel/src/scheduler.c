@@ -46,6 +46,14 @@ sem_t SEM_PROCESS_READY; // Al principio en 0
 int QUANTUM;
 int MULTIPROGRAMMING_LEVEL;
 
+t_temporal *VAR_TEMP_QUANTUM = NULL;
+
+//consola interactiva
+pthread_mutex_t MUTEX_PID_DETECTED;
+int IDENTIFIER_PID = 1;
+
+int PID_COUNTER;
+
 t_Scheduling_Algorithm *find_scheduling_algorithm(char *name) {
 	for (register int i = 0; SCHEDULING_ALGORITHMS[i].name != NULL; i++) {
 		if (!strcmp(SCHEDULING_ALGORITHMS[i].name, name)) {
@@ -234,6 +242,7 @@ void update_pcb_q(t_pcb *pcb)
 DESCOMENTAR
 */
 
+
 void switch_process_state(t_PCB* pcb, int new_state) {
 	int previous_state = pcb->current_state;
 	pcb->current_state = new_state;
@@ -368,6 +377,93 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 
 
 
+}
+
+//POR REVISAR
+t_PCB *pcb_create() {
+	//FALTA AGREGAR ATRIBUTOS AL PCB
+
+	t_PCB *pcb = malloc(sizeof(t_PCB));
+
+	pcb->PID = PID_COUNTER++;
+    pcb->PC = 0; 
+    pcb->AX = 0;
+    pcb->BX = 0;
+    pcb->CX = 0;
+    pcb->DX = 0;
+    pcb->EAX = 0;
+    pcb->EBX = 0;
+    pcb->ECX = 0;
+    pcb->EDX = 0;
+    pcb->RAX = 0;
+    pcb->RBX = 0;
+    pcb->RCX = 0;
+    pcb->RDX = 0;
+    pcb->SI = 0;
+    pcb->DI = 0;
+	pcb->quantum = 0;
+	pcb->current_state = 0;
+    pcb->arrival_READY = 0;
+    pcb->arrival_RUNNING = 0;
+
+	// pcb->recurso_solicitado = string_new();
+
+	// pcb->primera_aparicion = true;
+
+	return pcb;
+}
+
+int current_time(void) {
+	time_t now = time(NULL);
+	struct tm *local = localtime(&now);
+	int hours, minutes, seconds; //
+
+	hours = local->tm_hour;
+	minutes = local->tm_min;
+	seconds = local->tm_sec;
+
+	int total_seconds = hours * 60 * 60 + minutes * 60 + seconds;
+	return total_seconds;
+}
+
+int asignar_PID(void) {
+
+    pthread_mutex_lock(&MUTEX_PID_DETECTED);
+    unsigned int value_pid = IDENTIFIER_PID;
+    IDENTIFIER_PID++;
+    pthread_mutex_unlock(&MUTEX_PID_DETECTED);
+
+    return value_pid;
+}
+
+
+void send_interrupt(int socket)
+{
+    int dummy = 1;
+    send(socket, &dummy, sizeof(dummy), 0);
+}
+
+
+void* start_quantum_VRR(t_PCB *pcb)
+{
+    VAR_TEMP_QUANTUM = temporal_create();
+    log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
+    usleep(pcb->quantum * 1000); //en milisegundos
+    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+
+	return NULL;
+}
+
+
+void* start_quantum(void)
+{
+    log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
+    usleep(QUANTUM * 1000); //en milisegundos
+    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+
+	return NULL;
 }
 
 void stop_planificacion(void) {

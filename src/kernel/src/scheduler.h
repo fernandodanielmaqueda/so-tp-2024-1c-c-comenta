@@ -67,11 +67,18 @@ extern sem_t SEM_PROCESS_READY;
 extern int QUANTUM;
 extern int MULTIPROGRAMMING_LEVEL;
 
-t_Scheduling_Algorithm *find_scheduling_algorithm(char *name);
+extern t_temporal *VAR_TEMP_QUANTUM;
 
+//consola interactiva
+extern pthread_mutex_t MUTEX_PID_DETECTED;
+extern int IDENTIFIER_PID;
+//
+
+extern int PID_COUNTER;
+
+t_Scheduling_Algorithm *find_scheduling_algorithm(char *name);
 void initialize_long_term_scheduler(void);
 void initialize_short_term_scheduler(void);
-void initialize_cpu_command_line_interface(void);
 void *long_term_scheduler(void*);
 void *short_term_scheduler(void*);
 t_PCB *FIFO_scheduling_algorithm(void);
@@ -79,6 +86,8 @@ t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);
 t_PCB *kernel_get_normal_list(void);
 t_PCB *kernel_get_priority_list(void);
+void switch_process_state(t_PCB* pcb, int new_state);
+t_PCB *pcb_create();
 int current_time(void);
 int asignar_PID();
 void* start_quantum_VRR(t_PCB *pcb);

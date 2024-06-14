@@ -11,16 +11,6 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
-t_temporal *VAR_TEMP_QUANTUM = NULL;
-
-//consola interactiva
-pthread_mutex_t MUTEX_PID_DETECTED;
-int IDENTIFIER_PID = 1;
-
-char **RESOURCES;
-char **RESOURCE_INSTANCES;
-int PID_COUNTER;
-
 int module(int argc, char *argv[]) {
 
 	initialize_loggers();
@@ -58,16 +48,15 @@ int module(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-void read_module_config(t_config *MODULE_CONFIG) {
-	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
-	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_DISPATCH")};
-	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_CPU"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_CPU_INTERRUPT")};
-	SCHEDULING_ALGORITHM = find_scheduling_algorithm(config_get_string_value(MODULE_CONFIG, "ALGORITMO_PLANIFICACION"));
-	QUANTUM = config_get_int_value(MODULE_CONFIG, "QUANTUM");
-	RESOURCES = config_get_array_value(MODULE_CONFIG, "RECURSOS");
-	RESOURCE_INSTANCES = config_get_array_value(MODULE_CONFIG, "INSTANCIAS_RECURSOS");
-	MULTIPROGRAMMING_LEVEL = config_get_int_value(MODULE_CONFIG, "GRADO_MULTIPROGRAMACION");
+void read_module_config(t_config *module_config) {
+	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_TYPE, .clients_type = IO_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA")};
+	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
+	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_DISPATCH_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH")};
+	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_TYPE, .server_type = CPU_INTERRUPT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_INTERRUPT")};
+	SCHEDULING_ALGORITHM = find_scheduling_algorithm(config_get_string_value(module_config, "ALGORITMO_PLANIFICACION"));
+	QUANTUM = config_get_int_value(module_config, "QUANTUM");
+	resources_read_module_config(module_config);
+	MULTIPROGRAMMING_LEVEL = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
 }
 
 void initialize_cpu_command_line_interface(void) {
@@ -209,38 +198,4 @@ void *receptor_mensajes_cpu(void *parameter) {
 	}
 
 	return NULL;
-}
-
-//POR REVISAR
-t_PCB *pcb_create() {
-	//FALTA AGREGAR ATRIBUTOS AL PCB
-
-	t_PCB *pcb = malloc(sizeof(t_PCB));
-
-	pcb->PID = PID_COUNTER++;
-    pcb->PC = 0; 
-    pcb->AX = 0;
-    pcb->BX = 0;
-    pcb->CX = 0;
-    pcb->DX = 0;
-    pcb->EAX = 0;
-    pcb->EBX = 0;
-    pcb->ECX = 0;
-    pcb->EDX = 0;
-    pcb->RAX = 0;
-    pcb->RBX = 0;
-    pcb->RCX = 0;
-    pcb->RDX = 0;
-    pcb->SI = 0;
-    pcb->DI = 0;
-	pcb->quantum = 0;
-	pcb->current_state = 0;
-    pcb->arrival_READY = 0;
-    pcb->arrival_RUNNING = 0;
-
-	// pcb->recurso_solicitado = string_new();
-
-	// pcb->primera_aparicion = true;
-
-	return pcb;
 }
