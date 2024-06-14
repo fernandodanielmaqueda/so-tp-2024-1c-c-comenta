@@ -71,7 +71,6 @@ int mov_in_cpu_opcode(int argc, char *argv[]) {
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB->PID, argv[0], argv[1], argv[2]);
 
-    // preguntar a fer
     // message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", SERVER_CPU_DISPATCH.client.fd_client);
     // size_pag = atoi(message_receive(SERVER_CPU_DISPATCH.client.fd_client));
 
@@ -101,7 +100,6 @@ int mov_out_cpu_opcode(int argc, char *argv[]) {
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", PCB->PID, argv[0], argv[1], argv[2]);
 
-    // preguntar a fer
     // message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", SERVER_CPU_DISPATCH.client.fd_client);
     // size_pag = atoi(message_receive(SERVER_CPU_DISPATCH.client.fd_client));
 
@@ -187,9 +185,9 @@ int resize_cpu_opcode(int argc, char *argv[]) {
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB->PID, argv[0], argv[1]);
     // TODO: BRIAAN PEDIR A MEMORIA QUE HAGA ESTA FUNCION
     /*
-    message_send(RESIZE_REQUEST, "Tamanio Pag", SERVER_CPU_DISPATCH.client.fd_client);
+    message_send(RESIZE_REQUEST, "Tamanio Pag", CONNECTION_MEMORY.fd_connection);
 
-    if(message_receive(SERVER_CPU_DISPATCH.client.fd_client) == "Out of Memory"){
+    if(message_receive(CONNECTION_MEMORY.fd_connection) == "Out of Memory"){
 
         //devuelvo contexto ejecucion a kernel
 

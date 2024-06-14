@@ -31,11 +31,12 @@
 
 typedef struct t_Resource {
     char *name;
-    long instances;
+    long available;
+    long total;
 } t_Resource;
 
 //extern t_Resource *TOTAL_RESOURCES;
-extern t_Resource *AVAILABLE_RESOURCES;
+extern t_Resource *RESOURCES;
 
 void resources_read_module_config(t_config *module_config);
 t_Resource *resource_find (char *name);

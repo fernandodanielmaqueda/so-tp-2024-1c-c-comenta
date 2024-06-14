@@ -98,7 +98,7 @@ void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int d
 void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
 void request_frame_memory(int page, int pid);
 t_PCB *cpu_receive_pcb(void);
-t_Arguments *cpu_receive_cpu_instruction(void);
+t_Arguments *cpu_fetch_next_instruction(void);
 e_Interrupt *cpu_receive_interrupt_type(void);
 
 #endif /* CPU_H */
