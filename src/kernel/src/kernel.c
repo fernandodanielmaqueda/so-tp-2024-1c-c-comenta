@@ -11,6 +11,8 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
+
+
 const t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
 	{ .name = "RR", .function = RR_scheduling_algorithm },
@@ -23,10 +25,10 @@ t_temporal *VAR_TEMP_QUANTUM = NULL;
 // Listas globales de estados
 t_list *LIST_NEW;
 t_list *LIST_READY;
-t_list *LIST_READY_PLUS;
 t_list *LIST_EXECUTING;
 t_list *LIST_BLOCKED;
 t_list *LIST_EXIT;
+t_list *priority_list;
 
 pthread_mutex_t mutex_PID;
 pthread_mutex_t mutex_LIST_NEW;
@@ -39,6 +41,7 @@ pthread_mutex_t mutex_LIST_EXIT;
 pthread_mutex_t mutex_pid_detected;
 int identifier_pid = 1;
 
+pthread_t THREAD_CONSOLE;
 pthread_t hilo_largo_plazo;
 pthread_t hilo_corto_plazo;
 pthread_t hilo_mensajes_cpu;
@@ -95,10 +98,10 @@ int module(int argc, char *argv[]) {
 
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
-	LIST_READY_PLUS = list_create();
 	LIST_EXECUTING = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
+	priority_list = list_create();
 
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();
@@ -158,13 +161,24 @@ void initialize_cpu_command_line_interface(void) {
 
 void *long_term_scheduler(void *parameter) {
 
+    t_Package* package;
 	while(1) {
 		sem_wait(&sem_long_term_scheduler);
 		sem_wait(&sem_multiprogramming_level);
-		t_PCB *pcb = list_get(LIST_NEW, 0);
 
-		//ACA VAN OTRAS COSAS QUE HACE EL PLANIFICADOR DE LARGO PLAZO (MENSAJES CON OTROS MODULOS, ETC)
+		pthread_mutex_lock(&mutex_LIST_NEW);
+		t_PCB* pcb = (t_PCB*) list_remove(LIST_NEW, 0);
+		pthread_mutex_unlock(&mutex_LIST_NEW);
+	
+		// ? Inicializa esctructuras del proceso
+		pcb_send(pcb, CONNECTION_MEMORY.fd_connection);
+		// Recibo paquete de memoria
+		package = package_receive(CONNECTION_MEMORY.fd_connection);
+		//t_pages_table* table = deserializar_tabla_paginas(paquete->buffer);
+		
+		//pcb->tabla_paginas = tabla->paginas;
 
+	
 	     switch_process_state(pcb, READY_STATE);
 		
 	}
@@ -255,7 +269,7 @@ t_PCB *VRR_scheduling_algorithm(void){
 	switch(pcb->interrupt_cause) {
 		case INTERRUPT_CAUSE:
 			if(pcb->quantum > 0) {
-				list_add(LIST_READY_PLUS, pcb);
+				list_add(priority_list, pcb);
 			} else {
 				list_add(LIST_READY, pcb);
 			}
@@ -263,13 +277,12 @@ t_PCB *VRR_scheduling_algorithm(void){
 	}
 
   if(pcb->quantum > 0 && pcb->interrupt_cause == INTERRUPTION_CAUSE){
-		list_add(LIST_READY_PLUS, pcb);
+		list_add(priority_list, pcb);
   }
   else {
 	RR_scheduling_algorithm();
   }
-  return pcb;
-*/
+  return pcb; */
 }
 
 /*
