@@ -50,6 +50,7 @@ int set_cpu_opcode(int argc, char *argv[]) {
     register_destination = value;
     PCB->PC++;
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -79,6 +80,7 @@ int mov_in_cpu_opcode(int argc, char *argv[]) {
 
     dir_fisica_destination = dir_fisica_origin;
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -108,6 +110,7 @@ int mov_out_cpu_opcode(int argc, char *argv[]) {
 
     dir_fisica_destination = dir_fisica_origin;
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -127,6 +130,7 @@ int sum_cpu_opcode(int argc, char *argv[]) {
     register_destination = register_destination + register_origin;
     PCB->PC++;
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -145,6 +149,7 @@ int sub_cpu_opcode(int argc, char *argv[]) {
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", PCB->PID, argv[0], argv[1], argv[2]);
     register_destination = register_destination - register_origin;
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -167,6 +172,7 @@ int jnz_cpu_opcode(int argc, char *argv[]) {
     }
     PCB->PC++;
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -207,6 +213,7 @@ int resize_cpu_opcode(int argc, char *argv[]) {
     
     PCB->PC++;
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -224,6 +231,7 @@ int copy_string_cpu_opcode(int argc, char *argv[]) {
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB->PID, argv[0], argv[1]);
     /*TODO:: DESARROLLAR*/
 
+    SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
@@ -237,8 +245,7 @@ int wait_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -252,8 +259,7 @@ int signal_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "SIGNAL %s", argv[1]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -272,8 +278,7 @@ int io_gen_sleep_cpu_opcode(int argc, char *argv[]) {
     usleep(unit_work);
     PCB->PC++;
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -287,8 +292,7 @@ int io_stdin_read_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -302,8 +306,7 @@ int io_stdout_write_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-    
+    SYSCALL_CALLED = 1;    
     return EXIT_SUCCESS;
 }
 
@@ -317,8 +320,7 @@ int io_fs_create_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -332,8 +334,7 @@ int io_fs_delete_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -347,8 +348,7 @@ int io_fs_truncate_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-    
+    SYSCALL_CALLED = 1;    
     return EXIT_SUCCESS;
 }
 
@@ -361,8 +361,7 @@ int io_fs_write_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -375,8 +374,7 @@ int io_fs_read_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
@@ -403,7 +401,6 @@ int exit_cpu_opcode(int argc, char *argv[]) {
     }
     log_info(MODULE_LOGGER, "Proceso %i finalizado y en TLB", PCB->PID);
 
-    INTERRUPT = SYSCALL_CAUSE;
-
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }

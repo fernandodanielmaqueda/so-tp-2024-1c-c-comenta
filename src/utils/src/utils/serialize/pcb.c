@@ -86,7 +86,6 @@ void pcb_log(t_PCB *pcb) {
     "* current_state: %" PRIu8 "\n"
     "* arrival_READY: %g\n"
     "* arrival_RUNNING: %g"
-    "* pages_table: %p\n"
     , (void *) pcb
     , pcb->PID
     , pcb->PC

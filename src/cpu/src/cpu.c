@@ -25,6 +25,10 @@ t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo
 int nro_page = 0;
 uint32_t value = 0;
 
+e_Kernel_Interrupt *KERNEL_INTERRUPT;
+
+int SYSCALL_CALLED;
+
 t_PCB *PCB;
 // char *recurso = NULL;
 // no sirveaca me aprece--> t_PCB new_pcb;
@@ -105,6 +109,7 @@ void instruction_cycle(void){
         PCB = cpu_receive_pcb();
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB->PID);
 
+        KERNEL_INTERRUPT = NULL;
 
         while(1) {
 
@@ -115,34 +120,35 @@ void instruction_cycle(void){
             opcode = decode_instruction(IR->argv[0]);
             if (opcode == NULL) {
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", IR->argv[0]);
-                exit(EXIT_FAILURE);
+                exit_status = EXIT_FAILURE;
+            } else {
+
+                // EXECUTE
+                exit_status = opcode->function(IR->argc, IR->argv);
             }
- 
-            // EXECUTE
-            exit_status = opcode->function(IR->argc, IR->argv);
-
-
 
             // CHECK INTERRUPT
+            if(exit_status) {
+                log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
+                INTERRUPT = ERROR_CAUSE;
+                break;
+            }
+
+            if(KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == KILL_INTERRUPT) {
+                INTERRUPT = INTERRUPTION_CAUSE;
+                break;
+            }
             
-            //INTERRUPT = cpu_receive_interrupt_type();
-            if(INTERRUPT == SYSCALL_CAUSE)
-                break; // DESALOJO
+            if(SYSCALL_CALLED) {
+                INTERRUPT = SYSCALL_CAUSE;
+                break;
+            }
+
+            if(KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == QUANTUM_INTERRUPT) {
+                INTERRUPT = INTERRUPTION_CAUSE;
+                break;
+            }
         }
-
-        // CHEQUEAR EL TIPO DE INTERRUPCION
-        
-
-
-        /*
-        if (interrupt != SYSCALL_CAUSE)
-        {
-
-            if ()
-        }
-        */
-
-        // TODO :: MANDO PCB CON LA INFO DEL FIN DE PROCESO
 
         t_Package *package = package_create_with_header(SUBHEADER_HEADER);
         pcb_serialize(package->payload, PCB);
@@ -160,58 +166,30 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
     cpu_start_server_for_kernel((void*) &SERVER_CPU_INTERRUPT);
 	sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
 
-	t_PCB *pcb;
-	e_Interrupt *interrupt;
-	t_Arguments *instruction;
-	
-    /*
+    e_Kernel_Interrupt *kernel_interrupt;
+
 	while(1) {
 
-    	t_Package *package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
+    	t_Package *package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
 		switch (package->header) {
-		case SUBHEADER_HEADER:
-			pcb = pcb_deserialize(package->payload);
-			interrupt = interrupt_deserialize(package->payload);
-			instruction = arguments_deserialize(package->payload);
+		case KERNEL_INTERRUPT_HEADER:
+			kernel_interrupt = kernel_interrupt_deserialize(package->payload);
 			break;
 		default:
-			log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
+			log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
 			exit(EXIT_FAILURE);
 			break;
 		}
 		package_destroy(package);
 
-		int exit_status;
+        if(KERNEL_INTERRUPT == NULL)
+            KERNEL_INTERRUPT = kernel_interrupt;
 
-		switch(*interrupt) {
-			case SYSCALL_CAUSE:
-				SYSCALL_PCB = pcb;
-				exit_status = syscall_execute(instruction);
-
-				if(exit_status) {
-					switch_process_state(pcb, EXIT_STATE);
-					break;
-				}
-
-				if(BLOCKING_SYSCALL) {
-					switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
-					break;
-				}
-
-				// En caso de que sea una syscall no bloqueante
-				pcb_send(CONNECTION_CPU_DISPATCH.fd_connection, pcb);
-				break;
-			default:
-				break;
-
-		}
-
-		// pcb_free(pcb)
-		// interrupt_free(interrupt);
-		// instruction_free(instruction);
+        // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
+        if(KERNEL_INTERRUPT < kernel_interrupt)
+            KERNEL_INTERRUPT = kernel_interrupt;
 		
 	}
-    */
 
 	return NULL;
 }

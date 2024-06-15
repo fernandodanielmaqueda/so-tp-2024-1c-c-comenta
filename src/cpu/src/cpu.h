@@ -23,6 +23,7 @@
 #include "utils/estructuras.h"
 #include "utils/module.h"
 #include "utils/serialize/interrupt.h"
+#include "utils/serialize/kernel_interrupt.h"
 #include "utils/serialize/cpu_instruction.h"
 #include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/pcb.h"
@@ -52,6 +53,8 @@ extern int interruption_io;
 
 extern int CANTIDAD_ENTRADAS_TLB;
 extern char *ALGORITMO_TLB;
+
+extern int SYSCALL_CALLED;
 
 extern int size_pag;
 extern long timestamp;
