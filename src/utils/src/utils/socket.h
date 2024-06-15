@@ -36,6 +36,7 @@ typedef struct t_Connection {
 typedef struct t_Client {
     int fd_client;
     enum e_PortType client_type;
+    // pthread_t client_thread;
 } t_Client;
 
 typedef struct t_Server {
@@ -43,6 +44,7 @@ typedef struct t_Server {
     enum e_PortType server_type;
     enum e_PortType clients_type;
     char *port;
+    // t_list *clients;
 } t_Server;
 
 typedef struct t_Single_Client_Server {

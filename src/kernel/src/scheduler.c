@@ -9,8 +9,13 @@ t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 
 t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 
+e_CPU_Status CPU_STATUS;
+pthread_mutex_t MUTEX_CPU_STATUS;
+
 t_list *START_PROCESS;
 pthread_mutex_t MUTEX_LIST_START_PROCESS;
+
+t_temporal *TEMPORAL_DISPATCHED;
 
 // Listas globales de estados
 t_list *LIST_NEW;
@@ -48,7 +53,7 @@ sem_t SEM_PROCESS_READY; // Al principio en 0
 
 sem_t SEM_CPU_INTERRUPT;
 
-int QUANTUM;
+uint64_t QUANTUM;
 int MULTIPROGRAMMING_LEVEL;
 
 //consola interactiva
@@ -98,20 +103,17 @@ void *long_term_scheduler(void *parameter) {
 			list_add(LIST_NEW, pcb);
 		pthread_mutex_unlock(&mutex_LIST_NEW);
 		
-		package = package_create_with_header(SUBHEADER_HEADER);
-		pcb_serialize(package->payload, pcb);
+		package = package_create_with_header(PROCESS_NEW);
 		payload_enqueue_string(package->payload, abspath);
+		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
 		package_send(package, CONNECTION_MEMORY.fd_connection);
 		package_destroy(package);
 
 		free(abspath);
 
-		// Recibo paquete de memoria
-		//package = package_receive(CONNECTION_MEMORY.fd_connection);			
-	
-	     switch_process_state(pcb, READY_STATE);
+	    switch_process_state(pcb, READY_STATE);
 
-		 sem_post(&SEM_SHORT_TERM_SCHEDULER);
+		sem_post(&SEM_SHORT_TERM_SCHEDULER);
 	}
 
 	return NULL;
@@ -130,7 +132,10 @@ void *short_term_scheduler(void *parameter) {
 
 		pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 
-		sem_post(&SEM_EXECUTING);
+		// sem_post(&SEM_EXECUTING);
+		TEMPORAL_DISPATCHED = temporal_create();
+
+
 	}
 
 	return NULL;
@@ -286,8 +291,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 
 
 	switch(new_state){ // ! ESTADO NUEVO
-		case NEW_STATE:
-		{
+		case NEW_STATE: {
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_add(LIST_NEW, pcb);
 			log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
@@ -308,8 +312,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			
 			break;
 		}
-		case EXECUTING_STATE:
-		{
+		case EXECUTING_STATE: {
 			pcb -> arrival_RUNNING = current_time();
 			
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
@@ -372,9 +375,6 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 		}
 		*/
 	}
-
-
-
 }
 
 //POR REVISAR
@@ -441,8 +441,7 @@ void send_interrupt(int socket)
     send(socket, &dummy, sizeof(dummy), 0);
 }
 
-void *thread_send_cpu_interrupt(void *arguments)
-{
+void *thread_send_cpu_interrupt(void *arguments) {
 	/*t_PCB *pcb = (t_PCB *) pcb_parameter;
 	sem_wait(&SEM_CPU_INTERRUPT);
 
@@ -455,18 +454,37 @@ void *thread_send_cpu_interrupt(void *arguments)
 	return NULL;
 }
 
-void *start_quantum(void *pcb_parameter)
-{
+void *start_quantum(void *pcb_parameter) {
+
+	temporal_stop(TEMPORAL_DISPATCHED);
+	uint64_t asd = temporal_gettime(TEMPORAL_DISPATCHED);
+	temporal_destroy(TEMPORAL_DISPATCHED);
+
 	int quantum = *((int *) pcb_parameter);
 
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
-	sem_wait(&SEM_EXECUTING);
-    usleep(quantum * 1000); // en milisegundos
+    //usleep(quantum * 1000); // en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", quantum);
 
 	return NULL;
 }
+
+void *sleep_interrupt(void *pcb_parameter) //int tiempo_inicio
+{
+	uint64_t quantum = *((uint64_t *) pcb_parameter);
+	usleep(quantum * 1000); // en milisegundos
+
+	// if preguntar si no volvio de CPU POR ESTE QUANTUM
+	// 1. verificar que no este en list_EXECUTE
+	// 2. checkiar si tiempo_inicio es el correcto
+    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", quantum);
+
+	return NULL;
+}
+
+
 
 void stop_planificacion(void) {
 	sem_wait(&sem_detener_planificacion);

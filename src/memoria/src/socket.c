@@ -108,7 +108,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
 
             FD_CLIENT_KERNEL = *fd_new_client;
             sem_post(&sem_coordinator_kernel_client_connected);
-            // Lógica de manejo de cliente Kernel (crear un hilo para menejo de cliente Kernel)
+            //listen_kernel(*fd_new_client);
             return NULL;
         case CPU_PORT_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
@@ -131,7 +131,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
 
             FD_CLIENT_CPU = *fd_new_client;
             sem_post(&sem_coordinator_cpu_client_connected);
-            // Lógica de manejo de cliente CPU (crear un hilo para menejo de cliente CPU)
+            listen_cpu(*fd_new_client);
             return NULL;
         case IO_PORT_TYPE:
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
@@ -151,7 +151,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
                 return NULL;
             }
 
-            // Lógica de manejo de cliente Entrada/Salida (crear un hilo para menejo de cliente Entrada/Salida)
+            listen_io(*fd_new_client);
             close(*fd_new_client);
             free(fd_new_client);
             return NULL;

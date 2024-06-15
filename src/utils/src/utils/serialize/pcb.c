@@ -82,7 +82,7 @@ void pcb_log(t_PCB *pcb) {
     "* RDX: %" PRIu32 "\n"
     "* SI: %" PRIu32 "\n"
     "* DI: %" PRIu32 "\n"
-    "* quantum: %" PRIu32 "\n"
+    "* quantum: %" PRIu64 "\n"
     "* current_state: %" PRIu8 "\n"
     "* arrival_READY: %g\n"
     "* arrival_RUNNING: %g"

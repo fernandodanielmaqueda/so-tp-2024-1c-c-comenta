@@ -22,6 +22,7 @@
 #include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
+#include "memoria.h"
 
 extern t_Server COORDINATOR_MEMORY;
 extern int FD_CLIENT_KERNEL;

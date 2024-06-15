@@ -54,7 +54,7 @@ typedef struct t_PCB {
     uint32_t RDX;
     uint32_t SI;
     uint32_t DI;
-    uint32_t quantum; //remanente del quantum
+    uint64_t quantum; //remanente del quantum
     uint8_t current_state; //enum Process_State current_state;
     double arrival_READY; // che llego en t=5s
     double arrival_RUNNING; // che corrio en runnign t=20seg 

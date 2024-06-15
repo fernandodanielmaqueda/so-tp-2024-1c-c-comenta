@@ -72,6 +72,10 @@ void *cpu_dispatch_handler(void *NULL_parameter) {
     	t_Package *package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
 		switch (package->header) {
 		case SUBHEADER_HEADER:
+		
+		pthread_exit(&SEM_LONG_TERM_SCHEDULER);
+		// pthread_cancel
+
 			pcb = pcb_deserialize(package->payload);
 			interrupt = interrupt_deserialize(package->payload);
 			instruction = arguments_deserialize(package->payload);

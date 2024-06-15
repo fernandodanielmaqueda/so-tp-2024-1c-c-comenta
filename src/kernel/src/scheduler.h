@@ -31,6 +31,15 @@ typedef struct t_Scheduling_Algorithm {
 
 extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 
+typedef enum e_CPU_Status {
+	EXECUTING_CPU_STATUS,
+	END_OF_QUANTUM_CPU_STATUS,
+	PCB_RETURNED_CPU_STATUS
+} e_CPU_Status;
+
+extern e_CPU_Status CPU_STATUS;
+extern pthread_mutex_t MUTEX_CPU_STATUS;
+
 extern t_list *START_PROCESS;
 extern pthread_mutex_t MUTEX_LIST_START_PROCESS;
 
@@ -66,7 +75,7 @@ extern sem_t SEM_SHORT_TERM_SCHEDULER;
 extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
 extern sem_t SEM_PROCESS_READY;
 
-extern int QUANTUM;
+extern uint64_t QUANTUM;
 extern int MULTIPROGRAMMING_LEVEL;
 
 //consola interactiva

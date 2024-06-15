@@ -181,7 +181,7 @@ void stdout_function(){
 t_Package* package;
 t_Arguments* instruction;
 	//escuchar peticion siempre
-	while(1){
+	while(1) {
 		//recibe peticion
 		package = package_receive(CONNECTION_KERNEL.fd_connection);
 		instruction = arguments_deserialize(package->payload);
@@ -200,7 +200,7 @@ t_Arguments* instruction;
 		payload_enqueue(package->payload, &(exit_status), sizeof(uint8_t));
 		package_send(package, CONNECTION_KERNEL.fd_connection);
 		package_destroy(package);
-}
+	}
 }
 
 
@@ -245,16 +245,19 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
 	t_Package *package;
+	uint32_t registro_direccion;
 	int registro_tamanio;
 
 	switch(IO_TYPE->type){
 		case STDIN_IO_TYPE:
+			registro_direccion = atoi(argv[2]);
 			registro_tamanio = atoi(argv[3]);
 			char* text = malloc(registro_tamanio * sizeof(char));
 			log_info(MODULE_LOGGER, "Ingrese un texto: ");
 			fgets(text, registro_tamanio * sizeof(char), stdin);
 			
 			package = package_create_with_header(STRING_HEADER);
+			payload_enqueue(package->payload, &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			payload_enqueue_string(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);

@@ -369,7 +369,8 @@ t_Arguments *cpu_fetch_next_instruction(void)
     t_Package *package;
 
     // Request
-    package = package_create_with_header(CPU_MEMORY_FETCH_HEADER);
+    package = package_create_with_header(INSTRUCTION_REQUEST);
+    payload_enqueue(package->payload, &(PCB->PID), sizeof(PCB->PID));
     payload_enqueue(package->payload, &(PCB->PC), sizeof(PCB->PC));
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);

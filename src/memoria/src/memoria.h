@@ -67,6 +67,7 @@ void kill_process (t_Payload* socketRecibido);
 void create_instruction(FILE* file, t_list* list_instruction);
 void parser_file(char* path, t_list* list_instruction);
 void listen_cpu(int fd_cpu);
+void listen_io(int fd_io);
 t_Process* seek_process_by_pid(int pidBuscado);
 
 /**

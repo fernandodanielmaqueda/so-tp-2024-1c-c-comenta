@@ -38,6 +38,8 @@ int module(int argc, char* argv[]) {
     initialize_sockets();
 
     log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+
+    listen_kernel(FD_CLIENT_KERNEL);
  
  /*   
     pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)FD_CLIENT_CPU);
@@ -212,7 +214,6 @@ void listen_cpu(int fd_cpu) {
                 break;
 
             /*
-            case DISCONNECTION_HEADERCODE:
                 log_warning(MODULE_LOGGER, "Se desconecto CPU.");
                 log_destroy(MODULE_LOGGER);
                 return;
@@ -243,6 +244,10 @@ void listen_cpu(int fd_cpu) {
                 break;
             }
     }
+}
+
+void listen_io(int fd_io) {
+
 }
 
 t_Process* seek_process_by_pid(int pidBuscado) {
