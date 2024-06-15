@@ -429,6 +429,8 @@ void write_memory(t_Payload* socketRecibido, int socket){
         
          //Actualizar pagina/TDP
     }
+
+    send_int(pidBuscado,socket,WRITE_REQUEST);
 }
 
 //Actualizar page y TDP
