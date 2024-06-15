@@ -22,6 +22,12 @@
 #include "utils/package.h"
 #include "utils/serialize/arguments.h"
 #include "utils/serialize/interrupt.h"
+typedef enum e_IO_Type {
+    GENERIC_IO_TYPE,
+    STDIN_IO_TYPE,
+    STDOUT_IO_TYPE,
+    DIALFS_IO_TYPE
+} e_IO_Type;
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);

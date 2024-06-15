@@ -35,6 +35,7 @@ typedef struct t_CPU_Registers {
     uint32_t DI;
 } t_CPU_Registers;
 
+
 typedef struct t_PCB {
     uint32_t PID;
     uint32_t PC;
@@ -57,7 +58,6 @@ typedef struct t_PCB {
     uint8_t current_state; //enum Process_State current_state;
     double arrival_READY; // che llego en t=5s
     double arrival_RUNNING; // che corrio en runnign t=20seg 
-    t_list* pages_table; // agrego atributo tabla de página del proceso
 } t_PCB;
 
 

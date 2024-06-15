@@ -23,40 +23,31 @@ int BLOCK_COUNT;
 
 int module(int argc, char* argv[]) {
 
+	/*
 	initialize_loggers();
-
-	//obtengo parametro 1
- 	char* parametro1 = argv[1];
-	log_info(MODULE_LOGGER, "el parametro 1 es: %s", parametro1);
-	
-	char* parametro2 = argv[2];
 	initialize_configs_io(argv[2]);
-	log_info(MODULE_LOGGER, "el parametro 2 es: %s", parametro2);
+	initialize_sockets();
 
-    initialize_sockets();
-
+	log_info(MODULE_LOGGER, "el parametro 1 es: %s", argv[1]);
+	log_info(MODULE_LOGGER, "el parametro 2 es: %s", argv[2]);
 	log_info(MODULE_LOGGER, "El tipo del modulo es: %s",TIPO_INTERFAZ);
- 	if(strcmp(TIPO_INTERFAZ, "GENERIC") == 0)
-	{
+
+ 	if(strcmp(TIPO_INTERFAZ, "GENERIC") == 0) {
 		log_info(MODULE_LOGGER, "ES el generico");
 		generic_function();
 
 	}
-	else if(strcmp(TIPO_INTERFAZ, "STDIN") == 0)
-	{
+	else if(strcmp(TIPO_INTERFAZ, "STDIN") == 0) {
 		log_info(MODULE_LOGGER, "Es STDIN");
 		stdin_function();
 	}
-	else if(strcmp(TIPO_INTERFAZ, "STDOUT") == 0)
-	{
+	else if(strcmp(TIPO_INTERFAZ, "STDOUT") == 0) {
 		log_info(MODULE_LOGGER, "Es STDOUT");
 		stdout_function();
-	}else
-	{
+	}else {
 		log_info(MODULE_LOGGER, "No reconozco el tipo interfaz");
 		char* mensaje = "No reconozco esta interfaz";
 		send(CONNECTION_KERNEL.fd_connection, mensaje, strlen(mensaje), 0);
-
 	}
 
     log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
@@ -65,6 +56,7 @@ int module(int argc, char* argv[]) {
 	finish_sockets();
 	//finish_configs();
 	finish_loggers();
+	*/
    
     return EXIT_SUCCESS;
 }
@@ -98,13 +90,14 @@ void finish_sockets(void) {
 	close(CONNECTION_MEMORY.fd_connection);
 }
 
-void generic_function(){
+void generic_function(void) {
 
+	/*
 	//escuchar peticion siempre
 	t_Package* instruction_package;
 	t_Arguments* instruction_arguments;
 	//recibe peticion
-	while(1){
+	while(1) {
 		instruction_package = package_receive(CONNECTION_KERNEL);
 		instruction_arguments = arguments_deserialize(instruction_package->payload);
 		
@@ -127,8 +120,8 @@ void generic_function(){
 			free(ERROR_CAUSE);
 		}
 
-	}; 
-
+	}
+	*/
 }
 
 void gen_sleep(int work_units, int work_unit_time){
@@ -173,7 +166,6 @@ void* stdin_function(){
 
 int IO_STDIN_READ(int argc, char* argv[]){
 
-	
 	char* text = malloc(sizeof(registroTamanio));
 	printf("Ingrese un texto: ");
 	scanf("%s",text);

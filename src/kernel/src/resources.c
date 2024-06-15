@@ -3,10 +3,9 @@
 
 #include "resources.h"
 
-//t_Resource *TOTAL_RESOURCES;
 t_Resource *RESOURCES;
 
-// t_list *ASSIGNED_RESOURCES;
+t_list *ASSIGNED_RESOURCES;
 
 int RESOURCE_QUANTITY;
 

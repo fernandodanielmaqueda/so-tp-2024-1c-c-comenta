@@ -65,8 +65,7 @@ const char *t_interrupt_type_string[] = {
     [SYSCALL_CAUSE] = "SYSCALL_CAUSE",
     [INTERRUPTION_CAUSE] = "INTERRUPTION_CAUSE"};
 
-int module(int argc, char *argv[])
-{
+int module(int argc, char *argv[]) {
 
     initialize_loggers();
     initialize_configs();

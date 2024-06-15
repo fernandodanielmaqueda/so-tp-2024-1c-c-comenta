@@ -25,21 +25,19 @@ t_Syscall *syscall_find(char *name) {
 
 int wait_kernel_syscall(int argc, char *argv[]) {
 
-    if (argc != 2)
-    {
+    if (argc != 2) {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
+    log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);    
 
     return EXIT_SUCCESS;
 }
 
 int signal_kernel_syscall(int argc, char *argv[]) {
 
-    if (argc != 2)
-    {
+    if (argc != 2) {
         log_error(MODULE_LOGGER, "Uso: SIGNAL <RECURSO>");
         exit(EXIT_FAILURE);
     }
