@@ -229,7 +229,19 @@ int copy_string_cpu_opcode(int argc, char *argv[]) {
 
     value = atoi(argv[1]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB->PID, argv[0], argv[1]);
-    /*TODO:: DESARROLLAR*/
+   
+    //COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
+    register_origin = string_to_register(argv[1]);
+    register_destination = string_to_register(argv[2]);
+
+    dir_logica_origin = atoi(argv[1]);
+    dir_logica_destination = atoi(argv[2]);
+
+    dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, IN);
+    dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, IN);
+
+   
+    
 
     SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
@@ -241,7 +253,7 @@ int wait_cpu_opcode(int argc, char *argv[]) {
     {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
         exit(EXIT_FAILURE);
-    }
+    }                                          
 
     log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
 
