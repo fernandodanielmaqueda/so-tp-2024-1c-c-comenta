@@ -247,6 +247,28 @@ void listen_cpu(int fd_cpu) {
 }
 
 void listen_io(int fd_io) {
+    while(1) {
+        t_Package* paquete = package_receive(fd_io);
+        e_Header header = paquete->header; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
+        switch(header) {
+            /*
+            case PROCESS_NEW:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion recibido.");
+                create_process(paquete->payload);
+                break;
+                */
+
+            case DISCONNECTION_HEADER:
+                log_warning(MODULE_LOGGER, "Se desconecto kernel.");
+                log_destroy(MODULE_LOGGER);
+                return;
+            
+            default:
+                log_warning(MODULE_LOGGER, "Operacion desconocida..");
+                break;
+        }
+        package_destroy(paquete);
+    }
 
 }
 
