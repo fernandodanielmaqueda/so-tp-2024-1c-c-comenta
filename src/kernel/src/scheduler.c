@@ -151,10 +151,7 @@ t_PCB *RR_scheduling_algorithm(void) {
 		t_PCB *pcb = (t_PCB *) list_remove(LIST_READY, 0);
 	pthread_mutex_unlock(&mutex_LIST_READY);
 
-	// ¿LO HAGO ACÁ O EN LISTEN CPU?
-	pcb->quantum = QUANTUM;
-
-	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, NULL); // thread interrupt
+	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, (void *) pcb->quantum); // thread interrupt
 	pthread_detach(&THREAD_INTERRUPT, NULL);
 
 	return pcb;
@@ -173,7 +170,8 @@ t_PCB *VRR_scheduling_algorithm(void){
 		pthread_mutex_unlock(&mutex_LIST_READY);
 	}
 
-	pthread_create(&thread_interrupt, NULL, start_quantum_VRR, (void *) pcb);
+	pthread_create(&THREAD_INTERRUPT, NULL, (void *) pcb->quantum);
+	pthread_detach(&THREAD_INTERRUPT, NULL);
 
 	return pcb;
 
@@ -199,6 +197,20 @@ t_PCB *VRR_scheduling_algorithm(void){
 	RR_scheduling_algorithm();
   }
   return pcb; */
+}
+
+t_PCB *FIFO_scheduling_reprogrammer(t_PCB *pcb) {
+	return NULL;
+}
+
+
+
+t_PCB *RR_scheduling_reprogrammer(t_PCB *pcb) {
+	return NULL;
+}
+
+t_PCB *VRR_scheduling_reprogrammer(t_PCB *pcb){
+	return NULL;
 }
 
 /*
@@ -320,7 +332,6 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 		//Todos los casos de salida de un proceso.
 		case EXIT_STATE:
 		{
-			
 			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
 
 			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
@@ -431,28 +442,25 @@ void send_interrupt(int socket)
 
 void *thread_send_cpu_interrupt(void *arguments)
 {
+	t_PCB *pcb = (t_PCB *) pcb_parameter;
 	sem_wait(&SEM_CPU_INTERRUPT);
 
-
-
-	return NULL;
-}
-
-
-void* start_quantum_VRR(void *pcb_parameter)
-{
-	t_PCB *pcb = (t_PCB *) pcb_parameter;    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
-    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
-	return NULL;
-}
-
-
-void* start_quantum(void *pcb_parameter)
-{
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
-    usleep(QUANTUM * 1000); //en milisegundos
+    usleep(pcb- * 1000); //en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+
+	return NULL;
+}
+
+void *start_quantum(void *pcb_parameter)
+{
+	int quantum = (int) pcb_parameter;
+
+    log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
+    usleep(quantum * 1000); // en milisegundos
+    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", quantum);
 
 	return NULL;
 }
@@ -484,4 +492,3 @@ void free_strv(char** array) {
 
 	free(array);
 }free(array);
-}
