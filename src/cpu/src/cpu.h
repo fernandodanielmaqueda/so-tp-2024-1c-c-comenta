@@ -101,6 +101,8 @@ void tlb_access(t_PCB *pcb, int nro_page, int nro_frame_required, int direc ,int
 void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
 void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
 void request_frame_memory(int page, int pid);
+void add_to_tlb(int pid , int page, int frame);
+void replace_tlb_input(int pid, int page, int frame);
 t_PCB *cpu_receive_pcb(void);
 t_Arguments *cpu_fetch_next_instruction(void);
 e_Interrupt *cpu_receive_interrupt_type(void);

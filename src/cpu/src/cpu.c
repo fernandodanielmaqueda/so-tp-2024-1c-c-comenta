@@ -69,7 +69,8 @@ const char *t_interrupt_type_string[] = {
     [SYSCALL_CAUSE] = "SYSCALL_CAUSE",
     [INTERRUPTION_CAUSE] = "INTERRUPTION_CAUSE"};
 
-int module(int argc, char *argv[]) {
+int module(int argc, char *argv[])
+{
 
     initialize_loggers();
     initialize_configs(MODULE_CONFIG_PATHNAME);
@@ -96,7 +97,8 @@ void read_module_config(t_config *MODULE_CONFIG)
     ALGORITMO_TLB = config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB");
 }
 
-void instruction_cycle(void){
+void instruction_cycle(void)
+{
 
     t_Arguments *IR;
     t_CPU_OpCode *opcode;
@@ -104,47 +106,56 @@ void instruction_cycle(void){
 
     tlb = list_create();
 
-    while (1){
+    while (1)
+    {
 
         PCB = cpu_receive_pcb();
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB->PID);
 
         KERNEL_INTERRUPT = NULL;
 
-        while(1) {
+        while (1)
+        {
 
-            // FETCH                   
+            // FETCH
             IR = cpu_fetch_next_instruction();
 
             // DECODE
             opcode = decode_instruction(IR->argv[0]);
-            if (opcode == NULL) {
+            if (opcode == NULL)
+            {
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", IR->argv[0]);
                 exit_status = EXIT_FAILURE;
-            } else {
+            }
+            else
+            {
 
                 // EXECUTE
                 exit_status = opcode->function(IR->argc, IR->argv);
             }
 
             // CHECK INTERRUPT
-            if(exit_status) {
+            if (exit_status)
+            {
                 log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
                 INTERRUPT = ERROR_CAUSE;
                 break;
             }
 
-            if(KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == KILL_INTERRUPT) {
+            if (KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == KILL_INTERRUPT)
+            {
                 INTERRUPT = INTERRUPTION_CAUSE;
                 break;
             }
-            
-            if(SYSCALL_CALLED) {
+
+            if (SYSCALL_CALLED)
+            {
                 INTERRUPT = SYSCALL_CAUSE;
                 break;
             }
 
-            if(KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == QUANTUM_INTERRUPT) {
+            if (KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == QUANTUM_INTERRUPT)
+            {
                 INTERRUPT = INTERRUPTION_CAUSE;
                 break;
             }
@@ -161,37 +172,39 @@ void instruction_cycle(void){
     }
 }
 
-void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
+void *kernel_cpu_interrupt_handler(void *NULL_parameter)
+{
 
-    cpu_start_server_for_kernel((void*) &SERVER_CPU_INTERRUPT);
-	sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
+    cpu_start_server_for_kernel((void *)&SERVER_CPU_INTERRUPT);
+    sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
 
     e_Kernel_Interrupt *kernel_interrupt;
 
-	while(1) {
+    while (1)
+    {
 
-    	t_Package *package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
-		switch (package->header) {
-		case KERNEL_INTERRUPT_HEADER:
-			kernel_interrupt = kernel_interrupt_deserialize(package->payload);
-			break;
-		default:
-			log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
-			exit(EXIT_FAILURE);
-			break;
-		}
-		package_destroy(package);
+        t_Package *package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
+        switch (package->header)
+        {
+        case KERNEL_INTERRUPT_HEADER:
+            kernel_interrupt = kernel_interrupt_deserialize(package->payload);
+            break;
+        default:
+            log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
+            exit(EXIT_FAILURE);
+            break;
+        }
+        package_destroy(package);
 
-        if(KERNEL_INTERRUPT == NULL)
+        if (KERNEL_INTERRUPT == NULL)
             KERNEL_INTERRUPT = kernel_interrupt;
 
         // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
-        if(KERNEL_INTERRUPT < kernel_interrupt)
+        if (KERNEL_INTERRUPT < kernel_interrupt)
             KERNEL_INTERRUPT = kernel_interrupt;
-		
-	}
+    }
 
-	return NULL;
+    return NULL;
 }
 
 int string_to_register(const char *string)
@@ -240,30 +253,53 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
     int dir_fisica = 0;
 
     // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
-    pthread_mutex_lock(&sem_mutex_tlb); // DUDA CONE ESTO!!
+    pthread_mutex_lock(&sem_mutex_tlb);
     int frame_tlb = check_tlb(pcb->PID, nro_page);
-    pthread_mutex_unlock(&sem_mutex_tlb); // DUDA CONE ESTO!!
+    pthread_mutex_unlock(&sem_mutex_tlb);
 
     if (frame_tlb != -1)
     {
         nro_frame_required = frame_tlb;
         log_info(MODULE_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pcb->PID, nro_page);
         tlb_access(pcb, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
+
+        dir_fisica = nro_frame_required * tamanio_pagina + offset;
+
+        return dir_fisica;
+
+       
     }
     else
     {
-        request_frame_memory(pcb->PID,nro_page);
+        request_frame_memory(pcb->PID, nro_page);
         t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
-         int frame = 0;
-         int pidBuscado = 0;
-         receive_2int(&pidBuscado,&frame,package->payload);
-         //tlb access 
-        log_info(MODULE_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->PID, nro_page);
-        package_destroy(package);
-    }
+        int frame = 0;
+        int pidBuscado = 0;
+        receive_2int(&pidBuscado, &frame, package->payload);
 
-    dir_fisica = nro_frame_required * tamanio_pagina + offset;
-    return dir_fisica;
+        if (CANTIDAD_ENTRADAS_TLB > 0)
+        {
+
+            if (list_size(tlb) < CANTIDAD_ENTRADAS_TLB)
+            {
+
+                add_to_tlb(pcb->PID, nro_page, frame);
+                log_trace(MODULE_LOGGER, "Agrego entrada a la TLB");
+            }
+            else
+            {
+
+                replace_tlb_input(pcb->PID, nro_page, frame);
+                log_trace(MODULE_LOGGER, "Reemplazo entrada a la TLB");
+            }
+
+            log_info(MODULE_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->PID, nro_page);
+            package_destroy(package);
+        }
+
+        dir_fisica = nro_frame_required * tamanio_pagina + offset;
+        return dir_fisica;
+    }
 }
 
 int check_tlb(int process_id, int page_number)
@@ -279,8 +315,6 @@ int check_tlb(int process_id, int page_number)
         {
             frame_number = tlb_entry->frame;
 
-            // ==============TODO:FALTA ALGORITMO FIFO ===============//
-
             if (strcmp(ALGORITMO_TLB, "LRU") == 0)
             {
                 tlb_entry->time = timestamp;
@@ -294,18 +328,75 @@ int check_tlb(int process_id, int page_number)
 void tlb_access(t_PCB *pcb, int nro_page, int frame_number_required, int direc, int register_origin, int register_destination, int in_out)
 {
 
+
     if (in_out == IN)
     {
 
-        // TODO : CON BRIAN PEDIR A MEMORIA QUE HAGA ESTAS FUNCIONES..
-        request_data_in_memory(frame_number_required, pcb->PID, nro_page, direc, register_origin, register_destination);
-        log_info(MODULE_LOGGER, "PID: %i -Accion:LEER - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
-    }
-    else
+        send_2int(pcb->PID, nro_page, CONNECTION_MEMORY.fd_connection, WRITE_REQUEST);
+        t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+
+        if (package == NULL)
+        {
+            log_error(MODULE_LOGGER, "Error al recibir el paquete");
+            exit(EXIT_FAILURE);
+        }  else
+        {
+            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR  - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
+        }
+        
+    }                
+      else //out
     {
-        request_data_out_memory(frame_number_required, pcb->PID, nro_page, direc, register_origin, register_destination);
-        log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
+        send_2int(pcb->PID, nro_page, CONNECTION_MEMORY.fd_connection, WRITE_REQUEST);
+        t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+
+        if (package == NULL)
+        {
+            log_error(MODULE_LOGGER, "Error al recibir el paquete");
+            exit(EXIT_FAILURE);
+        }  else
+        {
+            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
+        }
     }
+
+   // package_destroy(package);
+}
+
+
+void add_to_tlb(int pid , int page, int frame)
+{
+    t_TLB *tlb_entry = malloc(sizeof(t_TLB));
+    tlb_entry->PID = pid;
+    tlb_entry->page_number = page;
+    tlb_entry->frame = frame;
+    tlb_entry->time = timestamp;
+    timestamp++;
+    list_add(tlb, tlb_entry);
+
+}
+
+void replace_tlb_input(int pid, int page, int frame)
+{
+    t_TLB *tlb_aux = list_get(tlb, 0);
+    int replace_value = tlb_aux->time + 1;
+    int index_replace = 0;
+        for(int i = 0; i < list_size(tlb); i++){
+
+            t_TLB *replaced_tlb = list_get(tlb, i);
+            if(replaced_tlb->time < replace_value){
+                replace_value = replaced_tlb->time;
+                index_replace = i;
+            } //guardo el d emenor tiempo
+        }
+
+    tlb_aux = list_get(tlb, index_replace);
+    tlb_aux->PID = pid;
+    tlb_aux->page_number = page;
+    tlb_aux->frame = frame;
+    tlb_aux->time = timestamp;
+    timestamp++;
+    
 }
 
 void request_data_in_memory(int frame_number_required, int pid, int nro_page, int direc, int register_origin, int register_destination)
@@ -357,12 +448,15 @@ e_Interrupt *cpu_receive_interrupt_type(void)
     return interrupt;
 }
 
-void request_frame_memory(int page, int pid) {
+void request_frame_memory(int page, int pid)
+{
     t_Package *package = package_create_with_header(FRAME_REQUEST);
     payload_enqueue(package->payload, &page, sizeof(int));
     payload_enqueue(package->payload, &pid, sizeof(int));
     package_send(package, CONNECTION_MEMORY.fd_connection);
 }
+
+
 
 t_Arguments *cpu_fetch_next_instruction(void)
 {
@@ -380,7 +474,8 @@ t_Arguments *cpu_fetch_next_instruction(void)
     t_Arguments *instruction;
 
     package = package_receive(CONNECTION_MEMORY.fd_connection);
-    switch (package->header) {
+    switch (package->header)
+    {
     case CPU_INSTRUCTION_HEADER:
         instruction = arguments_deserialize(package->payload);
         break;
