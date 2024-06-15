@@ -28,7 +28,7 @@ int RETARDO_RESPUESTA;
 int module(int argc, char* argv[]) {
 
 	initialize_loggers();
-	initialize_configs();
+	initialize_configs(MODULE_CONFIG_PATHNAME);
 
     memoria_principal = (void*) malloc(TAM_MEMORIA);
     memset(memoria_principal, (u_int32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
@@ -59,7 +59,7 @@ int module(int argc, char* argv[]) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_TYPE, .clients_type = TO_BE_DEFINED_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_DEFINED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
     TAM_MEMORIA = config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");

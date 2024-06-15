@@ -21,11 +21,11 @@ void finish_loggers(void) {
 	log_destroy(SERIALIZE_LOGGER);
 }
 
-void initialize_configs(void) {
-	MODULE_CONFIG = config_create(MODULE_CONFIG_PATHNAME);
+void initialize_configs(char *pathname) {
+	MODULE_CONFIG = config_create(pathname);
 
 	if(MODULE_CONFIG == NULL) {
-		log_error(MODULE_LOGGER, "No se pudo abrir el archivo config del modulo %s: %s", MODULE_NAME, MODULE_CONFIG_PATHNAME);
+		log_error(MODULE_LOGGER, "No se pudo abrir el archivo config del modulo %s: %s", MODULE_NAME, pathname);
         exit(EXIT_FAILURE);
 	}
 

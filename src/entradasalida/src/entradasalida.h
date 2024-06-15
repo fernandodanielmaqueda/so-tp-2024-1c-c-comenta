@@ -22,6 +22,7 @@
 #include "utils/package.h"
 #include "utils/serialize/arguments.h"
 #include "utils/serialize/interrupt.h"
+
 typedef enum e_IO_Type {
     GENERIC_IO_TYPE,
     STDIN_IO_TYPE,
@@ -29,16 +30,40 @@ typedef enum e_IO_Type {
     DIALFS_IO_TYPE
 } e_IO_Type;
 
+typedef struct t_IO_Type {
+    char *name;
+    enum e_IO_Type type;
+    void (*function) (void);
+} t_IO_Type;
+
+extern t_IO_Type IO_TYPES[];
+extern t_IO_Type *IO_TYPE;
+
+typedef struct t_IO_Operation {
+    char *name;
+    int (*function) (int, char*[]);
+} t_IO_Operation;
+
+extern t_IO_Operation IO_OPERATIONS[];
+extern t_IO_Operation *IO_OPERATION;
+
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
+t_IO_Type *io_type_find(char *name);
+t_IO_Operation *io_operation_find(char *name);
+void generic_function(void);
 void initialize_sockets(void);
 void finish_sockets(void);
-void* generic();
-void gen_sleep(int work_units, int work_unit_time);
-void* stdin_function();
-void IO_STDIN_READ(void* registroDireccion, void* direccionTamanio);
-void* stdout_function();
-void IO_STDOUT_WRITE(int direccionMemoria);
-int receive_from_memory(int direccionMemoria);
+void stdin_function();
+void stdout_function();
+int receive_from_memory(void* direccionMemoria);
+int io_gen_sleep_io_operation(int argc, char *argv[]);
+int io_stdin_read_io_operation(int argc, char *argv[]);
+int io_stdout_write_io_operation(int argc, char *argv[]);
+int io_fs_create_io_operation(int argc, char *argv[]);
+int io_fs_delete_io_operation(int argc, char *argv[]);
+int io_fs_truncate_io_operation(int argc, char *argv[]);
+int io_fs_write_io_operation(int argc, char *argv[]);
+int io_fs_read_io_operation(int argc, char *argv[]);
 
 #endif /* ENTRADASALIDA_H */

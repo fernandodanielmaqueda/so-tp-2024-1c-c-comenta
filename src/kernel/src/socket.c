@@ -94,7 +94,7 @@ void *kernel_client_handler_for_io(void *fd_new_client_parameter) {
 	}
 
     switch((e_PortType) handshake) {
-        case IO_TYPE:
+        case IO_PORT_TYPE:
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
 			handshake = 0;
             bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);

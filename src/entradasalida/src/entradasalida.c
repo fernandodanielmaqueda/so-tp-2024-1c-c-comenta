@@ -21,34 +21,48 @@ char *PATH_BASE_DIALFS;
 int BLOCK_SIZE;
 int BLOCK_COUNT;
 
+t_IO_Type IO_TYPES[] = {
+    {.name = "GENERIC", .type = GENERIC_IO_TYPE, .function = generic_function },
+    {.name = "STDIN", .type = STDIN_IO_TYPE, .function = stdin_function },
+    {.name = "STDOUT", .type = STDOUT_IO_TYPE, .function = stdout_function },
+    {.name = "DIALFS", .type = DIALFS_IO_TYPE, .function = NULL},
+    {.name = NULL}
+};
+
+t_IO_Type *IO_TYPE;
+
+t_IO_Operation IO_OPERATIONS[] = {
+    {.name = "IO_GEN_SLEEP", .function = io_gen_sleep_io_operation},
+    {.name = "IO_STDIN_READ", .function = io_stdin_read_io_operation},
+    {.name = "IO_STDOUT_WRITE", .function = io_stdout_write_io_operation},
+    {.name = "IO_FS_CREATE", .function = io_fs_create_io_operation},
+    {.name = "IO_FS_DELETE", .function = io_fs_delete_io_operation},
+    {.name = "IO_FS_TRUNCATE", .function = io_fs_truncate_io_operation},
+    {.name = "IO_FS_WRITE", .function = io_fs_write_io_operation},
+    {.name = "IO_FS_READ", .function = io_fs_read_io_operation},
+    {.name = NULL}
+};
+
+t_IO_Operation *IO_OPERATION;
+
 int module(int argc, char* argv[]) {
 
-	/*
 	initialize_loggers();
-	initialize_configs_io(argv[2]);
+	initialize_configs(argv[2]);
 	initialize_sockets();
 
 	log_info(MODULE_LOGGER, "el parametro 1 es: %s", argv[1]);
 	log_info(MODULE_LOGGER, "el parametro 2 es: %s", argv[2]);
 	log_info(MODULE_LOGGER, "El tipo del modulo es: %s",TIPO_INTERFAZ);
 
- 	if(strcmp(TIPO_INTERFAZ, "GENERIC") == 0) {
-		log_info(MODULE_LOGGER, "ES el generico");
-		generic_function();
+	IO_TYPE = io_type_find(TIPO_INTERFAZ);
+	if(IO_TYPE == NULL) {
+		log_error(MODULE_LOGGER, "No se reconoce el tipo de interfaz");
+		exit(EXIT_FAILURE);
+	}
 
-	}
-	else if(strcmp(TIPO_INTERFAZ, "STDIN") == 0) {
-		log_info(MODULE_LOGGER, "Es STDIN");
-		stdin_function();
-	}
-	else if(strcmp(TIPO_INTERFAZ, "STDOUT") == 0) {
-		log_info(MODULE_LOGGER, "Es STDOUT");
-		stdout_function();
-	}else {
-		log_info(MODULE_LOGGER, "No reconozco el tipo interfaz");
-		char* mensaje = "No reconozco esta interfaz";
-		send(CONNECTION_KERNEL.fd_connection, mensaje, strlen(mensaje), 0);
-	}
+	// Invoco a la funcion que corresponda
+	IO_TYPE->function();
 
     log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
@@ -56,16 +70,31 @@ int module(int argc, char* argv[]) {
 	finish_sockets();
 	//finish_configs();
 	finish_loggers();
-	*/
    
     return EXIT_SUCCESS;
+}
+
+t_IO_Type *io_type_find(char *name) {
+    for(register int i = 0; IO_TYPES[i].name != NULL; i++)
+        if(!strcmp(IO_TYPES[i].name, name))
+            return (&IO_TYPES[i]);
+
+    return NULL;
+}
+
+t_IO_Operation *io_operation_find(char *name) {
+    for(register int i = 0; IO_OPERATIONS[i].name != NULL; i++)
+        if(!strcmp(IO_OPERATIONS[i].name, name))
+            return (&IO_OPERATIONS[i]);
+
+    return NULL;
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
     TIPO_INTERFAZ = config_get_string_value(MODULE_CONFIG, "TIPO_INTERFAZ");
     TIEMPO_UNIDAD_TRABAJO = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
-    CONNECTION_KERNEL = (t_Connection) {.client_type = IO_TYPE, .server_type = KERNEL_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
-    CONNECTION_MEMORY = (t_Connection) {.client_type = IO_TYPE, .server_type = MEMORY_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+    CONNECTION_KERNEL = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = KERNEL_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
+    CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
     PATH_BASE_DIALFS = config_get_string_value(MODULE_CONFIG, "PATH_BASE_DIALFS");
     BLOCK_SIZE = config_get_int_value(MODULE_CONFIG, "BLOCK_SIZE");
     BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");
@@ -92,43 +121,35 @@ void finish_sockets(void) {
 
 void generic_function(void) {
 
-	/*
 	//escuchar peticion siempre
-	t_Package* instruction_package;
-	t_Arguments* instruction_arguments;
+	t_Package* package;
+	t_Arguments* instruction;
 	//recibe peticion
 	while(1) {
-		instruction_package = package_receive(CONNECTION_KERNEL);
-		instruction_arguments = arguments_deserialize(instruction_package->payload);
-		
-		package_destroy(instruction_package);
-		//Chequear si puede realizar esta instruccion
-		//if(strcmp(instruction_arguments.argv[0],"IO_GEN_SLEEP") == 0){
-			
-			//si la puede realizar entonces hace el gen_sleep
-			//gen_sleep(instruction_arguments.argv[2],TIEMPO_UNIDAD_TRABAJO);
 
-			//arguments_free(instruction_arguments);
-			//Avisar a kernel que la hizo
-			//instruction_made* REALIZADA;
-			
-		}else{
-			//Si no la puede realizar avisa a kernel y se hace cargo kernel
-			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-			e_Interrupt* ERROR_CAUSE;
-		//	interrupt_send(ERROR_CAUSE,CONNECTION_KERNEL);
-			free(ERROR_CAUSE);
+		package = package_receive(CONNECTION_KERNEL.fd_connection);
+		instruction = arguments_deserialize(package->payload);
+		package_destroy(package);
+
+		IO_OPERATION = io_operation_find(instruction->argv[0]);
+		if(IO_OPERATION == NULL) {
+			log_error(MODULE_LOGGER, "No se reconoce la operacion");
+			exit(EXIT_FAILURE);
 		}
 
+		int exit_status = IO_OPERATION->function(instruction->argc, instruction->argv);
+
+		// arguments_free(instruction);
+
+		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+		package = package_create_with_header(EXIT_STATUS_HEADER);
+		payload_enqueue(package->payload, &(exit_status), sizeof(uint8_t));
+		package_send(package, CONNECTION_KERNEL.fd_connection);
+		package_destroy(package);
 	}
-	*/
 }
 
-void gen_sleep(int work_units, int work_unit_time){
-	sleep(work_units * work_unit_time);
-}
-/*
-void* stdin_function(){
+void stdin_function(){
 
 
 	t_Package* instruction_package;
@@ -136,7 +157,7 @@ void* stdin_function(){
 	//escuchar peticion siempre
 	while(1){
 		//recibe peticion
-		//instruction_package = package_receive(CONNECTION_KERNEL);
+		//instruction_package = package_receive(CONNECTION_KERNEL.fd_connection);
 		instruction_arguments = arguments_deserialize(instruction_package->payload);
 		
 		package_destroy(instruction_package);
@@ -149,10 +170,10 @@ void* stdin_function(){
 			//Avisar a kernel que la hizo
 			//instruction_made* REALIZADA;
 	//chequear si puede realizar instruccion
-	 if(strcmp(nombre_instruccion, "IO_GEN_SLEEP") =! 0){
+	 if(strcmp(instruction_arguments->argv[0], "IO_GEN_SLEEP") != 0){
 		log_info(MODULE_LOGGER, "No puedo realizar esa instruccion");
-		 No puede realizar: 
-			Avisa a kernel y se hace cargo kernel
+		 // No puede realizar: 
+			// Avisa a kernel y se hace cargo kernel
 		 }
 		else{ 
 
@@ -162,17 +183,17 @@ void* stdin_function(){
 	//avisar a kernel
 }
 	}
-}*/
+}
 
-/*int IO_STDIN_READ(int argc, char* argv[]){
+int IO_STDIN_READ(int argc, char* argv[]){
 
-	char* text = malloc(sizeof(registroTamanio));
+	char* text = malloc(sizeof(argv[2]));
 	
 	//char* text = malloc(sizeof(registroTamanio));
 	printf("Ingrese un texto: ");
 }
 
-void* stdout_function(){
+void stdout_function(){
 	//conectar a kernel
 
 	//escuchar peticion siempre
@@ -188,30 +209,136 @@ void* stdout_function(){
 	//si es IO_STDOUT_WRITE realizarlo
 
 	//avisar a kernel
-//}
+}
 
-/* void IO_STDOUT_WRITE(void* registroDireccion, void* direccionTamanio){
-	int dir_memoria = receive_from_memory(direccionMemoria);
-	printf("El valor hallado en la direccion de memoria es: %d", dir_memoria);
-} */
+void IO_STDOUT_WRITE(void* registroDireccion, void* direccionTamanio){
+	//int dir_memoria = receive_from_memory(direccionMemoria);
+	//printf("El valor hallado en la direccion de memoria es: %d", dir_memoria);
+}
 
-/* int receive_from_memory(void* direccionMemoria){
-	recv(CONNECTION_MEMORY.fd_connection,,,MSG_WAITALL);
-} 
-
-void initialize_configs_io(char* path) {
-	MODULE_CONFIG = config_create(path);
-
-	if(MODULE_CONFIG == NULL) {
-		log_error(MODULE_LOGGER, "No se pudo abrir el archivo config del modulo %s: %s", MODULE_NAME, MODULE_CONFIG_PATHNAME);
-        exit(EXIT_FAILURE);
-	}
-
-	read_module_config(MODULE_CONFIG);
-};
+int receive_from_memory(void* direccionMemoria){
+	// recv(CONNECTION_MEMORY.fd_connection,,,MSG_WAITALL);
+}
 
 typedef enum instruction_made { // CONTEXT_SWITCH_CAUSE
     REALIZADA, // por ejemplo decode
     NO_REALIZADA, //incluye el EXIT
     
-} instruction_made;*/
+} instruction_made;
+
+
+int io_gen_sleep_io_operation(int argc, char *argv[]) {
+
+    if (argc != 3)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
+
+	switch(IO_TYPE->type) {
+		case GENERIC_IO_TYPE:
+		// LA PUEDE HACER (Y LA HACE)
+			sleep(atoi(argv[2]) * TIEMPO_UNIDAD_TRABAJO);
+			break;
+		default:
+			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
+			return EXIT_FAILURE;
+	}
+
+    return EXIT_SUCCESS;
+}
+
+int io_stdin_read_io_operation(int argc, char *argv[]) {
+
+    if (argc != 3)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_STDIN_READ <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
+
+    // VALIDAR LA INTERFAZ
+
+    return EXIT_SUCCESS;
+}
+
+int io_stdout_write_io_operation(int argc, char *argv[]) {
+    
+    if (argc != 3)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
+
+    // TODO
+    
+    return EXIT_SUCCESS;
+}
+
+int io_fs_create_io_operation(int argc, char *argv[]) {
+    
+    if (argc != 3)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_FS_CREATE <INTERFAZ> <NOMBRE ARCHIVO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
+
+    return EXIT_SUCCESS;
+}
+
+int io_fs_delete_io_operation(int argc, char *argv[]) {
+
+    if (argc != 3)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_FS_DELETE <INTERFAZ> <NOMBRE ARCHIVO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
+
+    return EXIT_SUCCESS;
+}
+
+int io_fs_truncate_io_operation(int argc, char *argv[]) {
+
+    if (argc != 4)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_FS_TRUNCATE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO TAMANIO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
+    
+    return EXIT_SUCCESS;
+}
+
+int io_fs_write_io_operation(int argc, char *argv[]) {
+    if(argc != 6)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+
+    return EXIT_SUCCESS;
+}
+
+int io_fs_read_io_operation(int argc, char *argv[]) {
+    if(argc != 6)
+    {
+        log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
+        exit(EXIT_FAILURE);
+    }
+
+    log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+
+    return EXIT_SUCCESS;
+}

@@ -25,6 +25,7 @@ typedef enum e_Header {
     CPU_INSTRUCTION_HEADER,
     INTERRUPT_HEADER,
     KERNEL_INTERRUPT_HEADER,
+    EXIT_STATUS_HEADER,
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_NEW,

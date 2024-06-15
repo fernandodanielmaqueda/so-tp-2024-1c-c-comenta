@@ -3,7 +3,7 @@
 
 #include "socket.h"
 
-const char *PORT_NAMES[PortType_Count] = {[KERNEL_TYPE] = "Kernel", [CPU_TYPE] = "CPU", [CPU_DISPATCH_TYPE] = "CPU (Dispatch)", [CPU_INTERRUPT_TYPE] = "CPU (Interrupt)", [MEMORY_TYPE] = "Memoria", [IO_TYPE] = "Entrada/Salida", [TO_BE_DEFINED_TYPE] = "A identificar"};
+const char *PORT_NAMES[PortType_Count] = {[KERNEL_PORT_TYPE] = "Kernel", [CPU_PORT_TYPE] = "CPU", [CPU_DISPATCH_PORT_TYPE] = "CPU (Dispatch)", [CPU_INTERRUPT_PORT_TYPE] = "CPU (Interrupt)", [MEMORY_PORT_TYPE] = "Memoria", [IO_PORT_TYPE] = "Entrada/Salida", [TO_BE_DEFINED_PORT_TYPE] = "A identificar"};
 // const t_Handshake HANDSHAKES[PortType_Count] = {[KERNEL_TYPE] = 10, [CPU_TYPE] = 20, [CPU_DISPATCH_TYPE] = 21, [CPU_INTERRUPT_TYPE] = 22, [MEMORY_TYPE] = 30, [IO_TYPE] = 40, [TO_BE_DEFINED_TYPE] = -1};
 
 void *client_thread_connect_to_server(void *connection_parameter) {

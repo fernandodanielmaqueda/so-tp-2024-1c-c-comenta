@@ -87,7 +87,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
     }
 
     switch((e_PortType) handshake) {
-        case KERNEL_TYPE:
+        case KERNEL_PORT_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
             handshake = 0;
@@ -110,7 +110,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             sem_post(&sem_coordinator_kernel_client_connected);
             // Lógica de manejo de cliente Kernel (crear un hilo para menejo de cliente Kernel)
             return NULL;
-        case CPU_TYPE:
+        case CPU_PORT_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
             handshake = 0;
@@ -133,7 +133,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             sem_post(&sem_coordinator_cpu_client_connected);
             // Lógica de manejo de cliente CPU (crear un hilo para menejo de cliente CPU)
             return NULL;
-        case IO_TYPE:
+        case IO_PORT_TYPE:
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
             handshake = 0;
             bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);

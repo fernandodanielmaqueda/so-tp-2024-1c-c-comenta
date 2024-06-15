@@ -9,13 +9,13 @@
 #include "commons/config.h"
 
 typedef enum e_PortType {
-    KERNEL_TYPE,
-    CPU_TYPE,
-    CPU_DISPATCH_TYPE,
-    CPU_INTERRUPT_TYPE,
-    MEMORY_TYPE,
-    IO_TYPE,
-    TO_BE_DEFINED_TYPE
+    KERNEL_PORT_TYPE,
+    CPU_PORT_TYPE,
+    CPU_DISPATCH_PORT_TYPE,
+    CPU_INTERRUPT_PORT_TYPE,
+    MEMORY_PORT_TYPE,
+    IO_PORT_TYPE,
+    TO_BE_DEFINED_PORT_TYPE
 } e_PortType;
 #define PortType_Count 7
 
@@ -32,7 +32,7 @@ extern t_config *MODULE_CONFIG;
 
 void initialize_loggers(void);
 void finish_loggers(void);
-void initialize_configs(void);
+void initialize_configs(char *pathname);
 void finish_configs(void);
 extern void read_module_config(t_config*);
 
