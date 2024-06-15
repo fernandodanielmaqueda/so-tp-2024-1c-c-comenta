@@ -244,17 +244,28 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
+	t_Package *package;
+	int registro_tamanio;
+
 	switch(IO_TYPE->type){
 		case STDIN_IO_TYPE:
-			char* text = malloc(sizeof(argv[3]));
+			registro_tamanio = atoi(argv[3]);
+			char* text = malloc(registro_tamanio * sizeof(char));
 			log_info(MODULE_LOGGER, "Ingrese un texto: ");
-			scanf("%s", text);
-			//write_memory()
+			fgets(text, registro_tamanio * sizeof(char), stdin);
+			
+			package = package_create_with_header(STRING_HEADER);
+			payload_enqueue_string(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
+			package_send(package, CONNECTION_MEMORY.fd_connection);
+			package_destroy(package);
+
+			free(text);
+
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
 			return EXIT_FAILURE;
-	}	
+	}
 
 	return EXIT_SUCCESS;	
 }

@@ -20,6 +20,7 @@ typedef enum e_Header {
     SUBHEADER_HEADER,
     ARGUMENTS_HEADER,
     PCB_HEADER,
+    STRING_HEADER,
     CPU_MEMORY_REQUEST_HEADER,//deberia estar obsoleto ya
     CPU_MEMORY_FETCH_HEADER, //
     CPU_INSTRUCTION_HEADER,
