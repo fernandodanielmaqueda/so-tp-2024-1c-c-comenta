@@ -204,13 +204,6 @@ t_Arguments* instruction;
 }
 
 
-typedef enum instruction_made { // CONTEXT_SWITCH_CAUSE
-    REALIZADA, // por ejemplo decode
-    NO_REALIZADA, //incluye el EXIT
-    
-} instruction_made;
-
-
 int io_gen_sleep_io_operation(int argc, char *argv[]) {
 
     if (argc != 3)
@@ -283,9 +276,24 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
+	t_Package* package;
+	t_Arguments* instruction;
+	int registro_tamanio;
+
 	switch(IO_TYPE->type){
 		case STDOUT_IO_TYPE:
-			//read_memory()
+
+			package = package_create_with_header(STRING_HEADER);
+			payload_enqueue_string(package->payload, argv[2]);
+			payload_enqueue_string(package->payload, argv[3]);
+
+			package_send(package, CONNECTION_MEMORY.fd_connection);
+			package_destroy(package);
+
+			package = package_receive(CONNECTION_MEMORY.fd_connection);
+			instruction = arguments_deserialize(package);
+			log_info(MODULE_LOGGER, "En la memoria se halla el siguiente contenido: %s", instruction->argv[0]);
+			package_destroy(package);
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
