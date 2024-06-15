@@ -385,13 +385,15 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
 void read_memory(t_Payload* socketRecibido, int socket) {
     int dir_fisica = 0;
     int pidBuscado = 0;
-    receive_2int(&dir_fisica,&pidBuscado,socketRecibido);
+    int bytes = 0;
+    //receive_2int(&dir_fisica,&pidBuscado,socketRecibido);
+    receive_read_request(&pidBuscado, &dir_fisica, &bytes,socketRecibido);
 
-    u_int32_t lectura;
+    char* lectura;
     void* posicion = memoria_principal + dir_fisica;
-    memcpy(&lectura, posicion, sizeof(u_int32_t));
+    memcpy(&lectura, posicion, bytes);
 
-    send_2int(pidBuscado,lectura, socket, READ_REQUEST);
+    send_String_1int(pidBuscado,lectura, socket, READ_REQUEST);
     
 }
 
@@ -399,9 +401,13 @@ void read_memory(t_Payload* socketRecibido, int socket) {
 void write_memory(t_Payload* socketRecibido, int socket){
     int dir_fisica = 0;
     int pidBuscado = 0;
-    uint32_t contenido = 0;
+    int bytes = 0;
+    char* contenido;
+
     
-    receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
+    receive_write_request(&pidBuscado, &dir_fisica, &bytes, &contenido, socketRecibido);
+    
+    //receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
 
     int pages = sizeof(contenido)/TAM_PAGINA;
     int resto = sizeof(contenido) % TAM_PAGINA;
