@@ -104,11 +104,7 @@ void *long_term_scheduler(void *parameter) {
 		free(abspath);
 
 		// Recibo paquete de memoria
-		package = package_receive(CONNECTION_MEMORY.fd_connection);
-		//t_pages_table* table = deserializar_tabla_paginas(paquete->buffer);
-		
-		//pcb->tabla_paginas = tabla->paginas;
-
+		//package = package_receive(CONNECTION_MEMORY.fd_connection);			
 	
 	     switch_process_state(pcb, READY_STATE);
 	}
@@ -160,15 +156,6 @@ t_PCB *RR_scheduling_algorithm(void ){
 		return pcb;
 }
 
-/* 
-PROBLEMAS.
-
-1- EN QUE MOMENTO SE ACTUALIZA EL QUANTUM
-2- EL PCB DONDE SE LO PASO?
-
-
-
-*/
 
 
 t_PCB *kernel_get_priority_list(void) { //como sacar el pcb de las listas?
