@@ -165,7 +165,7 @@ void stdin_function(){
 			log_error(MODULE_LOGGER,"No se reconoce la operacion");
 			exit(EXIT_FAILURE);
 		}
-		int exit_status = IO_OPERATION->function(instruccion->argc, instruction->argv);
+		int exit_status = IO_OPERATION->function(instruction->argc, instruction->argv);
 		// arguments_free(instruction);
 
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
@@ -176,30 +176,31 @@ void stdin_function(){
 }
 }
 
-int IO_STDIN_READ(int argc, char* argv[]){
-
-	char* text = malloc(sizeof(argv[2]));
-	
-	//char* text = malloc(sizeof(registroTamanio));
-	printf("Ingrese un texto: ");
-}
 
 void stdout_function(){
-	//conectar a kernel
-
+t_Package* package;
+t_Arguments* instruction;
 	//escuchar peticion siempre
+	while(1){
+		//recibe peticion
+		package = package_receive(CONNECTION_KERNEL.fd_connection);
+		instruction = arguments_deserialize(package->payload);
+		
+		package_destroy(package);
+		IO_OPERATION = io_operation_find(instruction->argv[0]);
+		if(IO_OPERATION == NULL){
+			log_error(MODULE_LOGGER,"No se reconoce la operacion");
+			exit(EXIT_FAILURE);
+		}
+		int exit_status = IO_OPERATION->function(instruction->argc, instruction->argv);
+		// arguments_free(instruction);
 
-	//recibe peticion
-
-	//chequear si puede realizar instruccion
-
-		/* No puede realizar: 
-			Avisa a kernel y se hace cargo kernel
-		*/	
-
-	//si es IO_STDOUT_WRITE realizarlo
-
-	//avisar a kernel
+		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+		package = package_create_with_header(EXIT_STATUS_HEADER);
+		payload_enqueue(package->payload, &(exit_status), sizeof(uint8_t));
+		package_send(package, CONNECTION_KERNEL.fd_connection);
+		package_destroy(package);
+}
 }
 
 
@@ -245,8 +246,12 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
 
 	switch(IO_TYPE->type){
 		case STDIN_IO_TYPE:
-		break;
-	default:
+			char* text = malloc(sizeof(argv[3]));
+			log_info(MODULE_LOGGER, "Ingrese un texto: ");
+			scanf("%s", text);
+			//write_memory()
+			break;
+		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
 			return EXIT_FAILURE;
 	}	
@@ -264,7 +269,14 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
-    // TODO
+	switch(IO_TYPE->type){
+		case STDOUT_IO_TYPE:
+			//read_memory()
+			break;
+		default:
+			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
+			return EXIT_FAILURE;
+	}
     
     return EXIT_SUCCESS;
 }
