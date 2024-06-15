@@ -104,6 +104,60 @@ void receive_2int_1uint32(int* nro1, int* nro2, u_int32_t* contenido, t_Payload*
     offset += sizeof(u_int32_t);
 }
 
+//receive_write_request(&n1,&n2,&content,&bytes,payload);
+void receive_write_request(int* pid, int* dir_fis, int* bytes, char* contenido, t_Payload* payload){ 
+    // Extrae el primer entero del payload
+    int offset = 0;
+    memcpy(pid, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+
+    // Extrae el segundo entero del payload
+    memcpy(dir_fis, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+    
+    // Extrae el tercer entero del payload
+    memcpy(bytes, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+    
+    // Extrae el char* del payload
+    memcpy(contenido, payload->stream + offset, bytes);
+}
+
+void send_write_request(int pid, int dir_fis, char* mensaje, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, (void*) pid, sizeof(int) );
+    payload_enqueue(package->payload, (void*) dir_fis, sizeof(int) );
+    payload_enqueue(package->payload, (void*)(strlen(mensaje)+1), sizeof(int) );
+    payload_enqueue(package->payload, mensaje, strlen(mensaje)+1 );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+void receive_read_request(int* pid, int* dir_fis, int* bytes, t_Payload* payload){ 
+    // Extrae el primer entero del payload
+    int offset = 0;
+    memcpy(pid, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+
+    // Extrae el segundo entero del payload
+    memcpy(dir_fis, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+    
+    // Extrae el segundo entero del payload
+    memcpy(bytes, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+}
+
+void send_read_request(int pid, int dir_fis, int bytes, int socket, int opcod){
+    t_Package* package = package_create_with_header(opcod);
+    payload_enqueue(package->payload, (void*) pid, sizeof(int) );
+    payload_enqueue(package->payload, (void*) dir_fis, sizeof(int) );
+    payload_enqueue(package->payload, (void*) bytes, sizeof(int) );
+  package_send(package, socket);
+  package_destroy(package);
+}
+
+
 void send_String_1int(int nro, char* mensaje, int socket, int opcod){
     t_Package* package = package_create_with_header(opcod);
     payload_enqueue(package->payload, (void*)(strlen(mensaje)+1), sizeof(int) );

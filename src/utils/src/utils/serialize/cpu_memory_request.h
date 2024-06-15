@@ -60,6 +60,10 @@ void receive_2int(int* nro1, int* nro2, t_Payload* payload);
 void send_String_1int(int nro, char* mensaje, int socket, int opcod);
 void receive_2int_1uint32(int* nro1, int* nro2,uint32_t* contenido, t_Payload* payload);
 void send_2int_1uint32(int nro1, int nro2,uint32_t contenido, int socket, int opcod);
+void receive_write_request(int* pid, int* dir_fis, int* bytes, char* contenido, t_Payload* payload);
+void send_write_request(int pid, int dir_fis, char* mensaje, int socket, int opcod);
+void receive_read_request(int* pid, int* dir_fis, int* bytes, t_Payload* payload);
+void send_read_request(int pid, int dir_fis, int bytes, int socket, int opcod);
 
 
 #endif // SERIALIZE_CPU_MEMORY_REQUEST_H
