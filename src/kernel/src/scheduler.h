@@ -25,7 +25,8 @@
 
 typedef struct t_Scheduling_Algorithm {
     char *name;
-    t_PCB *(*function) (void);
+    t_PCB *(*function_fetcher) (void);
+    t_PCB *(*function_reprogrammer) (t_PCB *);
 } t_Scheduling_Algorithm;
 
 extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
@@ -44,6 +45,7 @@ extern t_list *LIST_EXIT;
 extern pthread_mutex_t mutex_PID;
 extern pthread_mutex_t mutex_LIST_NEW;
 extern pthread_mutex_t mutex_LIST_READY;
+extern pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
 extern pthread_mutex_t mutex_LIST_BLOCKED;
 extern pthread_mutex_t mutex_LIST_EXECUTING;
 extern pthread_mutex_t mutex_LIST_EXIT;
@@ -84,6 +86,9 @@ void *short_term_scheduler(void*);
 t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);
+t_PCB *FIFO_scheduling_reprogrammer(t_PCB *pcb);
+t_PCB *RR_scheduling_reprogrammer(t_PCB *pcb);
+t_PCB *VRR_scheduling_reprogrammer(t_PCB *pcb);
 t_PCB *kernel_get_normal_list(void);
 t_PCB *kernel_get_priority_list(void);
 void switch_process_state(t_PCB* pcb, int new_state);

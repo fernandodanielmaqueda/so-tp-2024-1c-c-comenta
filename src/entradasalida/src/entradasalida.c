@@ -103,20 +103,20 @@ void generic_function(void) {
 		
 		package_destroy(instruction_package);
 		//Chequear si puede realizar esta instruccion
-		if(strcmp(instruction_arguments.argv[0],"IO_GEN_SLEEP") == 0){
+		//if(strcmp(instruction_arguments.argv[0],"IO_GEN_SLEEP") == 0){
 			
 			//si la puede realizar entonces hace el gen_sleep
-			gen_sleep(instruction_arguments.argv[2],TIEMPO_UNIDAD_TRABAJO);
+			//gen_sleep(instruction_arguments.argv[2],TIEMPO_UNIDAD_TRABAJO);
 
 			//arguments_free(instruction_arguments);
 			//Avisar a kernel que la hizo
-			instruction_made* REALIZADA;
+			//instruction_made* REALIZADA;
 			
 		}else{
 			//Si no la puede realizar avisa a kernel y se hace cargo kernel
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
 			e_Interrupt* ERROR_CAUSE;
-			interrupt_send(ERROR_CAUSE,CONNECTION_KERNEL);
+		//	interrupt_send(ERROR_CAUSE,CONNECTION_KERNEL);
 			free(ERROR_CAUSE);
 		}
 
@@ -127,7 +127,7 @@ void generic_function(void) {
 void gen_sleep(int work_units, int work_unit_time){
 	sleep(work_units * work_unit_time);
 }
-
+/*
 void* stdin_function(){
 
 
@@ -136,25 +136,25 @@ void* stdin_function(){
 	//escuchar peticion siempre
 	while(1){
 		//recibe peticion
-		instruction_package = package_receive(CONNECTION_KERNEL);
+		//instruction_package = package_receive(CONNECTION_KERNEL);
 		instruction_arguments = arguments_deserialize(instruction_package->payload);
 		
 		package_destroy(instruction_package);
 		//Chequear si puede realizar esta instruccion
-		if(strcmp(instruction_arguments.argv[0],"IO_STDIN_READ") == 0){
+		//if(strcmp(instruction_arguments.argv[0],"IO_STDIN_READ") == 0){
 			//si la puede realizar entonces hace el STDIN READ
-			IO_STDIN_READ(2, instruction_arguments.argv[]);
+			//IO_STDIN_READ(2, instruction_arguments.argv[]);
 
 			//arguments_free(instruction_arguments);
 			//Avisar a kernel que la hizo
-			instruction_made* REALIZADA;
+			//instruction_made* REALIZADA;
 	//chequear si puede realizar instruccion
-	/* if(strcmp(nombre_instruccion, "IO_GEN_SLEEP") =! 0){
+	 if(strcmp(nombre_instruccion, "IO_GEN_SLEEP") =! 0){
 		log_info(MODULE_LOGGER, "No puedo realizar esa instruccion");
 		 No puede realizar: 
 			Avisa a kernel y se hace cargo kernel
 		 }
-		else{ */
+		else{ 
 
 
 	//si es IO_STDIN_READ realizarlo
@@ -162,16 +162,14 @@ void* stdin_function(){
 	//avisar a kernel
 }
 	}
-}
+}*/
 
-int IO_STDIN_READ(int argc, char* argv[]){
+/*int IO_STDIN_READ(int argc, char* argv[]){
 
 	char* text = malloc(sizeof(registroTamanio));
+	
+	//char* text = malloc(sizeof(registroTamanio));
 	printf("Ingrese un texto: ");
-	scanf("%s",text);
-
-	//enviar el texto a memoria
-	//send_to_memory(text,registroDireccion);
 }
 
 void* stdout_function(){
@@ -190,7 +188,7 @@ void* stdout_function(){
 	//si es IO_STDOUT_WRITE realizarlo
 
 	//avisar a kernel
-}
+//}
 
 /* void IO_STDOUT_WRITE(void* registroDireccion, void* direccionTamanio){
 	int dir_memoria = receive_from_memory(direccionMemoria);
@@ -199,7 +197,7 @@ void* stdout_function(){
 
 /* int receive_from_memory(void* direccionMemoria){
 	recv(CONNECTION_MEMORY.fd_connection,,,MSG_WAITALL);
-} */
+} 
 
 void initialize_configs_io(char* path) {
 	MODULE_CONFIG = config_create(path);
@@ -216,4 +214,4 @@ typedef enum instruction_made { // CONTEXT_SWITCH_CAUSE
     REALIZADA, // por ejemplo decode
     NO_REALIZADA, //incluye el EXIT
     
-} instruction_made;
+} instruction_made;*/

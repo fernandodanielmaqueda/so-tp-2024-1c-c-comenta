@@ -23,6 +23,7 @@ t_list *LIST_EXIT;
 pthread_mutex_t mutex_PID;
 pthread_mutex_t mutex_LIST_NEW;
 pthread_mutex_t mutex_LIST_READY;
+pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
 pthread_mutex_t mutex_LIST_BLOCKED;
 pthread_mutex_t mutex_LIST_EXECUTING;
 pthread_mutex_t mutex_LIST_EXIT;
@@ -123,7 +124,7 @@ void *short_term_scheduler(void *parameter) {
 	while(1) {
 		sem_wait(&SEM_SHORT_TERM_SCHEDULER);
 
-		pcb = SCHEDULING_ALGORITHM->function();
+		pcb = SCHEDULING_ALGORITHM->function_fetcher();
 
 		switch_process_state(pcb, EXECUTING_STATE);
 
@@ -148,11 +149,11 @@ t_PCB *RR_scheduling_algorithm(void) {
 	t_PCB *pcb;
 
 	pthread_mutex_lock(&mutex_LIST_READY);
-		t_PCB *pcb = (t_PCB *) list_remove(LIST_READY, 0);
+		pcb = (t_PCB *) list_remove(LIST_READY, 0);
 	pthread_mutex_unlock(&mutex_LIST_READY);
 
-	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, (void *) pcb->quantum); // thread interrupt
-	pthread_detach(&THREAD_INTERRUPT, NULL);
+	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum)); // thread interrupt
+	pthread_detach(THREAD_INTERRUPT);
 
 	return pcb;
 }
@@ -161,17 +162,17 @@ t_PCB *VRR_scheduling_algorithm(void){
 	t_PCB *pcb;
 	
 	if(list_size(LIST_READY_PRIORITARY)) {
-		pthread_mutex_lock(&mutex_LIST_READY_PRIOTARY);
+		pthread_mutex_lock(&MUTEX_LIST_READY_PRIORITARY);
 			pcb = (t_PCB *) list_remove(LIST_READY_PRIORITARY, 0);
-		pthread_mutex_unlock(&mutex_LIST_READY_PRIOTARY);
+		pthread_mutex_unlock(&MUTEX_LIST_READY_PRIORITARY);
 	} else {
 		pthread_mutex_lock(&mutex_LIST_READY);
 			pcb = (t_PCB *) list_remove(LIST_READY, 0);
 		pthread_mutex_unlock(&mutex_LIST_READY);
 	}
 
-	pthread_create(&THREAD_INTERRUPT, NULL, (void *) pcb->quantum);
-	pthread_detach(&THREAD_INTERRUPT, NULL);
+	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
+	pthread_detach(THREAD_INTERRUPT);
 
 	return pcb;
 
@@ -246,7 +247,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	pcb->current_state = new_state;
 	char* global_previous_state;
 	
-	t_Package* package;
+	//t_Package* package;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_PCB*)elemento)->PID == pcb->PID);
@@ -442,20 +443,21 @@ void send_interrupt(int socket)
 
 void *thread_send_cpu_interrupt(void *arguments)
 {
-	t_PCB *pcb = (t_PCB *) pcb_parameter;
+	/*t_PCB *pcb = (t_PCB *) pcb_parameter;
 	sem_wait(&SEM_CPU_INTERRUPT);
 
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(pcb- * 1000); //en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+	*/
 
 	return NULL;
 }
 
 void *start_quantum(void *pcb_parameter)
 {
-	int quantum = (int) pcb_parameter;
+	int quantum = *((int *) pcb_parameter);
 
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(quantum * 1000); // en milisegundos
@@ -491,4 +493,4 @@ void free_strv(char** array) {
 		free(array[i]);
 
 	free(array);
-}free(array);
+}
