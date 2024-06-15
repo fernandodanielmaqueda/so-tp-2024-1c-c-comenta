@@ -129,7 +129,7 @@ void create_process(t_Payload* socketRecibido) {
     log_debug(MODULE_LOGGER, "Archivo leido: %s", path_buscado);
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el PID del proceso origen
-    //message_send(PROCESS_CREATED, string_itoa(new_process->PID), FD_CLIENT_KERNEL);
+    send_int(new_process->PID,FD_CLIENT_KERNEL,PROCESS_CREATED);
     
 }
 
@@ -148,6 +148,9 @@ void kill_process (t_Payload* socketRecibido){
         free(paginaBuscada);
     }
     free(process);
+    
+    //ENVIAR RTA OK A KERNEL --> En este caso solo envio el PID del proceso origen
+    send_int(pid,FD_CLIENT_KERNEL,PROCESS_CREATED);
     
 }
 
