@@ -107,6 +107,7 @@ void *long_term_scheduler(void *parameter) {
 		//package = package_receive(CONNECTION_MEMORY.fd_connection);			
 	
 	     switch_process_state(pcb, READY_STATE);
+		 sem_post(&SEM_SHORT_TERM_SCHEDULER);
 	}
 
 	return NULL;
@@ -173,8 +174,7 @@ t_PCB *VRR_scheduling_algorithm(void){
 
 	pcb = kernel_get_priority_list();
 
-	if(pcb == NULL) {
-
+	if(pcb == NULL) 
 		pcb = kernel_get_normal_list();
 	}
 
@@ -234,7 +234,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 	pcb->current_state = new_state;
 	char* global_previous_state;
 	
-	//t_Package* package;
+	t_Package* package;
 	
 	bool _remover_por_pid(void* elemento) {
 			return (((t_PCB*)elemento)->PID == pcb->PID);
