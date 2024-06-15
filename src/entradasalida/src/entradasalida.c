@@ -174,6 +174,7 @@ void stdin_function(){
 		package_send(package, CONNECTION_KERNEL.fd_connection);
 		package_destroy(package);
 }
+}
 
 int IO_STDIN_READ(int argc, char* argv[]){
 
@@ -251,8 +252,6 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
 	}	
 
 	return EXIT_SUCCESS;	
-	}
-
 }
 
 int io_stdout_write_io_operation(int argc, char *argv[]) {
