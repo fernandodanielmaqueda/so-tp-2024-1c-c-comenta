@@ -24,11 +24,14 @@
 #include <commons/temporal.h>
 #include "utils/module.h"
 #include "utils/serialize/pcb.h"
+#include "utils/serialize/interrupt.h"
+#include "utils/serialize/arguments.h"
 #include "utils/socket.h"
 #include "console.h"
 #include "socket.h"
 #include "scheduler.h"
 #include "resources.h"
+#include "syscalls.h"
 
 extern char *MODULE_NAME;
 
@@ -40,6 +43,7 @@ extern char *MODULE_CONFIG_PATHNAME;
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
+void *cpu_dispatch_handler(void *NULL_parameter);
 void initialize_cpu_command_line_interface(void);
 void *receptor_mensajes_cpu(void*);
 void listen_cpu(int fd_cpu) ;

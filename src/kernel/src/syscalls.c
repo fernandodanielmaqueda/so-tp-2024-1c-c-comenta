@@ -15,6 +15,21 @@ t_Syscall SYSCALLS[] = {
     {.name = NULL}
 };
 
+t_PCB *SYSCALL_PCB;
+
+int BLOCKING_SYSCALL;
+
+int syscall_execute(t_Arguments *instruction) {
+
+    t_Syscall *syscall = syscall_find(instruction->argv[0]);
+    if(syscall == NULL) {
+        log_error(MODULE_LOGGER, "Syscall %s no encontrada", instruction->argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    return syscall->function(instruction->argc, instruction->argv);
+}
+
 t_Syscall *syscall_find(char *name) {
     for(register int i = 0; SYSCALLS[i].name != NULL; i++)
         if(!strcmp(SYSCALLS[i].name, name))
@@ -30,7 +45,21 @@ int wait_kernel_syscall(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);    
+    log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
+
+    t_Resource *resource = resource_find(argv[1]);
+    if(resource == NULL) {
+        log_trace(MODULE_LOGGER, "WAIT %s: recurso no encontrado", argv[1]);
+        return EXIT_FAILURE;
+    }
+
+    resource->available--;
+    if(resource->available < 0) {
+        list_add(resource->blocked_queue, SYSCALL_PCB);
+        BLOCKING_SYSCALL = 1;
+    } else {
+        BLOCKING_SYSCALL = 0;
+    }
 
     return EXIT_SUCCESS;
 }
@@ -44,6 +73,18 @@ int signal_kernel_syscall(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "SIGNAL %s", argv[1]);
 
+    t_Resource *resource = resource_find(argv[1]);
+    if(resource == NULL) {
+        log_trace(MODULE_LOGGER, "SIGNAL %s: recurso no encontrado", argv[1]);
+        return EXIT_FAILURE;
+    }
+
+    resource->available++;
+    if(resource->available <= 0)
+        if(list_size(resource->blocked_queue) > 0)
+            switch_process_state((t_PCB *) list_get(resource->blocked_queue, 0), READY_STATE);
+    
+    BLOCKING_SYSCALL = 0;
     return EXIT_SUCCESS;
 }
 
@@ -56,6 +97,8 @@ int io_gen_sleep_kernel_syscall(int argc, char *argv[]) {
     }
 
     log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
+
+    // TODO
 
     return EXIT_SUCCESS;
 }
@@ -70,6 +113,8 @@ int io_stdin_read_kernel_syscall(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
+    // TODO
+
     return EXIT_SUCCESS;
 }
 
@@ -82,6 +127,8 @@ int io_stdout_write_kernel_syscall(int argc, char *argv[]) {
     }
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
+
+    // TODO
     
     return EXIT_SUCCESS;
 }

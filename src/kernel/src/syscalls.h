@@ -19,6 +19,7 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
+#include "utils/serialize/arguments.h"
 #include "utils/module.h"
 #include "utils/socket.h"
 #include "kernel.h"
@@ -32,6 +33,11 @@ typedef struct t_Syscall {
 
 extern t_Syscall SYSCALLS[];
 
+extern t_PCB *SYSCALL_PCB;
+
+extern int BLOCKING_SYSCALL;
+
+int syscall_execute(t_Arguments *instruction);
 t_Syscall *syscall_find(char *name);
 int wait_kernel_syscall(int argc, char *argv[]);
 int signal_kernel_syscall(int argc, char *argv[]);

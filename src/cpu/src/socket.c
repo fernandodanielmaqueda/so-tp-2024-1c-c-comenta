@@ -7,7 +7,11 @@ t_Single_Client_Server SERVER_CPU_DISPATCH;
 t_Single_Client_Server SERVER_CPU_INTERRUPT;
 t_Connection CONNECTION_MEMORY;
 
+sem_t CONNECTED_KERNEL_CPU_INTERRUPT;
+
 void initialize_sockets(void) {
+    sem_init(&CONNECTED_KERNEL_CPU_INTERRUPT, 0, 0);
+
     pthread_t thread_cpu_dispatch_start_server_for_kernel;
     pthread_t thread_cpu_interrupt_start_server_for_kernel;
     pthread_t thread_cpu_connect_to_memory;
@@ -15,14 +19,16 @@ void initialize_sockets(void) {
     // [Server] CPU (Dispatch) <- [Cliente] Kernel
     pthread_create(&thread_cpu_dispatch_start_server_for_kernel, NULL, cpu_start_server_for_kernel, (void *)&SERVER_CPU_DISPATCH);
     // [Server] CPU (Interrupt) <- [Cliente] Kernel
-    pthread_create(&thread_cpu_interrupt_start_server_for_kernel, NULL, cpu_start_server_for_kernel, (void *)&SERVER_CPU_INTERRUPT);
+    pthread_create(&thread_cpu_interrupt_start_server_for_kernel, NULL, kernel_cpu_interrupt_handler, NULL);
     // [Client] CPU -> [Server] Memoria
     pthread_create(&thread_cpu_connect_to_memory, NULL, client_thread_connect_to_server, (void *)&CONNECTION_MEMORY);
 
     // Se bloquea hasta que se realicen todas las conexiones
     pthread_join(thread_cpu_dispatch_start_server_for_kernel, NULL);
-    pthread_join(thread_cpu_interrupt_start_server_for_kernel, NULL);
+    pthread_detach(thread_cpu_interrupt_start_server_for_kernel);
     pthread_join(thread_cpu_connect_to_memory, NULL);
+
+    sem_wait(&CONNECTED_KERNEL_CPU_INTERRUPT);
 }
 
 void finish_sockets(void) {

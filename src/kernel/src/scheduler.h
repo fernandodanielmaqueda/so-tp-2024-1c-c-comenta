@@ -69,8 +69,6 @@ extern sem_t SEM_PROCESS_READY;
 extern int QUANTUM;
 extern int MULTIPROGRAMMING_LEVEL;
 
-extern t_temporal *VAR_TEMP_QUANTUM;
-
 //consola interactiva
 extern pthread_mutex_t MUTEX_PID_DETECTED;
 extern int IDENTIFIER_PID;

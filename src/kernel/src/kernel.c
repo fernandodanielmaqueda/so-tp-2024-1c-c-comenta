@@ -36,7 +36,6 @@ int module(int argc, char *argv[]) {
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();
 	initialize_short_term_scheduler();
-	initialize_cpu_command_line_interface();
 
 	initialize_kernel_console(NULL);
 
@@ -59,142 +58,60 @@ void read_module_config(t_config *module_config) {
 	MULTIPROGRAMMING_LEVEL = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
 }
 
-void initialize_cpu_command_line_interface(void) {
-	pthread_create(&hilo_mensajes_cpu, NULL, receptor_mensajes_cpu, NULL);
-	//log_info(MODULE_LOGGER, "Inicio mensajes cpu");
-	pthread_detach(hilo_mensajes_cpu);
-}
+void *cpu_dispatch_handler(void *NULL_parameter) {
 
-/*
-void listen_cpu(int fd_cpu) {
-    while(1) {
-        t_Package* paquete = package_receive(fd_cpu);
-        e_Header header = paquete->header;
-        //e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
-        switch (header) {
-            
-            case DISCONNECTION_HEADERCODE:
-                log_warning(MODULE_LOGGER, "Se desconecto CPU.");
-                log_destroy(MODULE_LOGGER);
-                return;
-                
-            case PAGE_SIZE_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                send_int(PAGE_SIZE_REQUEST, TAM_PAGINA,FD_CLIENT_CPU);
-                break;
+	client_thread_connect_to_server((void*) &CONNECTION_CPU_DISPATCH);
+	sem_post(&CONNECTED_CPU_DISPATCH);
 
-            case RESIZE_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                resize_process(paquete->payload);
-                break;
-
-            default:
-                log_warning(MODULE_LOGGER, "Operacion desconocida..");
-                break;
-            }
-    }
-} */ //tomar como inspiración para la función de abajo
-
-void *receptor_mensajes_cpu(void *parameter) {
-	// Package *package;
-
+	t_PCB *pcb;
+	e_Interrupt *interrupt;
+	t_Arguments *instruction;
+	
 	while(1) {
-		
-		//FALTA RECIBIR PAQUETE DE LA CONEXION CON CPU
-		//FALTA DESERIALIZAR PCB
-		
-		/*
-		switch (package->codigo_operacion)
-		{
-			case EXIT:
-			{
-				switch_process_state(pcb, EXITED);
 
-				break;
-			}
-			case SET:
-			{
-
-			}
-			case MOVE_IN:
-			{
-
-			}
-			case MOVE_OUT:
-			{
-
-			}
-			case SUM:
-			{
-
-			}
-			case SUB:
-			{
-
-			}
-			case JNZ:
-			{
-
-			}
-			case RESIZE:
-			{
-				//mando mensaje a memoria
-				//Recibo mensaje de memorai
-				//mando mensaje a fs
-				//recibo mensaje de fs
-				//mando a cpu de vuelta
-			}
-			case COPY_STRING:
-			{
-
-			}
-			case WAIT:
-			{
-
-			}
-			case SIGNAL:
-			{
-
-			}
-			case IO_GEN_SLEEP:
-			{
-
-			}
-			case IO_STDIN_READ:
-			{
-
-			}
-			case IO_STDOUT_WRITE:
-			{
-
-			}
-			case IO_FS_CREATE:
-			{
-
-			}
-			case IO_FS_DELETE:
-			{
-
-			}
-			case IO_FS_TRUNCATE:
-			{
-
-			}
-			case IO_FS_WRITE:
-			{
-
-			}
-			case IO_FS_READ:
-			{
-
-			}
-			case EXIT:
-			{
-
-			}
-			// ACA SIGO AGREGANDO CASES SEGUN LA INSTRUCCION
+    	t_Package *package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
+		switch (package->header) {
+		case SUBHEADER_HEADER:
+			pcb = pcb_deserialize(package->payload);
+			interrupt = interrupt_deserialize(package->payload);
+			instruction = arguments_deserialize(package->payload);
+			break;
+		default:
+			log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
+			exit(EXIT_FAILURE);
+			break;
 		}
-		*/
+		package_destroy(package);
+
+		int exit_status;
+
+		switch(*interrupt) {
+			case SYSCALL_CAUSE:
+				SYSCALL_PCB = pcb;
+				exit_status = syscall_execute(instruction);
+
+				if(exit_status) {
+					switch_process_state(pcb, EXIT_STATE);
+					break;
+				}
+
+				if(BLOCKING_SYSCALL) {
+					switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
+					break;
+				}
+
+				// En caso de que sea una syscall no bloqueante
+				pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+				break;
+			default:
+				break;
+
+		}
+
+		// pcb_free(pcb)
+		// interrupt_free(interrupt);
+		// instruction_free(instruction);
+		
 	}
 
 	return NULL;

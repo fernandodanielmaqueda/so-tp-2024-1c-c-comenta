@@ -96,17 +96,17 @@ void instruction_cycle(void){
 
     t_Arguments *IR;
     t_CPU_OpCode *opcode;
+    int exit_status;
 
     tlb = list_create();
 
-    while (1)
-    {
+    while (1){
 
         PCB = cpu_receive_pcb();
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB->PID);
 
-        while(1)
-        {
+
+        while(1) {
 
             // FETCH                   
             IR = cpu_fetch_next_instruction();
@@ -117,9 +117,11 @@ void instruction_cycle(void){
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", IR->argv[0]);
                 exit(EXIT_FAILURE);
             }
-
+ 
             // EXECUTE
-            opcode->function(IR->argc, IR->argv);
+            exit_status = opcode->function(IR->argc, IR->argv);
+
+
 
             // CHECK INTERRUPT
             
@@ -153,6 +155,66 @@ void instruction_cycle(void){
     }
 }
 
+void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
+
+    cpu_start_server_for_kernel((void*) &SERVER_CPU_INTERRUPT);
+	sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
+
+	t_PCB *pcb;
+	e_Interrupt *interrupt;
+	t_Arguments *instruction;
+	
+    /*
+	while(1) {
+
+    	t_Package *package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
+		switch (package->header) {
+		case SUBHEADER_HEADER:
+			pcb = pcb_deserialize(package->payload);
+			interrupt = interrupt_deserialize(package->payload);
+			instruction = arguments_deserialize(package->payload);
+			break;
+		default:
+			log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
+			exit(EXIT_FAILURE);
+			break;
+		}
+		package_destroy(package);
+
+		int exit_status;
+
+		switch(*interrupt) {
+			case SYSCALL_CAUSE:
+				SYSCALL_PCB = pcb;
+				exit_status = syscall_execute(instruction);
+
+				if(exit_status) {
+					switch_process_state(pcb, EXIT_STATE);
+					break;
+				}
+
+				if(BLOCKING_SYSCALL) {
+					switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
+					break;
+				}
+
+				// En caso de que sea una syscall no bloqueante
+				pcb_send(CONNECTION_CPU_DISPATCH.fd_connection, pcb);
+				break;
+			default:
+				break;
+
+		}
+
+		// pcb_free(pcb)
+		// interrupt_free(interrupt);
+		// instruction_free(instruction);
+		
+	}
+    */
+
+	return NULL;
+}
 
 int string_to_register(const char *string)
 {
@@ -330,7 +392,7 @@ t_Arguments *cpu_fetch_next_instruction(void)
 
     // Request
     package = package_create_with_header(CPU_MEMORY_FETCH_HEADER);
-    payload_enqueue(package->payload, PCB->PC, sizeof(PCB->PC));
+    payload_enqueue(package->payload, &(PCB->PC), sizeof(PCB->PC));
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 

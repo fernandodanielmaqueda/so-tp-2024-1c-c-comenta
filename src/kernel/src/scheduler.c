@@ -28,6 +28,8 @@ pthread_mutex_t mutex_LIST_BLOCKED;
 pthread_mutex_t mutex_LIST_EXECUTING;
 pthread_mutex_t mutex_LIST_EXIT;
 
+sem_t SEM_EXECUTING;
+
 sem_t sem_detener_execute;
 sem_t sem_detener_new_ready;
 sem_t sem_detener_block_ready;
@@ -48,8 +50,6 @@ sem_t SEM_CPU_INTERRUPT;
 
 int QUANTUM;
 int MULTIPROGRAMMING_LEVEL;
-
-t_temporal *VAR_TEMP_QUANTUM = NULL;
 
 //consola interactiva
 pthread_mutex_t MUTEX_PID_DETECTED;
@@ -129,6 +129,8 @@ void *short_term_scheduler(void *parameter) {
 		switch_process_state(pcb, EXECUTING_STATE);
 
 		pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+
+		sem_post(&SEM_EXECUTING);
 	}
 
 	return NULL;
@@ -141,8 +143,6 @@ t_PCB *FIFO_scheduling_algorithm(void) {
 
 	return pcb;
 }
-
-
 
 t_PCB *RR_scheduling_algorithm(void) {
 	
@@ -158,7 +158,7 @@ t_PCB *RR_scheduling_algorithm(void) {
 	return pcb;
 }
 
-t_PCB *VRR_scheduling_algorithm(void){
+t_PCB *VRR_scheduling_algorithm(void) {
 	t_PCB *pcb;
 	
 	if(list_size(LIST_READY_PRIORITARY)) {
@@ -460,6 +460,7 @@ void *start_quantum(void *pcb_parameter)
 	int quantum = *((int *) pcb_parameter);
 
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
+	sem_wait(&SEM_EXECUTING);
     usleep(quantum * 1000); // en milisegundos
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", quantum);

@@ -32,13 +32,14 @@ void resources_read_module_config(t_config *module_config) {
 	for(int i = 0; i < RESOURCE_QUANTITY; i++) {
 		instances = strtol(resource_instances[i], &end, 10);
 		if(!*(resource_instances[i]) || *end) {
-			log_error(MODULE_LOGGER, "La cantidad de instancias del recurso %s no es un número válido: %s", resource_names[i], instances);
+			log_error(MODULE_LOGGER, "La cantidad de instancias del recurso %s no es un número válido: %ld", resource_names[i], instances);
 			exit(EXIT_FAILURE);
 		}
 
 		RESOURCES[i].name = resource_names[i];
 		RESOURCES[i].available = instances;
 		RESOURCES[i].total = instances;
+		RESOURCES[i].blocked_queue = list_create();
 	}
 
 	RESOURCES[RESOURCE_QUANTITY].name = NULL;

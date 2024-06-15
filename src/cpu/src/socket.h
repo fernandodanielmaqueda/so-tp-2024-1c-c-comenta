@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <string.h>
+#include <semaphore.h>
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"
@@ -23,10 +24,13 @@
 #include "utils/estructuras.h"
 #include "utils/module.h"
 #include "utils/socket.h"
+#include "cpu.h"
 
 extern t_Single_Client_Server SERVER_CPU_DISPATCH;
 extern t_Single_Client_Server SERVER_CPU_INTERRUPT;
 extern t_Connection CONNECTION_MEMORY;
+
+extern sem_t CONNECTED_KERNEL_CPU_INTERRUPT;
 
 void initialize_sockets(void);
 void finish_sockets(void);

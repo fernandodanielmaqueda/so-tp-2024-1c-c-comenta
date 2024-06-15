@@ -89,6 +89,7 @@ void finish_sockets(void);
 void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
+void *kernel_cpu_interrupt_handler(void *NULL_parameter);
 void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb);
 int string_to_register(const char *string);
 int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
