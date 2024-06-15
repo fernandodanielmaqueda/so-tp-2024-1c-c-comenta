@@ -151,38 +151,28 @@ void generic_function(void) {
 
 void stdin_function(){
 
-
-	t_Package* instruction_package;
-	t_Arguments* instruction_arguments;
+	t_Package* package;
+	t_Arguments* instruction;
 	//escuchar peticion siempre
 	while(1){
 		//recibe peticion
-		//instruction_package = package_receive(CONNECTION_KERNEL.fd_connection);
-		instruction_arguments = arguments_deserialize(instruction_package->payload);
+		package = package_receive(CONNECTION_KERNEL.fd_connection);
+		instruction = arguments_deserialize(package->payload);
 		
-		package_destroy(instruction_package);
-		//Chequear si puede realizar esta instruccion
-		//if(strcmp(instruction_arguments.argv[0],"IO_STDIN_READ") == 0){
-			//si la puede realizar entonces hace el STDIN READ
-			//IO_STDIN_READ(2, instruction_arguments.argv[]);
+		package_destroy(package);
+		IO_OPERATION = io_operation_find(instruction->argv[0]);
+		if(IO_OPERATION == NULL){
+			log_error(MODULE_LOGGER,"No se reconoce la operacion");
+			exit(EXIT_FAILURE);
+		}
+		int exit_status = IO_OPERATION->function(instruccion->argc, instruction->argv);
+		// arguments_free(instruction);
 
-			//arguments_free(instruction_arguments);
-			//Avisar a kernel que la hizo
-			//instruction_made* REALIZADA;
-	//chequear si puede realizar instruccion
-	 if(strcmp(instruction_arguments->argv[0], "IO_GEN_SLEEP") != 0){
-		log_info(MODULE_LOGGER, "No puedo realizar esa instruccion");
-		 // No puede realizar: 
-			// Avisa a kernel y se hace cargo kernel
-		 }
-		else{ 
-
-
-	//si es IO_STDIN_READ realizarlo
-
-	//avisar a kernel
-}
-	}
+		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+		package = package_create_with_header(EXIT_STATUS_HEADER);
+		payload_enqueue(package->payload, &(exit_status), sizeof(uint8_t));
+		package_send(package, CONNECTION_KERNEL.fd_connection);
+		package_destroy(package);
 }
 
 int IO_STDIN_READ(int argc, char* argv[]){
@@ -211,14 +201,6 @@ void stdout_function(){
 	//avisar a kernel
 }
 
-void IO_STDOUT_WRITE(void* registroDireccion, void* direccionTamanio){
-	//int dir_memoria = receive_from_memory(direccionMemoria);
-	//printf("El valor hallado en la direccion de memoria es: %d", dir_memoria);
-}
-
-int receive_from_memory(void* direccionMemoria){
-	// recv(CONNECTION_MEMORY.fd_connection,,,MSG_WAITALL);
-}
 
 typedef enum instruction_made { // CONTEXT_SWITCH_CAUSE
     REALIZADA, // por ejemplo decode
@@ -260,9 +242,17 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
-    // VALIDAR LA INTERFAZ
+	switch(IO_TYPE->type){
+		case STDIN_IO_TYPE:
+		break;
+	default:
+			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
+			return EXIT_FAILURE;
+	}	
 
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;	
+	}
+
 }
 
 int io_stdout_write_io_operation(int argc, char *argv[]) {
