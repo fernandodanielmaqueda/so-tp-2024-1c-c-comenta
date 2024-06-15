@@ -25,7 +25,8 @@
 
 typedef struct t_Scheduling_Algorithm {
     char *name;
-    t_PCB *(*function) (void);
+    t_PCB *(*function_fetcher) (void);
+    t_PCB *(*function_reprogrammer) (void);
 } t_Scheduling_Algorithm;
 
 extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;

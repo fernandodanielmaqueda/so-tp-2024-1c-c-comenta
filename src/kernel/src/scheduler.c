@@ -1,10 +1,10 @@
 #include "scheduler.h"
 
 t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
-	{ .name = "FIFO", .function = FIFO_scheduling_algorithm },
-	{ .name = "RR", .function = RR_scheduling_algorithm },
-	{ .name = "VRR", .function = VRR_scheduling_algorithm },
-	{ .name = NULL, .function = NULL }
+	{ .name = "FIFO", .function_fetcher = FIFO_scheduling_algorithm , .function_reprogrammer = FIFO_scheduling_reprogrammer},
+	{ .name = "RR", .function_fetcher = RR_scheduling_algorithm , .function_reprogrammer = RR_scheduling_reprogrammer },
+	{ .name = "VRR", .function_fetcher = VRR_scheduling_algorithm , .function_reprogrammer = VRR_scheduling_reprogrammer },
+	{ .name = NULL }
 };
 
 t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
@@ -42,6 +42,8 @@ sem_t SEM_LONG_TERM_SCHEDULER;
 sem_t SEM_SHORT_TERM_SCHEDULER;
 sem_t SEM_MULTIPROGRAMMING_LEVEL; // 20 procesos en sim
 sem_t SEM_PROCESS_READY; // Al principio en 0
+
+sem_t SEM_CPU_INTERRUPT;
 
 int QUANTUM;
 int MULTIPROGRAMMING_LEVEL;
@@ -107,6 +109,7 @@ void *long_term_scheduler(void *parameter) {
 		//package = package_receive(CONNECTION_MEMORY.fd_connection);			
 	
 	     switch_process_state(pcb, READY_STATE);
+
 		 sem_post(&SEM_SHORT_TERM_SCHEDULER);
 	}
 
@@ -140,44 +143,41 @@ t_PCB *FIFO_scheduling_algorithm(void) {
 
 
 
-t_PCB *RR_scheduling_algorithm(void ){
+t_PCB *RR_scheduling_algorithm(void) {
 	
 	t_PCB *pcb;
-		
-       if(list_size(LIST_READY) > 0) {
-            pcb = (t_PCB*)list_get(LIST_READY, 0);
-            //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
-        }
-        else if(list_size(LIST_NEW) > 0) {
-            pcb = (t_PCB*)list_get(LIST_NEW, 0);
-           // log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: NEW - Estado Actual: READY", pcb->id);
-           //log_info(MODULE_LOGGER, "PID: %i - Estado Anterior: READY - Estado Actual: EXECUTE", pcb->id);
-        }
 
-		return pcb;
-}
+	pthread_mutex_lock(&mutex_LIST_READY);
+		t_PCB *pcb = (t_PCB *) list_remove(LIST_READY, 0);
+	pthread_mutex_unlock(&mutex_LIST_READY);
 
+	// ¿LO HAGO ACÁ O EN LISTEN CPU?
+	pcb->quantum = QUANTUM;
 
+	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, NULL); // thread interrupt
+	pthread_detach(&THREAD_INTERRUPT, NULL);
 
-t_PCB *kernel_get_priority_list(void) { //como sacar el pcb de las listas?
-	// ponele que puede ser un list_get
-}
-
-t_PCB *kernel_get_normal_list(void) {
-	
+	return pcb;
 }
 
 t_PCB *VRR_scheduling_algorithm(void){
 	t_PCB *pcb;
-
-	sem_wait(&SEM_PROCESS_READY);
-
-	pcb = kernel_get_priority_list();
-
-	if(pcb == NULL) 
-		pcb = kernel_get_normal_list();
+	
+	if(list_size(LIST_READY_PRIORITARY)) {
+		pthread_mutex_lock(&mutex_LIST_READY_PRIOTARY);
+			pcb = (t_PCB *) list_remove(LIST_READY_PRIORITARY, 0);
+		pthread_mutex_unlock(&mutex_LIST_READY_PRIOTARY);
+	} else {
+		pthread_mutex_lock(&mutex_LIST_READY);
+			pcb = (t_PCB *) list_remove(LIST_READY, 0);
+		pthread_mutex_unlock(&mutex_LIST_READY);
 	}
 
+	pthread_create(&thread_interrupt, NULL, start_quantum_VRR, (void *) pcb);
+
+	return pcb;
+
+	// VA EN LISTEN CPU VRR
 	// Mandar el PCB a CPU
 
 //ACA CREAR  UN HILO... REVISDR
@@ -429,20 +429,25 @@ void send_interrupt(int socket)
     send(socket, &dummy, sizeof(dummy), 0);
 }
 
-
-void* start_quantum_VRR(t_PCB *pcb)
+void *thread_send_cpu_interrupt(void *arguments)
 {
-    VAR_TEMP_QUANTUM = temporal_create();
-    log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
-    usleep(pcb->quantum * 1000); //en milisegundos
-    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
-    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+	sem_wait(&SEM_CPU_INTERRUPT);
+
+
 
 	return NULL;
 }
 
 
-void* start_quantum(void)
+void* start_quantum_VRR(void *pcb_parameter)
+{
+	t_PCB *pcb = (t_PCB *) pcb_parameter;    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", QUANTUM);
+	return NULL;
+}
+
+
+void* start_quantum(void *pcb_parameter)
 {
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(QUANTUM * 1000); //en milisegundos
@@ -478,4 +483,5 @@ void free_strv(char** array) {
 		free(array[i]);
 
 	free(array);
+}free(array);
 }
