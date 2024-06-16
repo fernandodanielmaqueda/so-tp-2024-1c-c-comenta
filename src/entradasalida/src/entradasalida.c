@@ -249,12 +249,17 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
 			char* text = malloc(registro_tamanio * sizeof(char));
 			log_info(MODULE_LOGGER, "Ingrese un texto: ");
 			fgets(text, registro_tamanio * sizeof(char), stdin);
-			
+			int pid = 0;
+
+
+			send_write_request( pid,  registro_direccion,  text, CONNECTION_MEMORY.fd_connection, IO_STDIN_WRITE_MEMORY);
+			/*
 			package = package_create_with_header(STRING_HEADER);
 			payload_enqueue(package->payload, &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			payload_enqueue_string(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
+			*/
 
 			free(text);
 
@@ -278,25 +283,34 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
 	t_Package *package;
-	t_Arguments* instruction;
-	char *string;
-	int registro_tamanio;
+	//t_Arguments* instruction;
+	//int registro_tamanio;
 
 	switch(IO_TYPE->type){
 		case STDOUT_IO_TYPE:
-
+/*
 			package = package_create_with_header(STRING_HEADER);
 			payload_enqueue_string(package->payload, argv[2]);
 			payload_enqueue_string(package->payload, argv[3]);
 
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
+*/
+			int pid = 0;			
+			int bytes = atoi(argv[2]);
+			int dir_fis = atoi(argv[3]);
+			send_read_request(pid, dir_fis, bytes, CONNECTION_MEMORY.fd_connection, IO_STDOUT_READ_MEMORY);
 
+			char* mensaje;
 			package = package_receive(CONNECTION_MEMORY.fd_connection);
-			payload_dequeue_string(package->payload, &string);
-			log_info(MODULE_LOGGER, "En la memoria se halla el siguiente contenido: %s", instruction->argv[0]);
+			receive_String_1int(&pid, &mensaje, package->payload);
+
+			//instruction = arguments_deserialize(package->payload);
+			log_info(MODULE_LOGGER, "En la memoria se halla el siguiente contenido: %s", mensaje);
 			package_destroy(package);
-			fprintf(stdout, "%s", string);
+
+			fprintf(stdout,"%s", mensaje);
+
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");

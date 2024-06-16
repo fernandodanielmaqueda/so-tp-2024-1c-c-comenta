@@ -36,6 +36,8 @@ typedef enum e_Header {
     //Kernel - CPU
     STDIN_REQUEST,
     STDOUT_REQUEST,
+    IO_STDIN_WRITE_MEMORY,
+    IO_STDOUT_READ_MEMORY
     ///////////////////
     //IO - Memoria
     //Instrucciones
