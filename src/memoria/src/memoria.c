@@ -151,50 +151,42 @@ void kill_process (t_Payload* socketRecibido){
     
 }
 
-void create_instruction(FILE* file, t_list* list_instruction) {
-
-    t_CPU_Instruction* nueva_instruccion = malloc(sizeof(t_CPU_Instruction));
-    char *linea = string_new();
-    int tamanio_buffer = 0;
- 
-    getline(&linea, (size_t *restrict)&tamanio_buffer, file);
-
-    if (linea[strlen(linea) - 1] == '\n') linea[strlen(linea) - 1] = '\0';
-  
-    char** campos = string_split(linea," ");
-
-    nueva_instruccion->opcode = (e_Header)(campos[0]);
-    nueva_instruccion->parameters = list_create();
-
-    int numero_elementos= 0;
-        while (campos[numero_elementos] != NULL) {
-        numero_elementos++;
-    }
-    for (int pos = 1; pos < numero_elementos; pos++) 
-	{
-        char* parametro = string_new();
-        parametro = campos[pos];
-        list_add(nueva_instruccion->parameters, parametro); 
-	}
-
-	list_add(list_instruction, nueva_instruccion);
-
-    free(linea);
-}
-
-void parser_file(char* path, t_list* list_instruction) {
+void parser_file(char* path, t_list *list_instruction) {
 
     FILE* file;
-    if ((file = fopen(path, "r")) == NULL)
-    {
+    if ((file = fopen(path, "r")) == NULL) {
         log_error(MODULE_LOGGER, "[ERROR] No se pudo abrir el archivo de pseudocodigo indicado.");
         exit(EXIT_FAILURE);
     }
-        
-        while(!feof(file)) create_instruction(file, list_instruction);
+
+    char *line = NULL, *subline;
+    size_t length;
+    ssize_t nread;
+
+    while(1) {
+
+        nread = getline(&line, &length, file);
+
+        if(nread == -1) {
+            if(errno) {
+                log_warning(MODULE_LOGGER, "Funcion getline: %s", strerror(errno));
+                free(line);
+                exit(EXIT_FAILURE);
+            }
+
+            // Se terminó de leer el archivo
+            free(line);
+            break;
+        }
+
+        subline = strip_whitespaces(line);
+
+        if(*subline) {
+           list_add(list_instruction, arguments_create(subline, MODULE_LOGGER));
+        }
+    }
        
         fclose(file);
-    
 }
 
 void listen_cpu(int fd_cpu) {

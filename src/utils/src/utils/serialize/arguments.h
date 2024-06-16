@@ -10,19 +10,25 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <string.h>
+#include <readline/readline.h>
 #include "commons/config.h"
 #include "commons/string.h"
+#include "commons/log.h"
+#include "commons/log.h"
 #include "estructuras.h"
 #include "utils/package.h"
-
-#include "commons/log.h"
 #include "utils/module.h"
+
+#define MAX_ARGC 6 // 1 para el nombre del comando + 5 para los argumentos
 
 typedef struct t_Arguments {
     uint8_t argc;
-    char *argv[];
+    char **argv;
 } t_Arguments;
 
+
+t_Arguments *arguments_create(char *line, t_log *logger);
+char *strip_whitespaces(char *string);
 
 /**
  * @brief Enviar arguments (incluye el serializado)

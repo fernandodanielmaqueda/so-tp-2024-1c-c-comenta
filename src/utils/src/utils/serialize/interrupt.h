@@ -20,8 +20,8 @@
 
 typedef enum e_Interrupt { // CONTEXT_SWITCH_CAUSE
     ERROR_CAUSE, // por ejemplo decode
-    SYSCALL_CAUSE, // Incluye a EXIT
-    INTERRUPTION_CAUSE //Incluye el quantum
+    INTERRUPTION_CAUSE, //Incluye el quantum
+    SYSCALL_CAUSE // Incluye a EXIT
 } e_Interrupt;
 
 
