@@ -55,6 +55,7 @@ extern int interruption_io;
 extern int CANTIDAD_ENTRADAS_TLB;
 extern char *ALGORITMO_TLB;
 
+extern t_Arguments *IR;
 extern int SYSCALL_CALLED;
 
 extern int size_pag;

@@ -112,7 +112,9 @@ void create_process(t_Payload* socketRecibido) {
     int string_len = -1;   
     cursor = memcpy_deserialize(&(string_len), socketRecibido->stream, cursor, sizeof(int));
     cursor = memcpy_deserialize(&(new_process->name), socketRecibido->stream, cursor, string_len);
-    cursor = memcpy_deserialize(&(new_process->PID), socketRecibido->stream, cursor, sizeof(int));
+    cursor = memcpy_deserialize(&(new_process->PID), socketRecibido->stream, cursor, sizeof(uint32_t));
+
+    //payload_dequeue()
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);

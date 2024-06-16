@@ -35,30 +35,30 @@
 
 typedef struct t_CPU_OpCode {
     char *name;
-    int (*function) (int, char*[]);
+    int (*function) (void);
 } t_CPU_OpCode;
 
 extern t_CPU_OpCode CPU_OPCODES[];
 
 t_CPU_OpCode *decode_instruction(char *name);
-int set_cpu_opcode(int argc, char *argv[]);
-int mov_in_cpu_opcode(int argc, char *argv[]);
-int mov_out_cpu_opcode(int argc, char *argv[]);
-int sum_cpu_opcode(int argc, char *argv[]);
-int sub_cpu_opcode(int argc, char *argv[]);
-int jnz_cpu_opcode(int argc, char *argv[]);
-int resize_cpu_opcode(int argc, char *argv[]);
-int copy_string_cpu_opcode(int argc, char *argv[]);
-int wait_cpu_opcode(int argc, char *argv[]);
-int signal_cpu_opcode(int argc, char *argv[]);
-int io_gen_sleep_cpu_opcode(int argc, char *argv[]);
-int io_stdin_read_cpu_opcode(int argc, char *argv[]);
-int io_stdout_write_cpu_opcode(int argc, char *argv[]);
-int io_fs_create_cpu_opcode(int argc, char *argv[]);
-int io_fs_delete_cpu_opcode(int argc, char *argv[]);
-int io_fs_truncate_cpu_opcode(int argc, char *argv[]);
-int io_fs_write_cpu_opcode(int argc, char *argv[]);
-int io_fs_read_cpu_opcode(int argc, char *argv[]);
-int exit_cpu_opcode(int argc, char *argv[]);
+int set_cpu_opcode(void);
+int mov_in_cpu_opcode(void);
+int mov_out_cpu_opcode(void);
+int sum_cpu_opcode(void);
+int sub_cpu_opcode(void);
+int jnz_cpu_opcode(void);
+int resize_cpu_opcode(void);
+int copy_string_cpu_opcode(void);
+int wait_cpu_opcode(void);
+int signal_cpu_opcode(void);
+int io_gen_sleep_cpu_opcode(void);
+int io_stdin_read_cpu_opcode(void);
+int io_stdout_write_cpu_opcode(void);
+int io_fs_create_cpu_opcode(void);
+int io_fs_delete_cpu_opcode(void);
+int io_fs_truncate_cpu_opcode(void);
+int io_fs_write_cpu_opcode(void);
+int io_fs_read_cpu_opcode(void);
+int exit_cpu_opcode(void);
 
 #endif // CPU_OPCODES_H

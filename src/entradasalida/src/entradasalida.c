@@ -279,6 +279,7 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
 
 	t_Package *package;
 	t_Arguments* instruction;
+	char *string;
 	int registro_tamanio;
 
 	switch(IO_TYPE->type){
@@ -292,9 +293,10 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
 			package_destroy(package);
 
 			package = package_receive(CONNECTION_MEMORY.fd_connection);
-			instruction = arguments_deserialize(package->payload);
+			payload_dequeue_string(package->payload, &string);
 			log_info(MODULE_LOGGER, "En la memoria se halla el siguiente contenido: %s", instruction->argv[0]);
 			package_destroy(package);
+			fprintf(stdout, "%s", string);
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");

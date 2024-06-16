@@ -33,8 +33,6 @@ pthread_mutex_t mutex_LIST_BLOCKED;
 pthread_mutex_t mutex_LIST_EXECUTING;
 pthread_mutex_t mutex_LIST_EXIT;
 
-sem_t SEM_EXECUTING;
-
 sem_t sem_detener_execute;
 sem_t sem_detener_new_ready;
 sem_t sem_detener_block_ready;
@@ -51,7 +49,7 @@ sem_t SEM_SHORT_TERM_SCHEDULER;
 sem_t SEM_MULTIPROGRAMMING_LEVEL; // 20 procesos en sim
 sem_t SEM_PROCESS_READY; // Al principio en 0
 
-sem_t SEM_CPU_INTERRUPT;
+
 
 uint64_t QUANTUM;
 int MULTIPROGRAMMING_LEVEL;
@@ -198,8 +196,6 @@ void *short_term_scheduler(void *parameter) {
 				case FIFO_SCHEDULING_ALGORITHM:
 					break;
 			}
-			
-			// NEGATIVO
 
 			switch(*interrupt) {
 				case ERROR_CAUSE:
@@ -357,20 +353,20 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 		case NEW_STATE:
 			global_previous_state="NEW";
 			pthread_mutex_lock(&mutex_LIST_NEW);
-			list_remove_by_condition(LIST_NEW, _remover_por_pid);
+				list_remove_by_condition(LIST_NEW, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 			break;
 		case READY_STATE:
 			global_previous_state="READY";
 			pthread_mutex_lock(&mutex_LIST_READY);
-			list_remove_by_condition(LIST_READY, _remover_por_pid);
+				list_remove_by_condition(LIST_READY, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_READY);
 			break;
 		case EXECUTING_STATE:
 		{
 			global_previous_state="EXECUTING";
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
-			list_remove_by_condition(LIST_EXECUTING, _remover_por_pid);
+				list_remove_by_condition(LIST_EXECUTING, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
 			break;
 		}
@@ -378,18 +374,17 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 		{
 			global_previous_state="BLOCKED";
 			pthread_mutex_lock(&mutex_LIST_BLOCKED);
-			list_remove_by_condition(LIST_BLOCKED, _remover_por_pid);
+				list_remove_by_condition(LIST_BLOCKED, _remover_por_pid);
 			pthread_mutex_unlock(&mutex_LIST_BLOCKED);		
 			break;
 		}
-		}
-
+	}
 
 	switch(new_state){ // ! ESTADO NUEVO
 		case NEW_STATE: {
 			pthread_mutex_lock(&mutex_LIST_NEW);
 			list_add(LIST_NEW, pcb);
-			log_info(MODULE_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
+			log_info(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 	
 			sem_post(&SEM_LONG_TERM_SCHEDULER);
@@ -399,12 +394,30 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 		{
 			pcb -> arrival_READY = current_time();
 
-			pthread_mutex_lock(&mutex_LIST_READY);
-			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->PID, global_previous_state);
-			list_add(LIST_READY, pcb);
-			pthread_mutex_unlock(&mutex_LIST_READY);
-			sem_post(&SEM_SHORT_TERM_SCHEDULER);
-			
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->PID, global_previous_state);
+			switch(SCHEDULING_ALGORITHM->type) {
+				case VRR_SCHEDULING_ALGORITHM:
+
+					if(pcb->quantum < QUANTUM) {
+						pthread_mutex_lock(&MUTEX_LIST_READY_PRIORITARY);
+							list_add(LIST_READY_PRIORITARY, pcb);
+						pthread_mutex_unlock(&MUTEX_LIST_READY_PRIORITARY);
+						sem_post(&SEM_SHORT_TERM_SCHEDULER);
+					} else {
+						pthread_mutex_lock(&mutex_LIST_READY);
+							list_add(LIST_READY, pcb);
+						pthread_mutex_unlock(&mutex_LIST_READY);
+						sem_post(&SEM_SHORT_TERM_SCHEDULER);
+					}
+					break;
+				case RR_SCHEDULING_ALGORITHM:
+				case FIFO_SCHEDULING_ALGORITHM:
+					pthread_mutex_lock(&mutex_LIST_READY);
+						list_add(LIST_READY, pcb);
+					pthread_mutex_unlock(&mutex_LIST_READY);
+					sem_post(&SEM_SHORT_TERM_SCHEDULER);
+					break;
+			}			
 			break;
 		}
 		case EXECUTING_STATE: {
@@ -413,7 +426,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			pthread_mutex_lock(&mutex_LIST_EXECUTING);
 			list_add(LIST_EXECUTING, pcb);
 			pthread_mutex_unlock(&mutex_LIST_EXECUTING);
-			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->PID, global_previous_state);
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->PID, global_previous_state);
 	
 			break;
 		}
@@ -424,14 +437,14 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 			pthread_mutex_unlock(&mutex_LIST_BLOCKED);
 
 		
-			log_info(MODULE_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->PID, global_previous_state);
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->PID, global_previous_state);
 
 			break;
 		}
 		//Todos los casos de salida de un proceso.
 		case EXIT_STATE:
 		{
-			 log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
+			 log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
 
 			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
 
@@ -445,7 +458,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 		/*
 		case INVALID_RESOURCE:{
 			
-			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->PID);
+			log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_RESOURCE>", pcb->PID);
 			
 
 			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
@@ -458,7 +471,7 @@ void switch_process_state(t_PCB* pcb, int new_state) {
 		}
 		case INVALID_WRITE:{
 			
-			log_info(MODULE_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_WRITE>", pcb->PID);
+			log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <INVALID_WRITE>", pcb->PID);
 		
 			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
 
@@ -555,23 +568,13 @@ void *start_quantum(void *pcb_parameter) {
 
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
     usleep(pcb->quantum * 1000); // en milisegundos
+	// ENVIAR LA INTERRUPCIÓN SÓLO SI HAY MÁS PROCESOS EN READY
+	// sem_wait()
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection);
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->quantum);
 
 	return NULL;
 }
-
-void *sleep_interrupt(void *pcb_parameter) //int tiempo_inicio
-{
-	t_PCB *pcb = (t_PCB *) pcb_parameter;
-	usleep(pcb->quantum * 1000); // en milisegundos
-
-    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
-    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->quantum);
-
-	return NULL;
-}
-
 
 
 void stop_planificacion(void) {

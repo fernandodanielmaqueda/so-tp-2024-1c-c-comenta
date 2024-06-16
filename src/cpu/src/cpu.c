@@ -27,6 +27,7 @@ uint32_t value = 0;
 
 e_Kernel_Interrupt *KERNEL_INTERRUPT;
 
+t_Arguments *IR;
 int SYSCALL_CALLED;
 
 t_PCB *PCB;
@@ -100,7 +101,7 @@ void read_module_config(t_config *MODULE_CONFIG)
 void instruction_cycle(void)
 {
 
-    t_Arguments *IR;
+
     t_CPU_OpCode *opcode;
     int exit_status;
 
@@ -119,6 +120,7 @@ void instruction_cycle(void)
 
             // FETCH
             IR = cpu_fetch_next_instruction();
+            log_info(MINIMAL_LOGGER,"PID:%d  - FETCH - Program Counter: %d", PCB->PID, PCB->PC);
 
             // DECODE
             opcode = decode_instruction(IR->argv[0]);
@@ -131,7 +133,7 @@ void instruction_cycle(void)
             {
 
                 // EXECUTE
-                exit_status = opcode->function(IR->argc, IR->argv);
+                exit_status = opcode->function();
             }
 
             // CHECK INTERRUPT
@@ -260,7 +262,8 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
     if (frame_tlb != -1)
     {
         nro_frame_required = frame_tlb;
-        log_info(MODULE_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pcb->PID, nro_page);
+        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pcb->PID, nro_page);
+        log_info(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pcb->PID, nro_page);
         tlb_access(pcb, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
         dir_fisica = nro_frame_required * tamanio_pagina + offset;
@@ -272,6 +275,9 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
     else
     {
         request_frame_memory(pcb->PID, nro_page);
+        //Obtener Marco: “PID: <PID> - OBTENER MARCO - Página: <NUMERO_PAGINA> - Marco: <NUMERO_MARCO>”.
+        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pcb->PID, nro_page);
+
         t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
         int frame = 0;
         int pidBuscado = 0;
@@ -293,7 +299,7 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
                 log_trace(MODULE_LOGGER, "Reemplazo entrada a la TLB");
             }
 
-            log_info(MODULE_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->PID, nro_page);
+            log_info(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->PID, nro_page);
             package_destroy(package);
         }
 

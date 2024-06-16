@@ -34,20 +34,20 @@ t_CPU_OpCode *decode_instruction(char *name)
     return NULL;
 }
 
-int set_cpu_opcode(int argc, char *argv[])
+int set_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SET <REGISTRO> <VALOR>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "SET %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "SET %s %s", IR->argv[1], IR->argv[2]);
 
-    register_destination = string_to_register(argv[1]);
-    value = atoi(argv[2]); // aca recibo el valor a asignarle al registro
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB->PID, argv[0], argv[1], argv[2]);
+    register_destination = string_to_register(IR->argv[1]);
+    value = atoi(IR->argv[2]); // aca recibo el valor a asignarle al registro
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
     register_destination = value;
     PCB->PC++;
 
@@ -55,24 +55,24 @@ int set_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int mov_in_cpu_opcode(int argc, char *argv[])
+int mov_in_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_IN <REGISTRO DATOS> <REGISTRO DIRECCION>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "MOV_IN %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "MOV_IN %s %s", IR->argv[1], IR->argv[2]);
 
-    register_origin = string_to_register(argv[1]);
-    register_destination = string_to_register(argv[2]);
+    register_origin = string_to_register(IR->argv[1]);
+    register_destination = string_to_register(IR->argv[2]);
 
-    dir_logica_origin = atoi(argv[1]);
-    dir_logica_destination = atoi(argv[2]);
+    dir_logica_origin = atoi(IR->argv[1]);
+    dir_logica_destination = atoi(IR->argv[2]);
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB->PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
 
     // pedir tamanioo pagina a memoria
     send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
@@ -99,24 +99,24 @@ int mov_in_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int mov_out_cpu_opcode(int argc, char *argv[])
+int mov_out_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_OUT <REGISTRO DIRECCION> <REGISTRO DATOS>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "MOV_OUT %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "MOV_OUT %s %s", IR->argv[1], IR->argv[2]);
 
-    register_origin = string_to_register(argv[1]);
-    register_destination = string_to_register(argv[2]);
+    register_origin = string_to_register(IR->argv[1]);
+    register_destination = string_to_register(IR->argv[2]);
 
-    dir_logica_origin = atoi(argv[1]);
-    dir_logica_destination = atoi(argv[2]);
+    dir_logica_origin = atoi(IR->argv[1]);
+    dir_logica_destination = atoi(IR->argv[2]);
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", PCB->PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
 
       // pedir tamanioo pagina a memoria
     send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
@@ -142,20 +142,20 @@ int mov_out_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int sum_cpu_opcode(int argc, char *argv[])
+int sum_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUM <REGISTRO DESTINO> <REGISTRO ORIGEN>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "SUM %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "SUM %s %s", IR->argv[1], IR->argv[2]);
 
-    register_destination = string_to_register(argv[1]);
-    register_origin = string_to_register(argv[2]);
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", PCB->PID, argv[0], argv[1], argv[2]);
+    register_destination = string_to_register(IR->argv[1]);
+    register_origin = string_to_register(IR->argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
     register_destination = register_destination + register_origin;
     PCB->PC++;
 
@@ -163,40 +163,40 @@ int sum_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int sub_cpu_opcode(int argc, char *argv[])
+int sub_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUB <REGISTRO DESTINO> <REGISTRO ORIGEN>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "SUB %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "SUB %s %s", IR->argv[1], IR->argv[2]);
 
-    register_destination = string_to_register(argv[0]);
-    register_origin = string_to_register(argv[1]);
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", PCB->PID, argv[0], argv[1], argv[2]);
+    register_destination = string_to_register(IR->argv[0]);
+    register_origin = string_to_register(IR->argv[1]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
     register_destination = register_destination - register_origin;
 
     SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
-int jnz_cpu_opcode(int argc, char *argv[])
+int jnz_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: JNZ <REGISTRO> <INSTRUCCION>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "JNZ %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "JNZ %s %s", IR->argv[1], IR->argv[2]);
 
-    register_destination = string_to_register(argv[1]);
-    value = atoi(argv[2]);
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB->PID, argv[0], argv[1], argv[2]);
+    register_destination = string_to_register(IR->argv[1]);
+    value = atoi(IR->argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
     if (register_destination != 0)
     {
         PCB->PC = value;
@@ -207,19 +207,19 @@ int jnz_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int resize_cpu_opcode(int argc, char *argv[])
+int resize_cpu_opcode(void)
 {
 
-    if (argc != 2)
+    if (IR->argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: RESIZE <TAMANIO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "RESIZE %s", argv[1]);
+    log_trace(MODULE_LOGGER, "RESIZE %s", IR->argv[1]);
 
-    value = atoi(argv[2]);
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB->PID, argv[0], argv[1]);
+    value = atoi(IR->argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB->PID, IR->argv[0], IR->argv[1]);
 
     send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
 
@@ -248,26 +248,26 @@ int resize_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int copy_string_cpu_opcode(int argc, char *argv[])
+int copy_string_cpu_opcode(void)
 {
 
-    if (argc != 2)
+    if (IR->argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: COPY_STRING <TAMANIO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "COPY_STRING %s", argv[1]);
+    log_trace(MODULE_LOGGER, "COPY_STRING %s", IR->argv[1]);
 
-    value = atoi(argv[1]);
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB->PID, argv[0], argv[1]);
+    value = atoi(IR->argv[1]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB->PID, IR->argv[0], IR->argv[1]);
 
     // COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI.
-    register_origin = string_to_register(argv[1]);
-    register_destination = string_to_register(argv[2]);
+    register_origin = string_to_register(IR->argv[1]);
+    register_destination = string_to_register(IR->argv[2]);
 
-    dir_logica_origin = atoi(argv[1]);
-    dir_logica_destination = atoi(argv[2]);
+    dir_logica_origin = atoi(IR->argv[1]);
+    dir_logica_destination = atoi(IR->argv[2]);
 
     dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, IN);
     dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, IN);
@@ -276,49 +276,49 @@ int copy_string_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int wait_cpu_opcode(int argc, char *argv[])
+int wait_cpu_opcode(void)
 {
 
-    if (argc != 2)
+    if (IR->argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
+    log_trace(MODULE_LOGGER, "WAIT %s", IR->argv[1]);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int signal_cpu_opcode(int argc, char *argv[])
+int signal_cpu_opcode(void)
 {
 
-    if (argc != 2)
+    if (IR->argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: SIGNAL <RECURSO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "SIGNAL %s", argv[1]);
+    log_trace(MODULE_LOGGER, "SIGNAL %s", IR->argv[1]);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_gen_sleep_cpu_opcode(int argc, char *argv[])
+int io_gen_sleep_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", IR->argv[1], IR->argv[2]);
 
-    unit_work = atoi(argv[2]);
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Interfaz: %s - Unidad de trabajo: %s", PCB->PID, argv[0], argv[1], argv[2]);
+    unit_work = atoi(IR->argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Interfaz: %s - Unidad de trabajo: %s", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
     usleep(unit_work);
     PCB->PC++;
 
@@ -326,113 +326,139 @@ int io_gen_sleep_cpu_opcode(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-int io_stdin_read_cpu_opcode(int argc, char *argv[])
+int io_stdin_read_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDIN_READ <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
+    log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", IR->argv[1], IR->argv[2], IR->argv[3]);
 
+    register_origin = string_to_register(IR->argv[1]);
+    register_destination = string_to_register(IR->argv[2]);
+
+    dir_logica_origin = atoi(IR->argv[1]);
+    dir_logica_destination = atoi(IR->argv[2]);
+
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro tamanio: %s", PCB->PID, IR->argv[0], IR->argv[1], IR->argv[2]);
+
+    
+   int direct_fisica =  mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, NULL);
+
+    //ENVIO PAQUETE A KERNEL
+    send_2int(direct_fisica, dir_logica_destination , SERVER_CPU_DISPATCH.client.fd_client, STDIN_REQUEST);
+
+     
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_stdout_write_cpu_opcode(int argc, char *argv[])
+int io_stdout_write_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
+    log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", IR->argv[1], IR->argv[2], IR->argv[3]);
+
+    register_origin = string_to_register(IR->argv[1]);
+    register_destination = string_to_register(IR->argv[2]);
+
+    dir_logica_origin = atoi(IR->argv[1]);
+    dir_logica_destination = atoi(IR->argv[2]);
+
+    int direct_fisica = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, NULL);
+    
+    //ENVIO PAQUETE A KERNEL
+    send_2int(direct_fisica, dir_logica_destination , SERVER_CPU_DISPATCH.client.fd_client, STDOUT_REQUEST);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_fs_create_cpu_opcode(int argc, char *argv[])
+int io_fs_create_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_CREATE <INTERFAZ> <NOMBRE ARCHIVO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", IR->argv[1], IR->argv[2]);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_fs_delete_cpu_opcode(int argc, char *argv[])
+int io_fs_delete_cpu_opcode(void)
 {
 
-    if (argc != 3)
+    if (IR->argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_DELETE <INTERFAZ> <NOMBRE ARCHIVO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
+    log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", IR->argv[1], IR->argv[2]);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_fs_truncate_cpu_opcode(int argc, char *argv[])
+int io_fs_truncate_cpu_opcode(void)
 {
 
-    if (argc != 4)
+    if (IR->argc != 4)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_TRUNCATE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO TAMANIO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
+    log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", IR->argv[1], IR->argv[2], IR->argv[3]);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_fs_write_cpu_opcode(int argc, char *argv[])
+int io_fs_write_cpu_opcode(void)
 {
-    if (argc != 6)
+    if (IR->argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+    log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", IR->argv[1], IR->argv[2], IR->argv[3], IR->argv[4], IR->argv[5]);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_fs_read_cpu_opcode(int argc, char *argv[])
+int io_fs_read_cpu_opcode(void)
 {
-    if (argc != 6)
+    if (IR->argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
         exit(EXIT_FAILURE);
     }
 
-    log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+    log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", IR->argv[1], IR->argv[2], IR->argv[3], IR->argv[4], IR->argv[5]);
 
     SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int exit_cpu_opcode(int argc, char *argv[])
+int exit_cpu_opcode(void)
 {
 
-    if (argc != 1)
+    if (IR->argc != 1)
     {
         log_error(MODULE_LOGGER, "Uso: EXIT");
         exit(EXIT_FAILURE);

@@ -34,6 +34,8 @@ typedef enum e_Header {
     PROCESS_FINALIZED,
     //Kernel - IO
     //Kernel - CPU
+    STDIN_REQUEST,
+    STDOUT_REQUEST,
     ///////////////////
     //IO - Memoria
     //Instrucciones
