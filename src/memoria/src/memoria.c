@@ -537,8 +537,9 @@ void resize_process(t_Payload* socketRecibido){
          
         for (size_t i = size; i > paginas; i--)
         {
-            t_Page* pagina = list_get(procesoBuscado->pages_table, i);
-            list_remove(procesoBuscado->pages_table, i);
+            int pos_lista = seek_oldest_page_updated(procesoBuscado->pages_table);
+            t_Page* pagina = list_get(procesoBuscado->pages_table, pos_lista);
+            list_remove(procesoBuscado->pages_table, pos_lista);
             t_Frame* marco = list_get(lista_marcos, pagina->assigned_frame);
             list_add(lista_marcos_libres,marco);
 
@@ -549,4 +550,22 @@ void resize_process(t_Payload* socketRecibido){
         
     }
     //No hace falta el caso page == size ya que no sucederia nada
+}
+
+int seek_oldest_page_updated(t_list* page_list){
+
+    t_Page* mas_antigua = list_get(page_list,0);
+    int size = list_size(page_list);
+    int oldest_pos = 0;
+
+    for (size_t i = 1; i < size; i++) {
+        t_Page* page_temp = list_get(page_list,i);
+
+        if (difftime(page_temp->last_use, mas_antigua->last_use) < 0) {
+            mas_antigua = page_temp;
+            oldest_pos = i;
+        }
+    }
+    return oldest_pos;
+
 }

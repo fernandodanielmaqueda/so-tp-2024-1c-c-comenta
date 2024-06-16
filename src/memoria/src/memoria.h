@@ -146,5 +146,6 @@ void write_memory(t_Payload* socketRecibido, int socket);
 void read_memory(t_Payload* socketRecibido, int socket);
 void update_page(int current_frame);
 int get_next_dir_fis(int current_frame, int pid);
+int seek_oldest_page_updated(t_list* page_list);
 
 #endif /* MEMORIA_H */
