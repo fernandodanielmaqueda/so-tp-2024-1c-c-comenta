@@ -387,11 +387,49 @@ void read_memory(t_Payload* socketRecibido, int socket) {
     receive_read_request(&pidBuscado, &dir_fisica, &bytes,socketRecibido);
 
     char* lectura;
+    char* lectura_final = "";
+    int temp_dir_fis = -1;
+
     void* posicion = memoria_principal + dir_fisica;
-    memcpy(&lectura, posicion, bytes);
+    
+    int pages = bytes/TAM_PAGINA;
+    int resto = bytes % TAM_PAGINA;
+    if (resto != 0) pages += 1;
+
+    memcpy(&lectura, posicion, bytes);    
+    int current_frame = dir_fisica / TAM_PAGINA;
+
+    if(pages < 2){//En caso de que sea menor a 2 pagina
+        memcpy(&lectura_final, posicion, bytes);  
+         //Actualizar pagina/TDP
+        update_page(current_frame);
+    }
+    else{//En caso de que el contenido supere a 1 pagina
+        int bytes_restantes = bytes;
+        for (size_t i = 1; i > pages; i++)
+        {
+            if (i == pages)
+            {
+                memcpy(&lectura, posicion, bytes_restantes);  
+                string_append(lectura_final, lectura);
+                update_page(current_frame);
+            }
+            if(i<pages){
+                memcpy(&lectura, posicion, TAM_PAGINA);  
+                string_append(lectura_final, lectura);
+                update_page(current_frame);
+                bytes_restantes -= TAM_PAGINA;
+
+                temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
+                current_frame = temp_dir_fis / TAM_PAGINA;
+                //Posicion de la proxima escritura
+                posicion = memoria_principal + temp_dir_fis;
+            }
+            
+        }
+    }
 
     send_String_1int(pidBuscado,lectura, socket, READ_REQUEST);
-    
 }
 
 
@@ -401,14 +439,12 @@ void write_memory(t_Payload* socketRecibido, int socket){
     int bytes = 0;
     char* contenido;
     int temp_dir_fis = 0;
-
     
     receive_write_request(&pidBuscado, &dir_fisica, &bytes, &contenido, socketRecibido);
-    
     //receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
 
-    int pages = sizeof(contenido)/TAM_PAGINA;
-    int resto = sizeof(contenido) % TAM_PAGINA;
+    int pages = bytes/TAM_PAGINA;
+    int resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
     void* posicion = memoria_principal + dir_fisica;
     
@@ -531,8 +567,9 @@ void resize_process(t_Payload* socketRecibido){
          
         for (size_t i = size; i > paginas; i--)
         {
-            t_Page* pagina = list_get(procesoBuscado->pages_table, i);
-            list_remove(procesoBuscado->pages_table, i);
+            int pos_lista = seek_oldest_page_updated(procesoBuscado->pages_table);
+            t_Page* pagina = list_get(procesoBuscado->pages_table, pos_lista);
+            list_remove(procesoBuscado->pages_table, pos_lista);
             t_Frame* marco = list_get(lista_marcos, pagina->assigned_frame);
             list_add(lista_marcos_libres,marco);
 
@@ -543,4 +580,22 @@ void resize_process(t_Payload* socketRecibido){
         
     }
     //No hace falta el caso page == size ya que no sucederia nada
+}
+
+int seek_oldest_page_updated(t_list* page_list){
+
+    t_Page* mas_antigua = list_get(page_list,0);
+    int size = list_size(page_list);
+    int oldest_pos = 0;
+
+    for (size_t i = 1; i < size; i++) {
+        t_Page* page_temp = list_get(page_list,i);
+
+        if (difftime(page_temp->last_use, mas_antigua->last_use) < 0) {
+            mas_antigua = page_temp;
+            oldest_pos = i;
+        }
+    }
+    return oldest_pos;
+
 }
