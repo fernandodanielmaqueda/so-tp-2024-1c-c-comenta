@@ -36,7 +36,7 @@
 extern char *MODULE_NAME;
 
 extern t_log *MODULE_LOGGER;
-extern char *MODULE_LOG_PATHNAME;
+extern char *MINIMAL_LOG_PATHNAME;
 
 extern t_config *MODULE_CONFIG;
 extern char *MODULE_CONFIG_PATHNAME;
