@@ -406,6 +406,7 @@ void write_memory(t_Payload* socketRecibido, int socket){
     int pidBuscado = 0;
     int bytes = 0;
     char* contenido;
+    int temp_dir_fis = 0;
 
     
     receive_write_request(&pidBuscado, &dir_fisica, &bytes, &contenido, socketRecibido);
@@ -417,33 +418,58 @@ void write_memory(t_Payload* socketRecibido, int socket){
     if (resto != 0) pages += 1;
     void* posicion = memoria_principal + dir_fisica;
     
-    //int current_frame = dir_fisica / TAM_PAGINA;
+    int current_frame = dir_fisica / TAM_PAGINA;
 
     if(pages < 2){//En caso de que sea menor a 2 pagina
-         memcpy(posicion, &contenido, sizeof(contenido));
+         memcpy(posicion, &contenido, bytes);
          //Actualizar pagina/TDP
+         update_page(current_frame);
     }
     else{//En caso de que el contenido supere a 1 pagina
-        //int page_id = 0;
+        int bytes_restantes = bytes;
+        for (size_t i = 1; i > pages; i++)
+        {
+            if (i == pages)
+            {
+                memcpy(posicion, &contenido, bytes_restantes);
+            }
+            if(i<pages){
+                memcpy(posicion, &contenido, TAM_PAGINA);
+                update_page(current_frame);
+                bytes_restantes -= TAM_PAGINA;
 
-        
-         //Actualizar pagina/TDP
+                temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
+                current_frame = temp_dir_fis / TAM_PAGINA;
+                //Posicion de la proxima escritura
+                posicion = memoria_principal + temp_dir_fis;
+            }
+            
+        }
     }
 
     send_int(pidBuscado,socket,WRITE_REQUEST);
 }
 
 //Actualizar page y TDP
-void update_page_TDP(){
-
+void update_page(int current_frame){
+    t_Frame* marco = list_get(lista_marcos, current_frame);
+    t_Page* current_page = marco->assigned_page;
+    current_page->last_use = time(NULL);
 }
+
+
 //En caso de varias paginas
-void get_next_page(int current_frame, int pid){
+int get_next_dir_fis(int current_frame, int pid){
     t_Frame* marco = list_get(lista_marcos, current_frame);
     t_Page* current_page = marco->assigned_page;
     int pagid = current_page->pagid;
     t_Process* proceso = seek_process_by_pid(pid);
+    current_page = list_get(proceso->pages_table, (pagid+1));
+    int next_frame = current_page->assigned_frame;
+    int offset = 0;
+    int next_dir_fis = next_frame * TAM_PAGINA + offset;
 
+    /*
     int count = list_size(proceso->pages_table);
     for (size_t i = 0; i < count; i++)
     {
@@ -454,11 +480,12 @@ void get_next_page(int current_frame, int pid){
         }
         
     }
-    /*   
+     
     int nro_page = floor(dir_logica / tamanio_pagina);
     int offset = dir_logica - nro_page * tamanio_pagina; 
     dir_fisica = nro_frame_required * tamanio_pagina + offset;
 */
+    return next_dir_fis;
 }
 
 
@@ -493,6 +520,7 @@ void resize_process(t_Payload* socketRecibido){
                     pagina->bit_presencia = false;
                     pagina->bit_uso = false;
                     pagina->pagid = i;
+                    pagina->last_use = 0;
 
                     //Actualizo el marco asignado
                     marcoLibre->PID= pid;
