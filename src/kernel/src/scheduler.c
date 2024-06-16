@@ -1,16 +1,16 @@
 #include "scheduler.h"
 
 t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
-	{ .name = "FIFO", .function_fetcher = FIFO_scheduling_algorithm , .function_reprogrammer = FIFO_scheduling_reprogrammer},
-	{ .name = "RR", .function_fetcher = RR_scheduling_algorithm , .function_reprogrammer = RR_scheduling_reprogrammer },
-	{ .name = "VRR", .function_fetcher = VRR_scheduling_algorithm , .function_reprogrammer = VRR_scheduling_reprogrammer },
+	{ .name = "FIFO", .type = FIFO_SCHEDULING_ALGORITHM, .function_fetcher = FIFO_scheduling_algorithm , .function_reprogrammer = FIFO_scheduling_reprogrammer},
+	{ .name = "RR",.type = RR_SCHEDULING_ALGORITHM,.function_fetcher = RR_scheduling_algorithm , .function_reprogrammer = RR_scheduling_reprogrammer },
+	{ .name = "VRR",.type =VRR_SCHEDULING_ALGORITHM , .function_fetcher = VRR_scheduling_algorithm , .function_reprogrammer = VRR_scheduling_reprogrammer },
 	{ .name = NULL }
 };
 
 t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 
-e_CPU_Status CPU_STATUS;
-pthread_mutex_t MUTEX_CPU_STATUS;
+int QUANTUM_INTERRUPT;
+pthread_mutex_t MUTEX_QUANTUM_INTERRUPT;
 
 t_list *START_PROCESS;
 pthread_mutex_t MUTEX_LIST_START_PROCESS;
@@ -44,7 +44,7 @@ sem_t sem_detener_planificacion;
 pthread_t THREAD_LONG_TERM_SCHEDULER;
 pthread_t THREAD_SHORT_TERM_SCHEDULER;
 pthread_t hilo_mensajes_cpu;
-pthread_t THREAD_INTERRUPT;
+pthread_t THREAD_QUANTUM_INTERRUPT;
 
 sem_t SEM_LONG_TERM_SCHEDULER;
 sem_t SEM_SHORT_TERM_SCHEDULER;
@@ -122,6 +122,11 @@ void *long_term_scheduler(void *parameter) {
 void *short_term_scheduler(void *parameter) {
 
 	t_PCB* pcb;
+	e_Interrupt *interrupt;
+	t_Arguments *instruction;
+	t_Package *package;
+	int exit_status;
+	uint64_t cpu_burst;
 
 	while(1) {
 		sem_wait(&SEM_SHORT_TERM_SCHEDULER);
@@ -130,12 +135,81 @@ void *short_term_scheduler(void *parameter) {
 
 		switch_process_state(pcb, EXECUTING_STATE);
 
-		pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+		int PCB_EXECUTE = 1;
+		while(PCB_EXECUTE) {
 
-		// sem_post(&SEM_EXECUTING);
-		TEMPORAL_DISPATCHED = temporal_create();
+			pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+			// pcb_free(pcb);
 
+			// SI ESTOY EN RR Ó EN VRR
+			QUANTUM_INTERRUPT = 0;
+			TEMPORAL_DISPATCHED = temporal_create();
 
+			pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
+			pthread_detach(THREAD_QUANTUM_INTERRUPT);
+
+			package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
+			switch(package->header) {
+			case SUBHEADER_HEADER:
+
+				temporal_stop(TEMPORAL_DISPATCHED);
+				cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
+				temporal_destroy(TEMPORAL_DISPATCHED);
+
+				// SI ESTOY EN RR Y EN VRR
+				pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+				if(!QUANTUM_INTERRUPT)
+					pthread_cancel(THREAD_QUANTUM_INTERRUPT);
+				pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
+				pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
+
+				pcb = pcb_deserialize(package->payload);
+				interrupt = interrupt_deserialize(package->payload);
+				instruction = arguments_deserialize(package->payload);
+				break;
+			default:
+				log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
+				exit(EXIT_FAILURE);
+				break;
+			}
+			package_destroy(package);
+
+			switch(*interrupt) {
+				case ERROR_CAUSE:
+					switch_process_state(pcb, EXIT_STATE);
+					PCB_EXECUTE = 0;
+					break;
+
+				case INTERRUPTION_CAUSE:
+					// FALTARÍA DISTINGUIR SI LA INTERRUPCIÓN FUE POR FIN DE QUANTUM O POR KILL
+					switch_process_state(pcb, READY_STATE);
+					PCB_EXECUTE = 0;
+					break;
+					
+				case SYSCALL_CAUSE:
+					SYSCALL_PCB = pcb;
+					exit_status = syscall_execute(instruction);
+
+					if(exit_status) {
+						switch_process_state(pcb, EXIT_STATE);
+						PCB_EXECUTE = 0;
+						break;
+					}
+
+					if(BLOCKING_SYSCALL) {
+						switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
+						PCB_EXECUTE = 0;
+						break;
+					}
+
+					// En caso de que sea una syscall no bloqueante
+					break;
+			}
+
+			// pcb_free(pcb)
+			// interrupt_free(interrupt);
+			// instruction_free(instruction);
+		}
 	}
 
 	return NULL;
@@ -157,9 +231,6 @@ t_PCB *RR_scheduling_algorithm(void) {
 		pcb = (t_PCB *) list_remove(LIST_READY, 0);
 	pthread_mutex_unlock(&mutex_LIST_READY);
 
-	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum)); // thread interrupt
-	pthread_detach(THREAD_INTERRUPT);
-
 	return pcb;
 }
 
@@ -175,9 +246,6 @@ t_PCB *VRR_scheduling_algorithm(void) {
 			pcb = (t_PCB *) list_remove(LIST_READY, 0);
 		pthread_mutex_unlock(&mutex_LIST_READY);
 	}
-
-	pthread_create(&THREAD_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
-	pthread_detach(THREAD_INTERRUPT);
 
 	return pcb;
 
@@ -456,30 +524,23 @@ void *thread_send_cpu_interrupt(void *arguments) {
 
 void *start_quantum(void *pcb_parameter) {
 
-	temporal_stop(TEMPORAL_DISPATCHED);
-	uint64_t asd = temporal_gettime(TEMPORAL_DISPATCHED);
-	temporal_destroy(TEMPORAL_DISPATCHED);
-
-	int quantum = *((int *) pcb_parameter);
+	t_PCB *pcb = (t_PCB *) pcb_parameter;
 
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
-    //usleep(quantum * 1000); // en milisegundos
-    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
-    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %i milisegundos", quantum);
+    usleep(pcb->quantum * 1000); // en milisegundos
+    send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection);
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->quantum);
 
 	return NULL;
 }
 
 void *sleep_interrupt(void *pcb_parameter) //int tiempo_inicio
 {
-	uint64_t quantum = *((uint64_t *) pcb_parameter);
-	usleep(quantum * 1000); // en milisegundos
+	t_PCB *pcb = (t_PCB *) pcb_parameter;
+	usleep(pcb->quantum * 1000); // en milisegundos
 
-	// if preguntar si no volvio de CPU POR ESTE QUANTUM
-	// 1. verificar que no este en list_EXECUTE
-	// 2. checkiar si tiempo_inicio es el correcto
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection); 
-    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", quantum);
+    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->quantum);
 
 	return NULL;
 }

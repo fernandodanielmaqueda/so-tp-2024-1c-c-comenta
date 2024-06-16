@@ -23,22 +23,23 @@
 #include "utils/socket.h"
 #include "kernel.h"
 
+typedef enum e_Scheduling_Algorithm {
+    FIFO_SCHEDULING_ALGORITHM,
+    RR_SCHEDULING_ALGORITHM,
+    VRR_SCHEDULING_ALGORITHM
+} e_Scheduling_Algorithm;
+
 typedef struct t_Scheduling_Algorithm {
     char *name;
+    enum e_Scheduling_Algorithm type;
     t_PCB *(*function_fetcher) (void);
     t_PCB *(*function_reprogrammer) (t_PCB *);
 } t_Scheduling_Algorithm;
 
 extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 
-typedef enum e_CPU_Status {
-	EXECUTING_CPU_STATUS,
-	END_OF_QUANTUM_CPU_STATUS,
-	PCB_RETURNED_CPU_STATUS
-} e_CPU_Status;
-
-extern e_CPU_Status CPU_STATUS;
-extern pthread_mutex_t MUTEX_CPU_STATUS;
+extern int QUANTUM_INTERRUPT; 
+extern pthread_mutex_t MUTEX_QUANTUM_INTERRUPT;
 
 extern t_list *START_PROCESS;
 extern pthread_mutex_t MUTEX_LIST_START_PROCESS;
@@ -68,7 +69,7 @@ extern sem_t sem_detener_planificacion;
 extern pthread_t THREAD_LONG_TERM_SCHEDULER;
 extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
 extern pthread_t hilo_mensajes_cpu;
-extern pthread_t THREAD_INTERRUPT;
+extern pthread_t THREAD_QUANTUM_INTERRUPT;
 
 extern sem_t SEM_LONG_TERM_SCHEDULER;
 extern sem_t SEM_SHORT_TERM_SCHEDULER;

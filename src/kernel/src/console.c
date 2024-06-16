@@ -93,31 +93,9 @@ char *command_generator(const char *text, int state) {
     return NULL;
 }
 
-/* Strip whitespace from the start and end of STRING.  Return a pointer into STRING. */
-char *strip_whitespaces(char *string) {
-  register char *start, *end;
-
-  // Recorre el inicio de cadena hasta encontrar un caracter que no sea un espacio
-  for (start = string; whitespace(*start); start++);
-
-  if (*start == '\0')
-    return (start);
-
-  // Busca el fin de la cadena arrancando desde s para mayor optimización por menor recorrido
-  end = start + strlen(start) - 1;
-
-  while (end > start && whitespace(*end))
-    end--;
-
-  *++end = '\0';
-
-  return start;
-}
-
 /* Execute a command line. */
 int execute_line(char *line) {
     register int i = 0;
-    char *arg;
     int argc = 0;
     char *argv[MAX_CONSOLE_ARGC] = {NULL};
     t_Command *command;
@@ -134,8 +112,7 @@ int execute_line(char *line) {
             return EXIT_FAILURE;
         }
 
-        arg = line + i;
-        argv[argc++] = arg;
+        argv[argc++] = line + i;;
 
         while(line[i] && !whitespace(line[i]))
             i++;
@@ -178,7 +155,7 @@ int kernel_command_run_script(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    char *line = NULL;
+    char *line = NULL, *subline;
     size_t length;
     ssize_t nread;
     
@@ -197,6 +174,14 @@ int kernel_command_run_script(int argc, char* argv[]) {
 
         if(execute_line(line))
             break;
+
+        /*subline = strip_whitespaces(line);
+
+        if(*subline) {
+            if(execute_line(subline))
+                break;
+        }
+        */
     }
 
     free(line);

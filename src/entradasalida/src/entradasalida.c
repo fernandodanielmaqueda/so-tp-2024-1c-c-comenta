@@ -276,7 +276,7 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
-	t_Package* package;
+	t_Package *package;
 	t_Arguments* instruction;
 	int registro_tamanio;
 
@@ -291,7 +291,7 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
 			package_destroy(package);
 
 			package = package_receive(CONNECTION_MEMORY.fd_connection);
-			instruction = arguments_deserialize(package);
+			instruction = arguments_deserialize(package->payload);
 			log_info(MODULE_LOGGER, "En la memoria se halla el siguiente contenido: %s", instruction->argv[0]);
 			package_destroy(package);
 			break;

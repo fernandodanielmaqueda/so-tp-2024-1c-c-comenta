@@ -3,6 +3,70 @@
 
 #include "utils/serialize/arguments.h"
 
+t_Arguments *arguments_create(char *line, t_log *logger) {
+    char *subline;
+
+    t_Arguments *arguments = malloc(sizeof(t_Arguments));
+    if(arguments == NULL) {
+        log_error(logger, "No se pudo reservar memoria para los argumentos.");
+        exit(EXIT_FAILURE);
+    }
+
+    arguments->argc = 0;
+    arguments->argv = malloc(MAX_ARGC * sizeof(char *));
+
+    for(int i = 0; i < MAX_ARGC; i++) {
+        arguments->argv[i] = NULL;
+    }
+
+    subline = strip_whitespaces(line);
+    char *duplicate = strdup(subline);
+
+    register int i = 0;
+
+    while(duplicate[i]) {
+        while(duplicate[i] && whitespace(duplicate[i]))
+            i++;
+
+        if(!duplicate[i])
+            break;
+
+        if(arguments->argc == MAX_ARGC) {
+            log_warning(logger, "Demasiados argumentos.");
+            exit(EXIT_FAILURE);
+        }
+
+        arguments->argv[arguments->argc++] = duplicate + i;
+
+        while(duplicate[i] && !whitespace(duplicate[i]))
+            i++;
+
+        if(duplicate[i])
+            duplicate[i++] = '\0';
+    }
+}
+
+/* Strip whitespace from the start and end of STRING.  Return a pointer into STRING. */
+char *strip_whitespaces(char *string) {
+  register char *start, *end;
+
+  // Recorre el inicio de cadena hasta encontrar un caracter que no sea un espacio
+  for (start = string; whitespace(*start); start++);
+
+  if (*start == '\0')
+    return (start);
+
+  // Busca el fin de la cadena arrancando desde s para mayor optimización por menor recorrido
+  end = start + strlen(start) - 1;
+
+  while (end > start && whitespace(*end))
+    end--;
+
+  *++end = '\0';
+
+  return start;
+}
+
 void arguments_send(t_Arguments *arguments, int fd_socket) {
   t_Package *package = package_create_with_header(ARGUMENTS_HEADER);
   arguments_serialize(package->payload, arguments);
