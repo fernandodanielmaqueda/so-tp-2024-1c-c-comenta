@@ -342,6 +342,7 @@ void tlb_access(t_PCB *pcb, int nro_page, int frame_number_required, int direc, 
         }  else
         {
             log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR  - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
+           
         }
         
     }                
@@ -399,13 +400,7 @@ void replace_tlb_input(int pid, int page, int frame)
     
 }
 
-void request_data_in_memory(int frame_number_required, int pid, int nro_page, int direc, int register_origin, int register_destination)
-{
-}
 
-void request_data_out_memory(int frame_number_required, int pid, int nro_page, int direc, int register_origin, int register_destination)
-{
-}
 
 t_PCB *cpu_receive_pcb(void)
 {

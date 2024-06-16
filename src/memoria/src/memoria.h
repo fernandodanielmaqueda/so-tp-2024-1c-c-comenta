@@ -39,6 +39,7 @@ typedef struct t_Page {
     bool bit_modificado;
     bool bit_presencia;
     int assigned_frame;
+    time_t last_use;
 } t_Page;
 
 typedef struct t_Frame {
@@ -144,5 +145,7 @@ int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina);
 void resize_process(t_Payload* payload);
 void write_memory(t_Payload* socketRecibido, int socket);
 void read_memory(t_Payload* socketRecibido, int socket);
+void update_page(int current_frame);
+int get_next_dir_fis(int current_frame, int pid);
 
 #endif /* MEMORIA_H */
