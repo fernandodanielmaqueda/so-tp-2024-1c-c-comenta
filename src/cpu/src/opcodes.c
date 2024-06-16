@@ -23,18 +23,19 @@ t_CPU_OpCode CPU_OPCODES[] = {
     {.name = "IO_FS_WRITE", .function = io_fs_write_cpu_opcode},
     {.name = "IO_FS_READ", .function = io_fs_read_cpu_opcode},
     {.name = "EXIT", .function = exit_cpu_opcode},
-    {.name = NULL}
-};
+    {.name = NULL}};
 
-t_CPU_OpCode *decode_instruction(char *name) {
-    for(register int i = 0; CPU_OPCODES[i].name != NULL; i++)
-        if(!strcmp(CPU_OPCODES[i].name, name))
+t_CPU_OpCode *decode_instruction(char *name)
+{
+    for (register int i = 0; CPU_OPCODES[i].name != NULL; i++)
+        if (!strcmp(CPU_OPCODES[i].name, name))
             return (&CPU_OPCODES[i]);
 
     return NULL;
 }
 
-int set_cpu_opcode(int argc, char *argv[]) {
+int set_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -54,7 +55,8 @@ int set_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int mov_in_cpu_opcode(int argc, char *argv[]) {
+int mov_in_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -72,8 +74,21 @@ int mov_in_cpu_opcode(int argc, char *argv[]) {
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB->PID, argv[0], argv[1], argv[2]);
 
-    // message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", SERVER_CPU_DISPATCH.client.fd_client);
-    // size_pag = atoi(message_receive(SERVER_CPU_DISPATCH.client.fd_client));
+    // pedir tamanioo pagina a memoria
+    send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
+
+    t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+    if (package == NULL)
+    {
+        log_error(MODULE_LOGGER, "Error al recibir el paquete");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        int size_pag = PAGE_SIZE_REQUEST;
+    }
+
+    
 
     dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, IN);
     dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, IN);
@@ -84,7 +99,8 @@ int mov_in_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int mov_out_cpu_opcode(int argc, char *argv[]) {
+int mov_out_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -102,8 +118,20 @@ int mov_out_cpu_opcode(int argc, char *argv[]) {
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", PCB->PID, argv[0], argv[1], argv[2]);
 
-    // message_send(PAGE_SIZE_REQUEST, "Tamanio Pag", SERVER_CPU_DISPATCH.client.fd_client);
-    // size_pag = atoi(message_receive(SERVER_CPU_DISPATCH.client.fd_client));
+      // pedir tamanioo pagina a memoria
+    send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
+
+    t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+    if (package == NULL)
+    {
+        log_error(MODULE_LOGGER, "Error al recibir el paquete");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        int size_pag = PAGE_SIZE_REQUEST;
+    }
+
 
     dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, OUT);
     dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, OUT);
@@ -114,7 +142,8 @@ int mov_out_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int sum_cpu_opcode(int argc, char *argv[]) {
+int sum_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -134,7 +163,8 @@ int sum_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int sub_cpu_opcode(int argc, char *argv[]) {
+int sub_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -153,7 +183,8 @@ int sub_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int jnz_cpu_opcode(int argc, char *argv[]) {
+int jnz_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -176,7 +207,8 @@ int jnz_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int resize_cpu_opcode(int argc, char *argv[]) {
+int resize_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 2)
     {
@@ -186,15 +218,14 @@ int resize_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "RESIZE %s", argv[1]);
 
-    
     value = atoi(argv[2]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB->PID, argv[0], argv[1]);
-    // TODO: BRIAAN PEDIR A MEMORIA QUE HAGA ESTA FUNCION
 
     send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
-    
+
     t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
-    if(package == NULL){
+    if (package == NULL)
+    {
         log_error(MODULE_LOGGER, "Error al recibir el paquete");
         exit(EXIT_FAILURE);
     }
@@ -205,19 +236,20 @@ int resize_cpu_opcode(int argc, char *argv[]) {
     }
     else if (package->header == OUT_OF_MEMORY)
     {
-        //COMUNICAR CON KERNEL QUE NO HAY MAS MEMORIA
-
+        // COMUNICAR CON KERNEL QUE NO HAY MAS MEMORIA
+        return EXIT_FAILURE;
     }
-       
+
     package_destroy(package);
-    
+
     PCB->PC++;
 
     SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
-int copy_string_cpu_opcode(int argc, char *argv[]) {
+int copy_string_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 2)
     {
@@ -229,8 +261,8 @@ int copy_string_cpu_opcode(int argc, char *argv[]) {
 
     value = atoi(argv[1]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB->PID, argv[0], argv[1]);
-   
-    //COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI. 
+
+    // COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI.
     register_origin = string_to_register(argv[1]);
     register_destination = string_to_register(argv[2]);
 
@@ -240,20 +272,18 @@ int copy_string_cpu_opcode(int argc, char *argv[]) {
     dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, IN);
     dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, IN);
 
-   
-    
-
     SYSCALL_CALLED = 0;
     return EXIT_SUCCESS;
 }
 
-int wait_cpu_opcode(int argc, char *argv[]) {
+int wait_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
         exit(EXIT_FAILURE);
-    }                                          
+    }
 
     log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
 
@@ -261,7 +291,8 @@ int wait_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int signal_cpu_opcode(int argc, char *argv[]) {
+int signal_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 2)
     {
@@ -275,7 +306,8 @@ int signal_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_gen_sleep_cpu_opcode(int argc, char *argv[]) {
+int io_gen_sleep_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -294,7 +326,8 @@ int io_gen_sleep_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_stdin_read_cpu_opcode(int argc, char *argv[]) {
+int io_stdin_read_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -308,8 +341,9 @@ int io_stdin_read_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_stdout_write_cpu_opcode(int argc, char *argv[]) {
-    
+int io_stdout_write_cpu_opcode(int argc, char *argv[])
+{
+
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
@@ -318,12 +352,13 @@ int io_stdout_write_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
-    SYSCALL_CALLED = 1;    
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_fs_create_cpu_opcode(int argc, char *argv[]) {
-    
+int io_fs_create_cpu_opcode(int argc, char *argv[])
+{
+
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_CREATE <INTERFAZ> <NOMBRE ARCHIVO>");
@@ -336,7 +371,8 @@ int io_fs_create_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_delete_cpu_opcode(int argc, char *argv[]) {
+int io_fs_delete_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 3)
     {
@@ -350,7 +386,8 @@ int io_fs_delete_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_truncate_cpu_opcode(int argc, char *argv[]) {
+int io_fs_truncate_cpu_opcode(int argc, char *argv[])
+{
 
     if (argc != 4)
     {
@@ -360,12 +397,13 @@ int io_fs_truncate_cpu_opcode(int argc, char *argv[]) {
 
     log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
 
-    SYSCALL_CALLED = 1;    
+    SYSCALL_CALLED = 1;
     return EXIT_SUCCESS;
 }
 
-int io_fs_write_cpu_opcode(int argc, char *argv[]) {
-    if(argc != 6)
+int io_fs_write_cpu_opcode(int argc, char *argv[])
+{
+    if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
         exit(EXIT_FAILURE);
@@ -377,8 +415,9 @@ int io_fs_write_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_read_cpu_opcode(int argc, char *argv[]) {
-    if(argc != 6)
+int io_fs_read_cpu_opcode(int argc, char *argv[])
+{
+    if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
         exit(EXIT_FAILURE);
@@ -390,9 +429,10 @@ int io_fs_read_cpu_opcode(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int exit_cpu_opcode(int argc, char *argv[]) {
+int exit_cpu_opcode(int argc, char *argv[])
+{
 
-    if(argc != 1)
+    if (argc != 1)
     {
         log_error(MODULE_LOGGER, "Uso: EXIT");
         exit(EXIT_FAILURE);

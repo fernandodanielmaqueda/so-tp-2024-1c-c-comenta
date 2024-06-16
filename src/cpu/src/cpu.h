@@ -32,6 +32,7 @@
 #include "socket.h"
 #include "opcodes.h"
 
+
 #include "utils/estructuras.h"
 
 //Para el SET en el ciclo de instruccion verificar si es in o out
