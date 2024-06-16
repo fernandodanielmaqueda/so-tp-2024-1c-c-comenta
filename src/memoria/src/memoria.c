@@ -226,12 +226,12 @@ void listen_cpu(int fd_cpu) {
                 
             case READ_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                //read_memory(paquete->payload, FD_CLIENT_CPU);
+                read_memory(paquete->payload, FD_CLIENT_CPU);
                 break;
                 
             case WRITE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                //write_memory(paquete->payload, FD_CLIENT_CPU);
+                write_memory(paquete->payload, FD_CLIENT_CPU);
                 break;
             
             default:
@@ -246,12 +246,18 @@ void listen_io(int fd_io) {
         t_Package* paquete = package_receive(fd_io);
         e_Header header = paquete->header; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
         switch(header) {
-            /*
-            case PROCESS_NEW:
-                log_info(MODULE_LOGGER, "IO: Nueva peticion recibido.");
-                create_process(paquete->payload);
+            
+            case IO_STDIN_WRITE_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
+                write_memory(paquete->payload, fd_io);
                 break;
-                */
+                
+            
+            case IO_STDOUT_READ_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
+                read_memory(paquete->payload, fd_io);
+                break;
+                
 
             case DISCONNECTION_HEADER:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
@@ -396,6 +402,8 @@ void read_memory(t_Payload* socketRecibido, int socket) {
 
     memcpy(&lectura, posicion, bytes);    
     int current_frame = dir_fisica / TAM_PAGINA;
+    t_Frame* frame = list_get(lista_marcos, current_frame);
+    pidBuscado = frame->PID;
 
     if(pages < 2){//En caso de que sea menor a 2 pagina
         memcpy(&lectura_final, posicion, bytes);  
@@ -441,12 +449,15 @@ void write_memory(t_Payload* socketRecibido, int socket){
     receive_write_request(&pidBuscado, &dir_fisica, &bytes, &contenido, socketRecibido);
     //receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
 
+
     int pages = bytes/TAM_PAGINA;
     int resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
     void* posicion = memoria_principal + dir_fisica;
     
     int current_frame = dir_fisica / TAM_PAGINA;
+    t_Frame* frame = list_get(lista_marcos, current_frame);
+    pidBuscado = frame->PID;
 
     if(pages < 2){//En caso de que sea menor a 2 pagina
          memcpy(posicion, &contenido, bytes);

@@ -58,6 +58,7 @@ void send_int(int nro, int socket, int opcod);
 void send_2int(int nro, int nro2, int socket, int opcod);
 void receive_2int(int* nro1, int* nro2, t_Payload* payload);
 void send_String_1int(int nro, char* mensaje, int socket, int opcod);
+void receive_String_1int(int* pid, char** mensaje, t_Payload* payload);
 void receive_2int_1uint32(int* nro1, int* nro2,uint32_t* contenido, t_Payload* payload);
 void send_2int_1uint32(int nro1, int nro2,uint32_t contenido, int socket, int opcod);
 void receive_write_request(int* pid, int* dir_fis, int* bytes, char* contenido, t_Payload* payload);

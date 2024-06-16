@@ -166,3 +166,21 @@ void send_String_1int(int nro, char* mensaje, int socket, int opcod){
   package_send(package, socket);
   package_destroy(package);
 }
+
+void receive_String_1int(int* pid, char** mensaje, t_Payload* payload){
+  
+    // Extrae el primer entero del payload
+    int offset = 0;
+    memcpy(pid, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+
+    // Extrae el segundo entero del payload
+    int len = 0;
+    memcpy(len, payload->stream + offset, sizeof(int));
+    offset += sizeof(int);
+    
+    // Extrae el segundo entero del payload
+    memcpy(mensaje, payload->stream + offset, len);
+    offset += sizeof(int);
+
+}
