@@ -42,7 +42,7 @@ typedef enum {
 } t_in_out;
 
 extern char *MODULE_NAME;
-extern char *MODULE_LOG_PATHNAME;
+extern char *MINIMAL_LOG_PATHNAME;
 extern char *MODULE_CONFIG_PATHNAME;
 
 extern t_log *MODULE_LOGGER;

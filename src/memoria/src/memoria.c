@@ -5,10 +5,12 @@
 #include "memoria.h"
 
 char *MODULE_NAME = "memoria";
-char *MODULE_LOG_PATHNAME = "memoria.log";
+
+char *MINIMAL_LOG_PATHNAME = "memoria.log";
 char *MODULE_CONFIG_PATHNAME = "memoria.config";
 
-t_log *MODULE_LOGGER;
+t_log *MINIMAL_LOGGER;
+extern t_log *MODULE_LOGGER;
 extern t_log *SOCKET_LOGGER;
 t_config *MODULE_CONFIG;
 

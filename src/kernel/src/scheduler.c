@@ -139,29 +139,41 @@ void *short_term_scheduler(void *parameter) {
 		while(PCB_EXECUTE) {
 
 			pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+
+			switch(SCHEDULING_ALGORITHM->type) {
+				case RR_SCHEDULING_ALGORITHM:
+				case VRR_SCHEDULING_ALGORITHM:
+					QUANTUM_INTERRUPT = 0;
+					TEMPORAL_DISPATCHED = temporal_create();
+
+					pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
+					pthread_detach(THREAD_QUANTUM_INTERRUPT);
+					break;
+				case FIFO_SCHEDULING_ALGORITHM:
+					break;
+			}
 			// pcb_free(pcb);
-
-			// SI ESTOY EN RR Ó EN VRR
-			QUANTUM_INTERRUPT = 0;
-			TEMPORAL_DISPATCHED = temporal_create();
-
-			pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
-			pthread_detach(THREAD_QUANTUM_INTERRUPT);
-
+		
 			package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
 			switch(package->header) {
 			case SUBHEADER_HEADER:
 
-				temporal_stop(TEMPORAL_DISPATCHED);
-				cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
-				temporal_destroy(TEMPORAL_DISPATCHED);
+			switch(SCHEDULING_ALGORITHM->type) {
+				case RR_SCHEDULING_ALGORITHM:
+				case VRR_SCHEDULING_ALGORITHM:
+					temporal_stop(TEMPORAL_DISPATCHED);
+					cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
+					temporal_destroy(TEMPORAL_DISPATCHED);
 
-				// SI ESTOY EN RR Y EN VRR
-				pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
-				if(!QUANTUM_INTERRUPT)
-					pthread_cancel(THREAD_QUANTUM_INTERRUPT);
-				pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
-				pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
+					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+					if(!QUANTUM_INTERRUPT)
+						pthread_cancel(THREAD_QUANTUM_INTERRUPT);
+					pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
+					pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
+					break;
+				case FIFO_SCHEDULING_ALGORITHM:
+					break;
+			}
 
 				pcb = pcb_deserialize(package->payload);
 				interrupt = interrupt_deserialize(package->payload);
@@ -173,6 +185,21 @@ void *short_term_scheduler(void *parameter) {
 				break;
 			}
 			package_destroy(package);
+
+			switch(SCHEDULING_ALGORITHM->type) {
+				case RR_SCHEDULING_ALGORITHM:
+					pcb->quantum = QUANTUM;
+					break;
+				case VRR_SCHEDULING_ALGORITHM:
+					pcb->quantum -= cpu_burst;
+					if(pcb->quantum <= 0)
+						pcb->quantum = QUANTUM;
+					break;
+				case FIFO_SCHEDULING_ALGORITHM:
+					break;
+			}
+			
+			// NEGATIVO
 
 			switch(*interrupt) {
 				case ERROR_CAUSE:
@@ -467,7 +494,7 @@ t_PCB *pcb_create() {
     pcb->RDX = 0;
     pcb->SI = 0;
     pcb->DI = 0;
-	pcb->quantum = 0;
+	pcb->quantum = QUANTUM;
 	pcb->current_state = 0;
     pcb->arrival_READY = 0;
     pcb->arrival_RUNNING = 0;

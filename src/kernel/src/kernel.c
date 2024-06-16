@@ -5,8 +5,8 @@
 
 char *MODULE_NAME = "kernel";
 
-t_log *MODULE_LOGGER;
-char *MODULE_LOG_PATHNAME = "kernel.log";
+t_log *MINIMAL_LOGGER;
+char *MINIMAL_LOG_PATHNAME = "kernel.log";
 
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";

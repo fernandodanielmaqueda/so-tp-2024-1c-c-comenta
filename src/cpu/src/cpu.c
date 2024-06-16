@@ -4,10 +4,10 @@
 #include "cpu.h"
 
 char *MODULE_NAME = "cpu";
-char *MODULE_LOG_PATHNAME = "cpu.log";
+char *MINIMAL_LOG_PATHNAME = "cpu.log";
 char *MODULE_CONFIG_PATHNAME = "cpu.config";
 
-t_log *MODULE_LOGGER;
+t_log *MINIMAL_LOGGER;
 t_config *MODULE_CONFIG;
 
 // Tipos de interrupciones para el ciclo

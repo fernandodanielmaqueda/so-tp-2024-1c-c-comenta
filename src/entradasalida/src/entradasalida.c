@@ -4,10 +4,11 @@
 #include "entradasalida.h"
 
 char *MODULE_NAME = "entradasalida";
-char *MODULE_LOG_PATHNAME = "entradasalida.log";
+char *MINIMAL_LOG_PATHNAME = "entradasalida.log";
 char *MODULE_CONFIG_PATHNAME = "entradasalida.config";
 
-t_log* MODULE_LOGGER;
+t_log* MINIMAL_LOGGER;
+extern t_log *MODULE_LOGGER;
 extern t_log *SOCKET_LOGGER;
 t_config* MODULE_CONFIG;
 
