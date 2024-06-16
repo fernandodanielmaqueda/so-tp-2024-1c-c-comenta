@@ -385,11 +385,49 @@ void read_memory(t_Payload* socketRecibido, int socket) {
     receive_read_request(&pidBuscado, &dir_fisica, &bytes,socketRecibido);
 
     char* lectura;
+    char* lectura_final = "";
+    int temp_dir_fis = -1;
+
     void* posicion = memoria_principal + dir_fisica;
-    memcpy(&lectura, posicion, bytes);
+    
+    int pages = bytes/TAM_PAGINA;
+    int resto = bytes % TAM_PAGINA;
+    if (resto != 0) pages += 1;
+
+    memcpy(&lectura, posicion, bytes);    
+    int current_frame = dir_fisica / TAM_PAGINA;
+
+    if(pages < 2){//En caso de que sea menor a 2 pagina
+        memcpy(&lectura_final, posicion, bytes);  
+         //Actualizar pagina/TDP
+        update_page(current_frame);
+    }
+    else{//En caso de que el contenido supere a 1 pagina
+        int bytes_restantes = bytes;
+        for (size_t i = 1; i > pages; i++)
+        {
+            if (i == pages)
+            {
+                memcpy(&lectura, posicion, bytes_restantes);  
+                string_append(lectura_final, lectura);
+                update_page(current_frame);
+            }
+            if(i<pages){
+                memcpy(&lectura, posicion, TAM_PAGINA);  
+                string_append(lectura_final, lectura);
+                update_page(current_frame);
+                bytes_restantes -= TAM_PAGINA;
+
+                temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
+                current_frame = temp_dir_fis / TAM_PAGINA;
+                //Posicion de la proxima escritura
+                posicion = memoria_principal + temp_dir_fis;
+            }
+            
+        }
+    }
 
     send_String_1int(pidBuscado,lectura, socket, READ_REQUEST);
-    
 }
 
 
@@ -399,14 +437,12 @@ void write_memory(t_Payload* socketRecibido, int socket){
     int bytes = 0;
     char* contenido;
     int temp_dir_fis = 0;
-
     
     receive_write_request(&pidBuscado, &dir_fisica, &bytes, &contenido, socketRecibido);
-    
     //receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
 
-    int pages = sizeof(contenido)/TAM_PAGINA;
-    int resto = sizeof(contenido) % TAM_PAGINA;
+    int pages = bytes/TAM_PAGINA;
+    int resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
     void* posicion = memoria_principal + dir_fisica;
     
