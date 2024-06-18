@@ -102,7 +102,7 @@ void *long_term_scheduler(void *parameter) {
 		pthread_mutex_unlock(&mutex_LIST_NEW);
 		
 		package = package_create_with_header(PROCESS_NEW);
-		payload_enqueue_string(package->payload, abspath);
+		text_serialize(package->payload, abspath);
 		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
 		package_send(package, CONNECTION_MEMORY.fd_connection);
 		package_destroy(package);
@@ -120,8 +120,8 @@ void *long_term_scheduler(void *parameter) {
 void *short_term_scheduler(void *parameter) {
 
 	t_PCB* pcb;
-	e_Interrupt *interrupt;
-	t_Arguments *instruction;
+	e_Eviction_Reason *eviction_reason;
+	t_CPU_Instruction *instruction;
 	t_Package *package;
 	int exit_status;
 	uint64_t cpu_burst;
@@ -174,8 +174,8 @@ void *short_term_scheduler(void *parameter) {
 			}
 
 				pcb = pcb_deserialize(package->payload);
-				interrupt = interrupt_deserialize(package->payload);
-				instruction = arguments_deserialize(package->payload);
+				eviction_reason = eviction_reason_deserialize(package->payload);
+				instruction = cpu_instruction_deserialize(package->payload);
 				break;
 			default:
 				log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
@@ -197,19 +197,19 @@ void *short_term_scheduler(void *parameter) {
 					break;
 			}
 
-			switch(*interrupt) {
-				case ERROR_CAUSE:
+			switch(*eviction_reason) {
+				case ERROR_EVICTION_REASON:
 					switch_process_state(pcb, EXIT_STATE);
 					PCB_EXECUTE = 0;
 					break;
 
-				case INTERRUPTION_CAUSE:
+				case INTERRUPTION_EVICTION_REASON:
 					// FALTARÍA DISTINGUIR SI LA INTERRUPCIÓN FUE POR FIN DE QUANTUM O POR KILL
 					switch_process_state(pcb, READY_STATE);
 					PCB_EXECUTE = 0;
 					break;
 					
-				case SYSCALL_CAUSE:
+				case SYSCALL_EVICTION_REASON:
 					SYSCALL_PCB = pcb;
 					exit_status = syscall_execute(instruction);
 
@@ -230,7 +230,7 @@ void *short_term_scheduler(void *parameter) {
 			}
 
 			// pcb_free(pcb)
-			// interrupt_free(interrupt);
+			// eviction_reason_free(eviction_reason);
 			// instruction_free(instruction);
 		}
 	}

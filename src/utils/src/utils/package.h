@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef PACKAGE_H
-#define PACKAGE_H
+#ifndef UTILS_PACKAGE_H
+#define UTILS_PACKAGE_H
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -14,17 +14,16 @@
 #include "utils/payload.h"
 #include "utils/module.h"
 
-typedef uint8_t t_Header_Serialized;
 typedef enum e_Header {
-    DISCONNECTION_HEADER,
+    DISCONNECTING_HEADER,
     SUBHEADER_HEADER,
     ARGUMENTS_HEADER,
     PCB_HEADER,
-    STRING_HEADER,
+    TEXT_HEADER,
     CPU_MEMORY_REQUEST_HEADER,//deberia estar obsoleto ya
     CPU_MEMORY_FETCH_HEADER, //
     CPU_INSTRUCTION_HEADER,
-    INTERRUPT_HEADER,
+    EVICTION_REASON_HEADER,
     KERNEL_INTERRUPT_HEADER,
     EXIT_STATUS_HEADER,
     //::OPERACIONES MODULOS::
@@ -83,4 +82,4 @@ void package_receive_header(t_Package *package, int fd_socket);
 
 void package_receive_payload(t_Package *package, int fd_socket);
 
-#endif // PACKAGE_H
+#endif // UTILS_PACKAGE_H

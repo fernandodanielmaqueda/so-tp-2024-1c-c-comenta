@@ -25,18 +25,15 @@ t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo
 int nro_page = 0;
 uint32_t value = 0;
 
-e_Kernel_Interrupt *KERNEL_INTERRUPT;
-
-t_Arguments *IR;
-int SYSCALL_CALLED;
-
-t_PCB *PCB;
 // char *recurso = NULL;
 // no sirveaca me aprece--> t_PCB new_pcb;
 e_Register register_origin;
 e_Register register_destination;
 
-e_Interrupt INTERRUPT;
+e_Kernel_Interrupt KERNEL_INTERRUPT;
+int SYSCALL_CALLED;
+t_PCB *PCB;
+t_Payload *SYSCALL_ARGUMENTS;
 
 int dir_logica_origin = 0;
 int dir_logica_destination = 0;
@@ -66,9 +63,9 @@ const char *t_register_string[] = {
     [DI_REGISTER] = "DI"};
 
 const char *t_interrupt_type_string[] = {
-    [ERROR_CAUSE] = "ERROR_CAUSE",
-    [SYSCALL_CAUSE] = "SYSCALL_CAUSE",
-    [INTERRUPTION_CAUSE] = "INTERRUPTION_CAUSE"};
+    [ERROR_EVICTION_REASON] = "ERROR_EVICTION_REASON",
+    [SYSCALL_EVICTION_REASON] = "SYSCALL_EVICTION_REASON",
+    [INTERRUPTION_EVICTION_REASON] = "INTERRUPTION_EVICTION_REASON"};
 
 int module(int argc, char *argv[])
 {
@@ -101,72 +98,71 @@ void read_module_config(t_config *MODULE_CONFIG)
 void instruction_cycle(void)
 {
 
-
-    t_CPU_OpCode *opcode;
+    char *IR;
+    t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS, false);
+    e_Eviction_Reason eviction_reason;
+    t_CPU_Operation *operation;
     int exit_status;
 
     tlb = list_create();
 
-    while (1)
-    {
+    while(1) {
 
         PCB = cpu_receive_pcb();
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB->PID);
+        
+        KERNEL_INTERRUPT = NONE_KERNEL_INTERRUPT;
+        SYSCALL_ARGUMENTS = payload_create();
 
-        KERNEL_INTERRUPT = NULL;
+        while(1) {
 
-        while (1)
-        {
-
-            // FETCH
+            // Fetch
             IR = cpu_fetch_next_instruction();
+            // FALTA CONSIDERAR QUE EL FETCH FALLE YA SEA PORQUE NO HAY MÁS INSTRUCCIONES QUE EJECUTAR O PORQUE HUBO UN ERROR DE LECTURA
             log_info(MINIMAL_LOGGER,"PID:%d  - FETCH - Program Counter: %d", PCB->PID, PCB->PC);
 
-            // DECODE
-            opcode = decode_instruction(IR->argv[0]);
-            if (opcode == NULL)
-            {
-                log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", IR->argv[0]);
+            // Decode
+            arguments_add(arguments, IR);
+            // FALTA VALIDAR LA SALIDA DE arguments_add
+            operation = decode_instruction(arguments->argv[0]);
+            if (operation == NULL) {
+                log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
                 exit_status = EXIT_FAILURE;
-            }
-            else
-            {
-
+            } else {
                 // EXECUTE
-                exit_status = opcode->function();
+                exit_status = operation->function(arguments->argc, arguments->argv);
             }
 
-            // CHECK INTERRUPT
-            if (exit_status)
-            {
+            arguments_remove(arguments);
+            free(IR);
+
+            // Check interrupts
+            if (exit_status) {
                 log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
-                INTERRUPT = ERROR_CAUSE;
+                eviction_reason = ERROR_EVICTION_REASON;
                 break;
             }
 
-            if (KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == KILL_INTERRUPT)
-            {
-                INTERRUPT = INTERRUPTION_CAUSE;
+            if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
+                eviction_reason = INTERRUPTION_EVICTION_REASON;
                 break;
             }
 
-            if (SYSCALL_CALLED)
-            {
-                INTERRUPT = SYSCALL_CAUSE;
+            if (SYSCALL_CALLED) {
+                eviction_reason = SYSCALL_EVICTION_REASON;
                 break;
             }
 
-            if (KERNEL_INTERRUPT != NULL && *KERNEL_INTERRUPT == QUANTUM_INTERRUPT)
-            {
-                INTERRUPT = INTERRUPTION_CAUSE;
+            if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
+                eviction_reason = INTERRUPTION_EVICTION_REASON;
                 break;
             }
         }
 
         t_Package *package = package_create_with_header(SUBHEADER_HEADER);
         pcb_serialize(package->payload, PCB);
-        interrupt_serialize(package->payload, &INTERRUPT);
-        arguments_serialize(package->payload, IR);
+        eviction_reason_serialize(package->payload, &eviction_reason);
+        subpayload_serialize(package->payload, SYSCALL_ARGUMENTS);
         package_send(package, SERVER_CPU_DISPATCH.client.fd_client);
         package_destroy(package);
         // pcb_free(PCB);
@@ -180,30 +176,28 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
     cpu_start_server_for_kernel((void *)&SERVER_CPU_INTERRUPT);
     sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
 
-    e_Kernel_Interrupt *kernel_interrupt;
+    e_Kernel_Interrupt *kernel_interrupt_ptr;
+    t_Package *package;
 
-    while (1)
-    {
+    while(1) {
 
-        t_Package *package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
-        switch (package->header)
-        {
+        package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
+        switch (package->header) {
         case KERNEL_INTERRUPT_HEADER:
-            kernel_interrupt = kernel_interrupt_deserialize(package->payload);
+            kernel_interrupt_ptr = kernel_interrupt_deserialize(package->payload);
             break;
         default:
             log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
             exit(EXIT_FAILURE);
             break;
         }
-        package_destroy(package);
-
-        if (KERNEL_INTERRUPT == NULL)
-            KERNEL_INTERRUPT = kernel_interrupt;
+        package_destroy(package);          
 
         // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
-        if (KERNEL_INTERRUPT < kernel_interrupt)
-            KERNEL_INTERRUPT = kernel_interrupt;
+        if (KERNEL_INTERRUPT < *kernel_interrupt_ptr)
+            KERNEL_INTERRUPT = *kernel_interrupt_ptr;
+        
+        free(kernel_interrupt_ptr);
     }
 
     return NULL;
@@ -428,27 +422,6 @@ t_PCB *cpu_receive_pcb(void)
     return pcb;
 }
 
-e_Interrupt *cpu_receive_interrupt_type(void)
-{
-
-    e_Interrupt *interrupt;
-
-    t_Package *package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
-    switch (package->header)
-    {
-    case INTERRUPT_HEADER:
-        interrupt = interrupt_deserialize(package->payload);
-        break;
-    default:
-        log_error(SERIALIZE_LOGGER, "Header interrupt %d desconocido", package->header);
-        exit(EXIT_FAILURE);
-        break;
-    }
-    package_destroy(package);
-
-    return interrupt;
-}
-
 void request_frame_memory(int page, int pid)
 {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
@@ -459,7 +432,7 @@ void request_frame_memory(int page, int pid)
 
 
 
-t_Arguments *cpu_fetch_next_instruction(void)
+char *cpu_fetch_next_instruction(void)
 {
     t_Package *package;
 
@@ -472,13 +445,13 @@ t_Arguments *cpu_fetch_next_instruction(void)
 
     // Receive
 
-    t_Arguments *instruction;
+    char *line;
 
     package = package_receive(CONNECTION_MEMORY.fd_connection);
     switch (package->header)
     {
     case CPU_INSTRUCTION_HEADER:
-        instruction = arguments_deserialize(package->payload);
+        line = text_deserialize(package->payload);
         break;
     default:
         log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
@@ -487,5 +460,5 @@ t_Arguments *cpu_fetch_next_instruction(void)
     }
     package_destroy(package);
 
-    return instruction;
+    return line;
 }

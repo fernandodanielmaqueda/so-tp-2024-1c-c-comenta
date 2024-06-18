@@ -24,8 +24,8 @@
 #include <commons/temporal.h>
 #include "utils/module.h"
 #include "utils/serialize/pcb.h"
-#include "utils/serialize/interrupt.h"
-#include "utils/serialize/arguments.h"
+#include "utils/serialize/eviction_reason.h"
+#include "utils/serialize/cpu_opcode.h"
 #include "utils/socket.h"
 #include "console.h"
 #include "socket.h"

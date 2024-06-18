@@ -42,17 +42,6 @@ int module(int argc, char* argv[]) {
     log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
     listen_kernel(FD_CLIENT_KERNEL);
- 
- /*   
-    pthread_create(&hilo_cpu, NULL, (void *)listen_cpu, (void *)FD_CLIENT_CPU);
-    pthread_create(&hilo_kernel, NULL, (void *)listen_kernel, (void *)FD_CLIENT_KERNEL);
-    pthread_create(&hilo_io, NULL, (void *)listen_io, (void *)fd_io);
-
-    pthread_join(hilo_cpu, NULL);
-    pthread_join(hilo_kernel, NULL);
-    pthread_join(hilo_io, NULL);
-
-    */
 
 	//finish_threads();
 	finish_sockets();
@@ -85,7 +74,7 @@ void listen_kernel(int fd_kernel) {
                 kill_process(paquete->payload);
                 break;
 
-            case DISCONNECTION_HEADER:
+            case DISCONNECTING_HEADER:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
                 log_destroy(MODULE_LOGGER);
                 return;
@@ -162,7 +151,7 @@ void parser_file(char* path, t_list *list_instruction) {
 
     FILE* file;
     if ((file = fopen(path, "r")) == NULL) {
-        log_error(MODULE_LOGGER, "[ERROR] No se pudo abrir el archivo de pseudocodigo indicado.");
+        log_error(MODULE_LOGGER, "%s: No se pudo abrir el archivo de pseudocodigo indicado.", path);
         exit(EXIT_FAILURE);
     }
 
@@ -172,9 +161,7 @@ void parser_file(char* path, t_list *list_instruction) {
 
     while(1) {
 
-        nread = getline(&line, &length, file);
-
-        if(nread == -1) {
+        if((nread = getline(&line, &length, file)) == -1) {
             if(errno) {
                 log_warning(MODULE_LOGGER, "Funcion getline: %s", strerror(errno));
                 free(line);
@@ -186,14 +173,17 @@ void parser_file(char* path, t_list *list_instruction) {
             break;
         }
 
+        // Ignora líneas en blanco
         subline = strip_whitespaces(line);
 
         if(*subline) {
-           list_add(list_instruction, arguments_create(subline, MODULE_LOGGER));
+            // Se leyó una línea con contenido
+            list_add(list_instruction, strdup(subline));
         }
     }
-       
-        fclose(file);
+
+    free(line);       
+    fclose(file);
 }
 
 void listen_cpu(int fd_cpu) {
@@ -263,7 +253,7 @@ void listen_io(int fd_io) {
                 break;
                 
 
-            case DISCONNECTION_HEADER:
+            case DISCONNECTING_HEADER:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
                 log_destroy(MODULE_LOGGER);
                 return;
@@ -277,12 +267,12 @@ void listen_io(int fd_io) {
 
 }
 
-t_Process* seek_process_by_pid(int pidBuscado) {
+t_Process* seek_process_by_pid(t_PID pidBuscado) {
 
     t_Process* procesoBuscado;
     int size= list_size(lista_procesos);
 
-    procesoBuscado = list_get(lista_procesos,0); //SUPONEMOS QUE SIEMPRE ENCUENTRA EL PID
+    procesoBuscado = list_get(lista_procesos, 0); //SUPONEMOS QUE SIEMPRE ENCUENTRA EL PID
 
     for (size_t i = 0; i < size; i++)
     {
@@ -294,26 +284,19 @@ t_Process* seek_process_by_pid(int pidBuscado) {
     return procesoBuscado;
 }
 
-void seek_instruccion(t_Payload* socketRecibido) {
-    //t_list *lista_elememtos = NULL; //t_list *lista_elememtos = get_package_like_list(socketRecibido);
-    //int cursor = 0;
-    //int pid = *(int *)list_get(lista_elememtos, ++cursor);
-    int pid = -1;
-    int pc = -1;
-    
-    receive_2int(&pid,&pc,socketRecibido);
-    //memcpy(&pid, socketRecibido->stream, sizeof(int));
-    //memcpy(&pc,( socketRecibido->stream + sizeof(int)), sizeof(int));
-    //int pc = *(int *)list_get(lista_elememtos, ++cursor);
-    //list_destroy_and_destroy_elements(lista_elememtos, &free);
+void seek_instruccion(t_Payload* payload) {
+    t_PID PID;
+    t_PC PC;
 
+    payload_dequeue(payload, &PID, sizeof(PID));
+    payload_dequeue(payload, &PC, sizeof(PC));
     
-    t_Process* procesoBuscado = seek_process_by_pid(pid);
+    t_Process* procesoBuscado = seek_process_by_pid(PID);
     //Suponemos que la instruccion es encontrada siempre
-    t_CPU_Instruction* instruccionBuscada = list_get(procesoBuscado->instructions_list, pc);
+    char* instruccionBuscada = list_get(procesoBuscado->instructions_list, PC);
 
     usleep(RETARDO_RESPUESTA * 1000);
-    cpu_instruction_send(instruccionBuscada, FD_CLIENT_CPU);
+    send_text(instruccionBuscada, FD_CLIENT_CPU);
     log_info(MODULE_LOGGER, "Instruccion enviada.");
 }
 
@@ -398,7 +381,7 @@ void read_memory(t_Payload* socketRecibido, int socket) {
     char* lectura_final = "";
     int temp_dir_fis = -1;
 
-    void* posicion = memoria_principal + dir_fisica;
+    void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
     
     int pages = bytes/TAM_PAGINA;
     int resto = bytes % TAM_PAGINA;
@@ -421,19 +404,19 @@ void read_memory(t_Payload* socketRecibido, int socket) {
             if (i == pages)
             {
                 memcpy(&lectura, posicion, bytes_restantes);  
-                string_append(lectura_final, lectura);
+                string_append(&lectura_final, lectura);
                 update_page(current_frame);
             }
             if(i<pages){
                 memcpy(&lectura, posicion, TAM_PAGINA);  
-                string_append(lectura_final, lectura);
+                string_append(&lectura_final, lectura);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
 
                 temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
                 current_frame = temp_dir_fis / TAM_PAGINA;
                 //Posicion de la proxima escritura
-                posicion = memoria_principal + temp_dir_fis;
+                posicion = (void *)(((uint8_t *) memoria_principal) + temp_dir_fis);
             }
             
         }
@@ -447,17 +430,17 @@ void write_memory(t_Payload* socketRecibido, int socket){
     int dir_fisica = 0;
     int pidBuscado = 0;
     int bytes = 0;
-    char* contenido;
+    char* contenido = NULL;
     int temp_dir_fis = 0;
     
-    receive_write_request(&pidBuscado, &dir_fisica, &bytes, &contenido, socketRecibido);
+    receive_write_request(&pidBuscado, &dir_fisica, &bytes, contenido, socketRecibido);
     //receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
 
 
     int pages = bytes/TAM_PAGINA;
     int resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
-    void* posicion = memoria_principal + dir_fisica;
+    void* posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
     
     int current_frame = dir_fisica / TAM_PAGINA;
     t_Frame* frame = list_get(lista_marcos, current_frame);
@@ -484,7 +467,7 @@ void write_memory(t_Payload* socketRecibido, int socket){
                 temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
                 current_frame = temp_dir_fis / TAM_PAGINA;
                 //Posicion de la proxima escritura
-                posicion = memoria_principal + temp_dir_fis;
+                posicion = (void *)(((uint8_t *) memoria_principal) + temp_dir_fis);
             }
             
         }

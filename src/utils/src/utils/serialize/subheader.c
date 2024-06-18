@@ -3,32 +3,29 @@
 
 #include "utils/serialize/subheader.h"
 
-void header_send(e_Header *header, int fd_socket) {
-  t_Package *package = package_create_with_header(SUBHEADER_HEADER);
-  header_serialize(package->payload, header);
-  package_send(package, fd_socket);
-  package_destroy(package);
+void subheader_serialize(t_Payload *payload, e_Header *subheader) {
+  payload_enqueue(payload, subheader, sizeof(t_EnumValue));
+
+  subheader_log(subheader);
 }
 
-void header_serialize(t_Payload *payload, e_Header *header) {
-  payload_enqueue(payload, header, sizeof(t_Header_Serialized));
+e_Header *subheader_deserialize(t_Payload *payload) {
+  e_Header *subheader = malloc(sizeof(e_Header));
 
-  header_log(header);
+  payload_dequeue(payload, subheader, sizeof(t_EnumValue));
+
+  subheader_log(subheader);
+  return subheader;
 }
 
-e_Header *header_deserialize(t_Payload *payload) {
-  e_Header *header = malloc(sizeof(e_Header));
-
-  payload_dequeue(payload, header, sizeof(t_Header_Serialized));
-
-  header_log(header);
-  return header;
+void subheader_free(e_Header *subheader) {
+  free(subheader);
 }
 
-void header_log(e_Header *header) {
+void subheader_log(e_Header *subheader) {
   log_info(SERIALIZE_LOGGER,
     "e_Header[%p]: %d"
-    , (void *) header
-    , *header
+    , (void *) subheader
+    , *subheader
   );
 }

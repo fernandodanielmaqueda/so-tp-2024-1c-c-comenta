@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef SOCKET_H
-#define SOCKET_H
+#ifndef UTILS_SOCKET_H
+#define UTILS_SOCKET_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +15,6 @@
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"
-#include "utils/estructuras.h"
 #include "utils/module.h"
 
 #define RETRY_CONNECTION_IN_SECONDS 10
@@ -58,4 +57,4 @@ void server_start(t_Server *server);
 int server_start_try(char* port);
 int server_accept(int socket_servidor);
 
-#endif // SOCKET_H
+#endif // UTILS_SOCKET_H

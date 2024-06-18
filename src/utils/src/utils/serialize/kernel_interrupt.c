@@ -3,13 +3,6 @@
 
 #include "utils/serialize/kernel_interrupt.h"
 
-void kernel_interrupt_send(e_Kernel_Interrupt *kernel_interrupt, int fd_socket) {
-  t_Package *package = package_create_with_header(KERNEL_INTERRUPT_HEADER);
-  kernel_interrupt_serialize(package->payload, kernel_interrupt);
-  package_send(package, fd_socket);
-  package_destroy(package);
-}
-
 void kernel_interrupt_serialize(t_Payload *payload, e_Kernel_Interrupt *kernel_interrupt) {
   payload_enqueue(payload, kernel_interrupt, sizeof(uint8_t));
 
@@ -23,6 +16,10 @@ e_Kernel_Interrupt *kernel_interrupt_deserialize(t_Payload *payload) {
 
   kernel_interrupt_log(kernel_interrupt);
   return kernel_interrupt;
+}
+
+void kernel_interrupt_free(e_Kernel_Interrupt *kernel_interrupt) {
+  free(kernel_interrupt);
 }
 
 void kernel_interrupt_log(e_Kernel_Interrupt *kernel_interrupt) {

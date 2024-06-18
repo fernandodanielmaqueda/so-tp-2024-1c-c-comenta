@@ -32,19 +32,7 @@ t_IO_Type IO_TYPES[] = {
 
 t_IO_Type *IO_TYPE;
 
-t_IO_Operation IO_OPERATIONS[] = {
-    {.name = "IO_GEN_SLEEP", .function = io_gen_sleep_io_operation},
-    {.name = "IO_STDIN_READ", .function = io_stdin_read_io_operation},
-    {.name = "IO_STDOUT_WRITE", .function = io_stdout_write_io_operation},
-    {.name = "IO_FS_CREATE", .function = io_fs_create_io_operation},
-    {.name = "IO_FS_DELETE", .function = io_fs_delete_io_operation},
-    {.name = "IO_FS_TRUNCATE", .function = io_fs_truncate_io_operation},
-    {.name = "IO_FS_WRITE", .function = io_fs_write_io_operation},
-    {.name = "IO_FS_READ", .function = io_fs_read_io_operation},
-    {.name = NULL}
-};
-
-t_IO_Operation *IO_OPERATION;
+int (*IO_OPERATION) (t_CPU_Instruction *);
 
 int module(int argc, char* argv[]) {
 
@@ -83,12 +71,27 @@ t_IO_Type *io_type_find(char *name) {
     return NULL;
 }
 
-t_IO_Operation *io_operation_find(char *name) {
-    for(register int i = 0; IO_OPERATIONS[i].name != NULL; i++)
-        if(!strcmp(IO_OPERATIONS[i].name, name))
-            return (&IO_OPERATIONS[i]);
-
-    return NULL;
+int (*io_operation_find (enum e_CPU_OpCode opcode)) (t_CPU_Instruction *) {
+	switch(opcode) {
+		case IO_GEN_SLEEP_OPCODE:
+			return io_gen_sleep_io_operation;
+		case IO_STDIN_READ_OPCODE:
+			return io_stdin_read_io_operation;
+		case IO_STDOUT_WRITE_OPCODE:
+			return io_stdout_write_io_operation;
+		case IO_FS_CREATE_OPCODE:
+			return io_fs_create_io_operation;
+		case IO_FS_DELETE_OPCODE:
+			return io_fs_delete_io_operation;
+		case IO_FS_TRUNCATE_OPCODE:
+			return io_fs_truncate_io_operation;
+		case IO_FS_WRITE_OPCODE:
+			return io_fs_write_io_operation;
+		case IO_FS_READ_OPCODE:
+			return io_fs_read_io_operation;
+		default:
+			return NULL;
+	}
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
@@ -124,21 +127,21 @@ void generic_function(void) {
 
 	//escuchar peticion siempre
 	t_Package* package;
-	t_Arguments* instruction;
+	t_CPU_Instruction* instruction;
 	//recibe peticion
 	while(1) {
 
 		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		instruction = arguments_deserialize(package->payload);
+		instruction = cpu_instruction_deserialize(package->payload);
 		package_destroy(package);
 
-		IO_OPERATION = io_operation_find(instruction->argv[0]);
+		IO_OPERATION = io_operation_find(instruction->opcode);
 		if(IO_OPERATION == NULL) {
 			log_error(MODULE_LOGGER, "No se reconoce la operacion");
 			exit(EXIT_FAILURE);
 		}
 
-		int exit_status = IO_OPERATION->function(instruction->argc, instruction->argv);
+		int exit_status = IO_OPERATION(instruction);
 
 		// arguments_free(instruction);
 
@@ -153,20 +156,20 @@ void generic_function(void) {
 void stdin_function(){
 
 	t_Package* package;
-	t_Arguments* instruction;
+	t_CPU_Instruction* instruction;
 	//escuchar peticion siempre
 	while(1){
 		//recibe peticion
 		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		instruction = arguments_deserialize(package->payload);
-		
+		instruction = cpu_instruction_deserialize(package->payload);
 		package_destroy(package);
-		IO_OPERATION = io_operation_find(instruction->argv[0]);
+
+		IO_OPERATION = io_operation_find(instruction->opcode);
 		if(IO_OPERATION == NULL){
 			log_error(MODULE_LOGGER,"No se reconoce la operacion");
 			exit(EXIT_FAILURE);
 		}
-		int exit_status = IO_OPERATION->function(instruction->argc, instruction->argv);
+		int exit_status = IO_OPERATION(instruction);
 		// arguments_free(instruction);
 
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
@@ -179,21 +182,22 @@ void stdin_function(){
 
 
 void stdout_function(){
-t_Package* package;
-t_Arguments* instruction;
+	t_Package* package;
+	t_CPU_Instruction* instruction;
+
 	//escuchar peticion siempre
 	while(1) {
 		//recibe peticion
 		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		instruction = arguments_deserialize(package->payload);
-		
+		instruction = cpu_instruction_deserialize(package->payload);
 		package_destroy(package);
-		IO_OPERATION = io_operation_find(instruction->argv[0]);
+
+		IO_OPERATION = io_operation_find(instruction->opcode);
 		if(IO_OPERATION == NULL){
 			log_error(MODULE_LOGGER,"No se reconoce la operacion");
 			exit(EXIT_FAILURE);
 		}
-		int exit_status = IO_OPERATION->function(instruction->argc, instruction->argv);
+		int exit_status = IO_OPERATION(instruction);
 		// arguments_free(instruction);
 
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
@@ -204,16 +208,10 @@ t_Arguments* instruction;
 	}
 }
 
+// IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>
+int io_gen_sleep_io_operation(t_CPU_Instruction *instruction) {
 
-int io_gen_sleep_io_operation(int argc, char *argv[]) {
-
-    if (argc != 3)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>");
-        exit(EXIT_FAILURE);
-    }
-
-    log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
+    // log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
 
 	switch(IO_TYPE->type) {
 		case GENERIC_IO_TYPE:
@@ -228,15 +226,9 @@ int io_gen_sleep_io_operation(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_stdin_read_io_operation(int argc, char *argv[]) {
+int io_stdin_read_io_operation(t_CPU_Instruction *instruction) {
 
-    if (argc != 3)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_STDIN_READ <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        exit(EXIT_FAILURE);
-    }
-
-    log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
+    // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
 	t_Package *package;
 	uint32_t registro_direccion;
@@ -256,7 +248,7 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
 			/*
 			package = package_create_with_header(STRING_HEADER);
 			payload_enqueue(package->payload, &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
-			payload_enqueue_string(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
+			text_serialize(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
 			*/
@@ -272,15 +264,9 @@ int io_stdin_read_io_operation(int argc, char *argv[]) {
 	return EXIT_SUCCESS;	
 }
 
-int io_stdout_write_io_operation(int argc, char *argv[]) {
+int io_stdout_write_io_operation(t_CPU_Instruction *instruction) {
     
-    if (argc != 3)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        exit(EXIT_FAILURE);
-    }
-
-    log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
+    // log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
 	t_Package *package;
 	//t_Arguments* instruction;
@@ -290,8 +276,8 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
 		case STDOUT_IO_TYPE:
 /*
 			package = package_create_with_header(STRING_HEADER);
-			payload_enqueue_string(package->payload, argv[2]);
-			payload_enqueue_string(package->payload, argv[3]);
+			text_serialize(package->payload, argv[2]);
+			text_serialize(package->payload, argv[3]);
 
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
@@ -320,65 +306,37 @@ int io_stdout_write_io_operation(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_create_io_operation(int argc, char *argv[]) {
-    
-    if (argc != 3)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_FS_CREATE <INTERFAZ> <NOMBRE ARCHIVO>");
-        exit(EXIT_FAILURE);
-    }
+int io_fs_create_io_operation(t_CPU_Instruction *instruction) {
 
-    log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
+    // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
     return EXIT_SUCCESS;
 }
 
-int io_fs_delete_io_operation(int argc, char *argv[]) {
+int io_fs_delete_io_operation(t_CPU_Instruction *instruction) {
 
-    if (argc != 3)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_FS_DELETE <INTERFAZ> <NOMBRE ARCHIVO>");
-        exit(EXIT_FAILURE);
-    }
-
-    log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
+    // log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
 
     return EXIT_SUCCESS;
 }
 
-int io_fs_truncate_io_operation(int argc, char *argv[]) {
+int io_fs_truncate_io_operation(t_CPU_Instruction *instruction) {
 
-    if (argc != 4)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_FS_TRUNCATE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO TAMANIO>");
-        exit(EXIT_FAILURE);
-    }
-
-    log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
+    // log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
     
     return EXIT_SUCCESS;
 }
 
-int io_fs_write_io_operation(int argc, char *argv[]) {
-    if(argc != 6)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        exit(EXIT_FAILURE);
-    }
+int io_fs_write_io_operation(t_CPU_Instruction *instruction) {
 
-    log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+    // log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
     return EXIT_SUCCESS;
 }
 
-int io_fs_read_io_operation(int argc, char *argv[]) {
-    if(argc != 6)
-    {
-        log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        exit(EXIT_FAILURE);
-    }
+int io_fs_read_io_operation(t_CPU_Instruction *instruction) {
 
-    log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+    // log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
     return EXIT_SUCCESS;
 }

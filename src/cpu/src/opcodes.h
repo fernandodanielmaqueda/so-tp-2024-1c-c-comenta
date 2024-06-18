@@ -20,45 +20,43 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
-#include "utils/estructuras.h"
 #include "utils/module.h"
-#include "utils/serialize/interrupt.h"
-#include "utils/serialize/cpu_instruction.h"
+#include "utils/serialize/eviction_reason.h"
+#include "utils/serialize/cpu_opcode.h"
 #include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/pcb.h"
-#include "utils/serialize/arguments.h"
+#include "utils/arguments.h"
 #include "utils/socket.h"
 #include "socket.h"
 #include "cpu.h"
 
-#include "utils/estructuras.h"
-
-typedef struct t_CPU_OpCode {
+typedef struct t_CPU_Operation {
     char *name;
-    int (*function) (void);
-} t_CPU_OpCode;
+    enum e_CPU_OpCode opcode;
+    int (*function) (int, char**);
+} t_CPU_Operation;
 
-extern t_CPU_OpCode CPU_OPCODES[];
+extern t_CPU_Operation CPU_OPERATIONS[];
 
-t_CPU_OpCode *decode_instruction(char *name);
-int set_cpu_opcode(void);
-int mov_in_cpu_opcode(void);
-int mov_out_cpu_opcode(void);
-int sum_cpu_opcode(void);
-int sub_cpu_opcode(void);
-int jnz_cpu_opcode(void);
-int resize_cpu_opcode(void);
-int copy_string_cpu_opcode(void);
-int wait_cpu_opcode(void);
-int signal_cpu_opcode(void);
-int io_gen_sleep_cpu_opcode(void);
-int io_stdin_read_cpu_opcode(void);
-int io_stdout_write_cpu_opcode(void);
-int io_fs_create_cpu_opcode(void);
-int io_fs_delete_cpu_opcode(void);
-int io_fs_truncate_cpu_opcode(void);
-int io_fs_write_cpu_opcode(void);
-int io_fs_read_cpu_opcode(void);
-int exit_cpu_opcode(void);
+t_CPU_Operation *decode_instruction(char *name);
+int set_cpu_operation(int argc, char **argv);
+int mov_in_cpu_operation(int argc, char **argv);
+int mov_out_cpu_operation(int argc, char **argv);
+int sum_cpu_operation(int argc, char **argv);
+int sub_cpu_operation(int argc, char **argv);
+int jnz_cpu_operation(int argc, char **argv);
+int resize_cpu_operation(int argc, char **argv);
+int copy_string_cpu_operation(int argc, char **argv);
+int wait_cpu_operation(int argc, char **argv);
+int signal_cpu_operation(int argc, char **argv);
+int io_gen_sleep_cpu_operation(int argc, char **argv);
+int io_stdin_read_cpu_operation(int argc, char **argv);
+int io_stdout_write_cpu_operation(int argc, char **argv);
+int io_fs_create_cpu_operation(int argc, char **argv);
+int io_fs_delete_cpu_operation(int argc, char **argv);
+int io_fs_truncate_cpu_operation(int argc, char **argv);
+int io_fs_write_cpu_operation(int argc, char **argv);
+int io_fs_read_cpu_operation(int argc, char **argv);
+int exit_cpu_operation(int argc, char **argv);
 
 #endif // CPU_OPCODES_H

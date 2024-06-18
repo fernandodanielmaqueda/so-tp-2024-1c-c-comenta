@@ -18,16 +18,14 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "utils/module.h"
-#include "utils/serialize/cpu_instruction.h"
-#include "utils/serialize/cpu_memory_request.h"
-#include "utils/serialize/pcb.h"
-#include "utils/serialize/arguments.h"
+#include "utils/arguments.h"
+#include "utils/send.h"
 #include "utils/socket.h"
 #include "socket.h"
 
 typedef struct t_Process {
     char* name;
-    int PID;
+    t_PID PID;
     int number_of_instructions;
     t_list* instructions_list;
     t_list* pages_table;
@@ -43,7 +41,7 @@ typedef struct t_Page {
 } t_Page;
 
 typedef struct t_Frame {
-    int PID;
+    t_PID PID;
     int id;
     t_Page* assigned_page;
 } t_Frame;
@@ -70,7 +68,7 @@ void create_instruction(FILE* file, t_list* list_instruction);
 void parser_file(char* path, t_list* list_instruction);
 void listen_cpu(int fd_cpu);
 void listen_io(int fd_io);
-t_Process* seek_process_by_pid(int pidBuscado);
+t_Process* seek_process_by_pid(t_PID pidBuscado);
 
 /**
  * @brief Busca la lista de instruccion y devuelve la instruccion buscada
@@ -101,7 +99,7 @@ void parser_file(char* path, t_list* list_instruction);
  * @brief Busca el proceso asociado al PID de interes.
  * @param pidBuscado Pid de la lista de instrucciones asociada
  */
-t_Process* seek_process_by_pid(int pidBuscado);
+t_Process* seek_process_by_pid(t_PID pidBuscado);
 
 
 

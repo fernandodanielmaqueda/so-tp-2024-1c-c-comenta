@@ -20,26 +20,50 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
-#include "utils/estructuras.h"
 #include "utils/module.h"
-#include "utils/serialize/interrupt.h"
-#include "utils/serialize/kernel_interrupt.h"
-#include "utils/serialize/cpu_instruction.h"
-#include "utils/serialize/cpu_memory_request.h"
-#include "utils/serialize/pcb.h"
-#include "utils/serialize/arguments.h"
+#include "utils/arguments.h"
+#include "utils/send.h"
 #include "utils/socket.h"
 #include "socket.h"
 #include "opcodes.h"
-
-
-#include "utils/estructuras.h"
 
 //Para el SET en el ciclo de instruccion verificar si es in o out
 typedef enum {
 	IN,
 	OUT
 } t_in_out;
+
+typedef enum e_Register {
+	AX_REGISTER,
+	BX_REGISTER,
+	CX_REGISTER,
+	DX_REGISTER,
+    EAX_REGISTER,
+    EBX_REGISTER,
+    ECX_REGISTER,
+    EDX_REGISTER,
+    RAX_REGISTER,
+    RBX_REGISTER,
+    RCX_REGISTER,
+    RDX_REGISTER,
+    SI_REGISTER,
+    DI_REGISTER
+} e_Register;
+
+typedef struct t_TLB {
+	t_PID PID;
+	int page_number;
+	int frame;
+    int time; //para el LRU
+} t_TLB;
+
+/*
+typedef struct t_Pages_Table{
+    t_PID PID;
+    int page_number;
+	int frame;
+}t_Pages_Table;
+*/
 
 extern char *MODULE_NAME;
 extern char *MINIMAL_LOG_PATHNAME;
@@ -55,7 +79,6 @@ extern int interruption_io;
 extern int CANTIDAD_ENTRADAS_TLB;
 extern char *ALGORITMO_TLB;
 
-extern t_Arguments *IR;
 extern int SYSCALL_CALLED;
 
 extern int size_pag;
@@ -71,7 +94,7 @@ extern t_PCB *PCB;
 extern e_Register register_origin;
 extern e_Register register_destination;
 
-extern e_Interrupt INTERRUPT;
+extern e_Eviction_Reason EVICTION_REASON;
 
 extern int dir_logica_origin;
 extern int dir_logica_destination;
@@ -87,6 +110,8 @@ extern pthread_mutex_t sem_mutex_tlb;
 extern const char *t_register_string[];
 extern const char *t_interrupt_type_string[];
 
+#define MAX_CPU_INSTRUCTION_ARGUMENTS 1 + 5
+
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
 void initialize_sockets(void);
@@ -95,7 +120,6 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
 void *kernel_cpu_interrupt_handler(void *NULL_parameter);
-void decode_execute(t_CPU_Instruction *instruction, t_PCB *pcb);
 int string_to_register(const char *string);
 int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
 int check_tlb(int process_id, int nro_page);
@@ -106,7 +130,7 @@ void request_frame_memory(int page, int pid);
 void add_to_tlb(int pid , int page, int frame);
 void replace_tlb_input(int pid, int page, int frame);
 t_PCB *cpu_receive_pcb(void);
-t_Arguments *cpu_fetch_next_instruction(void);
-e_Interrupt *cpu_receive_interrupt_type(void);
+char *cpu_fetch_next_instruction(void);
+e_Eviction_Reason *cpu_receive_interrupt_type(void);
 
 #endif /* CPU_H */

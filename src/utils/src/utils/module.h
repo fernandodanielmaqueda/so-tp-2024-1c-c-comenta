@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef MODULE_H
-#define MODULE_H
+#ifndef UTILS_MODULE_H
+#define UTILS_MODULE_H
 
 #include <stdlib.h>
 #include "commons/log.h"
@@ -42,4 +42,4 @@ void initialize_configs(char *pathname);
 void finish_configs(void);
 extern void read_module_config(t_config*);
 
-#endif // MODULES_H
+#endif // UTILS_MODULE_H

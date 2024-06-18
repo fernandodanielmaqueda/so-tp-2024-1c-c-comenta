@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef SERIALIZE_CPU_MEMORY_REQUEST_H
-#define SERIALIZE_CPU_MEMORY_REQUEST_H
+#ifndef UTILS_SERIALIZE_CPU_MEMORY_REQUEST_H
+#define UTILS_SERIALIZE_CPU_MEMORY_REQUEST_H
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -12,7 +12,6 @@
 #include <string.h>
 #include "commons/config.h"
 #include "commons/string.h"
-#include "estructuras.h"
 #include "utils/package.h"
 
 #include "commons/log.h"
@@ -30,13 +29,6 @@ typedef enum e_CPU_Memory_Request {
     PAGE_SIZE_REQUEST
 } e_CPU_Memory_Request;
 
-/**
- * @brief Enviar pcb (incluye el serializado)
- * @param pcb t_PCB a enviar.
- * @param fd_socket Socket desde donde se va a recibir el pcb.
- */
-void cpu_memory_request_send(e_CPU_Memory_Request *memory_request, int socket) ;
-
 
 /**
  * @brief Serializacion del t_PCB para ser enviada.
@@ -52,19 +44,7 @@ void cpu_memory_request_serialize(t_Payload *payload, e_CPU_Memory_Request *memo
  */
 e_CPU_Memory_Request *cpu_memory_request_deserialize(t_Payload *payload);
 
-void cpu_memory_request_print(e_CPU_Memory_Request *memory_request);
-void send_string(char* mensaje, int socket, int opcod);
-void send_int(int nro, int socket, int opcod);
-void send_2int(int nro, int nro2, int socket, int opcod);
-void receive_2int(int* nro1, int* nro2, t_Payload* payload);
-void send_String_1int(int nro, char* mensaje, int socket, int opcod);
-void receive_String_1int(int* pid, char** mensaje, t_Payload* payload);
-void receive_2int_1uint32(int* nro1, int* nro2,uint32_t* contenido, t_Payload* payload);
-void send_2int_1uint32(int nro1, int nro2,uint32_t contenido, int socket, int opcod);
-void receive_write_request(int* pid, int* dir_fis, int* bytes, char* contenido, t_Payload* payload);
-void send_write_request(int pid, int dir_fis, char* mensaje, int socket, int opcod);
-void receive_read_request(int* pid, int* dir_fis, int* bytes, t_Payload* payload);
-void send_read_request(int pid, int dir_fis, int bytes, int socket, int opcod);
+void cpu_memory_request_free(e_CPU_Memory_Request *memory_request);
+void cpu_memory_request_log(e_CPU_Memory_Request *memory_request);
 
-
-#endif // SERIALIZE_CPU_MEMORY_REQUEST_H
+#endif // UTILS_SERIALIZE_CPU_MEMORY_REQUEST_H

@@ -21,7 +21,6 @@
 #include "commons/bitarray.h"
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
-#include "utils/estructuras.h"
 #include "utils/module.h"
 #include "utils/socket.h"
 #include "cpu.h"

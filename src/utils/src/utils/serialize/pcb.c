@@ -3,13 +3,6 @@
 
 #include "utils/serialize/pcb.h"
 
-void pcb_send(t_PCB *pcb, int fd_socket) {
-  t_Package *package = package_create_with_header(PCB_HEADER);
-  pcb_serialize(package->payload, pcb);
-  package_send(package, fd_socket);
-  package_destroy(package);
-}
-
 void pcb_serialize(t_Payload *payload, t_PCB *pcb) {
   payload_enqueue(payload, &(pcb->PID), sizeof(pcb->PID));
   payload_enqueue(payload, &(pcb->PC), sizeof(pcb->PC));
@@ -61,6 +54,10 @@ t_PCB *pcb_deserialize(t_Payload *payload) {
 
   pcb_log(pcb);
   return pcb;
+}
+
+void pcb_free(t_PCB *pcb) {
+  free(pcb);
 }
 
 void pcb_log(t_PCB *pcb) {

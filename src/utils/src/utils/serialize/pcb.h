@@ -1,8 +1,8 @@
 /* En los archivos de cabecera (header files) (*.h) poner DECLARACIONES (evitar DEFINICIONES) de C, así como directivas de preprocesador */
 /* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
 
-#ifndef SERIALIZE_PCB_H
-#define SERIALIZE_PCB_H
+#ifndef UTILS_SERIALIZE_PCB_H
+#define UTILS_SERIALIZE_PCB_H
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -12,7 +12,6 @@
 #include <string.h>
 #include "commons/config.h"
 #include "commons/string.h"
-#include "estructuras.h"
 #include "utils/package.h"
 
 #include "commons/log.h"
@@ -35,10 +34,12 @@ typedef struct t_CPU_Registers {
     uint32_t DI;
 } t_CPU_Registers;
 
+typedef uint32_t t_PID;
+typedef uint32_t t_PC;
 
 typedef struct t_PCB {
-    uint32_t PID;
-    uint32_t PC;
+    t_PID PID;
+    t_PC PC;
     //registers_1[t_register];
     uint8_t AX;
     uint8_t BX;
@@ -60,15 +61,6 @@ typedef struct t_PCB {
     double arrival_RUNNING; // che corrio en runnign t=20seg 
 } t_PCB;
 
-
-/**
- * @brief Enviar pcb (incluye el serializado)
- * @param pcb t_PCB a enviar.
- * @param fd_socket Socket desde donde se va a recibir el pcb.
- */
-void pcb_send(t_PCB *pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
-
-
 /**
  * @brief Serializacion del t_PCB para ser enviada.
  * @param package Package a rellenar.
@@ -84,6 +76,7 @@ void pcb_serialize(t_Payload *payload, t_PCB *pcb);
 t_PCB *pcb_deserialize(t_Payload *payload);
 
 
+void pcb_free(t_PCB *pcb);
 void pcb_log(t_PCB *pcb);
 
-#endif // SERIALIZE_PCB_H
+#endif // UTILS_SERIALIZE_PCB_H

@@ -23,6 +23,14 @@
 #include "utils/socket.h"
 #include "kernel.h"
 
+typedef enum e_Process_State {
+    NEW_STATE,
+    READY_STATE,
+    EXECUTING_STATE,
+    BLOCKED_STATE, 
+	EXIT_STATE
+} e_Process_State;
+
 typedef enum e_Scheduling_Algorithm {
     FIFO_SCHEDULING_ALGORITHM,
     RR_SCHEDULING_ALGORITHM,

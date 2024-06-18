@@ -37,7 +37,7 @@ void package_send(t_Package *package, int fd_socket) {
 
   ssize_t bytes;
 
-  size_t bufferSize = sizeof(t_Header_Serialized) + sizeof(package->payload->size) + (size_t) package->payload->size;
+  size_t bufferSize = sizeof(t_EnumValue) + sizeof(package->payload->size) + (size_t) package->payload->size;
 
   void *buffer = malloc(bufferSize);
   if(buffer == NULL) {
@@ -47,7 +47,7 @@ void package_send(t_Package *package, int fd_socket) {
 
   size_t offset = 0;
 
-  offset = memcpy_serialize(buffer, offset, &(package->header), sizeof(t_Header_Serialized));
+  offset = memcpy_serialize(buffer, offset, &(package->header), sizeof(t_EnumValue));
   offset = memcpy_serialize(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
   offset = memcpy_serialize(buffer, offset, package->payload->stream, (size_t) package->payload->size);
 
@@ -81,8 +81,8 @@ void package_receive_header(t_Package *package, int fd_socket) {
 
   ssize_t bytes;
 
-  t_Header_Serialized header_serialized;
-  bytes = recv(fd_socket, (void *) &(header_serialized), sizeof(t_Header_Serialized), 0); // MSG_WAITALL
+  t_EnumValue header_serialized;
+  bytes = recv(fd_socket, (void *) &(header_serialized), sizeof(t_EnumValue), 0); // MSG_WAITALL
 
   if (bytes == 0) {
       log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
@@ -94,8 +94,8 @@ void package_receive_header(t_Package *package, int fd_socket) {
       close(fd_socket);
       exit(EXIT_FAILURE);
   }
-  if (bytes != sizeof(t_Header_Serialized)) {
-      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_Header_Serialized), bytes);
+  if (bytes != sizeof(t_EnumValue)) {
+      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_EnumValue), bytes);
       close(fd_socket);
       exit(EXIT_FAILURE);
   }
