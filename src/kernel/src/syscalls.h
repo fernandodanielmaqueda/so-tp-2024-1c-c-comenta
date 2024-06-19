@@ -35,7 +35,6 @@ extern t_PCB *SYSCALL_PCB;
 extern int BLOCKING_SYSCALL;
 
 int syscall_execute(t_Payload *syscall_instruction);
-int (*syscall_find(e_CPU_OpCode syscall_opcode)) (t_Payload *);
 int wait_kernel_syscall(t_Payload *syscall_arguments);
 int signal_kernel_syscall(t_Payload *syscall_arguments);
 int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments);

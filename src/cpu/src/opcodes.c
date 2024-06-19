@@ -53,9 +53,11 @@ int set_cpu_operation(int argc, char **argv)
     value = atoi(argv[2]); // aca recibo el valor a asignarle al registro
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB->PID, argv[0], argv[1], argv[2]);
     register_destination = value;
+
     PCB->PC++;
 
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -92,14 +94,15 @@ int mov_in_cpu_operation(int argc, char **argv)
         int size_pag = PAGE_SIZE_REQUEST;
     }
 
-    
-
     dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, IN);
     dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, IN);
 
     dir_fisica_destination = dir_fisica_origin;
 
+    PCB->PC++;
+
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -136,13 +139,15 @@ int mov_out_cpu_operation(int argc, char **argv)
         int size_pag = PAGE_SIZE_REQUEST;
     }
 
-
     dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, OUT);
     dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, OUT);
 
     dir_fisica_destination = dir_fisica_origin;
 
+    PCB->PC++;
+
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -161,9 +166,11 @@ int sum_cpu_operation(int argc, char **argv)
     register_origin = string_to_register(argv[2]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", PCB->PID, argv[0], argv[1], argv[2]);
     register_destination = register_destination + register_origin;
+
     PCB->PC++;
 
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -183,7 +190,10 @@ int sub_cpu_operation(int argc, char **argv)
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", PCB->PID, argv[0], argv[1], argv[2]);
     register_destination = register_destination - register_origin;
 
+    PCB->PC++;
+
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -205,9 +215,11 @@ int jnz_cpu_operation(int argc, char **argv)
     {
         PCB->PC = value;
     }
+
     PCB->PC++;
 
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -249,6 +261,7 @@ int resize_cpu_operation(int argc, char **argv)
     PCB->PC++;
 
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -276,7 +289,10 @@ int copy_string_cpu_operation(int argc, char **argv)
     dir_fisica_origin = mmu(dir_logica_origin, PCB, size_pag, register_origin, register_destination, IN);
     dir_fisica_destination = mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, IN);
 
+    PCB->PC++;
+
     SYSCALL_CALLED = 0;
+
     return EXIT_SUCCESS;
 }
 
@@ -291,7 +307,12 @@ int wait_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
 
+    PCB->PC++;
+
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = WAIT_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     return EXIT_SUCCESS;
 }
 
@@ -306,7 +327,13 @@ int signal_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "SIGNAL %s", argv[1]);
 
+    PCB->PC++;
+
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = SIGNAL_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+
     return EXIT_SUCCESS;
 }
 
@@ -321,12 +348,14 @@ int io_gen_sleep_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
 
-    unit_work = atoi(argv[2]);
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Interfaz: %s - Unidad de trabajo: %s", PCB->PID, argv[0], argv[1], argv[2]);
-    usleep(unit_work);
     PCB->PC++;
 
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_GEN_SLEEP_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[2]);
+
     return EXIT_SUCCESS;
 }
 
@@ -353,10 +382,18 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
    int direct_fisica =  mmu(dir_logica_destination, PCB, size_pag, register_origin, register_destination, NULL);
 
     //ENVIO PAQUETE A KERNEL
-    send_2int(direct_fisica, dir_logica_destination , SERVER_CPU_DISPATCH.client.fd_client, STDIN_REQUEST);
+    //send_2int(direct_fisica, dir_logica_destination , SERVER_CPU_DISPATCH.client.fd_client, STDIN_REQUEST);
 
-     
+    PCB->PC++;
+
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_STDIN_READ_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
+    payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
+ 
+
     return EXIT_SUCCESS;
 }
 
@@ -382,7 +419,15 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     //ENVIO PAQUETE A KERNEL
     send_2int(direct_fisica, dir_logica_destination , SERVER_CPU_DISPATCH.client.fd_client, STDOUT_REQUEST);
 
+    PCB->PC++;
+    
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_STDOUT_WRITE_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
+    payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
+
     return EXIT_SUCCESS;
 }
 
@@ -397,7 +442,14 @@ int io_fs_create_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
+    PCB->PC++;
+    
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_FS_CREATE_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[2]);
+
     return EXIT_SUCCESS;
 }
 
@@ -412,7 +464,14 @@ int io_fs_delete_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
 
+    PCB->PC++;
+    
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_FS_DELETE_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[2]);
+
     return EXIT_SUCCESS;
 }
 
@@ -427,7 +486,15 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
 
+    PCB->PC++;
+    
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_FS_TRUNCATE_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[2]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[3]);
+
     return EXIT_SUCCESS;
 }
 
@@ -441,7 +508,17 @@ int io_fs_write_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
+    PCB->PC++;
+    
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_FS_WRITE_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[2]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[3]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[4]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[5]);
+
     return EXIT_SUCCESS;
 }
 
@@ -455,7 +532,17 @@ int io_fs_read_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
+    PCB->PC++;
+    
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = IO_FS_READ_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+    text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[2]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[3]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[4]);
+    text_serialize(SYSCALL_INSTRUCTION, argv[5]);
+
     return EXIT_SUCCESS;
 }
 
@@ -483,6 +570,11 @@ int exit_cpu_operation(int argc, char **argv)
     }
     log_info(MODULE_LOGGER, "Proceso %i finalizado y en TLB", PCB->PID);
 
+    PCB->PC++;
+    
     SYSCALL_CALLED = 1;
+    e_CPU_OpCode syscall_opcode = EXIT_CPU_OPCODE;
+    cpu_opcode_serialize(SYSCALL_INSTRUCTION, &(syscall_opcode));
+
     return EXIT_SUCCESS;
 }

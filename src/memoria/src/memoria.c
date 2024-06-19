@@ -61,17 +61,16 @@ void read_module_config(t_config* MODULE_CONFIG) {
 
 void listen_kernel(int fd_kernel) {
     while(1) {
-        t_Package* paquete = package_receive(fd_kernel);
-        e_Header header = paquete->header; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
-        switch(header) {
+        t_Package* package = package_receive(fd_kernel);
+        switch(package->header) {
             case PROCESS_NEW:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
-                create_process(paquete->payload);
+                create_process(package->payload);
                 break;
                 
             case PROCESS_FINALIZED:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso finalizado recibido.");
-                kill_process(paquete->payload);
+                kill_process(package->payload);
                 break;
 
             case DISCONNECTING_HEADER:
@@ -83,32 +82,23 @@ void listen_kernel(int fd_kernel) {
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
         }
-        package_destroy(paquete);
+        package_destroy(package);
     }
 }
 
-void create_process(t_Payload* socketRecibido) {
+void create_process(t_Payload* process_data) {
 
     t_Process *new_process = malloc(sizeof(t_Process));
     t_list* instructions_list = list_create();
     t_list* pages_table = list_create();
 
-    //Leo los valores recibidos por parametro
-    //t_list *lista_elememtos = NULL; //t_list *lista_elememtos = get_package_like_list(socketRecibido);
-    int cursor = 0;
-    //new_process->name = string_duplicate(list_get(lista_elememtos, ++cursor));
-    //new_process->PID = *(int *)list_get(lista_elememtos, ++cursor);
-    int string_len = -1;   
-    cursor = memcpy_deserialize(&(string_len), socketRecibido->stream, cursor, sizeof(int));
-    cursor = memcpy_deserialize(&(new_process->name), socketRecibido->stream, cursor, string_len);
-    cursor = memcpy_deserialize(&(new_process->PID), socketRecibido->stream, cursor, sizeof(uint32_t));
-
-    //payload_dequeue()
+    new_process->filename = text_deserialize(process_data);
+    payload_dequeue(process_data, &(new_process->PID), sizeof(t_PID));
 
     //Busco el archivo deseado
     char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
     string_append(&path_buscado, "/");
-    string_append(&path_buscado, new_process->name);
+    string_append(&path_buscado, new_process->filename);
     log_debug(MODULE_LOGGER, "Archivo Buscado: %s", path_buscado);
 
     //CREAR LISTA INST CON EL PARSER
@@ -122,7 +112,11 @@ void create_process(t_Payload* socketRecibido) {
     log_debug(MODULE_LOGGER, "Archivo leido: %s", path_buscado);
 
     //ENVIAR RTA OK A KERNEL --> En este caso solo envio el PID del proceso origen
-    send_int(new_process->PID,FD_CLIENT_KERNEL,PROCESS_CREATED);
+    t_Return_Value return_value = 0;
+    t_Package *package = package_create_with_header(PROCESS_NEW); // PROCESS_CREATED
+    return_value_serialize(package->payload, &(return_value));
+    package_send(package, FD_CLIENT_KERNEL);
+    package_destroy(package);
     
 }
 

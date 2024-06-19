@@ -121,7 +121,7 @@ void instruction_cycle(void)
             // Fetch
             IR = cpu_fetch_next_instruction();
             // FALTA CONSIDERAR QUE EL FETCH FALLE YA SEA PORQUE NO HAY MÁS INSTRUCCIONES QUE EJECUTAR O PORQUE HUBO UN ERROR DE LECTURA
-            log_info(MINIMAL_LOGGER,"PID:%d  - FETCH - Program Counter: %d", PCB->PID, PCB->PC);
+            log_info(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB->PID, PCB->PC);
 
             // Decode
             arguments_add(arguments, IR);

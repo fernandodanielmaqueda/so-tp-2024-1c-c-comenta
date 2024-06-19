@@ -14,7 +14,7 @@ typedef uint8_t t_EnumValue;
 
 typedef struct t_Payload {
     t_PayloadSize size; // Tamaño del payload
-    void* stream; // Payload
+    void *stream; // Payload
 } t_Payload;
 
 extern t_log *SERIALIZE_LOGGER;

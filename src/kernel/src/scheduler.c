@@ -3,7 +3,7 @@
 t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	{ .name = "FIFO", .type = FIFO_SCHEDULING_ALGORITHM, .function_fetcher = FIFO_scheduling_algorithm , .function_reprogrammer = FIFO_scheduling_reprogrammer},
 	{ .name = "RR",.type = RR_SCHEDULING_ALGORITHM,.function_fetcher = RR_scheduling_algorithm , .function_reprogrammer = RR_scheduling_reprogrammer },
-	{ .name = "VRR",.type =VRR_SCHEDULING_ALGORITHM , .function_fetcher = VRR_scheduling_algorithm , .function_reprogrammer = VRR_scheduling_reprogrammer },
+	{ .name = "VRR",.type = VRR_SCHEDULING_ALGORITHM , .function_fetcher = VRR_scheduling_algorithm , .function_reprogrammer = VRR_scheduling_reprogrammer },
 	{ .name = NULL }
 };
 
@@ -109,6 +109,24 @@ void *long_term_scheduler(void *parameter) {
 
 		free(abspath);
 
+		t_Return_Value return_value;
+		package = package_receive(CONNECTION_MEMORY.fd_connection);
+		switch(package->header) {
+			case PROCESS_NEW:
+				payload_dequeue(package->payload, &(return_value), sizeof(t_Return_Value));
+				break;
+			default:
+				log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
+				exit(EXIT_FAILURE);
+				break;
+		}
+		package_destroy(package);
+
+		if(return_value) {
+			log_error(MODULE_LOGGER, "Error al crear el proceso");
+			exit(EXIT_FAILURE);
+		}
+
 	    switch_process_state(pcb, READY_STATE);
 
 		sem_post(&SEM_SHORT_TERM_SCHEDULER);
@@ -150,7 +168,8 @@ void *short_term_scheduler(void *parameter) {
 				case FIFO_SCHEDULING_ALGORITHM:
 					break;
 			}
-			// pcb_free(pcb);
+			
+			pcb_free(pcb);
 		
 			package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
 			switch(package->header) {
@@ -572,6 +591,9 @@ void *start_quantum(void *pcb_parameter) {
 	// ENVIAR LA INTERRUPCIÓN SÓLO SI HAY MÁS PROCESOS EN READY
 	// sem_wait()
     send_interrupt(CONNECTION_CPU_INTERRUPT.fd_connection);
+	pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+		QUANTUM_INTERRUPT = 1;
+	pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->quantum);
 
 	return NULL;

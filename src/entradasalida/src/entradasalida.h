@@ -18,10 +18,8 @@
 #include "commons/string.h"
 #include "commons/collections/list.h"
 #include "utils/module.h"
+#include "utils/send.h"
 #include "utils/socket.h"
-#include "utils/package.h"
-#include "utils/serialize/eviction_reason.h"
-#include "utils/serialize/cpu_opcode.h"
 
 typedef enum e_IO_Type {
     GENERIC_IO_TYPE,
@@ -39,25 +37,30 @@ typedef struct t_IO_Type {
 extern t_IO_Type IO_TYPES[];
 extern t_IO_Type *IO_TYPE;
 
-extern int (*IO_OPERATION) (t_CPU_Instruction *);
+typedef struct t_IO_Operation {
+    char *name;
+    int (*function) (t_Payload *);
+} t_IO_Operation;
+
+extern t_IO_Operation IO_OPERATIONS[];
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
 t_IO_Type *io_type_find(char *name);
-int (*io_operation_find (enum e_CPU_OpCode opcode)) (t_CPU_Instruction *);
+int io_operation_execute(t_Payload *operation);
 void generic_function(void);
 void initialize_sockets(void);
 void finish_sockets(void);
 void stdin_function();
 void stdout_function();
 int receive_from_memory(void* direccionMemoria);
-int io_gen_sleep_io_operation(t_CPU_Instruction *instruction);
-int io_stdin_read_io_operation(t_CPU_Instruction *instruction);
-int io_stdout_write_io_operation(t_CPU_Instruction *instruction);
-int io_fs_create_io_operation(t_CPU_Instruction *instruction);
-int io_fs_delete_io_operation(t_CPU_Instruction *instruction);
-int io_fs_truncate_io_operation(t_CPU_Instruction *instruction);
-int io_fs_write_io_operation(t_CPU_Instruction *instruction);
-int io_fs_read_io_operation(t_CPU_Instruction *instruction);
+int io_gen_sleep_io_operation(t_Payload *instruction);
+int io_stdin_read_io_operation(t_Payload *instruction);
+int io_stdout_write_io_operation(t_Payload *instruction);
+int io_fs_create_io_operation(t_Payload *instruction);
+int io_fs_delete_io_operation(t_Payload *instruction);
+int io_fs_truncate_io_operation(t_Payload *instruction);
+int io_fs_write_io_operation(t_Payload *instruction);
+int io_fs_read_io_operation(t_Payload *instruction);
 
 #endif /* ENTRADASALIDA_H */

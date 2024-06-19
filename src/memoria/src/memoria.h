@@ -24,7 +24,7 @@
 #include "socket.h"
 
 typedef struct t_Process {
-    char* name;
+    char* filename;
     t_PID PID;
     int number_of_instructions;
     t_list* instructions_list;

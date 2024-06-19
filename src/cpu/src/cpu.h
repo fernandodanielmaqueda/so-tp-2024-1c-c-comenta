@@ -80,6 +80,7 @@ extern int CANTIDAD_ENTRADAS_TLB;
 extern char *ALGORITMO_TLB;
 
 extern int SYSCALL_CALLED;
+extern t_Payload *SYSCALL_INSTRUCTION;
 
 extern int size_pag;
 extern long timestamp;
