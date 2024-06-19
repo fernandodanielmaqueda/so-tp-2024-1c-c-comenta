@@ -1,44 +1,69 @@
 #include "syscalls.h"
 
 t_Syscall SYSCALLS[] = {
-    {.name = "WAIT", .function = wait_kernel_syscall},
-    {.name = "SIGNAL", .function = signal_kernel_syscall},
-    {.name = "IO_GEN_SLEEP", .function = io_gen_sleep_kernel_syscall},
-    {.name = "IO_STDIN_READ", .function = io_stdin_read_kernel_syscall},
-    {.name = "IO_STDOUT_WRITE", .function = io_stdout_write_kernel_syscall},
-    {.name = "IO_FS_CREATE", .function = io_fs_create_kernel_syscall},
-    {.name = "IO_FS_DELETE", .function = io_fs_delete_kernel_syscall},
-    {.name = "IO_FS_TRUNCATE", .function = io_fs_truncate_kernel_syscall},
-    {.name = "IO_FS_WRITE", .function = io_fs_write_kernel_syscall},
-    {.name = "IO_FS_READ", .function = io_fs_read_kernel_syscall},
-    {.name = "EXIT", .function = exit_kernel_syscall},
-    {.name = NULL}
+    [WAIT_CPU_OPCODE] = {.name = "WAIT" , .function = wait_kernel_syscall},
+    [SIGNAL_CPU_OPCODE] = {.name = "SIGNAL" , .function = signal_kernel_syscall},
+    [IO_GEN_SLEEP_CPU_OPCODE] = {.name = "IO_GEN_SLEEP" , .function = io_gen_sleep_kernel_syscall},
+    [IO_STDIN_READ_CPU_OPCODE] = {.name = "IO_STDIN_READ" , .function = io_stdin_read_kernel_syscall},
+    [IO_STDOUT_WRITE_CPU_OPCODE] = {.name = "IO_STDOUT_WRITE" , .function = io_stdout_write_kernel_syscall},
+    [IO_FS_CREATE_CPU_OPCODE] = {.name = "IO_FS_CREATE" , .function = io_fs_create_kernel_syscall},
+    [IO_FS_DELETE_CPU_OPCODE] = {.name = "IO_FS_DELETE" , .function = io_fs_delete_kernel_syscall},
+    [IO_FS_TRUNCATE_CPU_OPCODE] = {.name = "IO_FS_TRUNCATE" , .function = io_fs_truncate_kernel_syscall},
+    [IO_FS_WRITE_CPU_OPCODE] = {.name = "IO_FS_WRITE" , .function = io_fs_write_kernel_syscall},
+    [IO_FS_READ_CPU_OPCODE] = {.name = "IO_FS_READ" , .function = io_fs_read_kernel_syscall},
+    [EXIT_CPU_OPCODE] = {.name = "EXIT" , .function = exit_kernel_syscall}
 };
 
 t_PCB *SYSCALL_PCB;
 
 int BLOCKING_SYSCALL;
 
-int syscall_execute(t_Arguments *instruction) {
+int syscall_execute(t_Payload *syscall_instruction) {
 
-    t_Syscall *syscall = syscall_find(instruction->argv[0]);
+    e_CPU_OpCode *syscall_opcode;
+    payload_dequeue(syscall_instruction, &syscall_opcode, sizeof(t_EnumValue));
+
+    int (*syscall) (t_Payload *) = syscall_find(*syscall_opcode);
     if(syscall == NULL) {
-        log_error(MODULE_LOGGER, "Syscall %s no encontrada", instruction->argv[0]);
+        log_error(MODULE_LOGGER, "Syscall %d no encontrada", *syscall_opcode);
         exit(EXIT_FAILURE);
     }
 
-    return syscall->function(instruction->argc, instruction->argv);
+    cpu_opcode_free(syscall_opcode);
+
+    return syscall(syscall_instruction);
 }
 
-t_Syscall *syscall_find(char *name) {
-    for(register int i = 0; SYSCALLS[i].name != NULL; i++)
-        if(!strcmp(SYSCALLS[i].name, name))
-            return (&SYSCALLS[i]);
-
-    return NULL;
+int (*syscall_find(e_CPU_OpCode syscall_opcode)) (t_Payload *) {
+    switch(syscall_opcode) {
+        case WAIT_CPU_OPCODE:
+            return wait_kernel_syscall;
+        case SIGNAL_CPU_OPCODE:
+            return signal_kernel_syscall;
+        case IO_GEN_SLEEP_CPU_OPCODE:
+            return io_gen_sleep_kernel_syscall;
+        case IO_STDIN_READ_CPU_OPCODE:
+            return io_stdin_read_kernel_syscall;
+        case IO_STDOUT_WRITE_CPU_OPCODE:
+            return io_stdout_write_kernel_syscall;
+        case IO_FS_CREATE_CPU_OPCODE:
+            return io_fs_create_kernel_syscall;
+        case IO_FS_DELETE_CPU_OPCODE:
+            return io_fs_delete_kernel_syscall;
+        case IO_FS_TRUNCATE_CPU_OPCODE:
+            return io_fs_truncate_kernel_syscall;
+        case IO_FS_WRITE_CPU_OPCODE:
+            return io_fs_write_kernel_syscall;
+        case IO_FS_READ_CPU_OPCODE:
+            return io_fs_read_kernel_syscall;
+        case EXIT_CPU_OPCODE:
+            return exit_kernel_syscall;
+        default:
+            return NULL;
+    }
 }
 
-int wait_kernel_syscall(int argc, char *argv[]) {
+int wait_kernel_syscall(t_Payload *syscall_arguments) {
 
     if (argc != 2) {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
@@ -64,7 +89,7 @@ int wait_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int signal_kernel_syscall(int argc, char *argv[]) {
+int signal_kernel_syscall(t_Payload *syscall_arguments) {
 
     if (argc != 2) {
         log_error(MODULE_LOGGER, "Uso: SIGNAL <RECURSO>");
@@ -88,7 +113,7 @@ int signal_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_gen_sleep_kernel_syscall(int argc, char *argv[]) {
+int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
 
     if (argc != 3)
     {
@@ -103,7 +128,7 @@ int io_gen_sleep_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_stdin_read_kernel_syscall(int argc, char *argv[]) {
+int io_stdin_read_kernel_syscall(t_Payload *syscall_arguments) {
 
     if (argc != 3)
     {
@@ -118,7 +143,7 @@ int io_stdin_read_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_stdout_write_kernel_syscall(int argc, char *argv[]) {
+int io_stdout_write_kernel_syscall(t_Payload *syscall_arguments) {
     
     if (argc != 3)
     {
@@ -133,7 +158,7 @@ int io_stdout_write_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_create_kernel_syscall(int argc, char *argv[]) {
+int io_fs_create_kernel_syscall(t_Payload *syscall_arguments) {
     
     if (argc != 3)
     {
@@ -146,7 +171,7 @@ int io_fs_create_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_delete_kernel_syscall(int argc, char *argv[]) {
+int io_fs_delete_kernel_syscall(t_Payload *syscall_arguments) {
 
     if (argc != 3)
     {
@@ -159,7 +184,7 @@ int io_fs_delete_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_truncate_kernel_syscall(int argc, char *argv[]) {
+int io_fs_truncate_kernel_syscall(t_Payload *syscall_arguments) {
 
     if (argc != 4)
     {
@@ -172,7 +197,7 @@ int io_fs_truncate_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_write_kernel_syscall(int argc, char *argv[]) {
+int io_fs_write_kernel_syscall(t_Payload *syscall_arguments) {
     if(argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
@@ -184,7 +209,7 @@ int io_fs_write_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int io_fs_read_kernel_syscall(int argc, char *argv[]) {
+int io_fs_read_kernel_syscall(t_Payload *syscall_arguments) {
     if(argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
@@ -196,7 +221,7 @@ int io_fs_read_kernel_syscall(int argc, char *argv[]) {
     return EXIT_SUCCESS;
 }
 
-int exit_kernel_syscall(int argc, char *argv[]) {
+int exit_kernel_syscall(t_Payload *syscall_arguments) {
 
     if(argc != 1)
     {

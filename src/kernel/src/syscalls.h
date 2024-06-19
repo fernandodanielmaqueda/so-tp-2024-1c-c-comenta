@@ -23,11 +23,9 @@
 #include "utils/socket.h"
 #include "kernel.h"
 
-#define MAX_CONSOLE_ARGC 2 // 1 para el nombre del comando + 1 para el argumento
-
 typedef struct t_Syscall {
     char *name;
-    int (*function) (int, char*[]);
+    int (*function) (t_Payload *);
 } t_Syscall;
 
 extern t_Syscall SYSCALLS[];
@@ -36,18 +34,18 @@ extern t_PCB *SYSCALL_PCB;
 
 extern int BLOCKING_SYSCALL;
 
-int syscall_execute(t_Arguments *instruction);
-t_Syscall *syscall_find(char *name);
-int wait_kernel_syscall(int argc, char *argv[]);
-int signal_kernel_syscall(int argc, char *argv[]);
-int io_gen_sleep_kernel_syscall(int argc, char *argv[]);
-int io_stdin_read_kernel_syscall(int argc, char *argv[]);
-int io_stdout_write_kernel_syscall(int argc, char *argv[]);
-int io_fs_create_kernel_syscall(int argc, char *argv[]);
-int io_fs_delete_kernel_syscall(int argc, char *argv[]);
-int io_fs_truncate_kernel_syscall(int argc, char *argv[]);
-int io_fs_write_kernel_syscall(int argc, char *argv[]);
-int io_fs_read_kernel_syscall(int argc, char *argv[]);
-int exit_kernel_syscall(int argc, char *argv[]);
+int syscall_execute(t_Payload *syscall_instruction);
+int (*syscall_find(e_CPU_OpCode syscall_opcode)) (t_Payload *);
+int wait_kernel_syscall(t_Payload *syscall_arguments);
+int signal_kernel_syscall(t_Payload *syscall_arguments);
+int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments);
+int io_stdin_read_kernel_syscall(t_Payload *syscall_arguments);
+int io_stdout_write_kernel_syscall(t_Payload *syscall_arguments);
+int io_fs_create_kernel_syscall(t_Payload *syscall_arguments);
+int io_fs_delete_kernel_syscall(t_Payload *syscall_arguments);
+int io_fs_truncate_kernel_syscall(t_Payload *syscall_arguments);
+int io_fs_write_kernel_syscall(t_Payload *syscall_arguments);
+int io_fs_read_kernel_syscall(t_Payload *syscall_arguments);
+int exit_kernel_syscall(t_Payload *syscall_arguments);
 
 #endif // KERNEL_SYSCALLS_H

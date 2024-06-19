@@ -121,7 +121,7 @@ void *short_term_scheduler(void *parameter) {
 
 	t_PCB* pcb;
 	e_Eviction_Reason *eviction_reason;
-	t_CPU_Instruction *instruction;
+	t_Payload *syscall_instruction;
 	t_Package *package;
 	int exit_status;
 	uint64_t cpu_burst;
@@ -136,7 +136,7 @@ void *short_term_scheduler(void *parameter) {
 		int PCB_EXECUTE = 1;
 		while(PCB_EXECUTE) {
 
-			pcb_send(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+			send_pcb(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 
 			switch(SCHEDULING_ALGORITHM->type) {
 				case RR_SCHEDULING_ALGORITHM:
@@ -175,7 +175,7 @@ void *short_term_scheduler(void *parameter) {
 
 				pcb = pcb_deserialize(package->payload);
 				eviction_reason = eviction_reason_deserialize(package->payload);
-				instruction = cpu_instruction_deserialize(package->payload);
+				syscall_instruction = subpayload_deserialize(package->payload);
 				break;
 			default:
 				log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
@@ -199,6 +199,7 @@ void *short_term_scheduler(void *parameter) {
 
 			switch(*eviction_reason) {
 				case ERROR_EVICTION_REASON:
+				case EXIT_EVICTION_REASON:
 					switch_process_state(pcb, EXIT_STATE);
 					PCB_EXECUTE = 0;
 					break;
@@ -211,7 +212,7 @@ void *short_term_scheduler(void *parameter) {
 					
 				case SYSCALL_EVICTION_REASON:
 					SYSCALL_PCB = pcb;
-					exit_status = syscall_execute(instruction);
+					exit_status = syscall_execute(syscall_instruction);
 
 					if(exit_status) {
 						switch_process_state(pcb, EXIT_STATE);

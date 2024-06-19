@@ -95,41 +95,18 @@ char *command_generator(const char *text, int state) {
 
 /* Execute a command line. */
 int execute_line(char *line) {
-    register int i = 0;
-    int argc = 0;
-    char *argv[MAX_CONSOLE_ARGC] = {NULL};
-    t_Command *command;
 
-    while(line[i]) {
-        while(line[i] && whitespace(line[i]))
-            i++;
+    t_Arguments *arguments = arguments_create(MAX_CONSOLE_ARGC, false);
+    arguments_add(arguments, line);
 
-        if(!line[i])
-            break;
-
-        if(argc == MAX_CONSOLE_ARGC) {
-            log_warning(CONSOLE_LOGGER, "Demasiados argumentos.");
-            return EXIT_FAILURE;
-        }
-
-        argv[argc++] = line + i;;
-
-        while(line[i] && !whitespace(line[i]))
-            i++;
-
-        if(line[i])
-            line[i++] = '\0';
-    }
-
-    command = find_command(argv[0]);
-
+    t_Command *command = find_command(arguments->argv[0]);
     if (command == NULL) {
-        log_warning(CONSOLE_LOGGER, "%s: No existe el comando especificado.", argv[0]);
+        log_warning(CONSOLE_LOGGER, "%s: No existe el comando especificado.", arguments->argv[0]);
         return EXIT_FAILURE;
     }
 
     // Call the function
-    return ((*(command->function)) (argc, argv));
+    return ((*(command->function)) (arguments->argc, arguments->argv));
 }
 
 t_Command *find_command (char *name) {
@@ -172,16 +149,12 @@ int kernel_command_run_script(int argc, char* argv[]) {
             break;
         }
 
-        if(execute_line(line))
-            break;
+        subline = strip_whitespaces(line);
 
-        /*subline = strip_whitespaces(line);
-
-        if(*subline) {
+        if(*subline)
             if(execute_line(subline))
                 break;
-        }
-        */
+        
     }
 
     free(line);

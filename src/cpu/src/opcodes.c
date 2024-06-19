@@ -4,34 +4,38 @@
 #include "opcodes.h"
 
 t_CPU_Operation CPU_OPERATIONS[] = {
-    {.name = "SET", .function = set_cpu_operation},
-    {.name = "MOV_IN", .function = mov_in_cpu_operation},
-    {.name = "MOV_OUT", .function = mov_out_cpu_operation},
-    {.name = "SUM", .function = sum_cpu_operation},
-    {.name = "SUB", .function = sub_cpu_operation},
-    {.name = "JNZ", .function = jnz_cpu_operation},
-    {.name = "RESIZE", .function = resize_cpu_operation},
-    {.name = "COPY_STRING", .function = copy_string_cpu_operation},
-    {.name = "WAIT", .function = wait_cpu_operation},
-    {.name = "SIGNAL", .function = signal_cpu_operation},
-    {.name = "IO_GEN_SLEEP", .function = io_gen_sleep_cpu_operation},
-    {.name = "IO_STDIN_READ", .function = io_stdin_read_cpu_operation},
-    {.name = "IO_STDOUT_WRITE", .function = io_stdout_write_cpu_operation},
-    {.name = "IO_FS_CREATE", .function = io_fs_create_cpu_operation},
-    {.name = "IO_FS_DELETE", .function = io_fs_delete_cpu_operation},
-    {.name = "IO_FS_TRUNCATE", .function = io_fs_truncate_cpu_operation},
-    {.name = "IO_FS_WRITE", .function = io_fs_write_cpu_operation},
-    {.name = "IO_FS_READ", .function = io_fs_read_cpu_operation},
-    {.name = "EXIT", .function = exit_cpu_operation},
-    {.name = NULL}};
+    [SET_CPU_OPCODE] = {.name = "SET" , .function = set_cpu_operation},
+    [MOV_IN_CPU_OPCODE] = {.name = "MOV_IN" , .function = mov_in_cpu_operation},
+    [MOV_OUT_CPU_OPCODE] = {.name = "MOV_OUT" , .function = mov_out_cpu_operation},
+    [SUM_CPU_OPCODE] = {.name = "SUM" , .function = sum_cpu_operation},
+    [SUB_CPU_OPCODE] = {.name = "SUB" , .function = sub_cpu_operation},
+    [JNZ_CPU_OPCODE] = {.name = "JNZ" , .function = jnz_cpu_operation},
+    [RESIZE_CPU_OPCODE] = {.name = "RESIZE" , .function = resize_cpu_operation},
+    [COPY_STRING_CPU_OPCODE] = {.name = "COPY_STRING" , .function = copy_string_cpu_operation},
+    [WAIT_CPU_OPCODE] = {.name = "WAIT" , .function = wait_cpu_operation},
+    [SIGNAL_CPU_OPCODE] = {.name = "SIGNAL" , .function = signal_cpu_operation},
+    [IO_GEN_SLEEP_CPU_OPCODE] = {.name = "IO_GEN_SLEEP" , .function = io_gen_sleep_cpu_operation},
+    [IO_STDIN_READ_CPU_OPCODE] = {.name = "IO_STDIN_READ" , .function = io_stdin_read_cpu_operation},
+    [IO_STDOUT_WRITE_CPU_OPCODE] = {.name = "IO_STDOUT_WRITE" , .function = io_stdout_write_cpu_operation},
+    [IO_FS_CREATE_CPU_OPCODE] = {.name = "IO_FS_CREATE" , .function = io_fs_create_cpu_operation},
+    [IO_FS_DELETE_CPU_OPCODE] = {.name = "IO_FS_DELETE" , .function = io_fs_delete_cpu_operation},
+    [IO_FS_TRUNCATE_CPU_OPCODE] = {.name = "IO_FS_TRUNCATE" , .function = io_fs_truncate_cpu_operation},
+    [IO_FS_WRITE_CPU_OPCODE] = {.name = "IO_FS_WRITE" , .function = io_fs_write_cpu_operation},
+    [IO_FS_READ_CPU_OPCODE] = {.name = "IO_FS_READ" , .function = io_fs_read_cpu_operation},
+    [EXIT_CPU_OPCODE] = {.name = "EXIT" , .function = exit_cpu_operation}
+};
 
-t_CPU_Operation *decode_instruction(char *name)
+e_CPU_OpCode decode_instruction(char *name)
 {
-    for (register int i = 0; CPU_OPERATIONS[i].name != NULL; i++)
-        if (!strcmp(CPU_OPERATIONS[i].name, name))
-            return (&CPU_OPERATIONS[i]);
+    if(name == NULL)
+        return -1;
+    
+    size_t opcodes_number = sizeof(CPU_OPERATIONS) / sizeof(CPU_OPERATIONS[0]);
+    for (register e_CPU_OpCode cpu_opcode = 0; cpu_opcode < opcodes_number; cpu_opcode++)
+        if (!strcmp(CPU_OPERATIONS[cpu_opcode].name, name))
+            return cpu_opcode;
 
-    return NULL;
+    return -1;
 }
 
 int set_cpu_operation(int argc, char **argv)

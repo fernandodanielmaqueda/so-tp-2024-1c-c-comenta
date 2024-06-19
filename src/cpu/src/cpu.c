@@ -33,7 +33,7 @@ e_Register register_destination;
 e_Kernel_Interrupt KERNEL_INTERRUPT;
 int SYSCALL_CALLED;
 t_PCB *PCB;
-t_Payload *SYSCALL_ARGUMENTS;
+t_Payload *SYSCALL_INSTRUCTION;
 
 int dir_logica_origin = 0;
 int dir_logica_destination = 0;
@@ -60,12 +60,14 @@ const char *t_register_string[] = {
     [RCX_REGISTER] = "RCX",
     [RDX_REGISTER] = "RDX",
     [SI_REGISTER] = "SI",
-    [DI_REGISTER] = "DI"};
+    [DI_REGISTER] = "DI"
+};
 
 const char *t_interrupt_type_string[] = {
     [ERROR_EVICTION_REASON] = "ERROR_EVICTION_REASON",
     [SYSCALL_EVICTION_REASON] = "SYSCALL_EVICTION_REASON",
-    [INTERRUPTION_EVICTION_REASON] = "INTERRUPTION_EVICTION_REASON"};
+    [INTERRUPTION_EVICTION_REASON] = "INTERRUPTION_EVICTION_REASON"
+};
 
 int module(int argc, char *argv[])
 {
@@ -101,7 +103,7 @@ void instruction_cycle(void)
     char *IR;
     t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS, false);
     e_Eviction_Reason eviction_reason;
-    t_CPU_Operation *operation;
+    e_CPU_OpCode cpu_opcode;
     int exit_status;
 
     tlb = list_create();
@@ -112,7 +114,7 @@ void instruction_cycle(void)
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB->PID);
         
         KERNEL_INTERRUPT = NONE_KERNEL_INTERRUPT;
-        SYSCALL_ARGUMENTS = payload_create();
+        SYSCALL_INSTRUCTION = payload_create();
 
         while(1) {
 
@@ -124,13 +126,13 @@ void instruction_cycle(void)
             // Decode
             arguments_add(arguments, IR);
             // FALTA VALIDAR LA SALIDA DE arguments_add
-            operation = decode_instruction(arguments->argv[0]);
-            if (operation == NULL) {
+            cpu_opcode = decode_instruction(arguments->argv[0]);
+            if (cpu_opcode == -1) {
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
                 exit_status = EXIT_FAILURE;
             } else {
                 // EXECUTE
-                exit_status = operation->function(arguments->argc, arguments->argv);
+                exit_status = CPU_OPERATIONS[cpu_opcode].function(arguments->argc, arguments->argv);
             }
 
             arguments_remove(arguments);
@@ -140,6 +142,11 @@ void instruction_cycle(void)
             if (exit_status) {
                 log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
                 eviction_reason = ERROR_EVICTION_REASON;
+                break;
+            }
+
+            if(cpu_opcode == EXIT_CPU_OPCODE) {
+                eviction_reason = EXIT_EVICTION_REASON;
                 break;
             }
 
@@ -162,18 +169,19 @@ void instruction_cycle(void)
         t_Package *package = package_create_with_header(SUBHEADER_HEADER);
         pcb_serialize(package->payload, PCB);
         eviction_reason_serialize(package->payload, &eviction_reason);
-        subpayload_serialize(package->payload, SYSCALL_ARGUMENTS);
+        subpayload_serialize(package->payload, SYSCALL_INSTRUCTION);
         package_send(package, SERVER_CPU_DISPATCH.client.fd_client);
         package_destroy(package);
-        // pcb_free(PCB);
-        // arguments_free(IR);
+
+        pcb_free(PCB);
+        payload_destroy(SYSCALL_INSTRUCTION);
     }
 }
 
 void *kernel_cpu_interrupt_handler(void *NULL_parameter)
 {
 
-    cpu_start_server_for_kernel((void *)&SERVER_CPU_INTERRUPT);
+    cpu_start_server_for_kernel((void *) &SERVER_CPU_INTERRUPT);
     sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
 
     e_Kernel_Interrupt *kernel_interrupt_ptr;

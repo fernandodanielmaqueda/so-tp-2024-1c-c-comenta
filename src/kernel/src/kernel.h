@@ -23,9 +23,7 @@
 #include "commons/collections/dictionary.h"
 #include <commons/temporal.h>
 #include "utils/module.h"
-#include "utils/serialize/pcb.h"
-#include "utils/serialize/eviction_reason.h"
-#include "utils/serialize/cpu_opcode.h"
+#include "utils/send.h"
 #include "utils/socket.h"
 #include "console.h"
 #include "socket.h"

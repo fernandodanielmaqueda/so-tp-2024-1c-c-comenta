@@ -21,10 +21,7 @@ t_Payload *payload_create(void) {
 void payload_destroy(t_Payload *payload) {
   if(payload == NULL)
     return;
-  if(payload->size != 0) {
-    // TODO: Verificar si es necesario liberar el stream caso por caso (creo que no)
-    free(payload->stream);
-  }
+  free(payload->stream);
   free(payload);
 }
 
@@ -35,7 +32,7 @@ void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize) {
     return;
   }
 
-  void *newStream = realloc(payload->stream, (size_t) ((payload->size) + sourceSize));
+  void *newStream = realloc(payload->stream, ((size_t) payload->size) + sourceSize);
   if(newStream == NULL) {
     log_error(SERIALIZE_LOGGER, "No se pudo agregar el stream al payload con realloc");
     exit(EXIT_FAILURE);

@@ -24,7 +24,7 @@
 #include "utils/socket.h"
 #include "kernel.h"
 
-#define MAX_CONSOLE_ARGC 2 // 1 para el nombre del comando + 1 para el argumento
+#define MAX_CONSOLE_ARGC 1 + 1
 
 typedef struct t_Command {
     char *name;
