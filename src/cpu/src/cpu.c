@@ -22,7 +22,7 @@ int direccion_logica; // momentaneo hasta ver de donde la saco
 t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
 
 // Variables para trabajar con las instrucciones
-int nro_page = 0;
+//t_Page nro_page = 0;
 uint32_t value = 0;
 
 // char *recurso = NULL;
@@ -251,7 +251,7 @@ int string_to_register(const char *string)
 int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigin, int register_destination, int in_out)
 {
 
-    int nro_page = floor(dir_logica / tamanio_pagina);
+    t_Page nro_page = (t_Page) floor(dir_logica / tamanio_pagina);
     int offset = dir_logica - nro_page * tamanio_pagina;
     int nro_frame_required = 0;
     int dir_fisica = 0;
@@ -281,9 +281,10 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
         log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pcb->PID, nro_page);
 
         t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
-        int frame = 0;
-        int pidBuscado = 0;
-        receive_2int(&pidBuscado, &frame, package->payload);
+        t_PID pidBuscado;
+        t_Frame frame;
+        payload_dequeue(package->payload, &pidBuscado, sizeof(t_PID) );
+        payload_dequeue(package->payload, &frame, sizeof(t_Frame) );
 
         if (CANTIDAD_ENTRADAS_TLB > 0)
         {
@@ -310,11 +311,11 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
     }
 }
 
-int check_tlb(int process_id, int page_number)
+int check_tlb(t_PID process_id, t_Page page_number)
 {
 
     t_TLB *tlb_entry = NULL;
-    int frame_number = -1;
+    t_Frame frame_number = -1;
     for (int i = 0; i < list_size(tlb); i++)
     {
 
@@ -333,16 +334,21 @@ int check_tlb(int process_id, int page_number)
     return frame_number;
 }
 
-void tlb_access(t_PCB *pcb, int nro_page, int frame_number_required, int direc, int register_origin, int register_destination, int in_out)
+void tlb_access(t_PCB *pcb, t_Page nro_page, int frame_number_required, int direc, int register_origin, int register_destination, int in_out)
 {
 
+    t_Package* package;
 
     if (in_out == IN)
     {
 
-        send_2int(pcb->PID, nro_page, CONNECTION_MEMORY.fd_connection, WRITE_REQUEST);
-        t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+        package = package_create_with_header(WRITE_REQUEST);
+        payload_enqueue(package->payload, &(pcb->PID), sizeof(t_PID) );
+        payload_enqueue(package->payload, &nro_page, sizeof(t_Page) );
+        package_send(package, CONNECTION_MEMORY.fd_connection);
+        package_destroy(package);
 
+        package = package_receive(CONNECTION_MEMORY.fd_connection);
         if (package == NULL)
         {
             log_error(MODULE_LOGGER, "Error al recibir el paquete");
@@ -356,9 +362,14 @@ void tlb_access(t_PCB *pcb, int nro_page, int frame_number_required, int direc, 
     }                
       else //out
     {
-        send_2int(pcb->PID, nro_page, CONNECTION_MEMORY.fd_connection, WRITE_REQUEST);
-        t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
 
+        package = package_create_with_header(WRITE_REQUEST);
+        payload_enqueue(package->payload, &(pcb->PID), sizeof(t_PID) );
+        payload_enqueue(package->payload, &nro_page, sizeof(t_Page) );
+        package_send(package, CONNECTION_MEMORY.fd_connection);
+        package_destroy(package);
+
+        package = package_receive(CONNECTION_MEMORY.fd_connection);
         if (package == NULL)
         {
             log_error(MODULE_LOGGER, "Error al recibir el paquete");
@@ -373,7 +384,7 @@ void tlb_access(t_PCB *pcb, int nro_page, int frame_number_required, int direc, 
 }
 
 
-void add_to_tlb(int pid , int page, int frame)
+void add_to_tlb(t_PID pid , t_Page page, t_Frame frame)
 {
     t_TLB *tlb_entry = malloc(sizeof(t_TLB));
     tlb_entry->PID = pid;
@@ -385,7 +396,7 @@ void add_to_tlb(int pid , int page, int frame)
 
 }
 
-void replace_tlb_input(int pid, int page, int frame)
+void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
 {
     t_TLB *tlb_aux = list_get(tlb, 0);
     int replace_value = tlb_aux->time + 1;
@@ -430,11 +441,11 @@ t_PCB *cpu_receive_pcb(void)
     return pcb;
 }
 
-void request_frame_memory(int page, int pid)
+void request_frame_memory(t_Page page, t_PID pid)
 {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
-    payload_enqueue(package->payload, &page, sizeof(int));
-    payload_enqueue(package->payload, &pid, sizeof(int));
+    payload_enqueue(package->payload, &page, sizeof(t_Page));
+    payload_enqueue(package->payload, &pid, sizeof(t_PID));
     package_send(package, CONNECTION_MEMORY.fd_connection);
 }
 

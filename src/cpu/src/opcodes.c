@@ -50,9 +50,9 @@ int set_cpu_operation(int argc, char **argv)
     log_trace(MODULE_LOGGER, "SET %s %s", argv[1], argv[2]);
 
     register_destination = string_to_register(argv[1]);
-    value = atoi(argv[2]); // aca recibo el valor a asignarle al registro
+    // value = atoi(argv[2]); // aca recibo el valor a asignarle al registro
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB->PID, argv[0], argv[1], argv[2]);
-    register_destination = value;
+    //register_destination = value;
 
     PCB->PC++;
 
@@ -81,7 +81,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB->PID, argv[0], argv[1], argv[2]);
 
     // pedir tamanioo pagina a memoria
-    send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
+    //send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
 
     t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
     if (package == NULL)
@@ -126,7 +126,7 @@ int mov_out_cpu_operation(int argc, char **argv)
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", PCB->PID, argv[0], argv[1], argv[2]);
 
       // pedir tamanioo pagina a memoria
-    send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
+    //send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, PAGE_SIZE_REQUEST);
 
     t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
     if (package == NULL)
@@ -209,11 +209,11 @@ int jnz_cpu_operation(int argc, char **argv)
     log_trace(MODULE_LOGGER, "JNZ %s %s", argv[1], argv[2]);
 
     register_destination = string_to_register(argv[1]);
-    value = atoi(argv[2]);
+    //value = atoi(argv[2]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB->PID, argv[0], argv[1], argv[2]);
     if (register_destination != 0)
     {
-        PCB->PC = value;
+        //PCB->PC = value;
     }
 
     PCB->PC++;
@@ -234,10 +234,10 @@ int resize_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "RESIZE %s", argv[1]);
 
-    value = atoi(argv[2]);
+    //value = atoi(argv[2]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB->PID, argv[0], argv[1]);
 
-    send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
+    //send_2int(PCB->PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
 
     t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
     if (package == NULL)

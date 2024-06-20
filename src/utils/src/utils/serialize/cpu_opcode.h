@@ -17,6 +17,8 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
+typedef uint32_t t_Value;
+
 typedef enum e_CPU_OpCode {
     SET_CPU_OPCODE,
     MOV_IN_CPU_OPCODE,

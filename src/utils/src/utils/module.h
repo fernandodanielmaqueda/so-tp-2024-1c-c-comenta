@@ -15,7 +15,7 @@ typedef enum e_PortType {
     CPU_INTERRUPT_PORT_TYPE,
     MEMORY_PORT_TYPE,
     IO_PORT_TYPE,
-    TO_BE_DEFINED_PORT_TYPE
+    TO_BE_IDENTIFIED_PORT_TYPE
 } e_PortType;
 #define PortType_Count 7
 

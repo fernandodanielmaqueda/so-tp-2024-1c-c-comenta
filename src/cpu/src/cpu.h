@@ -50,10 +50,13 @@ typedef enum e_Register {
     DI_REGISTER
 } e_Register;
 
+typedef uint32_t t_Page;
+typedef uint32_t t_Frame;
+
 typedef struct t_TLB {
 	t_PID PID;
-	int page_number;
-	int frame;
+	t_Page page_number;
+	t_Frame frame;
     int time; //para el LRU
 } t_TLB;
 
@@ -88,8 +91,8 @@ extern int direccion_logica; // momentaneo hasta ver de donde la saco
 extern t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
 
 // Variables para trabajar con las instrucciones
-extern int nro_page;
-extern uint32_t value;
+//extern t_Page nro_page;
+//extern uint32_t value;
 
 extern t_PCB *PCB;
 extern e_Register register_origin;
@@ -123,13 +126,13 @@ void instruction_cycle(void);
 void *kernel_cpu_interrupt_handler(void *NULL_parameter);
 int string_to_register(const char *string);
 int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
-int check_tlb(int process_id, int nro_page);
-void tlb_access(t_PCB *pcb, int nro_page, int nro_frame_required, int direc ,int register_origin, int register_destination,int in_out);
-void request_data_in_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
-void request_data_out_memory(int nro_frame_required, int pid, int nro_page, int direc, int register_origin, int register_destination);
-void request_frame_memory(int page, int pid);
-void add_to_tlb(int pid , int page, int frame);
-void replace_tlb_input(int pid, int page, int frame);
+int check_tlb(t_PID process_id, t_Page nro_page);
+void tlb_access(t_PCB *pcb, t_Page nro_page, int nro_frame_required, int direc, int register_origin, int register_destination, int in_out);
+void request_data_in_memory(int nro_frame_required, t_PID pid, t_Page nro_page, int direc, int register_origin, int register_destination);
+void request_data_out_memory(int nro_frame_required, t_PID pid, t_Page nro_page, int direc, int register_origin, int register_destination);
+void request_frame_memory(t_Page page, t_PID pid);
+void add_to_tlb(t_PID pid , t_Page page, t_Frame frame);
+void replace_tlb_input(t_PID pid, t_Page page, t_Frame frame);
 t_PCB *cpu_receive_pcb(void);
 char *cpu_fetch_next_instruction(void);
 e_Eviction_Reason *cpu_receive_interrupt_type(void);

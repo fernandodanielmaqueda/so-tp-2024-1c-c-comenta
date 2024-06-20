@@ -52,7 +52,7 @@ int module(int argc, char* argv[]) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_DEFINED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
     TAM_MEMORIA = config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
@@ -60,6 +60,8 @@ void read_module_config(t_config* MODULE_CONFIG) {
 }
 
 void listen_kernel(int fd_kernel) {
+
+    
     while(1) {
         t_Package* package = package_receive(fd_kernel);
         switch(package->header) {

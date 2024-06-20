@@ -73,7 +73,7 @@ void send_text(char *text, int fd_socket);
 
 
 //
-
+/*
 void send_string(char* mensaje, int socket, int opcod);
 void send_int(int nro, int socket, int opcod);
 void send_2int(int nro, int nro2, int socket, int opcod);
@@ -86,5 +86,6 @@ void receive_write_request(int* pid, int* dir_fis, int* bytes, char* contenido, 
 void send_write_request(int pid, int dir_fis, char* mensaje, int socket, int opcod);
 void receive_read_request(int* pid, int* dir_fis, int* bytes, t_Payload* payload);
 void send_read_request(int pid, int dir_fis, int bytes, int socket, int opcod);
+*/
 
 #endif // UTILS_SEND_H
