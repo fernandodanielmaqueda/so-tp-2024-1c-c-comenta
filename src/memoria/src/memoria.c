@@ -22,8 +22,8 @@ t_list* lista_procesos;
 t_list* lista_marcos;
 t_list* lista_marcos_libres;
 
-int TAM_MEMORIA;
-int TAM_PAGINA;
+t_MemorySize TAM_MEMORIA;
+t_MemorySize TAM_PAGINA;
 char *PATH_INSTRUCCIONES;
 int RETARDO_RESPUESTA;
 
@@ -53,8 +53,8 @@ int module(int argc, char* argv[]) {
 
 void read_module_config(t_config* MODULE_CONFIG) {
     COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
-    TAM_MEMORIA = config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
-    TAM_PAGINA = config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
+    TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
+    TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
     RETARDO_RESPUESTA = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
 }
@@ -186,18 +186,20 @@ void parser_file(char* path, t_list *list_instruction) {
 
 void listen_cpu(int fd_cpu) {
     while(1) {
-        t_Package* paquete = package_receive(fd_cpu);
-        e_Header header = paquete->header;
+        t_Package* package = package_receive(fd_cpu);
+        e_Header header = package->header;
         //e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
         switch (header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
-                seek_instruccion(paquete->payload);
+                seek_instruccion(package->payload);
+                package_destroy(package);
                 break;
                 
             case FRAME_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
-                respond_frame_request(paquete->payload);
+                respond_frame_request(package->payload);
+                package_destroy(package);
                 break;
 
             /*
@@ -208,22 +210,31 @@ void listen_cpu(int fd_cpu) {
                 
             case PAGE_SIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                send_int(PAGE_SIZE_REQUEST, TAM_PAGINA,FD_CLIENT_CPU);
+                package_destroy(package);
+
+                package = package_create_with_header(PAGE_SIZE_REQUEST);
+                payload_enqueue(package->payload, &TAM_PAGINA, sizeof(TAM_PAGINA));
+                package_send(package, FD_CLIENT_CPU);
+                package_destroy(package);
+
                 break;
 
             case RESIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                resize_process(paquete->payload);
+                resize_process(package->payload);
+                package_destroy(package);
                 break;
                 
             case READ_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                read_memory(paquete->payload, FD_CLIENT_CPU);
+                read_memory(package->payload, FD_CLIENT_CPU);
+                package_destroy(package);
                 break;
                 
             case WRITE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                write_memory(paquete->payload, FD_CLIENT_CPU);
+                write_memory(package->payload, FD_CLIENT_CPU);
+                package_destroy(package);
                 break;
             
             default:
@@ -299,12 +310,12 @@ void seek_instruccion(t_Payload* payload) {
 }
 
 void create_marcos(){
-    int cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
+    t_MemorySize cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
     
     lista_marcos = list_create();
     lista_marcos_libres = list_create();
 
-    for (size_t i = 0; i < cantidad_marcos; i++)
+    for (t_MemorySize i = 0; i < cantidad_marcos; i++)
     {
         t_Frame *marcoNuevo = malloc(sizeof(t_Frame));
         marcoNuevo->id = i;
@@ -328,7 +339,7 @@ void free_marcos(){
 
 }
 
-void respond_frame_request(t_Payload* socketRecibido){
+void respond_frame_request(t_Payload* payload){
 //Recibir parametros
  /* t_list *propiedadesPlanas = NULL; // t_list *propiedadesPlanas = get_package_like_list(socketRecibido);
   int cursor = 0;
@@ -336,21 +347,24 @@ void respond_frame_request(t_Payload* socketRecibido){
   int pidProceso = *(int*)list_get(propiedadesPlanas, cursor);
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
 */
-    int pageBuscada = -1;
-    int pidProceso = -1;
-    receive_2int(&pageBuscada,&pidProceso,socketRecibido);
+    int pageBuscada;
+    t_PID pidProceso;
+
+    payload_dequeue(payload, &pageBuscada, sizeof(int) );
+    payload_dequeue(payload, &pidProceso, sizeof(t_PID) );
+
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
-    send_2int(pidProceso,marcoEncontrado,FD_CLIENT_CPU,FRAME_REQUEST);
-   /* t_Package* package = package_create_with_header(FRAME_REQUEST);
-    payload_enqueue(package->payload, &pidProceso, sizeof(int));
+    
+    t_Package* package = package_create_with_header(FRAME_REQUEST);
+    payload_enqueue(package->payload, &pidProceso, sizeof(t_PID));
     payload_enqueue(package->payload, &marcoEncontrado, sizeof(int));
     package_send(package, FD_CLIENT_CPU);
-    */
+    
 }
 
 int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
@@ -368,12 +382,15 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
     return marcoObjetivo;
 }
 
-void read_memory(t_Payload* socketRecibido, int socket) {
+void read_memory(t_Payload* payload, int socket) {
     int dir_fisica = 0;
-    int pidBuscado = 0;
-    int bytes = 0;
-    //receive_2int(&dir_fisica,&pidBuscado,socketRecibido);
-    receive_read_request(&pidBuscado, &dir_fisica, &bytes,socketRecibido);
+    t_PID pidBuscado = 0;
+    t_MemorySize bytes = 0;
+    //receive_2int(&dir_fisica,&pidBuscado,payload);
+
+    payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
+    payload_dequeue(payload, &dir_fisica, sizeof(int) );
+    payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
 
     char* lectura;
     char* lectura_final = "";
@@ -381,8 +398,8 @@ void read_memory(t_Payload* socketRecibido, int socket) {
 
     void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
     
-    int pages = bytes/TAM_PAGINA;
-    int resto = bytes % TAM_PAGINA;
+    t_MemorySize pages = bytes/TAM_PAGINA;
+    t_MemorySize resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
 
     memcpy(&lectura, posicion, bytes);    
@@ -396,8 +413,8 @@ void read_memory(t_Payload* socketRecibido, int socket) {
         update_page(current_frame);
     }
     else{//En caso de que el contenido supere a 1 pagina
-        int bytes_restantes = bytes;
-        for (size_t i = 1; i > pages; i++)
+        t_MemorySize bytes_restantes = bytes;
+        for (t_MemorySize i = 1; i > pages; i++)
         {
             if (i == pages)
             {
@@ -420,27 +437,33 @@ void read_memory(t_Payload* socketRecibido, int socket) {
         }
     }
 
-    send_String_1int(pidBuscado,lectura, socket, READ_REQUEST);
+    t_Package* package = package_create_with_header(READ_REQUEST);
+    text_serialize(package->payload, lectura);
+    payload_enqueue(package->payload, &pidBuscado, sizeof(int) );
+    package_send(package, socket);
+    package_destroy(package);
+
 }
 
 
-void write_memory(t_Payload* socketRecibido, int socket){
-    int dir_fisica = 0;
-    int pidBuscado = 0;
-    int bytes = 0;
+void write_memory(t_Payload* payload, int socket){
+    t_MemorySize dir_fisica = 0;
+    t_PID pidBuscado = 0;
+    t_MemorySize bytes = 0;
     char* contenido = NULL;
     int temp_dir_fis = 0;
     
-    receive_write_request(&pidBuscado, &dir_fisica, &bytes, contenido, socketRecibido);
-    //receive_2int_1uint32(&dir_fisica,&pidBuscado,&contenido, socketRecibido);
+    payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
+    payload_dequeue(payload, &dir_fisica, sizeof(int) );
+    payload_dequeue(payload, &bytes, sizeof(int) );
+    payload_dequeue(payload, contenido, (size_t) bytes );
 
-
-    int pages = bytes/TAM_PAGINA;
-    int resto = bytes % TAM_PAGINA;
+    t_MemorySize pages = bytes/TAM_PAGINA;
+    t_MemorySize resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
     void* posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
     
-    int current_frame = dir_fisica / TAM_PAGINA;
+    t_MemorySize current_frame = dir_fisica / TAM_PAGINA;
     t_Frame* frame = list_get(lista_marcos, current_frame);
     pidBuscado = frame->PID;
 
@@ -450,14 +473,14 @@ void write_memory(t_Payload* socketRecibido, int socket){
          update_page(current_frame);
     }
     else{//En caso de que el contenido supere a 1 pagina
-        int bytes_restantes = bytes;
-        for (size_t i = 1; i > pages; i++)
+        t_MemorySize bytes_restantes = bytes;
+        for (t_MemorySize i = 1; i > pages; i++)
         {
             if (i == pages)
             {
                 memcpy(posicion, &contenido, bytes_restantes);
             }
-            if(i<pages){
+            if(i<pages){ 
                 memcpy(posicion, &contenido, TAM_PAGINA);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
@@ -471,7 +494,10 @@ void write_memory(t_Payload* socketRecibido, int socket){
         }
     }
 
-    send_int(pidBuscado,socket,WRITE_REQUEST);
+    t_Package* package = package_create_with_header(WRITE_REQUEST);
+    payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
+    package_send(package, socket);
+    package_destroy(package);
 }
 
 //Actualizar page y TDP
@@ -513,14 +539,19 @@ int get_next_dir_fis(int current_frame, int pid){
 }
 
 
-void resize_process(t_Payload* socketRecibido){
-    int pid;
-    int bytes;
-    receive_2int(&pid,&bytes,socketRecibido);
+void resize_process(t_Payload* payload){
+    t_Package* package;
+    t_PID pid;
+    t_MemorySize bytes;
+    
+
+    payload_dequeue(payload, &pid, sizeof(t_PID) );
+    payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
+
     t_Process* procesoBuscado = seek_process_by_pid(pid);
 
-    int paginas = bytes / TAM_PAGINA;
-    int resto = bytes % TAM_PAGINA;
+    t_MemorySize paginas = bytes / TAM_PAGINA;
+    t_MemorySize resto = bytes % TAM_PAGINA;
     if (resto == 0) paginas += 1;
     
 
@@ -530,7 +561,10 @@ void resize_process(t_Payload* socketRecibido){
         //CASO: OUT OF MEMORY
         if (list_size(lista_marcos_libres) < (paginas - size))
         {
-            send_int(pid, FD_CLIENT_CPU, OUT_OF_MEMORY);
+            package = package_create_with_header(OUT_OF_MEMORY);
+            payload_enqueue(package->payload, &pid, sizeof(t_PID) );
+            package_send(package, FD_CLIENT_CPU);
+            package_destroy(package);
         }
         else{
                 //CASO: HAY ESPACIO Y SUMA PAGINAS
@@ -553,7 +587,10 @@ void resize_process(t_Payload* socketRecibido){
                     list_add(procesoBuscado->pages_table, pagina);
                 }
                 
-            send_int(pid, FD_CLIENT_CPU, RESIZE_REQUEST);
+            package = package_create_with_header(RESIZE_REQUEST);
+            payload_enqueue(package->payload, &pid, sizeof(t_PID) );
+            package_send(package, FD_CLIENT_CPU);
+            package_destroy(package);
         }
         
     }
@@ -570,7 +607,10 @@ void resize_process(t_Payload* socketRecibido){
             free(pagina);
         }
         
-            send_int(pid, FD_CLIENT_CPU, RESIZE_REQUEST);
+            t_Package* package = package_create_with_header(RESIZE_REQUEST);
+            payload_enqueue(package->payload, &pid, sizeof(t_PID) );
+            package_send(package, FD_CLIENT_CPU);
+            package_destroy(package);
         
     }
     //No hace falta el caso page == size ya que no sucederia nada

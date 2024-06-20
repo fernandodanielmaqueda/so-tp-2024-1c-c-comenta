@@ -17,6 +17,8 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
+typedef uint32_t t_MemorySize;
+
  //CPU - Memoria//
 typedef enum e_CPU_Memory_Request {
     INSTRUCTION_REQUEST,
