@@ -20,27 +20,22 @@ int BLOCKING_SYSCALL;
 
 int syscall_execute(t_Payload *syscall_instruction) {
 
-    e_CPU_OpCode *syscall_opcode;
+    e_CPU_OpCode syscall_opcode;
+
     payload_dequeue(syscall_instruction, &syscall_opcode, sizeof(t_EnumValue));
 
-    if(syscall_opcode == NULL) {
-        log_error(MODULE_LOGGER, "Error al deserializar el opcode de la syscall");
-        return EXIT_FAILURE;
-    }
-
-    if(SYSCALLS[*syscall_opcode].function == NULL) {
+    if(SYSCALLS[syscall_opcode].function == NULL) {
         log_error(MODULE_LOGGER, "Funcion de syscall no encontrada");
         return EXIT_FAILURE;
     }
 
-    return SYSCALLS[*syscall_opcode].function(syscall_instruction);
-
-    cpu_opcode_free(syscall_opcode);
+    return SYSCALLS[syscall_opcode].function(syscall_instruction);
 }
 
 int wait_kernel_syscall(t_Payload *syscall_arguments) {
 
-    char *resource_name = text_deserialize(syscall_arguments);
+    char *resource_name;
+    text_deserialize(syscall_arguments, &resource_name);
 
     log_trace(MODULE_LOGGER, "WAIT %s", resource_name);
 
@@ -65,7 +60,8 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
 
 int signal_kernel_syscall(t_Payload *syscall_arguments) {
 
-    char *resource_name = text_deserialize(syscall_arguments);
+    char *resource_name;
+    text_deserialize(syscall_arguments, &resource_name);
 
     log_trace(MODULE_LOGGER, "SIGNAL %s", resource_name);
 

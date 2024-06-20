@@ -26,20 +26,25 @@ typedef enum e_Eviction_Reason {
 
 
 /**
- * @brief Serializacion del e_Eviction_Reason para ser enviada.
- * @param package Package a rellenar.
- * @param eviction_reason eviction_reason a serializar
+ * @brief Serializacion de un e_Eviction_Reason para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source e_Eviction_Reason fuente a serializar
  */
-void eviction_reason_serialize(t_Payload *payload, e_Eviction_Reason *eviction_reason);
+void eviction_reason_serialize(t_Payload *payload, e_Eviction_Reason source);
 
 
 /**
- * @brief Deserializacion del e_Eviction_Reason para ser enviada.
- * @param Payload Payload.
+ * @brief Deserializacion de un e_Eviction_Reason para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del e_Eviction_Reason deserializado
  */
-e_Eviction_Reason *eviction_reason_deserialize(t_Payload *payload);
+void eviction_reason_deserialize(t_Payload *payload, e_Eviction_Reason *destination);
 
-void eviction_reason_free(e_Eviction_Reason *eviction_reason);
-void eviction_reason_log(e_Eviction_Reason *eviction_reason);
+
+/**
+ * @brief Loguea un e_Eviction_Reason.
+ * @param eviction_reason e_Eviction_Reason a loguear.
+ */
+void eviction_reason_log(e_Eviction_Reason eviction_reason);
 
 #endif // UTILS_SERIALIZE_EVICTION_REASON_H

@@ -19,6 +19,7 @@ typedef enum e_Header {
     SUBHEADER_HEADER,
     ARGUMENTS_HEADER,
     PCB_HEADER,
+    INSTRUCTIONS_PATH_HEADER,
     TEXT_HEADER,
     CPU_MEMORY_REQUEST_HEADER,//deberia estar obsoleto ya
     CPU_MEMORY_FETCH_HEADER, //
@@ -28,9 +29,8 @@ typedef enum e_Header {
     EXIT_STATUS_HEADER,
     //::OPERACIONES MODULOS::
     //Kernel - Memoria
-    PROCESS_NEW,
-    PROCESS_CREATED,
-    PROCESS_FINALIZED,
+    PROCESS_CREATE_HEADER,
+    PROCESS_DESTROY_HEADER,
     //Kernel - IO
     //Kernel - CPU
     STDIN_REQUEST,

@@ -19,21 +19,25 @@
 
 
 /**
- * @brief Serializacion del t_Interrupt para ser enviada.
- * @param package Package a rellenar.
- * @param interrupt interrupt a serializar
+ * @brief Serializacion de un t_Payload para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source t_Payload fuente a serializar
  */
-void subpayload_serialize(t_Payload *payload, t_Payload *subpayload);
+void subpayload_serialize(t_Payload *payload, t_Payload source);
 
 
 /**
- * @brief Deserializacion del t_Interrupt para ser enviada.
- * @param Payload Payload.
+ * @brief Deserializacion de un t_Payload para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del t_Payload deserializado
  */
-t_Payload *subpayload_deserialize(t_Payload *payload);
+void subpayload_deserialize(t_Payload *payload, t_Payload *destination);
 
 
-void subpayload_free(t_Payload *subpayload);
-void subpayload_log(t_Payload *subpayload);
+/**
+ * @brief Loguea un t_Payload.
+ * @param subpayload t_Payload a loguear.
+ */
+void subpayload_log(t_Payload subpayload);
 
 #endif // UTILS_SERIALIZE_SUBPAYLOAD_H

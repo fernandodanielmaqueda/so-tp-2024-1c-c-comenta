@@ -18,8 +18,6 @@ int module(int argc, char *argv[]) {
 	initialize_sockets();
 	
 	PID_COUNTER = 0;
-
-	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 	
 	sem_init(&SEM_LONG_TERM_SCHEDULER, 0, 0);
 	sem_init(&SEM_SHORT_TERM_SCHEDULER, 0, 0);
@@ -33,6 +31,8 @@ int module(int argc, char *argv[]) {
 	LIST_EXECUTING = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
+
+	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	//UN HILO PARA CADA PROCESO
 	initialize_long_term_scheduler();

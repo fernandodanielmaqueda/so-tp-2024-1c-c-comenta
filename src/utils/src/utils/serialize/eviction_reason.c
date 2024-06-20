@@ -3,29 +3,27 @@
 
 #include "utils/serialize/eviction_reason.h"
 
-void eviction_reason_serialize(t_Payload *payload, e_Eviction_Reason *eviction_reason) {
-  payload_enqueue(payload, eviction_reason, sizeof(uint8_t));
+void eviction_reason_serialize(t_Payload *payload, e_Eviction_Reason source) {
+  if(payload == NULL)
+    return;
 
-  eviction_reason_log(eviction_reason);
+  payload_enqueue(payload, &source, sizeof(t_EnumValue));
+
+  eviction_reason_log(source);
 }
 
-e_Eviction_Reason *eviction_reason_deserialize(t_Payload *payload) {
-  e_Eviction_Reason *eviction_reason = malloc(sizeof(e_Eviction_Reason));
+void eviction_reason_deserialize(t_Payload *payload, e_Eviction_Reason *destination) {
+  if(payload == NULL || destination == NULL)
+    return;
 
-  payload_dequeue(payload, eviction_reason, sizeof(uint8_t));
+  payload_dequeue(payload, destination, sizeof(t_EnumValue));
 
-  eviction_reason_log(eviction_reason);
-  return eviction_reason;
+  eviction_reason_log(*destination);
 }
 
-void eviction_reason_free(e_Eviction_Reason *eviction_reason) {
-  free(eviction_reason);
-}
-
-void eviction_reason_log(e_Eviction_Reason *eviction_reason) {
+void eviction_reason_log(e_Eviction_Reason eviction_reason) {
   log_info(SERIALIZE_LOGGER,
-    "e_Eviction_Reason[%p]: %d"
-    , (void *) eviction_reason
-    , *eviction_reason
+    "e_Eviction_Reason: %d"
+    , eviction_reason
   );
 }

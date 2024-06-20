@@ -61,22 +61,27 @@ typedef struct t_PCB {
     double arrival_RUNNING; // che corrio en runnign t=20seg 
 } t_PCB;
 
-/**
- * @brief Serializacion del t_PCB para ser enviada.
- * @param package Package a rellenar.
- * @param pcb Pcb a serializar
- */
-void pcb_serialize(t_Payload *payload, t_PCB *pcb);
-
 
 /**
- * @brief Deserializacion del t_PCB para ser enviada.
- * @param Payload Payload.
+ * @brief Serializacion de un t_PCB para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source t_PCB fuente a serializar
  */
-t_PCB *pcb_deserialize(t_Payload *payload);
+void pcb_serialize(t_Payload *payload, t_PCB source);
 
 
-void pcb_free(t_PCB *pcb);
-void pcb_log(t_PCB *pcb);
+/**
+ * @brief Deserializacion de un t_PCB para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del t_PCB deserializado
+ */
+void pcb_deserialize(t_Payload *payload, t_PCB *destination);
+
+
+/**
+ * @brief Loguea un t_PCB.
+ * @param pcb t_PCB a loguear.
+ */
+void pcb_log(t_PCB pcb);
 
 #endif // UTILS_SERIALIZE_PCB_H

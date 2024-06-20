@@ -61,18 +61,24 @@ void read_module_config(t_config* MODULE_CONFIG) {
 
 void listen_kernel(int fd_kernel) {
 
+    t_Package* package;
     
     while(1) {
-        t_Package* package = package_receive(fd_kernel);
+        package = package_receive(fd_kernel);
         switch(package->header) {
-            case PROCESS_NEW:
+            case PROCESS_CREATE_HEADER:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
                 create_process(package->payload);
                 break;
                 
-            case PROCESS_FINALIZED:
+            case PROCESS_DESTROY_HEADER:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso finalizado recibido.");
                 kill_process(package->payload);
+                break;
+
+            case INSTRUCTIONS_PATH_HEADER:
+                log_info(MODULE_LOGGER, "KERNEL: Solicitud de path de instrucciones recibida.");
+                send_text_with_header(INSTRUCTIONS_PATH_HEADER, PATH_INSTRUCCIONES, FD_CLIENT_KERNEL);
                 break;
 
             case DISCONNECTING_HEADER:
@@ -94,7 +100,7 @@ void create_process(t_Payload* process_data) {
     t_list* instructions_list = list_create();
     t_list* pages_table = list_create();
 
-    new_process->filename = text_deserialize(process_data);
+    text_deserialize(process_data, &(new_process->filename));
     payload_dequeue(process_data, &(new_process->PID), sizeof(t_PID));
 
     //Busco el archivo deseado
@@ -113,12 +119,8 @@ void create_process(t_Payload* process_data) {
     
     log_debug(MODULE_LOGGER, "Archivo leido: %s", path_buscado);
 
-    //ENVIAR RTA OK A KERNEL --> En este caso solo envio el PID del proceso origen
-    t_Return_Value return_value = 0;
-    t_Package *package = package_create_with_header(PROCESS_NEW); // PROCESS_CREATED
-    return_value_serialize(package->payload, &(return_value));
-    package_send(package, FD_CLIENT_KERNEL);
-    package_destroy(package);
+    //ENVIAR RTA OK A KERNEL
+    send_return_value_with_header(PROCESS_CREATE_HEADER, EXIT_SUCCESS, FD_CLIENT_KERNEL);
     
 }
 
@@ -138,8 +140,8 @@ void kill_process (t_Payload* socketRecibido){
     }
     free(process);
     
-    //ENVIAR RTA OK A KERNEL --> En este caso solo envio el PID del proceso origen
-    send_int(pid,FD_CLIENT_KERNEL,PROCESS_CREATED);
+    //ENVIAR RTA OK A KERNEL
+    send_return_value_with_header(PROCESS_DESTROY_HEADER, EXIT_SUCCESS, FD_CLIENT_KERNEL);
     
 }
 
@@ -292,7 +294,7 @@ void seek_instruccion(t_Payload* payload) {
     char* instruccionBuscada = list_get(procesoBuscado->instructions_list, PC);
 
     usleep(RETARDO_RESPUESTA * 1000);
-    send_text(instruccionBuscada, FD_CLIENT_CPU);
+    send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, FD_CLIENT_CPU);
     log_info(MODULE_LOGGER, "Instruccion enviada.");
 }
 

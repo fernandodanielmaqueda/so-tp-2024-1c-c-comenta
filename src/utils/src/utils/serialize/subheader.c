@@ -3,29 +3,27 @@
 
 #include "utils/serialize/subheader.h"
 
-void subheader_serialize(t_Payload *payload, e_Header *subheader) {
-  payload_enqueue(payload, subheader, sizeof(t_EnumValue));
+void subheader_serialize(t_Payload *payload, e_Header source) {
+  if(payload == NULL)
+    return;
 
-  subheader_log(subheader);
+  payload_enqueue(payload, &source, sizeof(t_EnumValue));
+
+  subheader_log(source);
 }
 
-e_Header *subheader_deserialize(t_Payload *payload) {
-  e_Header *subheader = malloc(sizeof(e_Header));
+void subheader_deserialize(t_Payload *payload, e_Header *destination) {
+  if(payload == NULL || destination == NULL)
+    return;
 
-  payload_dequeue(payload, subheader, sizeof(t_EnumValue));
+  payload_dequeue(payload, destination, sizeof(t_EnumValue));
 
-  subheader_log(subheader);
-  return subheader;
+  subheader_log(*destination);
 }
 
-void subheader_free(e_Header *subheader) {
-  free(subheader);
-}
-
-void subheader_log(e_Header *subheader) {
+void subheader_log(e_Header subheader) {
   log_info(SERIALIZE_LOGGER,
-    "e_Header[%p]: %d"
-    , (void *) subheader
-    , *subheader
+    "e_Header: %d"
+    , subheader
   );
 }

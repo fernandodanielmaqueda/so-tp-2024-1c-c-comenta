@@ -3,34 +3,33 @@
 
 #include "utils/serialize/subpayload.h"
 
-void subpayload_serialize(t_Payload *payload, t_Payload *subpayload) {
-  payload_enqueue(payload, (void *) &(subpayload->size), sizeof(t_PayloadSize));
-  payload_enqueue(payload, (void *) subpayload->stream, (size_t) subpayload->size);
+void subpayload_serialize(t_Payload *payload, t_Payload source) {
+  if(payload == NULL)
+    return;
 
-  subpayload_log(subpayload);
+  payload_enqueue(payload, (void *) &(source.size), sizeof(t_PayloadSize));
+  payload_enqueue(payload, (void *) source.stream, (size_t) source.size);
+
+  subpayload_log(source);
 }
 
-t_Payload *subpayload_deserialize(t_Payload *payload) {
-  t_Payload *subpayload = payload_create();
+void subpayload_deserialize(t_Payload *payload, t_Payload *subpayload) {
+  if(payload == NULL || subpayload == NULL)
+    return;
 
   payload_dequeue(payload, (void *) &(subpayload->size), sizeof(t_PayloadSize)); 
   payload_dequeue(payload, (void *) subpayload->stream, (size_t) subpayload->size);
 
-  subpayload_log(subpayload);
-  return subpayload;
+  subpayload_log(*subpayload);
 }
 
-void subpayload_free(t_Payload *subpayload) {
-  payload_destroy(subpayload);
-}
+void subpayload_log(t_Payload subpayload) {
 
-void subpayload_log(t_Payload *subpayload) {
   log_info(SERIALIZE_LOGGER,
-    "t_Payload[%p]:\n"
+    "t_Payload:\n"
     "* size: %" PRIu32 "\n"
     "* stream: %p"
-    , (void *) subpayload
-    , subpayload->size
-    , subpayload->stream
+    , subpayload.size
+    , subpayload.stream
   );
 }

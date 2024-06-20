@@ -43,21 +43,25 @@ typedef enum e_CPU_OpCode {
 
 
 /**
- * @brief Serializacion del e_CPU_OpCode para ser enviada.
- * @param package Package a rellenar.
- * @param cpu_opcode instruction a serializar
+ * @brief Serializacion de un e_CPU_OpCode para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source e_CPU_OpCode fuente a serializar
  */
-void cpu_opcode_serialize(t_Payload *payload, e_CPU_OpCode *cpu_opcode);
+void cpu_opcode_serialize(t_Payload *payload, e_CPU_OpCode cpu_opcode);
 
 
 /**
- * @brief Deserializacion del e_CPU_OpCode para ser enviada.
- * @param Payload Payload.
+ * @brief Deserializacion de un e_CPU_OpCode para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del e_CPU_OpCode deserializado
  */
-e_CPU_OpCode *cpu_opcode_deserialize(t_Payload *payload);
+void cpu_opcode_deserialize(t_Payload *payload, e_CPU_OpCode *cpu_opcode);
 
 
-void cpu_opcode_free(e_CPU_OpCode *cpu_opcode);
-void cpu_opcode_log(e_CPU_OpCode *cpu_opcode);
+/**
+ * @brief Loguea un e_CPU_OpCode.
+ * @param cpu_opcode e_CPU_OpCode a loguear.
+ */
+void cpu_opcode_log(e_CPU_OpCode cpu_opcode);
 
 #endif // UTILS_SERIALIZE_CPU_INSTRUCTION_H

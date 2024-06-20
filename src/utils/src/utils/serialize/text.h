@@ -19,23 +19,27 @@
 
 typedef uint32_t t_StringLength;
 
-/**
- * @brief Serializacion del texto para ser enviada.
- * @param package Package a rellenar.
- * @param string Texto a serializar
- */
-void text_serialize(t_Payload *payload, char *text);
-
 
 /**
- * @brief Deserializacion del texto para ser enviada.
- * @param Payload Payload.
+ * @brief Serializacion de un texto para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source Texto fuente a serializar
  */
-char *text_deserialize(t_Payload *payload);
-
-void text_free(char *text);
+void text_serialize(t_Payload *payload, char *source);
 
 
+/**
+ * @brief Deserializacion de un texto para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del texto deserializado
+ */
+void text_deserialize(t_Payload *payload, char **destination);
+
+
+/**
+ * @brief Loguea un texto.
+ * @param text Texto a loguear.
+ */
 void text_log(char *text);
 
 #endif // UTILS_SERIALIZE_TEXT_H

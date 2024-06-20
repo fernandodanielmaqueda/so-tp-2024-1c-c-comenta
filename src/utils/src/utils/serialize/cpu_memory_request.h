@@ -31,20 +31,25 @@ typedef enum e_CPU_Memory_Request {
 
 
 /**
- * @brief Serializacion del t_PCB para ser enviada.
- * @param package t_Package a rellenar.
- * @param pcb Pcb a serializar
+ * @brief Serializacion de un e_CPU_Memory_Request para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source e_CPU_Memory_Request fuente a serializar
  */
-void cpu_memory_request_serialize(t_Payload *payload, e_CPU_Memory_Request *memory_request) ;
+void cpu_memory_request_serialize(t_Payload *payload, e_CPU_Memory_Request source) ;
 
 
 /**
- * @brief Deserializacion del t_PCB para ser enviada.
- * @param payload t_Payload.
+ * @brief Deserializacion de un e_CPU_Memory_Request para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del e_CPU_Memory_Request deserializado
  */
-e_CPU_Memory_Request *cpu_memory_request_deserialize(t_Payload *payload);
+void cpu_memory_request_deserialize(t_Payload *payload, e_CPU_Memory_Request *destination);
 
-void cpu_memory_request_free(e_CPU_Memory_Request *memory_request);
-void cpu_memory_request_log(e_CPU_Memory_Request *memory_request);
+
+/**
+ * @brief Loguea un e_CPU_Memory_Request.
+ * @param memory_request e_CPU_Memory_Request a loguear.
+ */
+void cpu_memory_request_log(e_CPU_Memory_Request memory_request);
 
 #endif // UTILS_SERIALIZE_CPU_MEMORY_REQUEST_H

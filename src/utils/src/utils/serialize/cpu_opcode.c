@@ -3,29 +3,27 @@
 
 #include "utils/serialize/cpu_opcode.h"
 
-void cpu_opcode_serialize(t_Payload *payload, e_CPU_OpCode *cpu_opcode) {
-  payload_enqueue(payload, cpu_opcode, sizeof(t_EnumValue));
+void cpu_opcode_serialize(t_Payload *payload, e_CPU_OpCode source) {
+  if(payload == NULL)
+    return;
 
-  cpu_opcode_log(cpu_opcode);
+  payload_enqueue(payload, &source, sizeof(t_EnumValue));
+
+  cpu_opcode_log(source);
 }
 
-e_CPU_OpCode *cpu_opcode_deserialize(t_Payload *payload) {
-  e_CPU_OpCode *cpu_opcode = malloc(sizeof(e_CPU_OpCode));
+void cpu_opcode_deserialize(t_Payload *payload, e_CPU_OpCode *destination) {
+  if(payload == NULL || destination == NULL)
+    return;
 
-  payload_dequeue(payload, cpu_opcode, sizeof(t_EnumValue));
+  payload_dequeue(payload, destination, sizeof(t_EnumValue));
 
-  cpu_opcode_log(cpu_opcode);
-  return cpu_opcode;
+  cpu_opcode_log(*destination);
 }
 
-void cpu_opcode_free(e_CPU_OpCode* cpu_opcode){
-  free(cpu_opcode);
-}
-
-void cpu_opcode_log(e_CPU_OpCode *cpu_opcode) {
+void cpu_opcode_log(e_CPU_OpCode cpu_opcode) {
   log_info(SERIALIZE_LOGGER,
-    "e_CPU_OpCode[%p]: %d"
-    , (void *) cpu_opcode
-    , *cpu_opcode
+    "e_CPU_OpCode: %d"
+    , cpu_opcode
   );
 }

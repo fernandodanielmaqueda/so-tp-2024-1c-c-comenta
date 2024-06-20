@@ -17,11 +17,23 @@
 
 
 /**
+ * @brief Enviar interrupt (incluye el serializado)
+ * @param interrupt t_Interrupt a enviar.
+ * @param fd_socket Socket desde donde se va a recibir el interrupt.
+ */
+void send_header(e_Header header, int fd_socket);
+
+
+void send_return_value_with_header(e_Header header, t_Return_Value return_value, int fd_socket);
+void receive_return_value_with_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket);
+
+
+/**
  * @brief Enviar pcb (incluye el serializado)
  * @param pcb t_PCB a enviar.
  * @param fd_socket Socket desde donde se va a recibir el pcb.
  */
-void send_cpu_memory_request(e_CPU_Memory_Request *memory_request, int socket);
+void send_cpu_memory_request(e_CPU_Memory_Request memory_request, int socket);
 
 
 /**
@@ -29,7 +41,7 @@ void send_cpu_memory_request(e_CPU_Memory_Request *memory_request, int socket);
  * @param cpu_opcode e_CPU_OpCode a enviar.
  * @param fd_socket Socket desde donde se va a recibir el cpu_opcode.
  */
-void send_cpu_opcode(e_CPU_OpCode *cpu_opcode, int fd_socket);
+void send_cpu_opcode(e_CPU_OpCode cpu_opcode, int fd_socket);
 
 
 /**
@@ -37,7 +49,7 @@ void send_cpu_opcode(e_CPU_OpCode *cpu_opcode, int fd_socket);
  * @param eviction_reason e_Eviction_Reason a enviar.
  * @param fd_socket Socket desde donde se va a recibir el eviction_reason.
  */
-void send_eviction_reason(e_Eviction_Reason *eviction_reason, int fd_socket);
+void send_eviction_reason(e_Eviction_Reason eviction_reason, int fd_socket);
 
 
 /**
@@ -45,7 +57,7 @@ void send_eviction_reason(e_Eviction_Reason *eviction_reason, int fd_socket);
  * @param kernel_interrupt t_Interrupt a enviar.
  * @param fd_socket Socket desde donde se va a recibir el kernel_interrupt.
  */
-void send_kernel_interrupt(e_Kernel_Interrupt *kernel_interrupt, int fd_socket);
+void send_kernel_interrupt(e_Kernel_Interrupt kernel_interrupt, int fd_socket);
 
 
 /**
@@ -53,15 +65,7 @@ void send_kernel_interrupt(e_Kernel_Interrupt *kernel_interrupt, int fd_socket);
  * @param pcb t_PCB a enviar.
  * @param fd_socket Socket desde donde se va a recibir el pcb.
  */
-void send_pcb(t_PCB *pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
-
-
-/**
- * @brief Enviar interrupt (incluye el serializado)
- * @param interrupt t_Interrupt a enviar.
- * @param fd_socket Socket desde donde se va a recibir el interrupt.
- */
-void send_header(e_Header *header, int fd_socket);
+void send_pcb(t_PCB pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
 
 
 /**
@@ -69,10 +73,10 @@ void send_header(e_Header *header, int fd_socket);
  * @param string Texto a enviar.
  * @param fd_socket Socket desde donde se va a recibir el texto.
  */
-void send_text(char *text, int fd_socket);
+void send_text_with_header(e_Header header, char *text, int fd_socket);
 
+void receive_text_with_header(e_Header header, char **text, int fd_socket);
 
-//
 /*
 void send_string(char* mensaje, int socket, int opcod);
 void send_int(int nro, int socket, int opcod);

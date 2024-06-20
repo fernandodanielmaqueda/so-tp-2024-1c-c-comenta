@@ -3,29 +3,27 @@
 
 #include "utils/serialize/kernel_interrupt.h"
 
-void kernel_interrupt_serialize(t_Payload *payload, e_Kernel_Interrupt *kernel_interrupt) {
-  payload_enqueue(payload, kernel_interrupt, sizeof(uint8_t));
+void kernel_interrupt_serialize(t_Payload *payload, e_Kernel_Interrupt source) {
+  if(payload == NULL)
+    return;
 
-  kernel_interrupt_log(kernel_interrupt);
+  payload_enqueue(payload, &source, sizeof(t_EnumValue));
+
+  kernel_interrupt_log(source);
 }
 
-e_Kernel_Interrupt *kernel_interrupt_deserialize(t_Payload *payload) {
-  e_Kernel_Interrupt *kernel_interrupt = malloc(sizeof(e_Kernel_Interrupt));
+void kernel_interrupt_deserialize(t_Payload *payload, e_Kernel_Interrupt *destination) {
+  if(payload == NULL || destination == NULL)
+    return;
 
-  payload_dequeue(payload, kernel_interrupt, sizeof(uint8_t));
+  payload_dequeue(payload, destination, sizeof(t_EnumValue));
 
-  kernel_interrupt_log(kernel_interrupt);
-  return kernel_interrupt;
+  kernel_interrupt_log(*destination);
 }
 
-void kernel_interrupt_free(e_Kernel_Interrupt *kernel_interrupt) {
-  free(kernel_interrupt);
-}
-
-void kernel_interrupt_log(e_Kernel_Interrupt *kernel_interrupt) {
+void kernel_interrupt_log(e_Kernel_Interrupt kernel_interrupt) {
   log_info(SERIALIZE_LOGGER,
-    "e_Kernel_Interrupt[%p]: %d"
-    , (void *) kernel_interrupt
-    , *kernel_interrupt
+    "e_Kernel_Interrupt: %d"
+    , kernel_interrupt
   );
 }

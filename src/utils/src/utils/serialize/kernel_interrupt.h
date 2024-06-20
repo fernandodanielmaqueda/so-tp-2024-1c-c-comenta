@@ -25,20 +25,25 @@ typedef enum e_Kernel_Interrupt {
 
 
 /**
- * @brief Serializacion del t_Interrupt para ser enviada.
- * @param package Package a rellenar.
- * @param kernel_interrupt kernel_interrupt a serializar
+ * @brief Serializacion de un e_Kernel_Interrupt para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source e_Kernel_Interrupt fuente a serializar
  */
-void kernel_interrupt_serialize(t_Payload *payload, e_Kernel_Interrupt *kernel_interrupt);
+void kernel_interrupt_serialize(t_Payload *payload, e_Kernel_Interrupt source);
 
 
 /**
- * @brief Deserializacion del t_Interrupt para ser enviada.
- * @param Payload Payload.
+ * @brief Deserializacion de un e_Kernel_Interrupt para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del e_Kernel_Interrupt deserializado
  */
-e_Kernel_Interrupt *kernel_interrupt_deserialize(t_Payload *payload);
+void kernel_interrupt_deserialize(t_Payload *payload, e_Kernel_Interrupt *destination);
 
-void kernel_interrupt_free(e_Kernel_Interrupt *kernel_interrupt);
-void kernel_interrupt_log(e_Kernel_Interrupt *kernel_interrupt);
+
+/**
+ * @brief Loguea un e_Kernel_Interrupt.
+ * @param kernel_interrupt e_Kernel_Interrupt a loguear.
+ */
+void kernel_interrupt_log(e_Kernel_Interrupt kernel_interrupt);
 
 #endif // UTILS_SERIALIZE_KERNEL_INTERRUPT_H

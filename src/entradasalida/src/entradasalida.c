@@ -82,22 +82,16 @@ t_IO_Type *io_type_find(char *name) {
 
 int io_operation_execute(t_Payload *operation) {
 
-    e_CPU_OpCode *io_opcode;
+    e_CPU_OpCode io_opcode;
+
     payload_dequeue(operation, &io_opcode, sizeof(t_EnumValue));
 
-    if(io_opcode == NULL) {
-        log_error(MODULE_LOGGER, "Error al deserializar el opcode de la operacion de IO");
-        return EXIT_FAILURE;
-    }
-
-    if(IO_OPERATIONS[*io_opcode].function == NULL) {
+    if(IO_OPERATIONS[io_opcode].function == NULL) {
         log_error(MODULE_LOGGER, "Funcion de operacion de IO no encontrada");
         return EXIT_FAILURE;
     }
 
-    return IO_OPERATIONS[*io_opcode].function(operation);
-
-    cpu_opcode_free(io_opcode);
+    return IO_OPERATIONS[io_opcode].function(operation);
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
@@ -132,13 +126,13 @@ void finish_sockets(void) {
 void generic_function(void) {
 
 	//escuchar peticion siempre
-	t_Package* package;
-	t_Payload* instruction;
+	t_Package *package;
+	t_Payload *instruction = NULL;
 	//recibe peticion
 	while(1) {
 
 		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		instruction = subpayload_deserialize(package->payload);
+		subpayload_deserialize(package->payload, instruction);
 		package_destroy(package);
 
 		int exit_status = io_operation_execute(instruction);
@@ -156,12 +150,12 @@ void generic_function(void) {
 void stdin_function(){
 
 	t_Package *package;
-	t_Payload *instruction;
+	t_Payload *instruction = NULL;
 	//escuchar peticion siempre
 	while(1){
 		//recibe peticion
 		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		instruction = subpayload_deserialize(package->payload);
+		subpayload_deserialize(package->payload, instruction);
 		package_destroy(package);
 
 		int exit_status = io_operation_execute(instruction);
@@ -178,13 +172,13 @@ void stdin_function(){
 
 void stdout_function(){
 	t_Package *package;
-	t_Payload *instruction;
+	t_Payload *instruction = NULL;
 
 	//escuchar peticion siempre
 	while(1) {
 		//recibe peticion
 		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		instruction = subpayload_deserialize(package->payload);
+		subpayload_deserialize(package->payload, instruction);
 		package_destroy(package);
 
 		int exit_status = io_operation_execute(instruction);

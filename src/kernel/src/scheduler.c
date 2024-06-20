@@ -101,7 +101,7 @@ void *long_term_scheduler(void *parameter) {
 			list_add(LIST_NEW, pcb);
 		pthread_mutex_unlock(&mutex_LIST_NEW);
 		
-		package = package_create_with_header(PROCESS_NEW);
+		package = package_create_with_header(PROCESS_CREATE_HEADER);
 		text_serialize(package->payload, abspath);
 		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
 		package_send(package, CONNECTION_MEMORY.fd_connection);
@@ -110,19 +110,8 @@ void *long_term_scheduler(void *parameter) {
 		free(abspath);
 
 		t_Return_Value return_value;
-		package = package_receive(CONNECTION_MEMORY.fd_connection);
-		switch(package->header) {
-			case PROCESS_NEW:
-				payload_dequeue(package->payload, &(return_value), sizeof(t_Return_Value));
-				break;
-			default:
-				log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
-				exit(EXIT_FAILURE);
-				break;
-		}
-		package_destroy(package);
-
-		if(return_value) {
+		receive_return_value_with_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
+		if(return_value != EXIT_SUCCESS) {
 			log_error(MODULE_LOGGER, "Error al crear el proceso");
 			exit(EXIT_FAILURE);
 		}
@@ -137,9 +126,9 @@ void *long_term_scheduler(void *parameter) {
 
 void *short_term_scheduler(void *parameter) {
 
-	t_PCB* pcb;
-	e_Eviction_Reason *eviction_reason;
-	t_Payload *syscall_instruction;
+	t_PCB *pcb;
+	e_Eviction_Reason eviction_reason;
+	t_Payload *syscall_instruction = NULL;
 	t_Package *package;
 	int exit_status;
 	uint64_t cpu_burst;
@@ -154,7 +143,7 @@ void *short_term_scheduler(void *parameter) {
 		int PCB_EXECUTE = 1;
 		while(PCB_EXECUTE) {
 
-			send_pcb(pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+			send_pcb(*pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 
 			switch(SCHEDULING_ALGORITHM->type) {
 				case RR_SCHEDULING_ALGORITHM:
@@ -169,7 +158,7 @@ void *short_term_scheduler(void *parameter) {
 					break;
 			}
 			
-			pcb_free(pcb);
+			// pcb_free(pcb);
 		
 			package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
 			switch(package->header) {
@@ -192,9 +181,9 @@ void *short_term_scheduler(void *parameter) {
 					break;
 			}
 
-				pcb = pcb_deserialize(package->payload);
-				eviction_reason = eviction_reason_deserialize(package->payload);
-				syscall_instruction = subpayload_deserialize(package->payload);
+				pcb_deserialize(package->payload, pcb);
+				eviction_reason_deserialize(package->payload, &eviction_reason);
+				subpayload_deserialize(package->payload, syscall_instruction);
 				break;
 			default:
 				log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
@@ -216,7 +205,7 @@ void *short_term_scheduler(void *parameter) {
 					break;
 			}
 
-			switch(*eviction_reason) {
+			switch(eviction_reason) {
 				case ERROR_EVICTION_REASON:
 				case EXIT_EVICTION_REASON:
 					switch_process_state(pcb, EXIT_STATE);
@@ -248,9 +237,6 @@ void *short_term_scheduler(void *parameter) {
 					// En caso de que sea una syscall no bloqueante
 					break;
 			}
-
-			// pcb_free(pcb)
-			// eviction_reason_free(eviction_reason);
 			// instruction_free(instruction);
 		}
 	}

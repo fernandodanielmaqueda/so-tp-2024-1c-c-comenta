@@ -1,5 +1,5 @@
-#ifndef CONSOLE_H
-#define CONSOLE_H
+#ifndef KERNEL_CONSOLE_H
+#define KERNEL_CONSOLE_H
 
 #include <ctype.h>
 #include <stdio.h>
@@ -36,6 +36,8 @@ extern t_Command CONSOLE_COMMANDS[];
 extern t_log *CONSOLE_LOGGER;
 extern char *CONSOLE_LOG_PATHNAME;
 
+extern char *INSTRUCTIONS_PATH;
+
 void *initialize_kernel_console(void *argument);
 void initialize_readline(void);
 char **console_completion(const char *text, int start, int end);
@@ -51,4 +53,4 @@ int kernel_command_start_scheduling(int argc, char* argv[]);
 int kernel_command_multiprogramming(int argc, char* argv[]);
 int kernel_command_process_states(int argc, char* argv[]);
 
-#endif /* CONSOLE_H */
+#endif // KERNEL_CONSOLE_H

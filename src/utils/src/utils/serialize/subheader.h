@@ -19,21 +19,25 @@
 
 
 /**
- * @brief Serializacion del e_Header para ser enviada.
- * @param package Package a rellenar.
- * @param subheader Subheader a serializar
+ * @brief Serializacion de un e_Header para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source e_Header fuente a serializar
  */
-void subheader_serialize(t_Payload *payload, e_Header *subheader);
+void subheader_serialize(t_Payload *payload, e_Header source);
 
 
 /**
- * @brief Deserializacion del e_Header para ser enviada.
- * @param Payload Payload.
+ * @brief Deserializacion de un e_Header para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del e_Header deserializado
  */
-e_Header *subheader_deserialize(t_Payload *payload);
+void subheader_deserialize(t_Payload *payload, e_Header *destination);
 
 
-void subheader_free(e_Header *subheader);
-void subheader_log(e_Header *subheader);
+/**
+ * @brief Loguea un e_Header.
+ * @param subheader e_Header a loguear.
+ */
+void subheader_log(e_Header subheader);
 
 #endif // UTILS_SERIALIZE_SUBHEADER_H

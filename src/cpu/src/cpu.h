@@ -94,7 +94,7 @@ extern t_list *tlb;          // tlb que voy a ir creando para darle valores que 
 //extern t_Page nro_page;
 //extern uint32_t value;
 
-extern t_PCB *PCB;
+extern t_PCB PCB;
 extern e_Register register_origin;
 extern e_Register register_destination;
 
@@ -133,8 +133,7 @@ void request_data_out_memory(int nro_frame_required, t_PID pid, t_Page nro_page,
 void request_frame_memory(t_Page page, t_PID pid);
 void add_to_tlb(t_PID pid , t_Page page, t_Frame frame);
 void replace_tlb_input(t_PID pid, t_Page page, t_Frame frame);
-t_PCB *cpu_receive_pcb(void);
-char *cpu_fetch_next_instruction(void);
-e_Eviction_Reason *cpu_receive_interrupt_type(void);
+void cpu_receive_pcb(t_PCB *pcb);
+void cpu_fetch_next_instruction(char **line);
 
 #endif /* CPU_H */

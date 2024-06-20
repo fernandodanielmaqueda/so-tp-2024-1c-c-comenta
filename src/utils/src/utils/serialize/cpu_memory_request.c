@@ -3,29 +3,27 @@
 
 #include "utils/serialize/cpu_memory_request.h"
 
-void cpu_memory_request_serialize(t_Payload *payload, e_CPU_Memory_Request *memory_request) {
-  payload_enqueue(payload, memory_request, sizeof(uint8_t));
+void cpu_memory_request_serialize(t_Payload *payload, e_CPU_Memory_Request source) {
+  if(payload == NULL)
+    return;
 
-  cpu_memory_request_log(memory_request);
+  payload_enqueue(payload, &source, sizeof(t_EnumValue));
+
+  cpu_memory_request_log(source);
 }
 
-e_CPU_Memory_Request *cpu_memory_request_deserialize(t_Payload *payload) {
-  e_CPU_Memory_Request *memory_request = malloc(sizeof(e_CPU_Memory_Request));
+void cpu_memory_request_deserialize(t_Payload *payload, e_CPU_Memory_Request *destination) {
+  if(payload == NULL || destination == NULL)
+    return;
 
-  payload_dequeue(payload, memory_request, sizeof(uint8_t));
+  payload_dequeue(payload, destination, sizeof(t_EnumValue));
 
-  cpu_memory_request_log(memory_request);
-  return memory_request;
+  cpu_memory_request_log(*destination);
 }
 
-void cpu_memory_request_free(e_CPU_Memory_Request *memory_request) {
-  free(memory_request);
-}
-
-void cpu_memory_request_log(e_CPU_Memory_Request *memory_request) {
+void cpu_memory_request_log(e_CPU_Memory_Request memory_request) {
   log_info(SERIALIZE_LOGGER,
-    "e_CPU_Memory_Request[%p]: %d",
-    (void *) memory_request,
-    *memory_request
+    "e_CPU_Memory_Request: %d",
+    memory_request
   );
 }

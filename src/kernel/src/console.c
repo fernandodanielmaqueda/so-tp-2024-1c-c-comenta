@@ -16,9 +16,16 @@ t_Command CONSOLE_COMMANDS[] = {
 
 int EXIT_CONSOLE = 0;
 
+char *INSTRUCTIONS_PATH;
+
 void *initialize_kernel_console(void *argument) {
 
     CONSOLE_LOGGER = log_create(CONSOLE_LOG_PATHNAME, "Console", true, LOG_LEVEL_TRACE);
+
+    send_header(INSTRUCTIONS_PATH_HEADER, CONNECTION_MEMORY.fd_connection);
+	receive_text_with_header(INSTRUCTIONS_PATH_HEADER, &INSTRUCTIONS_PATH, CONNECTION_MEMORY.fd_connection);
+
+    log_info(CONSOLE_LOGGER, "%s\n\n", INSTRUCTIONS_PATH);
 
     char *line, *subline;
 
@@ -39,6 +46,8 @@ void *initialize_kernel_console(void *argument) {
 
         free(line);
     }
+
+    free(INSTRUCTIONS_PATH);
 
     clear_history();
     return NULL;

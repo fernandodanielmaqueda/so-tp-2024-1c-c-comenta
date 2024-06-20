@@ -32,7 +32,7 @@ e_Register register_destination;
 
 e_Kernel_Interrupt KERNEL_INTERRUPT;
 int SYSCALL_CALLED;
-t_PCB *PCB;
+t_PCB PCB;
 t_Payload *SYSCALL_INSTRUCTION;
 
 int dir_logica_origin = 0;
@@ -110,8 +110,8 @@ void instruction_cycle(void)
 
     while(1) {
 
-        PCB = cpu_receive_pcb();
-        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB->PID);
+        cpu_receive_pcb(&PCB);
+        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB.PID);
         
         KERNEL_INTERRUPT = NONE_KERNEL_INTERRUPT;
         SYSCALL_INSTRUCTION = payload_create();
@@ -119,9 +119,9 @@ void instruction_cycle(void)
         while(1) {
 
             // Fetch
-            IR = cpu_fetch_next_instruction();
+            cpu_fetch_next_instruction(&IR);
             // FALTA CONSIDERAR QUE EL FETCH FALLE YA SEA PORQUE NO HAY MÁS INSTRUCCIONES QUE EJECUTAR O PORQUE HUBO UN ERROR DE LECTURA
-            log_info(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB->PID, PCB->PC);
+            log_info(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB.PID, PCB.PC);
 
             // Decode
             arguments_add(arguments, IR);
@@ -168,12 +168,11 @@ void instruction_cycle(void)
 
         t_Package *package = package_create_with_header(SUBHEADER_HEADER);
         pcb_serialize(package->payload, PCB);
-        eviction_reason_serialize(package->payload, &eviction_reason);
-        subpayload_serialize(package->payload, SYSCALL_INSTRUCTION);
+        eviction_reason_serialize(package->payload, eviction_reason);
+        subpayload_serialize(package->payload, *SYSCALL_INSTRUCTION);
         package_send(package, SERVER_CPU_DISPATCH.client.fd_client);
         package_destroy(package);
 
-        pcb_free(PCB);
         payload_destroy(SYSCALL_INSTRUCTION);
     }
 }
@@ -184,7 +183,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
     cpu_start_server_for_kernel((void *) &SERVER_CPU_INTERRUPT);
     sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
 
-    e_Kernel_Interrupt *kernel_interrupt_ptr;
+    e_Kernel_Interrupt kernel_interrupt;
     t_Package *package;
 
     while(1) {
@@ -192,7 +191,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
         package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
         switch (package->header) {
         case KERNEL_INTERRUPT_HEADER:
-            kernel_interrupt_ptr = kernel_interrupt_deserialize(package->payload);
+            kernel_interrupt_deserialize(package->payload, &kernel_interrupt);
             break;
         default:
             log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
@@ -202,10 +201,8 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
         package_destroy(package);          
 
         // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
-        if (KERNEL_INTERRUPT < *kernel_interrupt_ptr)
-            KERNEL_INTERRUPT = *kernel_interrupt_ptr;
-        
-        free(kernel_interrupt_ptr);
+        if (KERNEL_INTERRUPT < kernel_interrupt)
+            KERNEL_INTERRUPT = kernel_interrupt;
     }
 
     return NULL;
@@ -419,17 +416,14 @@ void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
     
 }
 
-
-
-t_PCB *cpu_receive_pcb(void)
+void cpu_receive_pcb(t_PCB *pcb)
 {
-    t_PCB *pcb;
 
     t_Package *package = package_receive(SERVER_CPU_DISPATCH.client.fd_client);
     switch (package->header)
     {
     case PCB_HEADER:
-        pcb = pcb_deserialize(package->payload);
+        pcb_deserialize(package->payload, pcb);
         break;
     default:
         log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
@@ -438,7 +432,6 @@ t_PCB *cpu_receive_pcb(void)
     }
     package_destroy(package);
 
-    return pcb;
 }
 
 void request_frame_memory(t_Page page, t_PID pid)
@@ -451,26 +444,24 @@ void request_frame_memory(t_Page page, t_PID pid)
 
 
 
-char *cpu_fetch_next_instruction(void)
+void cpu_fetch_next_instruction(char **line)
 {
     t_Package *package;
 
     // Request
     package = package_create_with_header(INSTRUCTION_REQUEST);
-    payload_enqueue(package->payload, &(PCB->PID), sizeof(PCB->PID));
-    payload_enqueue(package->payload, &(PCB->PC), sizeof(PCB->PC));
+    payload_enqueue(package->payload, &(PCB.PID), sizeof(PCB.PID));
+    payload_enqueue(package->payload, &(PCB.PC), sizeof(PCB.PC));
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
     // Receive
 
-    char *line;
-
     package = package_receive(CONNECTION_MEMORY.fd_connection);
     switch (package->header)
     {
     case CPU_INSTRUCTION_HEADER:
-        line = text_deserialize(package->payload);
+        text_deserialize(package->payload, line);
         break;
     default:
         log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
@@ -478,6 +469,4 @@ char *cpu_fetch_next_instruction(void)
         break;
     }
     package_destroy(package);
-
-    return line;
 }
