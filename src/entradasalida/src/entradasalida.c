@@ -82,9 +82,10 @@ t_IO_Type *io_type_find(char *name) {
 
 int io_operation_execute(t_Payload *operation) {
 
-    e_CPU_OpCode io_opcode;
+	t_EnumValue aux;
 
-    payload_dequeue(operation, &io_opcode, sizeof(t_EnumValue));
+    payload_dequeue(operation, &aux, sizeof(t_EnumValue));
+		e_CPU_OpCode io_opcode = (e_CPU_OpCode) aux;
 
     if(IO_OPERATIONS[io_opcode].function == NULL) {
         log_error(MODULE_LOGGER, "Funcion de operacion de IO no encontrada");

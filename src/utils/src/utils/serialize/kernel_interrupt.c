@@ -7,7 +7,10 @@ void kernel_interrupt_serialize(t_Payload *payload, e_Kernel_Interrupt source) {
   if(payload == NULL)
     return;
 
-  payload_enqueue(payload, &source, sizeof(t_EnumValue));
+  t_EnumValue aux;
+  
+    aux = (t_EnumValue) source;
+  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
 
   kernel_interrupt_log(source);
 }
@@ -16,7 +19,10 @@ void kernel_interrupt_deserialize(t_Payload *payload, e_Kernel_Interrupt *destin
   if(payload == NULL || destination == NULL)
     return;
 
-  payload_dequeue(payload, destination, sizeof(t_EnumValue));
+  t_EnumValue aux;
+
+  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+    *destination = (e_Kernel_Interrupt) aux;
 
   kernel_interrupt_log(*destination);
 }

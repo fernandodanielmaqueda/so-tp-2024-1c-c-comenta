@@ -23,14 +23,6 @@
 #include "utils/socket.h"
 #include "kernel.h"
 
-typedef enum e_Process_State {
-    NEW_STATE,
-    READY_STATE,
-    EXECUTING_STATE,
-    BLOCKED_STATE, 
-	EXIT_STATE
-} e_Process_State;
-
 typedef enum e_Scheduling_Algorithm {
     FIFO_SCHEDULING_ALGORITHM,
     RR_SCHEDULING_ALGORITHM,
@@ -41,7 +33,6 @@ typedef struct t_Scheduling_Algorithm {
     char *name;
     enum e_Scheduling_Algorithm type;
     t_PCB *(*function_fetcher) (void);
-    t_PCB *(*function_reprogrammer) (t_PCB *);
 } t_Scheduling_Algorithm;
 
 extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
@@ -84,7 +75,7 @@ extern sem_t SEM_SHORT_TERM_SCHEDULER;
 extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
 extern sem_t SEM_PROCESS_READY;
 
-extern uint64_t QUANTUM;
+extern t_Quantum QUANTUM;
 extern int MULTIPROGRAMMING_LEVEL;
 
 //consola interactiva
@@ -102,19 +93,13 @@ void *short_term_scheduler(void*);
 t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);
-t_PCB *FIFO_scheduling_reprogrammer(t_PCB *pcb);
-t_PCB *RR_scheduling_reprogrammer(t_PCB *pcb);
-t_PCB *VRR_scheduling_reprogrammer(t_PCB *pcb);
 t_PCB *kernel_get_normal_list(void);
 t_PCB *kernel_get_priority_list(void);
-void switch_process_state(t_PCB* pcb, int new_state);
+void switch_process_state(t_PCB* pcb, e_Process_State new_state);
 t_PCB *pcb_create();
-int current_time(void);
-int asignar_PID();
 void* start_quantum_VRR(t_PCB *pcb);
 void* start_quantum();
 void stop_planificacion(void);
 void init_planificacion(void);
-void free_strv(char** array);
 
 #endif // KERNEL_SCHEDULER_H

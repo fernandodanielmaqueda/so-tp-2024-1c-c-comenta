@@ -16,7 +16,7 @@
       "runOptions": {},
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/../../"
+        "cwd": "${workspaceFolder}/../../",
         "env": {},
         "shell": {}
       },

@@ -10,7 +10,7 @@
 #include "commons/log.h"
 
 typedef uint32_t t_PayloadSize;
-typedef uint8_t t_EnumValue;
+typedef int8_t t_EnumValue;
 
 typedef struct t_Payload {
     t_PayloadSize size; // Tamaño del payload

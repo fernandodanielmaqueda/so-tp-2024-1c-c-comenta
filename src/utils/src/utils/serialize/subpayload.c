@@ -17,7 +17,14 @@ void subpayload_deserialize(t_Payload *payload, t_Payload *subpayload) {
   if(payload == NULL || subpayload == NULL)
     return;
 
-  payload_dequeue(payload, (void *) &(subpayload->size), sizeof(t_PayloadSize)); 
+  payload_dequeue(payload, (void *) &(subpayload->size), sizeof(t_PayloadSize));
+
+  subpayload->stream = malloc((size_t) subpayload->size);
+  if(subpayload->stream == NULL) {
+    log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para el stream de destino");
+    exit(EXIT_FAILURE);
+  }
+
   payload_dequeue(payload, (void *) subpayload->stream, (size_t) subpayload->size);
 
   subpayload_log(*subpayload);

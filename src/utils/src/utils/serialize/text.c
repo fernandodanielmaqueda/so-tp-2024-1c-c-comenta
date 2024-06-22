@@ -7,9 +7,9 @@ void text_serialize(t_Payload *payload, char *source) {
   if(payload == NULL || source == NULL)
     return;
 
-  t_StringLength textLength = (t_StringLength) strlen(source) + 1;
-  payload_enqueue(payload, (void *) &(textLength), sizeof(t_StringLength));
-  payload_enqueue(payload, (void *) source, textLength);
+  t_StringLength textSize = (t_StringLength) strlen(source) + 1;
+  payload_enqueue(payload, (void *) &(textSize), sizeof(t_StringLength));
+  payload_enqueue(payload, (void *) source, textSize);
 
   text_log(source);
 }
@@ -18,16 +18,16 @@ void text_deserialize(t_Payload *payload, char **destination) {
   if(payload == NULL || destination == NULL)
     return;
 
-  t_StringLength textLength;
-  payload_dequeue(payload, (void *) &(textLength), sizeof(t_StringLength));
+  t_StringLength textSize;
+  payload_dequeue(payload, (void *) &(textSize), sizeof(t_StringLength));
 
-  *destination = malloc((size_t) textLength);
+  *destination = malloc((size_t) textSize);
   if(*destination == NULL) {
     log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena de destino");
     exit(EXIT_FAILURE);
   }
   
-  payload_dequeue(payload, (void *) destination, (size_t) textLength);
+  payload_dequeue(payload, (void *) *destination, (size_t) textSize);
 
   text_log(*destination);
 }

@@ -46,12 +46,13 @@ void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize) {
 
 void payload_dequeue(t_Payload *payload, void *destination, size_t destinationSize) {
   // Check for invalid input or not enough data in the payload
-  if (payload == NULL || payload->stream == NULL || destination == NULL || destinationSize == 0 || ((size_t) payload->size) < destinationSize) {
+  if (payload == NULL || payload->stream == NULL || destinationSize == 0 || ((size_t) payload->size) < destinationSize) {
     return;
   }
 
   // Copy the requested data from the payload's stream
-  memcpy(destination, payload->stream, destinationSize);
+  if(destination != NULL)
+    memcpy(destination, payload->stream, destinationSize);
 
   // Calculate the new size of the payload after removing the data
   size_t newSize = ((size_t) (payload->size)) - destinationSize;

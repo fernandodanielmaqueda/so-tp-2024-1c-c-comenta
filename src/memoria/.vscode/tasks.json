@@ -16,7 +16,7 @@
       "runOptions": {},
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/../../"
+        "cwd": "${workspaceFolder}/../../",
         "env": {},
         "shell": {}
       },
@@ -43,7 +43,7 @@
       "runOptions": {},
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/../../"
+        "cwd": "${workspaceFolder}/../../",
         "env": {},
         "shell": {}
       },
@@ -70,7 +70,7 @@
       "runOptions": {},
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/../../"
+        "cwd": "${workspaceFolder}/../../",
         "env": {},
         "shell": {}
       },
@@ -97,7 +97,7 @@
       "runOptions": {},
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/../../"
+        "cwd": "${workspaceFolder}/../../",
         "env": {},
         "shell": {}
       },
@@ -124,7 +124,7 @@
       "runOptions": {},
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/../../"
+        "cwd": "${workspaceFolder}/../../",
         "env": {},
         "shell": {}
       },
@@ -151,7 +151,7 @@
       "runOptions": {},
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/../../"
+        "cwd": "${workspaceFolder}/../../",
         "env": {},
         "shell": {}
       },

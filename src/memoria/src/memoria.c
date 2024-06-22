@@ -76,11 +76,6 @@ void listen_kernel(int fd_kernel) {
                 kill_process(package->payload);
                 break;
 
-            case INSTRUCTIONS_PATH_HEADER:
-                log_info(MODULE_LOGGER, "KERNEL: Solicitud de path de instrucciones recibida.");
-                send_text_with_header(INSTRUCTIONS_PATH_HEADER, PATH_INSTRUCCIONES, FD_CLIENT_KERNEL);
-                break;
-
             case DISCONNECTING_HEADER:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
                 log_destroy(MODULE_LOGGER);
@@ -94,33 +89,59 @@ void listen_kernel(int fd_kernel) {
     }
 }
 
-void create_process(t_Payload* process_data) {
+void create_process(t_Payload *process_data) {
 
+    char *argument_path, *target_path;
     t_Process *new_process = malloc(sizeof(t_Process));
-    t_list* instructions_list = list_create();
-    t_list* pages_table = list_create();
+    t_list *instructions_list = list_create();
+    t_list *pages_table = list_create();
 
-    text_deserialize(process_data, &(new_process->filename));
+    text_deserialize(process_data, &(argument_path));
     payload_dequeue(process_data, &(new_process->PID), sizeof(t_PID));
 
-    //Busco el archivo deseado
-    char* path_buscado = string_duplicate(PATH_INSTRUCCIONES);
-    string_append(&path_buscado, "/");
-    string_append(&path_buscado, new_process->filename);
-    log_debug(MODULE_LOGGER, "Archivo Buscado: %s", path_buscado);
+    if(argument_path[0] == '/') {
+        // Ruta absoluta
+        target_path = argument_path;
+    } else {
+        // Ruta relativa
+        target_path = malloc(strlen(PATH_INSTRUCCIONES) + 1 + strlen(argument_path) + 1);
+        if(target_path == NULL) {
+            log_error(MODULE_LOGGER, "Error de memoria al intentar crear la ruta absoluta del archivo de instrucciones.");
+            exit(EXIT_FAILURE);
+        }
+
+        register int i;
+        for(i = 0; PATH_INSTRUCCIONES[i]; i++) {
+            target_path[i] = PATH_INSTRUCCIONES[i];
+        }
+
+        target_path[i++] = '/';
+
+        register int j;
+        for(j = 0; argument_path[j]; j++) {
+            target_path[i + j] = argument_path[j];
+        }
+
+        target_path[i + j] = '\0';
+    }
+    log_debug(MODULE_LOGGER, "Archivo Buscado: %s", target_path);
 
     //CREAR LISTA INST CON EL PARSER
-    parser_file(path_buscado, instructions_list);
+    if(parser_file(target_path, instructions_list)) {
+        //ENVIAR RTA ERROR A KERNEL
+        send_return_value_with_header(PROCESS_CREATE_HEADER, 1, FD_CLIENT_KERNEL);
+        return;
+    }
 
     new_process->number_of_instructions = list_size(instructions_list);
     new_process->instructions_list = instructions_list;
     new_process->pages_table = pages_table;
     list_add(lista_procesos, new_process);
     
-    log_debug(MODULE_LOGGER, "Archivo leido: %s", path_buscado);
+    log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
 
     //ENVIAR RTA OK A KERNEL
-    send_return_value_with_header(PROCESS_CREATE_HEADER, EXIT_SUCCESS, FD_CLIENT_KERNEL);
+    send_return_value_with_header(PROCESS_CREATE_HEADER, 0, FD_CLIENT_KERNEL);
     
 }
 
@@ -141,16 +162,16 @@ void kill_process (t_Payload* socketRecibido){
     free(process);
     
     //ENVIAR RTA OK A KERNEL
-    send_return_value_with_header(PROCESS_DESTROY_HEADER, EXIT_SUCCESS, FD_CLIENT_KERNEL);
+    send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, FD_CLIENT_KERNEL);
     
 }
 
-void parser_file(char* path, t_list *list_instruction) {
+int parser_file(char* path, t_list *list_instruction) {
 
     FILE* file;
     if ((file = fopen(path, "r")) == NULL) {
-        log_error(MODULE_LOGGER, "%s: No se pudo abrir el archivo de pseudocodigo indicado.", path);
-        exit(EXIT_FAILURE);
+        log_warning(MODULE_LOGGER, "%s: No se pudo abrir el archivo de pseudocodigo indicado.", path);
+        return 1;
     }
 
     char *line = NULL, *subline;
@@ -159,6 +180,7 @@ void parser_file(char* path, t_list *list_instruction) {
 
     while(1) {
 
+        errno = 0;
         if((nread = getline(&line, &length, file)) == -1) {
             if(errno) {
                 log_warning(MODULE_LOGGER, "Funcion getline: %s", strerror(errno));
@@ -167,7 +189,6 @@ void parser_file(char* path, t_list *list_instruction) {
             }
 
             // Se terminó de leer el archivo
-            free(line);
             break;
         }
 
@@ -182,6 +203,7 @@ void parser_file(char* path, t_list *list_instruction) {
 
     free(line);       
     fclose(file);
+    return 0;
 }
 
 void listen_cpu(int fd_cpu) {

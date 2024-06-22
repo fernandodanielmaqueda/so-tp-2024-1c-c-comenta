@@ -17,6 +17,14 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
+typedef enum e_Process_State {
+    NEW_STATE,
+    READY_STATE,
+    EXECUTING_STATE,
+    BLOCKED_STATE, 
+	EXIT_STATE
+} e_Process_State;
+
 typedef struct t_CPU_Registers {
     uint8_t AX;
     uint8_t BX;
@@ -36,6 +44,8 @@ typedef struct t_CPU_Registers {
 
 typedef uint32_t t_PID;
 typedef uint32_t t_PC;
+typedef uint32_t t_MemorySize;
+typedef uint64_t t_Quantum;
 
 typedef struct t_PCB {
     t_PID PID;
@@ -55,10 +65,8 @@ typedef struct t_PCB {
     uint32_t RDX;
     uint32_t SI;
     uint32_t DI;
-    uint64_t quantum; //remanente del quantum
-    uint8_t current_state; //enum Process_State current_state;
-    double arrival_READY; // che llego en t=5s
-    double arrival_RUNNING; // che corrio en runnign t=20seg 
+    e_Process_State current_state;
+    t_Quantum quantum;
 } t_PCB;
 
 

@@ -80,6 +80,7 @@ void arguments_remove(t_Arguments *arguments) {
 
   free(arguments->argv);
   arguments->argc = 0;
+  arguments->argv = NULL;
 }
 
 void arguments_destroy(t_Arguments *arguments) {

@@ -36,20 +36,6 @@ void send_process_create(t_Return_Value return_value, int fd_socket) {
 }
 */
 
-void send_cpu_memory_request(e_CPU_Memory_Request memory_request, int fd_socket) {
-  t_Package *package = package_create_with_header(CPU_MEMORY_REQUEST_HEADER);
-  cpu_memory_request_serialize(package->payload, memory_request);
-  package_send(package, fd_socket);
-  package_destroy(package);
-}
-
-void send_cpu_opcode(e_CPU_OpCode cpu_opcode, int fd_socket) {
-  t_Package *package = package_create_with_header(CPU_INSTRUCTION_HEADER);
-  cpu_opcode_serialize(package->payload, cpu_opcode);
-  package_send(package, fd_socket);
-  package_destroy(package);
-}
-
 void send_eviction_reason(e_Eviction_Reason eviction_reason, int fd_socket) {
   t_Package *package = package_create_with_header(EVICTION_REASON_HEADER);
   eviction_reason_serialize(package->payload, eviction_reason);

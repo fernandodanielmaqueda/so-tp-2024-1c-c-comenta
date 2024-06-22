@@ -36,8 +36,6 @@ extern t_Command CONSOLE_COMMANDS[];
 extern t_log *CONSOLE_LOGGER;
 extern char *CONSOLE_LOG_PATHNAME;
 
-extern char *INSTRUCTIONS_PATH;
-
 void *initialize_kernel_console(void *argument);
 void initialize_readline(void);
 char **console_completion(const char *text, int start, int end);

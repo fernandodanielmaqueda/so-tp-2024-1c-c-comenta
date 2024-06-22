@@ -102,7 +102,7 @@ void instruction_cycle(void)
 
     char *IR;
     t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS, false);
-    e_Eviction_Reason eviction_reason;
+    e_Eviction_Reason eviction_reason = INTERRUPTION_EVICTION_REASON;
     e_CPU_OpCode cpu_opcode;
     int exit_status;
 
@@ -119,9 +119,9 @@ void instruction_cycle(void)
         while(1) {
 
             // Fetch
+            log_info(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB.PID, PCB.PC);
             cpu_fetch_next_instruction(&IR);
             // FALTA CONSIDERAR QUE EL FETCH FALLE YA SEA PORQUE NO HAY MÁS INSTRUCCIONES QUE EJECUTAR O PORQUE HUBO UN ERROR DE LECTURA
-            log_info(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB.PID, PCB.PC);
 
             // Decode
             arguments_add(arguments, IR);
@@ -131,7 +131,7 @@ void instruction_cycle(void)
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
                 exit_status = EXIT_FAILURE;
             } else {
-                // EXECUTE
+                // Execute
                 exit_status = CPU_OPERATIONS[cpu_opcode].function(arguments->argc, arguments->argv);
             }
 
@@ -458,15 +458,14 @@ void cpu_fetch_next_instruction(char **line)
     // Receive
 
     package = package_receive(CONNECTION_MEMORY.fd_connection);
-    switch (package->header)
-    {
-    case CPU_INSTRUCTION_HEADER:
-        text_deserialize(package->payload, line);
-        break;
-    default:
-        log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
-        exit(EXIT_FAILURE);
-        break;
+    switch (package->header) {
+        case INSTRUCTION_REQUEST:
+            text_deserialize(package->payload, line);
+            break;
+        default:
+            log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
+            exit(EXIT_FAILURE);
+            break;
     }
     package_destroy(package);
 }

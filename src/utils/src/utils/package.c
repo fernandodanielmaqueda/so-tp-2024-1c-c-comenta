@@ -47,7 +47,10 @@ void package_send(t_Package *package, int fd_socket) {
 
   size_t offset = 0;
 
-  offset = memcpy_serialize(buffer, offset, &(package->header), sizeof(t_EnumValue));
+  t_EnumValue aux;
+
+    aux = (t_EnumValue) package->header;
+  offset = memcpy_serialize(buffer, offset, &(aux), sizeof(t_EnumValue));
   offset = memcpy_serialize(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
   offset = memcpy_serialize(buffer, offset, package->payload->stream, (size_t) package->payload->size);
 
@@ -81,9 +84,9 @@ void package_receive_header(t_Package *package, int fd_socket) {
 
   ssize_t bytes;
 
-  t_EnumValue header_serialized;
-  bytes = recv(fd_socket, (void *) &(header_serialized), sizeof(t_EnumValue), 0); // MSG_WAITALL
+  t_EnumValue aux;
 
+  bytes = recv(fd_socket, (void *) &(aux), sizeof(t_EnumValue), 0); // MSG_WAITALL
   if (bytes == 0) {
       log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
       close(fd_socket);
@@ -100,7 +103,7 @@ void package_receive_header(t_Package *package, int fd_socket) {
       exit(EXIT_FAILURE);
   }
 
-  package->header = (e_Header) header_serialized;
+  package->header = (e_Header) aux;
 }
 
 void package_receive_payload(t_Package *package, int fd_socket) {

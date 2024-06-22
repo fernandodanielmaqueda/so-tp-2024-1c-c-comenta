@@ -20,9 +20,10 @@ int BLOCKING_SYSCALL;
 
 int syscall_execute(t_Payload *syscall_instruction) {
 
-    e_CPU_OpCode syscall_opcode;
+	t_EnumValue aux;
 
-    payload_dequeue(syscall_instruction, &syscall_opcode, sizeof(t_EnumValue));
+    payload_dequeue(syscall_instruction, &aux, sizeof(t_EnumValue));
+	    e_CPU_OpCode syscall_opcode = (e_CPU_OpCode) aux;
 
     if(SYSCALLS[syscall_opcode].function == NULL) {
         log_error(MODULE_LOGGER, "Funcion de syscall no encontrada");

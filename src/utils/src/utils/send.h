@@ -5,7 +5,6 @@
 #define UTILS_SEND_H
 
 #include "utils/package.h"
-#include "utils/serialize/cpu_memory_request.h"
 #include "utils/serialize/cpu_opcode.h"
 #include "utils/serialize/eviction_reason.h"
 #include "utils/serialize/kernel_interrupt.h"
@@ -26,22 +25,6 @@ void send_header(e_Header header, int fd_socket);
 
 void send_return_value_with_header(e_Header header, t_Return_Value return_value, int fd_socket);
 void receive_return_value_with_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket);
-
-
-/**
- * @brief Enviar pcb (incluye el serializado)
- * @param pcb t_PCB a enviar.
- * @param fd_socket Socket desde donde se va a recibir el pcb.
- */
-void send_cpu_memory_request(e_CPU_Memory_Request memory_request, int socket);
-
-
-/**
- * @brief Enviar cpu_opcode (incluye el serializado)
- * @param cpu_opcode e_CPU_OpCode a enviar.
- * @param fd_socket Socket desde donde se va a recibir el cpu_opcode.
- */
-void send_cpu_opcode(e_CPU_OpCode cpu_opcode, int fd_socket);
 
 
 /**

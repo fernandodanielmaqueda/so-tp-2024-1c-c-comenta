@@ -24,7 +24,6 @@
 #include "socket.h"
 
 typedef struct t_Process {
-    char* filename;
     t_PID PID;
     int number_of_instructions;
     t_list* instructions_list;
@@ -49,8 +48,6 @@ typedef struct t_Frame {
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
 
-void listen_kernel(int fd_kernel);
-
 /**
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
@@ -63,12 +60,7 @@ void create_process(t_Payload* socketRecibido);
  */
 void kill_process (t_Payload* socketRecibido);
 
-
-void create_instruction(FILE* file, t_list* list_instruction);
-void parser_file(char* path, t_list* list_instruction);
-void listen_cpu(int fd_cpu);
 void listen_io(int fd_io);
-t_Process* seek_process_by_pid(t_PID pidBuscado);
 
 /**
  * @brief Busca la lista de instruccion y devuelve la instruccion buscada
@@ -92,7 +84,7 @@ void create_instruction(FILE* file, t_list* list_instruction);
  * @param path Path donde se encuentra el archivo.
  * @param list_instruction Lista a llenarse con las instrucciones del archivo.
  */
-void parser_file(char* path, t_list* list_instruction);
+int parser_file(char* path, t_list* list_instruction);
 
 
 /**

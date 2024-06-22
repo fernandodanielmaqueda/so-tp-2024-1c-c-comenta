@@ -16,20 +16,13 @@ t_Command CONSOLE_COMMANDS[] = {
 
 int EXIT_CONSOLE = 0;
 
-char *INSTRUCTIONS_PATH;
-
 void *initialize_kernel_console(void *argument) {
 
     CONSOLE_LOGGER = log_create(CONSOLE_LOG_PATHNAME, "Console", true, LOG_LEVEL_TRACE);
 
-    send_header(INSTRUCTIONS_PATH_HEADER, CONNECTION_MEMORY.fd_connection);
-	receive_text_with_header(INSTRUCTIONS_PATH_HEADER, &INSTRUCTIONS_PATH, CONNECTION_MEMORY.fd_connection);
-
-    log_info(CONSOLE_LOGGER, "%s\n\n", INSTRUCTIONS_PATH);
-
     char *line, *subline;
 
-    initialize_readline();	/* Bind our completer. */
+    initialize_readline();
 
     while(!EXIT_CONSOLE) {
         line = readline("> ");
@@ -46,8 +39,6 @@ void *initialize_kernel_console(void *argument) {
 
         free(line);
     }
-
-    free(INSTRUCTIONS_PATH);
 
     clear_history();
     return NULL;
@@ -129,7 +120,7 @@ t_Command *find_command (char *name) {
 int kernel_command_run_script(int argc, char* argv[]) {
 
     if(argc != 2) {
-        log_warning(CONSOLE_LOGGER, "Uso: EJECUTAR_SCRIPT <PATH>");
+        log_warning(CONSOLE_LOGGER, "Uso: EJECUTAR_SCRIPT <PATH (EN KERNEL)>");
         return EXIT_FAILURE;
     }
 
@@ -175,22 +166,14 @@ int kernel_command_run_script(int argc, char* argv[]) {
 int kernel_command_start_process(int argc, char* argv[]) {
 
     if(argc != 2) {
-        log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PROCESO <PATH>");
+        log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PROCESO <PATH (EN MEMORIA)>");
         return EXIT_FAILURE;
     }
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
 
-    char *abspath = realpath(argv[1], NULL);
-    if(abspath == NULL) {
-        log_warning(CONSOLE_LOGGER, "%s: No se pudo encontrar el <PATH>: %s", argv[1], strerror(errno));
-        return EXIT_FAILURE;
-    }
-
-    log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", abspath);
-
     pthread_mutex_lock(&MUTEX_LIST_START_PROCESS);
-        list_add(START_PROCESS, abspath);
+        list_add(START_PROCESS, strdup(argv[1]));
     pthread_mutex_unlock(&MUTEX_LIST_START_PROCESS);
 
     sem_post(&SEM_LONG_TERM_SCHEDULER);
