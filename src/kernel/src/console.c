@@ -1,5 +1,6 @@
 #include "console.h"
 
+
 t_log *CONSOLE_LOGGER;
 char *CONSOLE_LOG_PATHNAME = "console.log";
 
@@ -191,6 +192,9 @@ int kernel_command_kill_process(int argc, char* argv[]) {
     log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
 
     // TODO: Implementación
+    switch_process_state(atoi(argv[1]), EXIT_STATE);
+
+    
 
     return EXIT_SUCCESS;
 }

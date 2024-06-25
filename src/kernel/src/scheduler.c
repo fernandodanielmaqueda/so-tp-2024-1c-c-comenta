@@ -115,6 +115,16 @@ void *long_term_scheduler(void *parameter) {
 			switch_process_state(pcb, READY_STATE);
 		}
 
+		//ANALIZAMOS ESTADO EXIT
+		//RECIBIR EL MOTIVO DE INTERRUPCION QUE YA ME ENVIO CPU
+		/* 
+		pthread_mutex_lock(&mutex_LIST_EXIT);
+			t_PCB pcb = list_get(LIST_EXIT, 0);
+		pthread_mutex_unlock(&mutex_LIST_EXIT);
+		*/
+
+
+
 		free(path);
 	}
 
@@ -428,11 +438,19 @@ bool _remover_por_pid(void *element) {
 		//Todos los casos de salida de un proceso.
 		case EXIT_STATE:
 		{
+
+			t_Package *package = package_create_with_header(PROCESS_DESTROY_HEADER);
+			payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
+			package_send(package, CONNECTION_MEMORY.fd_connection);
+			package_destroy(package);
+
 			pthread_mutex_lock(&mutex_LIST_EXIT);
 				list_add(LIST_EXIT, pcb);
 			pthread_mutex_unlock(&mutex_LIST_EXIT);
 			log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
-			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);		
+			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);	
+
+			//te tenemos qeu enviar algo a consola??	
 			break;
 		}
 	}
