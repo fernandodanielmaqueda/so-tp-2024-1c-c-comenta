@@ -27,8 +27,6 @@ uint32_t value = 0;
 
 // char *recurso = NULL;
 // no sirveaca me aprece--> t_PCB new_pcb;
-e_Register register_origin;
-e_Register register_destination;
 
 e_Kernel_Interrupt KERNEL_INTERRUPT;
 int SYSCALL_CALLED;
@@ -45,23 +43,6 @@ uint32_t unit_work = 0;
 char *interfaz = NULL;
 
 pthread_mutex_t sem_mutex_tlb;
-
-const char *t_register_string[] = {
-    [AX_REGISTER] = "AX",
-    [BX_REGISTER] = "BX",
-    [CX_REGISTER] = "CX",
-    [DX_REGISTER] = "DX",
-    [EAX_REGISTER] = "EAX",
-    [EBX_REGISTER] = "EBX",
-    [ECX_REGISTER] = "ECX",
-    [EDX_REGISTER] = "EDX",
-    [RAX_REGISTER] = "RAX",
-    [RBX_REGISTER] = "RBX",
-    [RCX_REGISTER] = "RCX",
-    [RDX_REGISTER] = "RDX",
-    [SI_REGISTER] = "SI",
-    [DI_REGISTER] = "DI"
-};
 
 const char *t_interrupt_type_string[] = {
     [ERROR_EVICTION_REASON] = "ERROR_EVICTION_REASON",
@@ -126,8 +107,7 @@ void instruction_cycle(void)
             // Decode
             arguments_add(arguments, IR);
             // FALTA VALIDAR LA SALIDA DE arguments_add
-            cpu_opcode = decode_instruction(arguments->argv[0]);
-            if (cpu_opcode == -1) {
+            if(decode_instruction(arguments->argv[0], &cpu_opcode)) {
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
                 exit_status = EXIT_FAILURE;
             } else {
@@ -208,44 +188,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
     return NULL;
 }
 
-int string_to_register(const char *string)
-{
-
-    if (strcmp(string, "AX") == 0)
-        return AX_REGISTER;
-    else if (strcmp(string, "BX") == 0)
-        return BX_REGISTER;
-    else if (strcmp(string, "CX") == 0)
-        return CX_REGISTER;
-    else if (strcmp(string, "DX") == 0)
-        return DX_REGISTER;
-    else if (strcmp(string, "EAX") == 0)
-        return EAX_REGISTER;
-    else if (strcmp(string, "EBX") == 0)
-        return EBX_REGISTER;
-    else if (strcmp(string, "ECX") == 0)
-        return ECX_REGISTER;
-    else if (strcmp(string, "EDX") == 0)
-        return EDX_REGISTER;
-    else if (strcmp(string, "RAX") == 0)
-        return RAX_REGISTER;
-    else if (strcmp(string, "RBX") == 0)
-        return RBX_REGISTER;
-    else if (strcmp(string, "RCX") == 0)
-        return RCX_REGISTER;
-    else if (strcmp(string, "SI") == 0)
-        return SI_REGISTER;
-    else if (strcmp(string, "DI") == 0)
-        return DI_REGISTER;
-
-    else
-    {
-        log_error(MODULE_LOGGER, "Se intentó convertir string a registro un parámetro que no es registro.");
-        exit(EXIT_FAILURE);
-    }
-}
-
-int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigin, int register_destination, int in_out)
+int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin, int register_destination, int in_out)
 {
 
     t_Page nro_page = (t_Page) floor(dir_logica / tamanio_pagina);
@@ -255,27 +198,25 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
 
     // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
     pthread_mutex_lock(&sem_mutex_tlb);
-    int frame_tlb = check_tlb(pcb->PID, nro_page);
+    int frame_tlb = check_tlb(pid, nro_page);
     pthread_mutex_unlock(&sem_mutex_tlb);
 
     if (frame_tlb != -1)
     {
         nro_frame_required = frame_tlb;
-        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pcb->PID, nro_page);
-        log_info(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pcb->PID, nro_page);
-        tlb_access(pcb, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
+        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
+        log_info(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
+        tlb_access(pid, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
         dir_fisica = nro_frame_required * tamanio_pagina + offset;
 
-        return dir_fisica;
-
-       
+        return dir_fisica;       
     }
     else
     {
-        request_frame_memory(pcb->PID, nro_page);
+        request_frame_memory(pid, nro_page);
         //Obtener Marco: “PID: <PID> - OBTENER MARCO - Página: <NUMERO_PAGINA> - Marco: <NUMERO_MARCO>”.
-        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pcb->PID, nro_page);
+        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
 
         t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
         t_PID pidBuscado;
@@ -289,17 +230,17 @@ int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigi
             if (list_size(tlb) < CANTIDAD_ENTRADAS_TLB)
             {
 
-                add_to_tlb(pcb->PID, nro_page, frame);
+                add_to_tlb(pid, nro_page, frame);
                 log_trace(MODULE_LOGGER, "Agrego entrada a la TLB");
             }
             else
             {
 
-                replace_tlb_input(pcb->PID, nro_page, frame);
+                replace_tlb_input(pid, nro_page, frame);
                 log_trace(MODULE_LOGGER, "Reemplazo entrada a la TLB");
             }
 
-            log_info(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pcb->PID, nro_page);
+            log_info(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pid, nro_page);
             package_destroy(package);
         }
 
@@ -331,7 +272,7 @@ int check_tlb(t_PID process_id, t_Page page_number)
     return frame_number;
 }
 
-void tlb_access(t_PCB *pcb, t_Page nro_page, int frame_number_required, int direc, int register_origin, int register_destination, int in_out)
+void tlb_access(t_PID pid, t_Page nro_page, int frame_number_required, int direc, int register_origin, int register_destination, int in_out)
 {
 
     t_Package* package;
@@ -340,7 +281,7 @@ void tlb_access(t_PCB *pcb, t_Page nro_page, int frame_number_required, int dire
     {
 
         package = package_create_with_header(WRITE_REQUEST);
-        payload_enqueue(package->payload, &(pcb->PID), sizeof(t_PID) );
+        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
         payload_enqueue(package->payload, &nro_page, sizeof(t_Page) );
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
@@ -352,7 +293,7 @@ void tlb_access(t_PCB *pcb, t_Page nro_page, int frame_number_required, int dire
             exit(EXIT_FAILURE);
         }  else
         {
-            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR  - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
+            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR  - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
            
         }
         
@@ -361,7 +302,7 @@ void tlb_access(t_PCB *pcb, t_Page nro_page, int frame_number_required, int dire
     {
 
         package = package_create_with_header(WRITE_REQUEST);
-        payload_enqueue(package->payload, &(pcb->PID), sizeof(t_PID) );
+        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
         payload_enqueue(package->payload, &nro_page, sizeof(t_Page) );
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
@@ -373,7 +314,7 @@ void tlb_access(t_PCB *pcb, t_Page nro_page, int frame_number_required, int dire
             exit(EXIT_FAILURE);
         }  else
         {
-            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pcb->PID, nro_page, frame_number_required, direc);
+            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
         }
     }
 

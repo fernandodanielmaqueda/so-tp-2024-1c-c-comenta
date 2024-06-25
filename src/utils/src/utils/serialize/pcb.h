@@ -25,23 +25,6 @@ typedef enum e_Process_State {
 	EXIT_STATE
 } e_Process_State;
 
-typedef struct t_CPU_Registers {
-    uint8_t AX;
-    uint8_t BX;
-    uint8_t CX; 
-    uint8_t DX;
-    uint32_t EAX;
-    uint32_t EBX;
-    uint32_t ECX;
-    uint32_t EDX;
-    uint32_t RAX;
-    uint32_t RBX;
-    uint32_t RCX;
-    uint32_t RDX;
-    uint32_t SI;
-    uint32_t DI;
-} t_CPU_Registers;
-
 typedef uint32_t t_PID;
 typedef uint32_t t_PC;
 typedef uint32_t t_MemorySize;
@@ -50,7 +33,6 @@ typedef uint64_t t_Quantum;
 typedef struct t_PCB {
     t_PID PID;
     t_PC PC;
-    //registers_1[t_register];
     uint8_t AX;
     uint8_t BX;
     uint8_t CX; 

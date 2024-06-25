@@ -26,29 +26,13 @@
 #include "utils/socket.h"
 #include "socket.h"
 #include "opcodes.h"
+#include "registers.h"
 
 //Para el SET en el ciclo de instruccion verificar si es in o out
-typedef enum {
+typedef enum t_in_out {
 	IN,
 	OUT
 } t_in_out;
-
-typedef enum e_Register {
-	AX_REGISTER,
-	BX_REGISTER,
-	CX_REGISTER,
-	DX_REGISTER,
-    EAX_REGISTER,
-    EBX_REGISTER,
-    ECX_REGISTER,
-    EDX_REGISTER,
-    RAX_REGISTER,
-    RBX_REGISTER,
-    RCX_REGISTER,
-    RDX_REGISTER,
-    SI_REGISTER,
-    DI_REGISTER
-} e_Register;
 
 typedef uint32_t t_Page;
 typedef uint32_t t_Frame;
@@ -95,8 +79,6 @@ extern t_list *tlb;          // tlb que voy a ir creando para darle valores que 
 //extern uint32_t value;
 
 extern t_PCB PCB;
-extern e_Register register_origin;
-extern e_Register register_destination;
 
 extern e_Eviction_Reason EVICTION_REASON;
 
@@ -111,7 +93,6 @@ extern char *interfaz;
 
 extern pthread_mutex_t sem_mutex_tlb;
 
-extern const char *t_register_string[];
 extern const char *t_interrupt_type_string[];
 
 #define MAX_CPU_INSTRUCTION_ARGUMENTS 1 + 5
@@ -124,10 +105,9 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
 void *kernel_cpu_interrupt_handler(void *NULL_parameter);
-int string_to_register(const char *string);
-int mmu(uint32_t dir_logica, t_PCB *pcb, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
+int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin , int register_destination, int in_out);
 int check_tlb(t_PID process_id, t_Page nro_page);
-void tlb_access(t_PCB *pcb, t_Page nro_page, int nro_frame_required, int direc, int register_origin, int register_destination, int in_out);
+void tlb_access(t_PID pid, t_Page nro_page, int nro_frame_required, int direc, int register_origin, int register_destination, int in_out);
 void request_data_in_memory(int nro_frame_required, t_PID pid, t_Page nro_page, int direc, int register_origin, int register_destination);
 void request_data_out_memory(int nro_frame_required, t_PID pid, t_Page nro_page, int direc, int register_origin, int register_destination);
 void request_frame_memory(t_Page page, t_PID pid);

@@ -34,7 +34,7 @@ typedef struct t_CPU_Operation {
 
 extern t_CPU_Operation CPU_OPERATIONS[];
 
-e_CPU_OpCode decode_instruction(char *name);
+int decode_instruction(char *name, e_CPU_OpCode *cpu_opcode);
 int set_cpu_operation(int argc, char **argv);
 int mov_in_cpu_operation(int argc, char **argv);
 int mov_out_cpu_operation(int argc, char **argv);
