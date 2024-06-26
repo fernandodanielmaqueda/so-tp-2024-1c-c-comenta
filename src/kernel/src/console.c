@@ -200,8 +200,6 @@ int kernel_command_kill_process(int argc, char* argv[]) {
     // TODO: Implementación
     // switch_process_state(atoi(argv[1]), EXIT_STATE);
 
-    
-
     return 0;
 }
 

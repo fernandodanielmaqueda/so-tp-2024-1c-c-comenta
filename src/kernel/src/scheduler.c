@@ -122,17 +122,9 @@ void *long_term_scheduler_new(void *parameter) {
 			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", pcb->instructions_path);
 		} else {
 			switch_process_state(pcb, READY_STATE);
-		}
+		}	
 
-		free(pcb->instructions_path);
-
-		//ANALIZAMOS ESTADO EXIT
-		//RECIBIR EL MOTIVO DE INTERRUPCION QUE YA ME ENVIO CPU
-		/* 
-		pthread_mutex_lock(&mutex_LIST_EXIT);
-			t_PCB pcb = list_get(LIST_EXIT, 0);
-		pthread_mutex_unlock(&mutex_LIST_EXIT);
-		*/
+		free(path);
 	}
 
 	return NULL;
@@ -149,31 +141,13 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 			pcb = (t_PCB *) list_remove(LIST_EXIT, 0);
 		pthread_mutex_unlock(&mutex_LIST_EXIT);
 
+		package = package_create_with_header(PROCESS_DESTROY_HEADER);
+		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
+		package_send(package, CONNECTION_MEMORY.fd_connection);
+		package_destroy(package);
+		
 		log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->PID, EXIT_REASONS[pcb->exit_reason]);
-
-		// FALTA LA LÓGICA DE LIBERACIÓN DE PROCESO
-
-		/*
-		HACE FALTA ESTE SWITCH O NO ?
-		switch(pcb->exit_reason) {
-			case OUT_OF_MEMORY:
-			{
-				t_Package *package = package_create_with_header(PROCESS_DESTROY_HEADER);
-				payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
-				package_send(package, CONNECTION_MEMORY.fd_connection);
-				package_destroy(package);
-
-				pthread_mutex_lock(&mutex_LIST_EXIT);
-					list_add(LIST_EXIT, pcb);
-				pthread_mutex_unlock(&mutex_LIST_EXIT);
-				
-				sem_post(&SEM_MULTIPROGRAMMING_LEVEL);	
-					
-				break;
-			}
-		}
-		*/
-
+		free(pcb);
 		sem_post(&SEM_MULTIPROGRAMMING_POSTER);
 		
 	}
@@ -182,7 +156,7 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 }
 
 void *short_term_scheduler(void *parameter) {
-
+ 
 	t_PCB *pcb;
 	e_Eviction_Reason eviction_reason;
 	t_Payload *syscall_instruction = payload_create();
@@ -376,33 +350,6 @@ t_PCB *VRR_scheduling_algorithm(void) {
   return pcb; */
 }
 
-/*
-void update_pcb_q(t_pcb *pcb)
-{
-    t_config_kernel *cfg = get_config();
-    if (!!strcmp(cfg->ALGORITMO_PLANIFICACION, "VRR"))
-    {
-        return;
-    }
-
-    temporal_stop(VAR_TEMP_QUANTUM);
-    int time_elapsed = (int)temporal_gettime(VAR_TEMP_QUANTUM);
-    int time_remaining = pcb->quantum - time_elapsed;
-    temporal_destroy(VAR_TEMP_QUANTUM);
-
-    log_trace(get_logger(), "PCB_Q (%i) - TIME_ELAPSED (%i) = time_remaining %i", pcb->quantum, time_elapsed,
-              time_remaining);
-
-    if (time_remaining > 0)
-    {
-        pcb->quantum = time_remaining;
-    }
-        pcb->quantum = cfg->QUANTUM;
- }
-
-DESCOMENTAR
-*/
-
 void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 	e_Process_State previous_state = pcb->current_state;
 	pcb->current_state = new_state;
@@ -543,7 +490,6 @@ t_PCB *pcb_create() {
     pcb->DI = 0;
 	pcb->current_state = NEW_STATE;
 	pcb->quantum = QUANTUM;
-	pcb->exit_reason = QUANTUM;
 
 	return pcb;
 }
