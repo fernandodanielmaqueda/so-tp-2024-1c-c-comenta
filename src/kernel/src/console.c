@@ -1,5 +1,6 @@
 #include "console.h"
 
+
 t_log *CONSOLE_LOGGER;
 char *CONSOLE_LOG_PATHNAME = "console.log";
 
@@ -176,7 +177,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
         list_add(START_PROCESS, strdup(argv[1]));
     pthread_mutex_unlock(&MUTEX_LIST_START_PROCESS);
 
-    sem_post(&SEM_LONG_TERM_SCHEDULER);
+    sem_post(&SEM_LONG_TERM_SCHEDULER_NEW);
 
     return 0;
 }
@@ -191,6 +192,9 @@ int kernel_command_kill_process(int argc, char* argv[]) {
     log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
 
     // TODO: Implementación
+    switch_process_state(atoi(argv[1]), EXIT_STATE);
+
+    
 
     return 0;
 }

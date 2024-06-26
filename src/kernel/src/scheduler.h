@@ -37,6 +37,8 @@ typedef struct t_Scheduling_Algorithm {
 
 extern t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 
+extern const char *EXIT_REASONS[];
+
 extern int QUANTUM_INTERRUPT; 
 extern pthread_mutex_t MUTEX_QUANTUM_INTERRUPT;
 
@@ -65,12 +67,14 @@ extern sem_t sem_detener_block_ready;
 extern sem_t sem_detener_block;
 extern sem_t sem_detener_planificacion;
 
-extern pthread_t THREAD_LONG_TERM_SCHEDULER;
+extern pthread_t THREAD_LONG_TERM_SCHEDULER_NEW;
+extern pthread_t THREAD_LONG_TERM_SCHEDULER_EXIT;
 extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
 extern pthread_t hilo_mensajes_cpu;
 extern pthread_t THREAD_QUANTUM_INTERRUPT;
 
-extern sem_t SEM_LONG_TERM_SCHEDULER;
+extern sem_t SEM_LONG_TERM_SCHEDULER_NEW;
+extern sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 extern sem_t SEM_SHORT_TERM_SCHEDULER;
 extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
 extern sem_t SEM_PROCESS_READY;
@@ -88,7 +92,8 @@ extern int PID_COUNTER;
 t_Scheduling_Algorithm *find_scheduling_algorithm(char *name);
 void initialize_long_term_scheduler(void);
 void initialize_short_term_scheduler(void);
-void *long_term_scheduler(void*);
+void *long_term_scheduler_new(void*);
+void *long_term_scheduler_exit(void *NULL_parameter);
 void *short_term_scheduler(void*);
 t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);

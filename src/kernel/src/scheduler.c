@@ -9,6 +9,14 @@ t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 
 t_Scheduling_Algorithm *SCHEDULING_ALGORITHM;
 
+const char *EXIT_REASONS[] = {
+	[SUCCESS_EXIT_REASON] = "SUCCESS",
+	[INVALID_RESOURCE_EXIT_REASON] = "INVALID_RESOURCE",
+	[INVALID_INTERFACE_EXIT_REASON] = "INVALID_INTERFACE",
+	[OUT_OF_MEMORY_EXIT_REASON] = "OUT_OF_MEMORY",
+	[INTERRUPTED_BY_USER_EXIT_REASON] = "INTERRUPTED_BY_USER"
+};  
+
 int QUANTUM_INTERRUPT;
 pthread_mutex_t MUTEX_QUANTUM_INTERRUPT;
 
@@ -39,12 +47,14 @@ sem_t sem_detener_block_ready;
 sem_t sem_detener_block;
 sem_t sem_detener_planificacion;
 
-pthread_t THREAD_LONG_TERM_SCHEDULER;
+pthread_t THREAD_LONG_TERM_SCHEDULER_NEW;
+pthread_t THREAD_LONG_TERM_SCHEDULER_EXIT;
 pthread_t THREAD_SHORT_TERM_SCHEDULER;
 pthread_t hilo_mensajes_cpu;
 pthread_t THREAD_QUANTUM_INTERRUPT;
 
-sem_t SEM_LONG_TERM_SCHEDULER;
+sem_t SEM_LONG_TERM_SCHEDULER_NEW;
+sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 sem_t SEM_SHORT_TERM_SCHEDULER;
 sem_t SEM_MULTIPROGRAMMING_LEVEL; // 20 procesos en sim
 sem_t SEM_PROCESS_READY; // Al principio en 0
@@ -70,9 +80,12 @@ t_Scheduling_Algorithm *find_scheduling_algorithm(char *name) {
 }
 
 void initialize_long_term_scheduler(void) {
-	pthread_create(&THREAD_LONG_TERM_SCHEDULER, NULL, long_term_scheduler, NULL);
+	pthread_create(&THREAD_LONG_TERM_SCHEDULER_NEW, NULL, long_term_scheduler_new, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
-	pthread_detach(THREAD_LONG_TERM_SCHEDULER);
+	pthread_detach(THREAD_LONG_TERM_SCHEDULER_NEW);
+	pthread_create(&THREAD_LONG_TERM_SCHEDULER_EXIT, NULL, long_term_scheduler_exit, NULL);
+	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
+	pthread_detach(THREAD_LONG_TERM_SCHEDULER_EXIT);
 }
 
 void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENTO
@@ -81,14 +94,14 @@ void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENT
 	pthread_detach(THREAD_SHORT_TERM_SCHEDULER);
 }
 
-void *long_term_scheduler(void *parameter) {
+void *long_term_scheduler_new(void *parameter) {
 
 	char *path;
 	t_PCB *pcb;
 
     t_Package* package;
 	while(1) {
-		sem_wait(&SEM_LONG_TERM_SCHEDULER);
+		sem_wait(&SEM_LONG_TERM_SCHEDULER_NEW);
 		sem_wait(&SEM_MULTIPROGRAMMING_LEVEL);
 
 		pthread_mutex_lock(&MUTEX_LIST_START_PROCESS);
@@ -115,7 +128,58 @@ void *long_term_scheduler(void *parameter) {
 			switch_process_state(pcb, READY_STATE);
 		}
 
+		//ANALIZAMOS ESTADO EXIT
+		//RECIBIR EL MOTIVO DE INTERRUPCION QUE YA ME ENVIO CPU
+		/* 
+		pthread_mutex_lock(&mutex_LIST_EXIT);
+			t_PCB pcb = list_get(LIST_EXIT, 0);
+		pthread_mutex_unlock(&mutex_LIST_EXIT);
+		*/
+
 		free(path);
+	}
+
+	return NULL;
+}
+
+void *long_term_scheduler_exit(void *NULL_parameter) {
+	t_PCB *pcb;
+    t_Package* package;
+
+	while(1) {
+		sem_wait(&SEM_LONG_TERM_SCHEDULER_EXIT);
+
+		pthread_mutex_lock(&mutex_LIST_EXIT);
+			pcb = (t_PCB *) list_remove(LIST_EXIT, 0);
+		pthread_mutex_unlock(&mutex_LIST_EXIT);
+
+		log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->PID, EXIT_REASONS[pcb->exit_reason]);
+
+		// FALTA LA LÓGICA DE LIBERACIÓN DE PROCESO
+
+		/*
+		HACE FALTA ESTE SWITCH O NO ?
+		switch(pcb->exit_reason) {
+			case OUT_OF_MEMORY:
+			{
+				t_Package *package = package_create_with_header(PROCESS_DESTROY_HEADER);
+				payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
+				package_send(package, CONNECTION_MEMORY.fd_connection);
+				package_destroy(package);
+
+				pthread_mutex_lock(&mutex_LIST_EXIT);
+					list_add(LIST_EXIT, pcb);
+				pthread_mutex_unlock(&mutex_LIST_EXIT);
+				
+				sem_post(&SEM_MULTIPROGRAMMING_LEVEL);	
+					
+				break;
+			}
+		}
+		*/
+
+		sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
+		
 	}
 
 	return NULL;
@@ -203,6 +267,7 @@ void *short_term_scheduler(void *parameter) {
 			switch(eviction_reason) {
 				case ERROR_EVICTION_REASON:
 				case EXIT_EVICTION_REASON:
+					pcb->exit_reason = SUCCESS_EXIT_REASON;
 					switch_process_state(pcb, EXIT_STATE);
 					PCB_EXECUTE = 0;
 					break;
@@ -377,7 +442,6 @@ bool _remover_por_pid(void *element) {
 				list_add(LIST_NEW, pcb);
 			pthread_mutex_unlock(&mutex_LIST_NEW);
 			log_info(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
-			sem_post(&SEM_LONG_TERM_SCHEDULER);
 			break;
 		}
 		case READY_STATE:
@@ -425,16 +489,17 @@ bool _remover_por_pid(void *element) {
 			log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->PID, previous_state_name);
 			break;
 		}
-		//Todos los casos de salida de un proceso.
 		case EXIT_STATE:
 		{
 			pthread_mutex_lock(&mutex_LIST_EXIT);
 				list_add(LIST_EXIT, pcb);
 			pthread_mutex_unlock(&mutex_LIST_EXIT);
-			log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <SUCCESS>", pcb->PID);
-			sem_post(&SEM_MULTIPROGRAMMING_LEVEL);		
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXIT>",pcb->PID, previous_state_name);
+
+			sem_post(&SEM_LONG_TERM_SCHEDULER_EXIT);
+			
 			break;
-		}
+		}		
 	}
 }
 
