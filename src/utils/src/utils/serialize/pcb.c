@@ -28,6 +28,8 @@ void pcb_serialize(t_Payload *payload, t_PCB source) {
     aux = (t_EnumValue) source.current_state;
   payload_enqueue(payload, &aux, sizeof(t_EnumValue));
   payload_enqueue(payload, &(source.quantum), sizeof(source.quantum));
+    aux = (t_EnumValue) source.exit_reason;
+  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
 
   pcb_log(source);
 }
@@ -57,6 +59,8 @@ void pcb_deserialize(t_Payload *payload, t_PCB *destination) {
   payload_dequeue(payload, &aux, sizeof(t_EnumValue));
     destination->current_state = (e_Process_State) aux;
   payload_dequeue(payload, &(destination->quantum), sizeof(destination->quantum));
+  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+    destination->exit_reason = (e_Exit_Reason) aux;
 
   pcb_log(*destination);
 }

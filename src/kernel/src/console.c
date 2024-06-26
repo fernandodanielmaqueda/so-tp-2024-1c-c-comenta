@@ -177,7 +177,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
         list_add(START_PROCESS, strdup(argv[1]));
     pthread_mutex_unlock(&MUTEX_LIST_START_PROCESS);
 
-    sem_post(&SEM_LONG_TERM_SCHEDULER);
+    sem_post(&SEM_LONG_TERM_SCHEDULER_NEW);
 
     return EXIT_SUCCESS;
 }

@@ -19,7 +19,8 @@ int module(int argc, char *argv[]) {
 	
 	PID_COUNTER = 0;
 	
-	sem_init(&SEM_LONG_TERM_SCHEDULER, 0, 0);
+	sem_init(&SEM_LONG_TERM_SCHEDULER_NEW, 0, 0);
+	sem_init(&SEM_LONG_TERM_SCHEDULER_EXIT, 0, 0);
 	sem_init(&SEM_SHORT_TERM_SCHEDULER, 0, 0);
 	sem_init(&SEM_MULTIPROGRAMMING_LEVEL, 0, MULTIPROGRAMMING_LEVEL);
 

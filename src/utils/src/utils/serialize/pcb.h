@@ -17,6 +17,14 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
+typedef enum e_Exit_Reason {
+    SUCCESS_EXIT_REASON,
+    INVALID_RESOURCE_EXIT_REASON,
+    INVALID_INTERFACE_EXIT_REASON,
+    OUT_OF_MEMORY_EXIT_REASON,
+    INTERRUPTED_BY_USER_EXIT_REASON
+} e_Exit_Reason;
+
 typedef enum e_Process_State {
     NEW_STATE,
     READY_STATE,
@@ -49,6 +57,7 @@ typedef struct t_PCB {
     uint32_t DI;
     e_Process_State current_state;
     t_Quantum quantum;
+    e_Exit_Reason exit_reason;
 } t_PCB;
 
 
