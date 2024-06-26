@@ -461,7 +461,7 @@ void read_memory(t_Payload* payload, int socket) {
 
     t_Package* package = package_create_with_header(READ_REQUEST);
     text_serialize(package->payload, lectura);
-    payload_enqueue(package->payload, &pidBuscado, sizeof(int) );
+    payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
     package_send(package, socket);
     package_destroy(package);
 

@@ -109,7 +109,7 @@ void instruction_cycle(void)
             // FALTA VALIDAR LA SALIDA DE arguments_add
             if(decode_instruction(arguments->argv[0], &cpu_opcode)) {
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
-                exit_status = EXIT_FAILURE;
+                exit_status = 1;
             } else {
                 // Execute
                 exit_status = CPU_OPERATIONS[cpu_opcode].function(arguments->argc, arguments->argv);

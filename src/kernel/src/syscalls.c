@@ -27,7 +27,7 @@ int syscall_execute(t_Payload *syscall_instruction) {
 
     if(SYSCALLS[syscall_opcode].function == NULL) {
         log_error(MODULE_LOGGER, "Funcion de syscall no encontrada");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     return SYSCALLS[syscall_opcode].function(syscall_instruction);
@@ -43,7 +43,7 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
     t_Resource *resource = resource_find(resource_name);
     if(resource == NULL) {
         log_trace(MODULE_LOGGER, "WAIT %s: recurso no encontrado", resource_name);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     free(resource_name);
@@ -56,7 +56,7 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
         BLOCKING_SYSCALL = 0;
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int signal_kernel_syscall(t_Payload *syscall_arguments) {
@@ -69,7 +69,7 @@ int signal_kernel_syscall(t_Payload *syscall_arguments) {
     t_Resource *resource = resource_find(resource_name);
     if(resource == NULL) {
         log_trace(MODULE_LOGGER, "SIGNAL %s: recurso no encontrado", resource_name);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     free(resource_name);
@@ -80,68 +80,68 @@ int signal_kernel_syscall(t_Payload *syscall_arguments) {
             switch_process_state((t_PCB *) list_get(resource->blocked_queue, 0), READY_STATE);
     
     BLOCKING_SYSCALL = 0;
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_stdin_read_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_stdout_write_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
     
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_create_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_delete_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_truncate_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
     
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_write_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_read_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int exit_kernel_syscall(t_Payload *syscall_arguments) {
 
     // log_trace(MODULE_LOGGER, "EXIT");
 
-    return EXIT_SUCCESS;
+    return 0;
 }

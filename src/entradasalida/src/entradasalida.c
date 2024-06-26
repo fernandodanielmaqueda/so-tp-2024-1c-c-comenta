@@ -89,7 +89,7 @@ int io_operation_execute(t_Payload *operation) {
 
     if(IO_OPERATIONS[io_opcode].function == NULL) {
         log_error(MODULE_LOGGER, "Funcion de operacion de IO no encontrada");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     return IO_OPERATIONS[io_opcode].function(operation);
@@ -205,10 +205,10 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-			return EXIT_FAILURE;
+			return 1;
 	}
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_stdin_read_io_operation(t_Payload *operation) {
@@ -243,10 +243,10 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-			return EXIT_FAILURE;
+			return 1;
 	}
 
-	return EXIT_SUCCESS;	
+	return 0;	
 }
 
 int io_stdout_write_io_operation(t_Payload *operation) {
@@ -285,43 +285,43 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-			return EXIT_FAILURE;
+			return 1;
 	}
     
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_create_io_operation(t_Payload *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_delete_io_operation(t_Payload *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_truncate_io_operation(t_Payload *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
     
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_write_io_operation(t_Payload *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_read_io_operation(t_Payload *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }

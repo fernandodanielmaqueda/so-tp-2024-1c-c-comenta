@@ -46,7 +46,7 @@ int set_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SET <REGISTRO> <VALOR>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "SET %s %s", argv[1], argv[2]);
@@ -54,14 +54,14 @@ int set_cpu_operation(int argc, char **argv)
     e_CPU_Register destination_register;
     if(decode_register(argv[1], &destination_register)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     char *end;
     uint32_t value = (uint32_t) strtoul(argv[2], &end, 10);
     if(!*(argv[2]) || *end) {
-        log_error(MODULE_LOGGER, "%s: No es valor válido", argv[2]);
-        return EXIT_FAILURE;
+        log_error(MODULE_LOGGER, "%s: No es un valor valido", argv[2]);
+        return 1;
     }
 
 
@@ -73,7 +73,7 @@ int set_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int mov_in_cpu_operation(int argc, char **argv)
@@ -82,7 +82,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_IN <REGISTRO DATOS> <REGISTRO DIRECCION>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "MOV_IN %s %s", argv[1], argv[2]);
@@ -91,11 +91,11 @@ int mov_in_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     if (decode_register(argv[2], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     dir_logica_origin = atoi(argv[1]);
@@ -110,7 +110,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     if (package == NULL)
     {
         log_error(MODULE_LOGGER, "Error al recibir el paquete");
-        return EXIT_FAILURE;
+        return 1;
     }
     else
     {
@@ -126,7 +126,7 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int mov_out_cpu_operation(int argc, char **argv)
@@ -135,7 +135,7 @@ int mov_out_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_OUT <REGISTRO DIRECCION> <REGISTRO DATOS>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "MOV_OUT %s %s", argv[1], argv[2]);
@@ -144,11 +144,11 @@ int mov_out_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     if (decode_register(argv[2], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     dir_logica_origin = atoi(argv[1]);
@@ -163,7 +163,7 @@ int mov_out_cpu_operation(int argc, char **argv)
     if (package == NULL)
     {
         log_error(MODULE_LOGGER, "Error al recibir el paquete");
-        return EXIT_FAILURE;
+        return 1;
     }
     else
     {
@@ -179,7 +179,7 @@ int mov_out_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int sum_cpu_operation(int argc, char **argv)
@@ -188,7 +188,7 @@ int sum_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUM <REGISTRO DESTINO> <REGISTRO ORIGEN>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "SUM %s %s", argv[1], argv[2]);
@@ -197,11 +197,11 @@ int sum_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     if (decode_register(argv[2], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return EXIT_FAILURE;
+        return 1;
     }
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", PCB.PID, argv[0], argv[1], argv[2]);
     register_destination = register_destination + register_origin;
@@ -210,7 +210,7 @@ int sum_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int sub_cpu_operation(int argc, char **argv)
@@ -219,7 +219,7 @@ int sub_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUB <REGISTRO DESTINO> <REGISTRO ORIGEN>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "SUB %s %s", argv[1], argv[2]);
@@ -228,11 +228,11 @@ int sub_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     if (decode_register(argv[2], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return EXIT_FAILURE;
+        return 1;
     }
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", PCB.PID, argv[0], argv[1], argv[2]);
     register_destination = register_destination - register_origin;
@@ -241,7 +241,7 @@ int sub_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int jnz_cpu_operation(int argc, char **argv)
@@ -250,7 +250,7 @@ int jnz_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: JNZ <REGISTRO> <INSTRUCCION>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "JNZ %s %s", argv[1], argv[2]);
@@ -258,7 +258,7 @@ int jnz_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     //value = atoi(argv[2]);
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB.PID, argv[0], argv[1], argv[2]);
@@ -271,7 +271,7 @@ int jnz_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int resize_cpu_operation(int argc, char **argv)
@@ -280,7 +280,7 @@ int resize_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: RESIZE <TAMANIO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "RESIZE %s", argv[1]);
@@ -294,7 +294,7 @@ int resize_cpu_operation(int argc, char **argv)
     if (package == NULL)
     {
         log_error(MODULE_LOGGER, "Error al recibir el paquete");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     if (package->header == RESIZE_REQUEST)
@@ -304,7 +304,7 @@ int resize_cpu_operation(int argc, char **argv)
     else if (package->header == OUT_OF_MEMORY)
     {
         // COMUNICAR CON KERNEL QUE NO HAY MAS MEMORIA
-        return EXIT_FAILURE;
+        return 1;
     }
 
     package_destroy(package);
@@ -313,7 +313,7 @@ int resize_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int copy_string_cpu_operation(int argc, char **argv)
@@ -322,7 +322,7 @@ int copy_string_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: COPY_STRING <TAMANIO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "COPY_STRING %s", argv[1]);
@@ -335,11 +335,11 @@ int copy_string_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     if (decode_register(argv[2], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     dir_logica_origin = atoi(argv[1]);
@@ -352,7 +352,7 @@ int copy_string_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 0;
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int wait_cpu_operation(int argc, char **argv)
@@ -361,7 +361,7 @@ int wait_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
@@ -371,7 +371,7 @@ int wait_cpu_operation(int argc, char **argv)
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, WAIT_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int signal_cpu_operation(int argc, char **argv)
@@ -380,7 +380,7 @@ int signal_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: SIGNAL <RECURSO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "SIGNAL %s", argv[1]);
@@ -391,7 +391,7 @@ int signal_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, SIGNAL_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_gen_sleep_cpu_operation(int argc, char **argv)
@@ -400,7 +400,7 @@ int io_gen_sleep_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
@@ -412,7 +412,7 @@ int io_gen_sleep_cpu_operation(int argc, char **argv)
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_stdin_read_cpu_operation(int argc, char **argv)
@@ -421,7 +421,7 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDIN_READ <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
@@ -430,11 +430,11 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     if (decode_register(argv[2], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     dir_logica_origin = atoi(argv[1]);
@@ -455,9 +455,8 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
     payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
- 
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_stdout_write_cpu_operation(int argc, char **argv)
@@ -466,7 +465,7 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
@@ -475,11 +474,11 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if(decode_register(argv[1], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return EXIT_FAILURE;
+        return 1;
     }
     if (decode_register(argv[2], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return EXIT_FAILURE;
+        return 1;
     }
 
     dir_logica_origin = atoi(argv[1]);
@@ -498,7 +497,7 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
     payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_create_cpu_operation(int argc, char **argv)
@@ -507,7 +506,7 @@ int io_fs_create_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_CREATE <INTERFAZ> <NOMBRE ARCHIVO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
@@ -519,7 +518,7 @@ int io_fs_create_cpu_operation(int argc, char **argv)
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_delete_cpu_operation(int argc, char **argv)
@@ -528,7 +527,7 @@ int io_fs_delete_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_DELETE <INTERFAZ> <NOMBRE ARCHIVO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
@@ -540,7 +539,7 @@ int io_fs_delete_cpu_operation(int argc, char **argv)
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_truncate_cpu_operation(int argc, char **argv)
@@ -549,7 +548,7 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
     if (argc != 4)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_TRUNCATE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO TAMANIO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
@@ -562,7 +561,7 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
     text_serialize(SYSCALL_INSTRUCTION, argv[3]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_write_cpu_operation(int argc, char **argv)
@@ -570,7 +569,7 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
@@ -585,7 +584,7 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     text_serialize(SYSCALL_INSTRUCTION, argv[4]);
     text_serialize(SYSCALL_INSTRUCTION, argv[5]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int io_fs_read_cpu_operation(int argc, char **argv)
@@ -593,7 +592,7 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
@@ -608,7 +607,7 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     text_serialize(SYSCALL_INSTRUCTION, argv[4]);
     text_serialize(SYSCALL_INSTRUCTION, argv[5]);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 
 int exit_cpu_operation(int argc, char **argv)
@@ -617,7 +616,7 @@ int exit_cpu_operation(int argc, char **argv)
     if (argc != 1)
     {
         log_error(MODULE_LOGGER, "Uso: EXIT");
-        return EXIT_FAILURE;
+        return 1;
     }
 
     log_trace(MODULE_LOGGER, "EXIT");
@@ -640,5 +639,5 @@ int exit_cpu_operation(int argc, char **argv)
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, EXIT_CPU_OPCODE);
 
-    return EXIT_SUCCESS;
+    return 0;
 }
