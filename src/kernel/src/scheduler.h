@@ -42,9 +42,6 @@ extern const char *EXIT_REASONS[];
 extern int QUANTUM_INTERRUPT; 
 extern pthread_mutex_t MUTEX_QUANTUM_INTERRUPT;
 
-extern t_list *START_PROCESS;
-extern pthread_mutex_t MUTEX_LIST_START_PROCESS;
-
 // Listas globales de estados
 extern t_list *LIST_NEW;
 extern t_list *LIST_READY;
@@ -76,11 +73,16 @@ extern pthread_t THREAD_QUANTUM_INTERRUPT;
 extern sem_t SEM_LONG_TERM_SCHEDULER_NEW;
 extern sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 extern sem_t SEM_SHORT_TERM_SCHEDULER;
-extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
 extern sem_t SEM_PROCESS_READY;
 
 extern t_Quantum QUANTUM;
+
 extern int MULTIPROGRAMMING_LEVEL;
+extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
+extern unsigned int MULTIPROGRAMMING_DIFFERENCE;
+extern pthread_mutex_t mutex_MULTIPROGRAMMING_DIFFERENCE;
+extern sem_t SEM_MULTIPROGRAMMING_POSTER;
+extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 
 //consola interactiva
 extern pthread_mutex_t MUTEX_PID_DETECTED;
@@ -95,6 +97,7 @@ void initialize_short_term_scheduler(void);
 void *long_term_scheduler_new(void*);
 void *long_term_scheduler_exit(void *NULL_parameter);
 void *short_term_scheduler(void*);
+void *multiprogramming_poster(void *NULL_argument);
 t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);

@@ -173,9 +173,15 @@ int kernel_command_start_process(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
 
-    pthread_mutex_lock(&MUTEX_LIST_START_PROCESS);
-        list_add(START_PROCESS, strdup(argv[1]));
-    pthread_mutex_unlock(&MUTEX_LIST_START_PROCESS);
+    t_PCB *pcb = pcb_create();
+
+    pcb->instructions_path = strdup(argv[1]);
+
+    pthread_mutex_lock(&mutex_LIST_NEW);
+        list_add(LIST_NEW, pcb);
+    pthread_mutex_unlock(&mutex_LIST_NEW);
+
+    log_info(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
 
     sem_post(&SEM_LONG_TERM_SCHEDULER_NEW);
 
@@ -192,7 +198,7 @@ int kernel_command_kill_process(int argc, char* argv[]) {
     log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
 
     // TODO: Implementación
-    switch_process_state(atoi(argv[1]), EXIT_STATE);
+    // switch_process_state(atoi(argv[1]), EXIT_STATE);
 
     
 
@@ -234,9 +240,33 @@ int kernel_command_multiprogramming(int argc, char* argv[]) {
         return 1;
     }
 
+    int value = atoi(argv[1]);
+    if(value < 0) {
+        log_warning(CONSOLE_LOGGER, "MULTIPROGRAMACION: El valor debe ser mayor o igual a 0.");
+        return 1;
+    }
+
     log_trace(CONSOLE_LOGGER, "MULTIPROGRAMACION %s", argv[1]);
 
-    // TODO: Implementación
+    if (value >= MULTIPROGRAMMING_LEVEL) {
+        for(register int i = value - MULTIPROGRAMMING_LEVEL; i > 0; i--)
+            sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
+        
+    } else
+        for(register int i = MULTIPROGRAMMING_LEVEL - value; i > 0; i--)
+            if(sem_trywait(&SEM_MULTIPROGRAMMING_LEVEL)) {
+                if(errno == EAGAIN) {
+                    pthread_mutex_lock(&mutex_MULTIPROGRAMMING_DIFFERENCE);
+                        MULTIPROGRAMMING_DIFFERENCE+= i;
+                    pthread_mutex_unlock(&mutex_MULTIPROGRAMMING_DIFFERENCE);
+                    sem_post(&SEM_MULTIPROGRAMMING_POSTER);
+                } else {
+                    log_warning(CONSOLE_LOGGER, "sem_trywait: %s", strerror(errno));
+                    return 1;
+                }
+            }
+
+    MULTIPROGRAMMING_LEVEL = value;
 
     return 0;
 }

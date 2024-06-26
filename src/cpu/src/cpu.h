@@ -52,10 +52,6 @@ typedef struct t_Pages_Table{
 }t_Pages_Table;
 */
 
-extern char *MODULE_NAME;
-extern char *MINIMAL_LOG_PATHNAME;
-extern char *MODULE_CONFIG_PATHNAME;
-
 extern t_log *MODULE_LOGGER;
 extern t_log *SOCKET_LOGGER;
 extern t_config *MODULE_CONFIG;

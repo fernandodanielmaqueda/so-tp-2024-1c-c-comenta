@@ -20,9 +20,6 @@ const char *EXIT_REASONS[] = {
 int QUANTUM_INTERRUPT;
 pthread_mutex_t MUTEX_QUANTUM_INTERRUPT;
 
-t_list *START_PROCESS;
-pthread_mutex_t MUTEX_LIST_START_PROCESS;
-
 t_temporal *TEMPORAL_DISPATCHED;
 
 // Listas globales de estados
@@ -56,13 +53,16 @@ pthread_t THREAD_QUANTUM_INTERRUPT;
 sem_t SEM_LONG_TERM_SCHEDULER_NEW;
 sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 sem_t SEM_SHORT_TERM_SCHEDULER;
-sem_t SEM_MULTIPROGRAMMING_LEVEL; // 20 procesos en sim
-sem_t SEM_PROCESS_READY; // Al principio en 0
-
-
+sem_t SEM_PROCESS_READY;
 
 t_Quantum QUANTUM;
+
 int MULTIPROGRAMMING_LEVEL;
+sem_t SEM_MULTIPROGRAMMING_LEVEL;
+unsigned int MULTIPROGRAMMING_DIFFERENCE = 0;
+pthread_mutex_t mutex_MULTIPROGRAMMING_DIFFERENCE;
+sem_t SEM_MULTIPROGRAMMING_POSTER;
+pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 
 //consola interactiva
 pthread_mutex_t MUTEX_PID_DETECTED;
@@ -92,11 +92,13 @@ void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENT
 	pthread_create(&THREAD_SHORT_TERM_SCHEDULER, NULL, short_term_scheduler, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
 	pthread_detach(THREAD_SHORT_TERM_SCHEDULER);
+	pthread_create(&THREAD_MULTIPROGRAMMING_POSTER, NULL, multiprogramming_poster, NULL);
+	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
+	pthread_detach(THREAD_MULTIPROGRAMMING_POSTER);
 }
 
 void *long_term_scheduler_new(void *parameter) {
 
-	char *path;
 	t_PCB *pcb;
 
     t_Package* package;
@@ -104,18 +106,12 @@ void *long_term_scheduler_new(void *parameter) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_NEW);
 		sem_wait(&SEM_MULTIPROGRAMMING_LEVEL);
 
-		pthread_mutex_lock(&MUTEX_LIST_START_PROCESS);
-			path = (char *) list_remove(START_PROCESS, 0);
-		pthread_mutex_unlock(&MUTEX_LIST_START_PROCESS);
-
-		pcb = pcb_create();
-
 		pthread_mutex_lock(&mutex_LIST_NEW);
-			list_add(LIST_NEW, pcb);
+			pcb = (t_PCB *) list_remove(LIST_NEW, 0);
 		pthread_mutex_unlock(&mutex_LIST_NEW);
 		
 		package = package_create_with_header(PROCESS_CREATE_HEADER);
-		text_serialize(package->payload, path);
+		text_serialize(package->payload, pcb->instructions_path);
 		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
 		package_send(package, CONNECTION_MEMORY.fd_connection);
 		package_destroy(package);
@@ -123,10 +119,12 @@ void *long_term_scheduler_new(void *parameter) {
 		t_Return_Value return_value;
 		receive_return_value_with_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
 		if(return_value) {
-			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", path);
+			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", pcb->instructions_path);
 		} else {
 			switch_process_state(pcb, READY_STATE);
 		}
+
+		free(pcb->instructions_path);
 
 		//ANALIZAMOS ESTADO EXIT
 		//RECIBIR EL MOTIVO DE INTERRUPCION QUE YA ME ENVIO CPU
@@ -135,8 +133,6 @@ void *long_term_scheduler_new(void *parameter) {
 			t_PCB pcb = list_get(LIST_EXIT, 0);
 		pthread_mutex_unlock(&mutex_LIST_EXIT);
 		*/
-
-		free(path);
 	}
 
 	return NULL;
@@ -178,7 +174,7 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 		}
 		*/
 
-		sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
+		sem_post(&SEM_MULTIPROGRAMMING_POSTER);
 		
 	}
 
@@ -302,6 +298,24 @@ void *short_term_scheduler(void *parameter) {
 	}
 
 	return NULL;
+}
+
+void *multiprogramming_poster(void *NULL_argument) {
+
+    while(1) {
+        sem_wait(&SEM_MULTIPROGRAMMING_POSTER);
+
+        pthread_mutex_lock(&mutex_MULTIPROGRAMMING_DIFFERENCE);
+
+            if(MULTIPROGRAMMING_DIFFERENCE == 0)
+                sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
+            else
+                MULTIPROGRAMMING_DIFFERENCE--;
+
+        pthread_mutex_unlock(&mutex_MULTIPROGRAMMING_DIFFERENCE);
+    }
+
+    return NULL;
 }
 
 t_PCB *FIFO_scheduling_algorithm(void) {
@@ -527,8 +541,9 @@ t_PCB *pcb_create() {
     pcb->RDX = 0;
     pcb->SI = 0;
     pcb->DI = 0;
-	pcb->current_state = -1;
+	pcb->current_state = NEW_STATE;
 	pcb->quantum = QUANTUM;
+	pcb->exit_reason = QUANTUM;
 
 	return pcb;
 }

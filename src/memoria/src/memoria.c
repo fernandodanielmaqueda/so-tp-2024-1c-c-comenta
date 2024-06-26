@@ -6,12 +6,11 @@
 
 char *MODULE_NAME = "memoria";
 
-char *MINIMAL_LOG_PATHNAME = "memoria.log";
+t_log *MODULE_LOGGER;
+char *MODULE_LOG_PATHNAME = "memoria.log";
+
 char *MODULE_CONFIG_PATHNAME = "memoria.config";
 
-t_log *MINIMAL_LOGGER;
-extern t_log *MODULE_LOGGER;
-extern t_log *SOCKET_LOGGER;
 t_config *MODULE_CONFIG;
 
 void *memoria_principal;

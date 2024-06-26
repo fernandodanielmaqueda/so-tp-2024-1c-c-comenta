@@ -5,8 +5,8 @@
 
 char *MODULE_NAME = "kernel";
 
-t_log *MINIMAL_LOGGER;
-char *MINIMAL_LOG_PATHNAME = "kernel.log";
+t_log *MODULE_LOGGER;
+char *MODULE_LOG_PATHNAME = "kernel.log";
 
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
@@ -23,8 +23,7 @@ int module(int argc, char *argv[]) {
 	sem_init(&SEM_LONG_TERM_SCHEDULER_EXIT, 0, 0);
 	sem_init(&SEM_SHORT_TERM_SCHEDULER, 0, 0);
 	sem_init(&SEM_MULTIPROGRAMMING_LEVEL, 0, MULTIPROGRAMMING_LEVEL);
-
-	START_PROCESS = list_create();
+	sem_init(&SEM_MULTIPROGRAMMING_POSTER, 0, 0);
 
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
