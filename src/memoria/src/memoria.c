@@ -472,7 +472,7 @@ void read_memory(t_Payload* payload, int socket) {
     }
 
     t_Package* package = package_create_with_header(READ_REQUEST);
-    text_serialize(package->payload, lectura);
+    text_serialize(package->payload, lectura_final);
     payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
     package_send(package, socket);
     package_destroy(package);
@@ -515,14 +515,21 @@ void write_memory(t_Payload* payload, int socket){
         t_MemorySize bytes_restantes = bytes;
         for (t_MemorySize i = 1; i > pages; i++)
         {
+            char* contenido_aux = NULL;
+            int paginas_copiadas = 0;
+
             if (i == pages)
             {
+                contenido_aux = string_substring(contenido, (paginas_copiadas * bytes) , bytes_restantes);
                 memcpy(posicion, &contenido, bytes_restantes);
             }
             if(i<pages){ 
-                memcpy(posicion, &contenido, TAM_PAGINA);
+                //Substring recibe Texto = contenido / start 
+                contenido_aux = string_substring(contenido, (paginas_copiadas * bytes) ,(bytes * i));
+                memcpy(posicion, &contenido_aux, TAM_PAGINA);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
+                paginas_copiadas++;
 
                 temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
                 current_frame = temp_dir_fis / TAM_PAGINA;

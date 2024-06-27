@@ -124,7 +124,7 @@ void *long_term_scheduler_new(void *parameter) {
 			switch_process_state(pcb, READY_STATE);
 		}	
 
-		free(path);
+		//free(path);
 	}
 
 	return NULL;
