@@ -139,6 +139,9 @@ void create_process(t_Payload *process_data) {
     
     log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
 
+    
+    log_debug(MODULE_LOGGER, "PID: <%d> - Tamaño: <0>", new_process->PID);
+
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_CREATE_HEADER, 0, FD_CLIENT_KERNEL);
     
@@ -159,6 +162,10 @@ void kill_process (t_Payload* socketRecibido){
         free(paginaBuscada);
     }
     free(process);
+
+    
+    log_debug(MODULE_LOGGER,
+        "PID: <%d> - Tamaño: <%d>", pid, size);
     
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, FD_CLIENT_KERNEL);
@@ -378,6 +385,9 @@ void respond_frame_request(t_Payload* payload){
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
 
+            
+    log_debug(MODULE_LOGGER, "PID: <%d> - Pagina: <%d> - Marco: <%d>", pidProceso, pageBuscada, marcoEncontrado);
+
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
     
@@ -407,7 +417,6 @@ void read_memory(t_Payload* payload, int socket) {
     int dir_fisica = 0;
     t_PID pidBuscado = 0;
     t_MemorySize bytes = 0;
-    //receive_2int(&dir_fisica,&pidBuscado,payload);
 
     payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
     payload_dequeue(payload, &dir_fisica, sizeof(int) );
@@ -423,10 +432,14 @@ void read_memory(t_Payload* payload, int socket) {
     t_MemorySize resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
 
-    memcpy(&lectura, posicion, bytes);    
+    //memcpy(&lectura, posicion, bytes);    
     int current_frame = dir_fisica / TAM_PAGINA;
     t_Frame* frame = list_get(lista_marcos, current_frame);
     pidBuscado = frame->PID;
+
+    
+    log_debug(MODULE_LOGGER,
+        "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", pidBuscado, dir_fisica, bytes);
 
     if(pages < 2){//En caso de que sea menor a 2 pagina
         memcpy(&lectura_final, posicion, bytes);  
@@ -487,7 +500,12 @@ void write_memory(t_Payload* payload, int socket){
     t_MemorySize current_frame = dir_fisica / TAM_PAGINA;
     t_Frame* frame = list_get(lista_marcos, current_frame);
     pidBuscado = frame->PID;
+    
+    
+    log_debug(MODULE_LOGGER,
+        "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", pidBuscado, dir_fisica, bytes);
 
+//COMIENZA LA ESCRITURA
     if(pages < 2){//En caso de que sea menor a 2 pagina
          memcpy(posicion, &contenido, bytes);
          //Actualizar pagina/TDP
@@ -588,6 +606,10 @@ void resize_process(t_Payload* payload){
             package_destroy(package);
         }
         else{
+            
+            log_debug(MODULE_LOGGER,
+                "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Ampliar: <%d>", pid, size, paginas);
+
                 //CASO: HAY ESPACIO Y SUMA PAGINAS
                 for (size_t i = size; i < paginas; i++)
                 {
@@ -616,6 +638,9 @@ void resize_process(t_Payload* payload){
         
     }
     if(size>paginas){ //RESTA paginas
+            
+        log_debug(MODULE_LOGGER,
+            "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Reducir: <%d>", pid, size, paginas);
          
         for (size_t i = size; i > paginas; i--)
         {
