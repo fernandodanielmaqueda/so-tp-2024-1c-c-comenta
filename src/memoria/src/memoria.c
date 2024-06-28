@@ -105,7 +105,7 @@ void create_process(t_Payload *process_data) {
         // Ruta relativa
         target_path = malloc(strlen(PATH_INSTRUCCIONES) + 1 + strlen(argument_path) + 1);
         if(target_path == NULL) {
-            log_error(MODULE_LOGGER, "Error de memoria al intentar crear la ruta absoluta del archivo de instrucciones.");
+            log_error(MODULE_LOGGER, "malloc: No se pudo reservar memoria para la ruta relativa.");
             exit(EXIT_FAILURE);
         }
 
@@ -139,26 +139,36 @@ void create_process(t_Payload *process_data) {
     
     log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
 
+    
+    log_debug(MODULE_LOGGER, "PID: <%d> - Tamaño: <0>", new_process->PID);
+
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_CREATE_HEADER, 0, FD_CLIENT_KERNEL);
     
 }
 
-void kill_process (t_Payload* socketRecibido){
-    int pid = 0; //int pid = atoi(message_receive(socketRecibido));
-    memcpy(&pid, socketRecibido->stream, sizeof(int));
-    t_Process* process = seek_process_by_pid(pid);
-    t_Page* paginaBuscada;
+void kill_process (t_Payload *payload){
+
+    t_PID pid;
+    payload_dequeue(payload, &pid, sizeof(t_PID));
+
+    t_Process *process = seek_process_by_pid(pid);
+    t_Page *paginaBuscada;
     
     int size = list_size(process->pages_table);
-    for (size_t i = size; i == 0 ; i--)
+    // ACÁ HABÍA UN SEGMENTATION FAULT: SI EL TAMAÑO DE LA LISTA ES 0, NO DEBERÍA ENTRAR AL FOR
+    for (; size > 0 ; size--)
     {
-        paginaBuscada = list_get(process->pages_table, i);
+        paginaBuscada = list_get(process->pages_table, size - 1);
         t_Frame *marco = list_get(lista_marcos, paginaBuscada->assigned_frame);
         list_add(lista_marcos_libres, marco);
         free(paginaBuscada);
     }
     free(process);
+
+    
+    log_debug(MODULE_LOGGER,
+        "PID: <%d> - Tamaño: <%d>", pid, size);
     
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, FD_CLIENT_KERNEL);
@@ -378,6 +388,9 @@ void respond_frame_request(t_Payload* payload){
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
 
+            
+    log_debug(MODULE_LOGGER, "PID: <%d> - Pagina: <%d> - Marco: <%d>", pidProceso, pageBuscada, marcoEncontrado);
+
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
     
@@ -407,7 +420,6 @@ void read_memory(t_Payload* payload, int socket) {
     int dir_fisica = 0;
     t_PID pidBuscado = 0;
     t_MemorySize bytes = 0;
-    //receive_2int(&dir_fisica,&pidBuscado,payload);
 
     payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
     payload_dequeue(payload, &dir_fisica, sizeof(int) );
@@ -423,10 +435,14 @@ void read_memory(t_Payload* payload, int socket) {
     t_MemorySize resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
 
-    memcpy(&lectura, posicion, bytes);    
+    //memcpy(&lectura, posicion, bytes);    
     int current_frame = dir_fisica / TAM_PAGINA;
     t_Frame* frame = list_get(lista_marcos, current_frame);
     pidBuscado = frame->PID;
+
+    
+    log_debug(MODULE_LOGGER,
+        "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", pidBuscado, dir_fisica, bytes);
 
     if(pages < 2){//En caso de que sea menor a 2 pagina
         memcpy(&lectura_final, posicion, bytes);  
@@ -459,7 +475,7 @@ void read_memory(t_Payload* payload, int socket) {
     }
 
     t_Package* package = package_create_with_header(READ_REQUEST);
-    text_serialize(package->payload, lectura);
+    text_serialize(package->payload, lectura_final);
     payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
     package_send(package, socket);
     package_destroy(package);
@@ -487,7 +503,12 @@ void write_memory(t_Payload* payload, int socket){
     t_MemorySize current_frame = dir_fisica / TAM_PAGINA;
     t_Frame* frame = list_get(lista_marcos, current_frame);
     pidBuscado = frame->PID;
+    
+    
+    log_debug(MODULE_LOGGER,
+        "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", pidBuscado, dir_fisica, bytes);
 
+//COMIENZA LA ESCRITURA
     if(pages < 2){//En caso de que sea menor a 2 pagina
          memcpy(posicion, &contenido, bytes);
          //Actualizar pagina/TDP
@@ -497,14 +518,21 @@ void write_memory(t_Payload* payload, int socket){
         t_MemorySize bytes_restantes = bytes;
         for (t_MemorySize i = 1; i > pages; i++)
         {
+            char* contenido_aux = NULL;
+            int paginas_copiadas = 0;
+
             if (i == pages)
             {
+                contenido_aux = string_substring(contenido, (paginas_copiadas * bytes) , bytes_restantes);
                 memcpy(posicion, &contenido, bytes_restantes);
             }
             if(i<pages){ 
-                memcpy(posicion, &contenido, TAM_PAGINA);
+                //Substring recibe Texto = contenido / start 
+                contenido_aux = string_substring(contenido, (paginas_copiadas * bytes) ,(bytes * i));
+                memcpy(posicion, &contenido_aux, TAM_PAGINA);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
+                paginas_copiadas++;
 
                 temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
                 current_frame = temp_dir_fis / TAM_PAGINA;
@@ -588,6 +616,10 @@ void resize_process(t_Payload* payload){
             package_destroy(package);
         }
         else{
+            
+            log_debug(MODULE_LOGGER,
+                "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Ampliar: <%d>", pid, size, paginas);
+
                 //CASO: HAY ESPACIO Y SUMA PAGINAS
                 for (size_t i = size; i < paginas; i++)
                 {
@@ -616,6 +648,9 @@ void resize_process(t_Payload* payload){
         
     }
     if(size>paginas){ //RESTA paginas
+            
+        log_debug(MODULE_LOGGER,
+            "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Reducir: <%d>", pid, size, paginas);
          
         for (size_t i = size; i > paginas; i--)
         {

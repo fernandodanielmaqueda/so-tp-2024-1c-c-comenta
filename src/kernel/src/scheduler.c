@@ -104,8 +104,9 @@ void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENT
 void *long_term_scheduler_new(void *parameter) {
 
 	t_PCB *pcb;
-
     t_Package* package;
+	t_Return_Value return_value;
+
 	while(1) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_NEW);
 		sem_wait(&SEM_MULTIPROGRAMMING_LEVEL);
@@ -122,13 +123,14 @@ void *long_term_scheduler_new(void *parameter) {
 		package_send(package, CONNECTION_MEMORY.fd_connection);
 		package_destroy(package);
 
-		t_Return_Value return_value;
 		receive_return_value_with_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
 		if(return_value) {
 			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", pcb->instructions_path);
 		} else {
 			switch_process_state(pcb, READY_STATE);
 		}
+
+		free(pcb->instructions_path);
 	}
 
 	return NULL;
@@ -137,6 +139,7 @@ void *long_term_scheduler_new(void *parameter) {
 void *long_term_scheduler_exit(void *NULL_parameter) {
 	t_PCB *pcb;
     t_Package* package;
+	t_Return_Value return_value;
 
 	while(1) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_EXIT);
@@ -151,8 +154,14 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
 		package_send(package, CONNECTION_MEMORY.fd_connection);
 		package_destroy(package);
+
+		receive_return_value_with_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
+		if(return_value) {
+			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo FINALIZAR_PROCESO %" PRIu32, pcb->PID);
+		} else {
+			log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->PID, EXIT_REASONS[pcb->exit_reason]);
+		}
 		
-		log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->PID, EXIT_REASONS[pcb->exit_reason]);
 		free(pcb);
 		sem_post(&SEM_MULTIPROGRAMMING_POSTER);
 		
