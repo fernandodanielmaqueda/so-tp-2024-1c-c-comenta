@@ -43,11 +43,12 @@ void send_eviction_reason(e_Eviction_Reason eviction_reason, int fd_socket) {
   package_destroy(package);
 }
 
-void send_kernel_interrupt(e_Kernel_Interrupt kernel_interrupt, int fd_socket) {
-  t_Package *package = package_create_with_header(KERNEL_INTERRUPT_HEADER);
-  kernel_interrupt_serialize(package->payload, kernel_interrupt);
-  package_send(package, fd_socket);
-  package_destroy(package);
+void send_kernel_interrupt(e_Kernel_Interrupt type, t_PID pid, int fd_socket) {
+	t_Package *package = package_create_with_header(KERNEL_INTERRUPT_HEADER);
+	kernel_interrupt_serialize(package->payload, type);
+	payload_enqueue(package->payload, &pid, sizeof(pid));
+	package_send(package, fd_socket);
+	package_destroy(package);
 }
 
 void send_pcb(t_PCB pcb, int fd_socket) {

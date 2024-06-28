@@ -23,7 +23,10 @@ void initialize_sockets(void) {
 
 	// Se bloquea hasta que se realicen todas las conexiones
     sem_wait(&sem_coordinator_kernel_client_connected);
-    sem_wait(&sem_coordinator_cpu_client_connected);
+    sem_destroy(&sem_coordinator_kernel_client_connected);
+
+    sem_wait(&sem_coordinator_cpu_client_connected);    
+    sem_destroy(&sem_coordinator_cpu_client_connected);
 }
 
 void finish_sockets(void) {

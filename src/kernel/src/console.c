@@ -177,9 +177,11 @@ int kernel_command_start_process(int argc, char* argv[]) {
 
     pcb->instructions_path = strdup(argv[1]);
 
-    pthread_mutex_lock(&mutex_LIST_NEW);
-        list_add(LIST_NEW, pcb);
-    pthread_mutex_unlock(&mutex_LIST_NEW);
+    wait_list_process_states();
+        pthread_mutex_lock(&MUTEX_LIST_NEW);
+            list_add(LIST_NEW, pcb);
+        pthread_mutex_unlock(&MUTEX_LIST_NEW);
+    signal_list_process_states();
 
     log_info(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
 
@@ -254,9 +256,9 @@ int kernel_command_multiprogramming(int argc, char* argv[]) {
         for(register int i = MULTIPROGRAMMING_LEVEL - value; i > 0; i--)
             if(sem_trywait(&SEM_MULTIPROGRAMMING_LEVEL)) {
                 if(errno == EAGAIN) {
-                    pthread_mutex_lock(&mutex_MULTIPROGRAMMING_DIFFERENCE);
+                    pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
                         MULTIPROGRAMMING_DIFFERENCE+= i;
-                    pthread_mutex_unlock(&mutex_MULTIPROGRAMMING_DIFFERENCE);
+                    pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
                     sem_post(&SEM_MULTIPROGRAMMING_POSTER);
                 } else {
                     log_warning(CONSOLE_LOGGER, "sem_trywait: %s", strerror(errno));
@@ -278,7 +280,64 @@ int kernel_command_process_states(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "PROCESO_ESTADO");
 
-    // TODO: Implementación
+    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
+        LIST_PROCESS_STATES = 1;
+    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+
+    int sem_value;
+    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
+    while(1) {
+        sem_getvalue(&SEM_SWITCHING_STATES_COUNT, &sem_value);
+        if(!sem_value)
+            break;
+        pthread_cond_wait(&COND_SWITCHING_STATES, &MUTEX_LIST_PROCESS_STATES);
+    }
+    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+
+        char *pid_string_new = pcb_list_to_pid_string(LIST_NEW);
+        char *pid_string_ready = pcb_list_to_pid_string(LIST_READY);
+        char *pid_string_executing = pcb_list_to_pid_string(LIST_EXECUTING);
+        char *pid_string_blocked = pcb_list_to_pid_string(LIST_BLOCKED);
+        char *pid_string_exit = pcb_list_to_pid_string(LIST_EXIT);
+
+    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
+        LIST_PROCESS_STATES = 0;
+        pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
+    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+
+    log_info(CONSOLE_LOGGER,
+        "* NEW: %s\n"
+        "* READY: %s\n"
+        "* EXEC: %s\n"
+        "* BLOCKED: %s\n"
+        "* EXIT: %s"
+        , pid_string_new
+        , pid_string_ready
+        , pid_string_executing
+        , pid_string_blocked
+        , pid_string_exit
+    );
+
+    free(pid_string_new);
+    free(pid_string_ready);
+    free(pid_string_executing);
+    free(pid_string_blocked);
+    free(pid_string_exit);
 
     return 0;
+}
+
+char *pcb_list_to_pid_string(t_list *pcb_list) {
+    char *string = string_new();
+    char *pid_as_string;
+    string_append(&string, "[");
+    for(register int i = 0; i < list_size(pcb_list); i++) {
+        pid_as_string = string_from_format("%" PRIu32, ((t_PCB *) list_get(pcb_list, i))->PID);
+        string_append(&string, pid_as_string);
+        free(pid_as_string);
+        if(i < list_size(pcb_list) - 1)
+            string_append(&string, " , ");
+    }
+    string_append(&string, "]");
+    return string;
 }

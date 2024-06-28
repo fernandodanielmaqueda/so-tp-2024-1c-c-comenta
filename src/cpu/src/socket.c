@@ -29,6 +29,7 @@ void initialize_sockets(void) {
     pthread_join(thread_cpu_connect_to_memory, NULL);
 
     sem_wait(&CONNECTED_KERNEL_CPU_INTERRUPT);
+    sem_destroy(&CONNECTED_KERNEL_CPU_INTERRUPT);
 }
 
 void finish_sockets(void) {

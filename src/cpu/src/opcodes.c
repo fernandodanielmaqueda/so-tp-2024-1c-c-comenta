@@ -27,6 +27,7 @@ t_CPU_Operation CPU_OPERATIONS[] = {
 
 int decode_instruction(char *name, e_CPU_OpCode *destination)
 {
+    
     if(name == NULL || destination == NULL)
         return 1;
     

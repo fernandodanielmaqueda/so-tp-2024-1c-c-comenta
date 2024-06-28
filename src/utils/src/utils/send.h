@@ -35,12 +35,7 @@ void receive_return_value_with_header(e_Header expected_header, t_Return_Value *
 void send_eviction_reason(e_Eviction_Reason eviction_reason, int fd_socket);
 
 
-/**
- * @brief Enviar kernel_interrupt (incluye el serializado)
- * @param kernel_interrupt t_Interrupt a enviar.
- * @param fd_socket Socket desde donde se va a recibir el kernel_interrupt.
- */
-void send_kernel_interrupt(e_Kernel_Interrupt kernel_interrupt, int fd_socket);
+void send_kernel_interrupt(e_Kernel_Interrupt type, t_PID pid, int fd_socket);
 
 
 /**

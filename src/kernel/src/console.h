@@ -50,5 +50,6 @@ int kernel_command_stop_scheduling(int argc, char* argv[]);
 int kernel_command_start_scheduling(int argc, char* argv[]);
 int kernel_command_multiprogramming(int argc, char* argv[]);
 int kernel_command_process_states(int argc, char* argv[]);
+char *pcb_list_to_pid_string(t_list *pcb_list);
 
 #endif // KERNEL_CONSOLE_H

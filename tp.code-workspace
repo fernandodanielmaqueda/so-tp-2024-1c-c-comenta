@@ -5,7 +5,8 @@
 			"*.h": "c",
 			"functional": "c",
 			"typeinfo": "c",
-			"type_traits": "c"
+			"type_traits": "c",
+			"compare": "c"
 		},
 		"C_Cpp.errorSquiggles": "disabled",
 	},

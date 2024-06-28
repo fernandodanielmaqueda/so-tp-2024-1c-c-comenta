@@ -43,7 +43,7 @@ int dir_fisica_destination = 0;
 uint32_t unit_work = 0;
 char *interfaz = NULL;
 
-pthread_mutex_t sem_mutex_tlb;
+pthread_mutex_t MUTEX_TLB;
 
 const char *t_interrupt_type_string[] = {
     [ERROR_EVICTION_REASON] = "ERROR_EVICTION_REASON",
@@ -56,6 +56,8 @@ int module(int argc, char *argv[])
 
     initialize_loggers();
     initialize_configs(MODULE_CONFIG_PATHNAME);
+    initialize_mutexes();
+	initialize_semaphores();
     initialize_sockets();
 
     log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
@@ -66,8 +68,26 @@ int module(int argc, char *argv[])
     finish_sockets();
     // finish_configs();
     finish_loggers();
+	finish_semaphores();
+	finish_mutexes();
 
     return EXIT_SUCCESS;
+}
+
+void initialize_mutexes(void) {
+    pthread_mutex_init(&MUTEX_TLB, NULL);
+}
+
+void finish_mutexes(void) {
+    pthread_mutex_destroy(&MUTEX_TLB);
+}
+
+void initialize_semaphores(void) {
+    
+}
+
+void finish_semaphores(void) {
+    
 }
 
 void read_module_config(t_config *MODULE_CONFIG)
@@ -166,6 +186,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
 
     e_Kernel_Interrupt kernel_interrupt;
     t_Package *package;
+    t_PID pid;
 
     while(1) {
 
@@ -173,13 +194,14 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
         switch (package->header) {
         case KERNEL_INTERRUPT_HEADER:
             kernel_interrupt_deserialize(package->payload, &kernel_interrupt);
+            payload_dequeue(package->payload, &pid, sizeof(pid));
             break;
         default:
             log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
             exit(EXIT_FAILURE);
             break;
         }
-        package_destroy(package);          
+        package_destroy(package);    
 
         // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
         if (KERNEL_INTERRUPT < kernel_interrupt)
@@ -198,9 +220,9 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
     int dir_fisica = 0;
 
     // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
-    pthread_mutex_lock(&sem_mutex_tlb);
+    pthread_mutex_lock(&MUTEX_TLB);
     int frame_tlb = check_tlb(pid, nro_page);
-    pthread_mutex_unlock(&sem_mutex_tlb);
+    pthread_mutex_unlock(&MUTEX_TLB);
 
     if (frame_tlb != -1)
     {
