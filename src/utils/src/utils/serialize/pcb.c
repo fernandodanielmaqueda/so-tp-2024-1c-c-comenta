@@ -11,20 +11,20 @@ void pcb_serialize(t_Payload *payload, t_PCB source) {
 
   payload_enqueue(payload, &(source.PID), sizeof(source.PID));
   payload_enqueue(payload, &(source.PC), sizeof(source.PC));
-  payload_enqueue(payload, &(source.AX), sizeof(source.AX));
-  payload_enqueue(payload, &(source.BX), sizeof(source.BX));
-  payload_enqueue(payload, &(source.CX), sizeof(source.CX));
-  payload_enqueue(payload, &(source.DX), sizeof(source.DX));
-  payload_enqueue(payload, &(source.EAX), sizeof(source.EAX));
-  payload_enqueue(payload, &(source.EBX), sizeof(source.EBX));
-  payload_enqueue(payload, &(source.ECX), sizeof(source.ECX));
-  payload_enqueue(payload, &(source.EDX), sizeof(source.EDX));
-  payload_enqueue(payload, &(source.RAX), sizeof(source.RAX));
-  payload_enqueue(payload, &(source.RBX), sizeof(source.RBX));
-  payload_enqueue(payload, &(source.RCX), sizeof(source.RCX));
-  payload_enqueue(payload, &(source.RDX), sizeof(source.RDX));
-  payload_enqueue(payload, &(source.SI), sizeof(source.SI));
-  payload_enqueue(payload, &(source.DI), sizeof(source.DI));
+  payload_enqueue(payload, &(source.cpu_registers.AX), sizeof(source.cpu_registers.AX));
+  payload_enqueue(payload, &(source.cpu_registers.BX), sizeof(source.cpu_registers.BX));
+  payload_enqueue(payload, &(source.cpu_registers.CX), sizeof(source.cpu_registers.CX));
+  payload_enqueue(payload, &(source.cpu_registers.DX), sizeof(source.cpu_registers.DX));
+  payload_enqueue(payload, &(source.cpu_registers.EAX), sizeof(source.cpu_registers.EAX));
+  payload_enqueue(payload, &(source.cpu_registers.EBX), sizeof(source.cpu_registers.EBX));
+  payload_enqueue(payload, &(source.cpu_registers.ECX), sizeof(source.cpu_registers.ECX));
+  payload_enqueue(payload, &(source.cpu_registers.EDX), sizeof(source.cpu_registers.EDX));
+  payload_enqueue(payload, &(source.cpu_registers.RAX), sizeof(source.cpu_registers.RAX));
+  payload_enqueue(payload, &(source.cpu_registers.RBX), sizeof(source.cpu_registers.RBX));
+  payload_enqueue(payload, &(source.cpu_registers.RCX), sizeof(source.cpu_registers.RCX));
+  payload_enqueue(payload, &(source.cpu_registers.RDX), sizeof(source.cpu_registers.RDX));
+  payload_enqueue(payload, &(source.cpu_registers.SI), sizeof(source.cpu_registers.SI));
+  payload_enqueue(payload, &(source.cpu_registers.DI), sizeof(source.cpu_registers.DI));
     aux = (t_EnumValue) source.current_state;
   payload_enqueue(payload, &aux, sizeof(t_EnumValue));
   payload_enqueue(payload, &(source.quantum), sizeof(source.quantum));
@@ -42,20 +42,20 @@ void pcb_deserialize(t_Payload *payload, t_PCB *destination) {
 
   payload_dequeue(payload, &(destination->PID), sizeof(destination->PID));
   payload_dequeue(payload, &(destination->PC), sizeof(destination->PC));
-  payload_dequeue(payload, &(destination->AX), sizeof(destination->AX));
-  payload_dequeue(payload, &(destination->BX), sizeof(destination->BX));
-  payload_dequeue(payload, &(destination->CX), sizeof(destination->CX));
-  payload_dequeue(payload, &(destination->DX), sizeof(destination->DX));
-  payload_dequeue(payload, &(destination->EAX), sizeof(destination->EAX));
-  payload_dequeue(payload, &(destination->EBX), sizeof(destination->EBX));
-  payload_dequeue(payload, &(destination->ECX), sizeof(destination->ECX));
-  payload_dequeue(payload, &(destination->EDX), sizeof(destination->EDX));
-  payload_dequeue(payload, &(destination->RAX), sizeof(destination->RAX));
-  payload_dequeue(payload, &(destination->RBX), sizeof(destination->RBX));
-  payload_dequeue(payload, &(destination->RCX), sizeof(destination->RCX));
-  payload_dequeue(payload, &(destination->RDX), sizeof(destination->RDX));
-  payload_dequeue(payload, &(destination->SI), sizeof(destination->SI));
-  payload_dequeue(payload, &(destination->DI), sizeof(destination->DI));
+  payload_dequeue(payload, &(destination->cpu_registers.AX), sizeof(destination->cpu_registers.AX));
+  payload_dequeue(payload, &(destination->cpu_registers.BX), sizeof(destination->cpu_registers.BX));
+  payload_dequeue(payload, &(destination->cpu_registers.CX), sizeof(destination->cpu_registers.CX));
+  payload_dequeue(payload, &(destination->cpu_registers.DX), sizeof(destination->cpu_registers.DX));
+  payload_dequeue(payload, &(destination->cpu_registers.EAX), sizeof(destination->cpu_registers.EAX));
+  payload_dequeue(payload, &(destination->cpu_registers.EBX), sizeof(destination->cpu_registers.EBX));
+  payload_dequeue(payload, &(destination->cpu_registers.ECX), sizeof(destination->cpu_registers.ECX));
+  payload_dequeue(payload, &(destination->cpu_registers.EDX), sizeof(destination->cpu_registers.EDX));
+  payload_dequeue(payload, &(destination->cpu_registers.RAX), sizeof(destination->cpu_registers.RAX));
+  payload_dequeue(payload, &(destination->cpu_registers.RBX), sizeof(destination->cpu_registers.RBX));
+  payload_dequeue(payload, &(destination->cpu_registers.RCX), sizeof(destination->cpu_registers.RCX));
+  payload_dequeue(payload, &(destination->cpu_registers.RDX), sizeof(destination->cpu_registers.RDX));
+  payload_dequeue(payload, &(destination->cpu_registers.SI), sizeof(destination->cpu_registers.SI));
+  payload_dequeue(payload, &(destination->cpu_registers.DI), sizeof(destination->cpu_registers.DI));
   payload_dequeue(payload, &aux, sizeof(t_EnumValue));
     destination->current_state = (e_Process_State) aux;
   payload_dequeue(payload, &(destination->quantum), sizeof(destination->quantum));
@@ -88,20 +88,20 @@ void pcb_log(t_PCB pcb) {
     "* quantum: %" PRIu64
     , pcb.PID
     , pcb.PC
-    , pcb.AX
-    , pcb.BX
-    , pcb.CX
-    , pcb.DX
-    , pcb.EAX
-    , pcb.EBX
-    , pcb.ECX
-    , pcb.EDX
-    , pcb.RAX
-    , pcb.RBX
-    , pcb.RCX
-    , pcb.RDX
-    , pcb.SI
-    , pcb.DI
+    , pcb.cpu_registers.AX
+    , pcb.cpu_registers.BX
+    , pcb.cpu_registers.CX
+    , pcb.cpu_registers.DX
+    , pcb.cpu_registers.EAX
+    , pcb.cpu_registers.EBX
+    , pcb.cpu_registers.ECX
+    , pcb.cpu_registers.EDX
+    , pcb.cpu_registers.RAX
+    , pcb.cpu_registers.RBX
+    , pcb.cpu_registers.RCX
+    , pcb.cpu_registers.RDX
+    , pcb.cpu_registers.SI
+    , pcb.cpu_registers.DI
     , pcb.current_state
     , pcb.quantum
     );

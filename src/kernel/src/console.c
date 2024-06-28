@@ -175,7 +175,14 @@ int kernel_command_start_process(int argc, char* argv[]) {
 
     t_PCB *pcb = pcb_create();
 
-    pcb->instructions_path = strdup(argv[1]);
+    send_process_create(argv[1], pcb->PID, CONNECTION_MEMORY.fd_connection);
+
+    t_Return_Value return_value;
+    receive_return_value_with_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
+    if(return_value) {
+        log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", argv[1]);
+        return 1;
+    }
 
     wait_list_process_states();
         pthread_mutex_lock(&MUTEX_LIST_NEW);
@@ -200,7 +207,6 @@ int kernel_command_kill_process(int argc, char* argv[]) {
     log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
 
     // TODO: Implementación
-    // switch_process_state(atoi(argv[1]), EXIT_STATE);
 
     return 0;
 }
@@ -306,6 +312,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
     pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
 
     log_info(CONSOLE_LOGGER,
+        "Lista de proceso por estado:\n"
         "* NEW: %s\n"
         "* READY: %s\n"
         "* EXEC: %s\n"

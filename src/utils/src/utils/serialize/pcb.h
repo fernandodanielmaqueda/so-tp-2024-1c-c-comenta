@@ -33,14 +33,7 @@ typedef enum e_Process_State {
 	EXIT_STATE
 } e_Process_State;
 
-typedef uint32_t t_PID;
-typedef uint32_t t_PC;
-typedef uint32_t t_MemorySize;
-typedef uint64_t t_Quantum;
-
-typedef struct t_PCB {
-    t_PID PID;
-    t_PC PC;
+typedef struct t_CPU_Registers {
     uint8_t AX;
     uint8_t BX;
     uint8_t CX;
@@ -55,10 +48,20 @@ typedef struct t_PCB {
     uint32_t RDX;
     uint32_t SI;
     uint32_t DI;
-    e_Process_State current_state;
+} t_CPU_Registers;
+
+typedef uint32_t t_PID;
+typedef uint32_t t_PC;
+typedef uint32_t t_MemorySize;
+typedef uint64_t t_Quantum;
+
+typedef struct t_PCB {
+    t_PID PID;
+    t_PC PC;
     t_Quantum quantum;
+    t_CPU_Registers cpu_registers;
+    e_Process_State current_state;
     e_Exit_Reason exit_reason;
-    char *instructions_path; // No hace falta serializarlo
 } t_PCB;
 
 

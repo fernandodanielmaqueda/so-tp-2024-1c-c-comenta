@@ -17,10 +17,10 @@
 typedef enum e_Header {
     // USO GENERAL
     DISCONNECTING_HEADER,
-    SUBHEADER_HEADER,
-    ARGUMENTS_HEADER,
-    PCB_HEADER,
-    TEXT_HEADER,
+    // Kernel - CPU
+    PROCESS_DISPATCH_HEADER,
+    PROCESS_EVICTION_HEADER,
+    KERNEL_INTERRUPT_HEADER,
     // CPU - Memoria
     INSTRUCTION_REQUEST,
     READ_REQUEST, //utilizado en MEMORIA-IO
@@ -30,11 +30,6 @@ typedef enum e_Header {
     FRAME_ACCESS,    //PARA MEMORIA Y REVISAR LA TLB
     FRAME_REQUEST,
     PAGE_SIZE_REQUEST,
-    // Kernel - CPU
-    EVICTION_REASON_HEADER,
-    KERNEL_INTERRUPT_HEADER,
-    EXIT_STATUS_HEADER,
-    //::OPERACIONES MODULOS::
     //Kernel - Memoria
     PROCESS_CREATE_HEADER,
     PROCESS_DESTROY_HEADER,
@@ -44,9 +39,7 @@ typedef enum e_Header {
     STDOUT_REQUEST,
     IO_STDIN_WRITE_MEMORY,
     IO_STDOUT_READ_MEMORY
-    ///////////////////
     //IO - Memoria
-    //Instrucciones
 } e_Header;
 
 typedef struct t_Package {

@@ -41,46 +41,46 @@ t_CPU_Register_Accessor get_register_accessor(t_PCB *pcb, e_CPU_Register cpu_reg
 
     switch (cpu_register) {
         case AX_REGISTER:
-            register_accessor.register_pointer = &(pcb->AX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.AX);
             break;
         case BX_REGISTER:
-            register_accessor.register_pointer = &(pcb->BX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.BX);
             break;
         case CX_REGISTER:
-            register_accessor.register_pointer = &(pcb->CX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.CX);
             break;
         case DX_REGISTER:
-            register_accessor.register_pointer = &(pcb->DX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.DX);
             break;
         case EAX_REGISTER:
-            register_accessor.register_pointer = &(pcb->EAX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.EAX);
             break;
         case EBX_REGISTER:
-            register_accessor.register_pointer = &(pcb->EBX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.EBX);
             break;
         case ECX_REGISTER:
-            register_accessor.register_pointer = &(pcb->ECX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.ECX);
             break;
         case EDX_REGISTER:
-            register_accessor.register_pointer = &(pcb->EDX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.EDX);
             break;
         case RAX_REGISTER:
-            register_accessor.register_pointer = &(pcb->RAX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.RAX);
             break;
         case RBX_REGISTER:
-            register_accessor.register_pointer = &(pcb->RBX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.RBX);
             break;
         case RCX_REGISTER:
-            register_accessor.register_pointer = &(pcb->RCX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.RCX);
             break;
         case RDX_REGISTER:
-            register_accessor.register_pointer = &(pcb->RDX);
+            register_accessor.register_pointer = &(pcb->cpu_registers.RDX);
             break;
         case SI_REGISTER:
-            register_accessor.register_pointer = &(pcb->SI);
+            register_accessor.register_pointer = &(pcb->cpu_registers.SI);
             break;
         case DI_REGISTER:
-            register_accessor.register_pointer = &(pcb->DI);
+            register_accessor.register_pointer = &(pcb->cpu_registers.DI);
             break;
     }
 

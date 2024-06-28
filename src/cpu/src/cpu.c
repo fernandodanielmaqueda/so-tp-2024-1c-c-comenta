@@ -112,7 +112,7 @@ void instruction_cycle(void)
 
     while(1) {
 
-        cpu_receive_pcb(&PCB);
+        receive_process_dispatch(&PCB, SERVER_CPU_DISPATCH.client.fd_client);
         log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB.PID);
         
         KERNEL_INTERRUPT = NONE_KERNEL_INTERRUPT;
@@ -167,12 +167,7 @@ void instruction_cycle(void)
             }
         }
 
-        t_Package *package = package_create_with_header(SUBHEADER_HEADER);
-        pcb_serialize(package->payload, PCB);
-        eviction_reason_serialize(package->payload, eviction_reason);
-        subpayload_serialize(package->payload, *SYSCALL_INSTRUCTION);
-        package_send(package, SERVER_CPU_DISPATCH.client.fd_client);
-        package_destroy(package);
+        send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, SERVER_CPU_DISPATCH.client.fd_client);
 
         payload_destroy(SYSCALL_INSTRUCTION);
     }
@@ -185,23 +180,11 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
     sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
 
     e_Kernel_Interrupt kernel_interrupt;
-    t_Package *package;
     t_PID pid;
 
     while(1) {
 
-        package = package_receive(SERVER_CPU_INTERRUPT.client.fd_client);
-        switch (package->header) {
-        case KERNEL_INTERRUPT_HEADER:
-            kernel_interrupt_deserialize(package->payload, &kernel_interrupt);
-            payload_dequeue(package->payload, &pid, sizeof(pid));
-            break;
-        default:
-            log_error(SERIALIZE_LOGGER, "HeaderCode %d desconocido", package->header);
-            exit(EXIT_FAILURE);
-            break;
-        }
-        package_destroy(package);    
+        receive_kernel_interrupt(&kernel_interrupt, &pid, SERVER_CPU_INTERRUPT.client.fd_client);
 
         // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
         if (KERNEL_INTERRUPT < kernel_interrupt)
@@ -380,24 +363,6 @@ void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
     
 }
 
-void cpu_receive_pcb(t_PCB *pcb)
-{
-
-    t_Package *package = package_receive(SERVER_CPU_DISPATCH.client.fd_client);
-    switch (package->header)
-    {
-    case PCB_HEADER:
-        pcb_deserialize(package->payload, pcb);
-        break;
-    default:
-        log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
-        exit(EXIT_FAILURE);
-        break;
-    }
-    package_destroy(package);
-
-}
-
 void request_frame_memory(t_Page page, t_PID pid)
 {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
@@ -410,26 +375,6 @@ void request_frame_memory(t_Page page, t_PID pid)
 
 void cpu_fetch_next_instruction(char **line)
 {
-    t_Package *package;
-
-    // Request
-    package = package_create_with_header(INSTRUCTION_REQUEST);
-    payload_enqueue(package->payload, &(PCB.PID), sizeof(PCB.PID));
-    payload_enqueue(package->payload, &(PCB.PC), sizeof(PCB.PC));
-    package_send(package, CONNECTION_MEMORY.fd_connection);
-    package_destroy(package);
-
-    // Receive
-
-    package = package_receive(CONNECTION_MEMORY.fd_connection);
-    switch (package->header) {
-        case INSTRUCTION_REQUEST:
-            text_deserialize(package->payload, line);
-            break;
-        default:
-            log_error(SERIALIZE_LOGGER, "Header %d desconocido", package->header);
-            exit(EXIT_FAILURE);
-            break;
-    }
-    package_destroy(package);
+    send_instruction_request(PCB.PID, PCB.PC, CONNECTION_MEMORY.fd_connection);
+    receive_text_with_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
 }

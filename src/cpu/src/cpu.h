@@ -35,7 +35,7 @@ typedef enum t_in_out {
 } t_in_out;
 
 typedef uint32_t t_Page;
-typedef uint32_t t_Frame;
+typedef t_Page t_Frame;
 
 typedef struct t_TLB {
 	t_PID PID;
@@ -113,7 +113,6 @@ void request_data_out_memory(int nro_frame_required, t_PID pid, t_Page nro_page,
 void request_frame_memory(t_Page page, t_PID pid);
 void add_to_tlb(t_PID pid , t_Page page, t_Frame frame);
 void replace_tlb_input(t_PID pid, t_Page page, t_Frame frame);
-void cpu_receive_pcb(t_PCB *pcb);
 void cpu_fetch_next_instruction(char **line);
 
 #endif /* CPU_H */

@@ -23,29 +23,6 @@
 void send_header(e_Header header, int fd_socket);
 
 
-void send_return_value_with_header(e_Header header, t_Return_Value return_value, int fd_socket);
-void receive_return_value_with_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket);
-
-
-/**
- * @brief Enviar eviction_reason (incluye el serializado)
- * @param eviction_reason e_Eviction_Reason a enviar.
- * @param fd_socket Socket desde donde se va a recibir el eviction_reason.
- */
-void send_eviction_reason(e_Eviction_Reason eviction_reason, int fd_socket);
-
-
-void send_kernel_interrupt(e_Kernel_Interrupt type, t_PID pid, int fd_socket);
-
-
-/**
- * @brief Enviar pcb (incluye el serializado)
- * @param pcb t_PCB a enviar.
- * @param fd_socket Socket desde donde se va a recibir el pcb.
- */
-void send_pcb(t_PCB pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
-
-
 /**
  * @brief Enviar texto (incluye el serializado)
  * @param string Texto a enviar.
@@ -53,6 +30,46 @@ void send_pcb(t_PCB pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PC
  */
 void send_text_with_header(e_Header header, char *text, int fd_socket);
 
+
 void receive_text_with_header(e_Header header, char **text, int fd_socket);
+
+
+void send_return_value_with_header(e_Header header, t_Return_Value return_value, int fd_socket);
+
+
+void receive_return_value_with_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket);
+
+
+void send_process_create(char *instructions_path, t_PID pid, int fd_socket);
+
+
+void send_process_destroy(t_PID pid, int fd_socket);
+
+
+/**
+ * @brief Enviar pcb (incluye el serializado)
+ * @param pcb t_PCB a enviar.
+ * @param fd_socket Socket desde donde se va a recibir el pcb.
+ */
+void send_process_dispatch(t_PCB pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
+
+
+void receive_process_dispatch(t_PCB *pcb, int fd_socket);
+
+
+void send_process_eviction(t_PCB pcb, e_Eviction_Reason eviction_reason, t_Payload syscall_instruction, int fd_socket);
+
+
+void receive_process_eviction(t_PCB *pcb, e_Eviction_Reason *eviction_reason, t_Payload *syscall_instruction, int fd_socket);
+
+
+void send_kernel_interrupt(e_Kernel_Interrupt type, t_PID pid, int fd_socket);
+
+
+void receive_kernel_interrupt(e_Kernel_Interrupt *kernel_interrupt, t_PID *pid, int fd_socket);
+
+// CPU - Memoria
+
+void send_instruction_request(t_PID pid, t_PC pc, int fd_socket);
 
 #endif // UTILS_SEND_H

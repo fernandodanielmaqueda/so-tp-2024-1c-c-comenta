@@ -104,8 +104,6 @@ void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENT
 void *long_term_scheduler_new(void *parameter) {
 
 	t_PCB *pcb;
-    t_Package* package;
-	t_Return_Value return_value;
 
 	while(1) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_NEW);
@@ -116,21 +114,8 @@ void *long_term_scheduler_new(void *parameter) {
 				pcb = (t_PCB *) list_get(LIST_NEW, 0);
 			pthread_mutex_unlock(&MUTEX_LIST_NEW);
 		signal_list_process_states();
-
-		package = package_create_with_header(PROCESS_CREATE_HEADER);
-		text_serialize(package->payload, pcb->instructions_path);
-		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
-		package_send(package, CONNECTION_MEMORY.fd_connection);
-		package_destroy(package);
-
-		receive_return_value_with_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
-		if(return_value) {
-			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", pcb->instructions_path);
-		} else {
-			switch_process_state(pcb, READY_STATE);
-		}
-
-		free(pcb->instructions_path);
+		
+		switch_process_state(pcb, READY_STATE);
 	}
 
 	return NULL;
@@ -138,7 +123,6 @@ void *long_term_scheduler_new(void *parameter) {
 
 void *long_term_scheduler_exit(void *NULL_parameter) {
 	t_PCB *pcb;
-    t_Package* package;
 	t_Return_Value return_value;
 
 	while(1) {
@@ -150,10 +134,7 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 			pthread_mutex_unlock(&MUTEX_LIST_EXIT);
 		signal_list_process_states();
 
-		package = package_create_with_header(PROCESS_DESTROY_HEADER);
-		payload_enqueue(package->payload, &(pcb->PID), sizeof(pcb->PID));
-		package_send(package, CONNECTION_MEMORY.fd_connection);
-		package_destroy(package);
+		send_process_destroy(pcb->PID, CONNECTION_MEMORY.fd_connection); 
 
 		receive_return_value_with_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
 		if(return_value) {
@@ -175,7 +156,6 @@ void *short_term_scheduler(void *parameter) {
 	t_PCB *pcb;
 	e_Eviction_Reason eviction_reason;
 	t_Payload *syscall_instruction = payload_create();
-	t_Package *package;
 	int exit_status;
 	uint64_t cpu_burst;
 
@@ -191,7 +171,7 @@ void *short_term_scheduler(void *parameter) {
 		int PCB_EXECUTE = 1;
 		while(PCB_EXECUTE) {
 
-			send_pcb(*pcb, CONNECTION_CPU_DISPATCH.fd_connection);
+			send_process_dispatch(*pcb, CONNECTION_CPU_DISPATCH.fd_connection);
 
 			switch(SCHEDULING_ALGORITHM) {
 				case RR_SCHEDULING_ALGORITHM:
@@ -206,37 +186,24 @@ void *short_term_scheduler(void *parameter) {
 					break;
 			}
 
-			package = package_receive(CONNECTION_CPU_DISPATCH.fd_connection);
-			switch(package->header) {
-				case SUBHEADER_HEADER:
+			receive_process_eviction(pcb, &eviction_reason, syscall_instruction, CONNECTION_CPU_DISPATCH.fd_connection);
 
-					switch(SCHEDULING_ALGORITHM) {
-						case RR_SCHEDULING_ALGORITHM:
-						case VRR_SCHEDULING_ALGORITHM:
-							temporal_stop(TEMPORAL_DISPATCHED);
-							cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
-							temporal_destroy(TEMPORAL_DISPATCHED);
+			switch(SCHEDULING_ALGORITHM) {
+				case RR_SCHEDULING_ALGORITHM:
+				case VRR_SCHEDULING_ALGORITHM:
+					temporal_stop(TEMPORAL_DISPATCHED);
+					cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
+					temporal_destroy(TEMPORAL_DISPATCHED);
 
-							pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
-							if(!QUANTUM_INTERRUPT)
-								pthread_cancel(THREAD_QUANTUM_INTERRUPT);
-							pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
-							pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
-							break;
-						case FIFO_SCHEDULING_ALGORITHM:
-							break;
-					}
-
-					pcb_deserialize(package->payload, pcb);
-					eviction_reason_deserialize(package->payload, &eviction_reason);
-					subpayload_deserialize(package->payload, syscall_instruction);
+					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+					if(!QUANTUM_INTERRUPT)
+						pthread_cancel(THREAD_QUANTUM_INTERRUPT);
+					pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
+					pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
 					break;
-				default:
-					log_error(SERIALIZE_LOGGER, "HeaderCode pcb %d desconocido", package->header);
-					exit(EXIT_FAILURE);
+				case FIFO_SCHEDULING_ALGORITHM:
 					break;
 			}
-			package_destroy(package);
 
 			switch(SCHEDULING_ALGORITHM) {
 				case RR_SCHEDULING_ALGORITHM:
@@ -475,20 +442,20 @@ t_PCB *pcb_create() {
 
 	pcb->PID = PID_COUNTER++;
     pcb->PC = 0; 
-    pcb->AX = 0;
-    pcb->BX = 0;
-    pcb->CX = 0;
-    pcb->DX = 0;
-    pcb->EAX = 0;
-    pcb->EBX = 0;
-    pcb->ECX = 0;
-    pcb->EDX = 0;
-    pcb->RAX = 0;
-    pcb->RBX = 0;
-    pcb->RCX = 0;
-    pcb->RDX = 0;
-    pcb->SI = 0;
-    pcb->DI = 0;
+    pcb->cpu_registers.AX = 0;
+    pcb->cpu_registers.BX = 0;
+    pcb->cpu_registers.CX = 0;
+    pcb->cpu_registers.DX = 0;
+    pcb->cpu_registers.EAX = 0;
+    pcb->cpu_registers.EBX = 0;
+    pcb->cpu_registers.ECX = 0;
+    pcb->cpu_registers.EDX = 0;
+    pcb->cpu_registers.RAX = 0;
+    pcb->cpu_registers.RBX = 0;
+    pcb->cpu_registers.RCX = 0;
+    pcb->cpu_registers.RDX = 0;
+    pcb->cpu_registers.SI = 0;
+    pcb->cpu_registers.DI = 0;
 	pcb->current_state = NEW_STATE;
 	pcb->quantum = QUANTUM;
 

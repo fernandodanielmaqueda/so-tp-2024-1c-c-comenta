@@ -218,9 +218,7 @@ int parser_file(char* path, t_list *list_instruction) {
 void listen_cpu(int fd_cpu) {
     while(1) {
         t_Package* package = package_receive(fd_cpu);
-        e_Header header = package->header;
-        //e_CPU_Memory_Request memory_request = 0; //enum HeaderCode headerCode = package_receive_header(fd_cpu);
-        switch (header) {
+        switch (package->header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
                 seek_instruccion(package->payload);
@@ -278,8 +276,7 @@ void listen_cpu(int fd_cpu) {
 void listen_io(int fd_io) {
     while(1) {
         t_Package* paquete = package_receive(fd_io);
-        e_Header header = paquete->header; //enum HeaderCode headerCode = package_receive_header(fd_kernel);
-        switch(header) {
+        switch(paquete->header) {
             
             case IO_STDIN_WRITE_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");

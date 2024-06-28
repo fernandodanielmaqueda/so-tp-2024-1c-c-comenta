@@ -141,10 +141,6 @@ void generic_function(void) {
 		// arguments_free(instruction);
 
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-		package = package_create_with_header(EXIT_STATUS_HEADER);
-		payload_enqueue(package->payload, &(exit_status), sizeof(uint8_t));
-		package_send(package, CONNECTION_KERNEL.fd_connection);
-		package_destroy(package);
 	}
 }
 
@@ -163,10 +159,6 @@ void stdin_function(){
 		// arguments_free(instruction);
 
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-		package = package_create_with_header(EXIT_STATUS_HEADER);
-		payload_enqueue(package->payload, &(exit_status), sizeof(uint8_t));
-		package_send(package, CONNECTION_KERNEL.fd_connection);
-		package_destroy(package);
 }
 }
 
@@ -186,10 +178,6 @@ void stdout_function(){
 		// arguments_free(instruction);
 
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-		package = package_create_with_header(EXIT_STATUS_HEADER);
-		payload_enqueue(package->payload, &(exit_status), sizeof(uint8_t));
-		package_send(package, CONNECTION_KERNEL.fd_connection);
-		package_destroy(package);
 	}
 }
 
