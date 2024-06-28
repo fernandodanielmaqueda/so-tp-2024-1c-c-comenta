@@ -26,7 +26,7 @@ t_temporal *TEMPORAL_DISPATCHED;
 t_list *LIST_NEW;
 t_list *LIST_READY;
 t_list *LIST_READY_PRIORITARY;
-t_list *LIST_EXECUTING;
+t_list *LIST_EXEC;
 t_list *LIST_BLOCKED;
 t_list *LIST_EXIT;
 
@@ -34,7 +34,7 @@ pthread_mutex_t MUTEX_LIST_NEW;
 pthread_mutex_t MUTEX_LIST_READY;
 pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
 pthread_mutex_t MUTEX_LIST_BLOCKED;
-pthread_mutex_t MUTEX_LIST_EXECUTING;
+pthread_mutex_t MUTEX_LIST_EXEC;
 pthread_mutex_t MUTEX_LIST_EXIT;
 
 /*
@@ -140,7 +140,7 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 		if(return_value) {
 			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo FINALIZAR_PROCESO %" PRIu32, pcb->PID);
 		} else {
-			log_info(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->PID, EXIT_REASONS[pcb->exit_reason]);
+			log_debug(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->PID, EXIT_REASONS[pcb->exit_reason]);
 		}
 		
 		free(pcb);
@@ -166,7 +166,7 @@ void *short_term_scheduler(void *parameter) {
 			pcb = SCHEDULING_ALGORITHMS[SCHEDULING_ALGORITHM].function_fetcher();
 		signal_list_process_states();
 
-		switch_process_state(pcb, EXECUTING_STATE);
+		switch_process_state(pcb, EXEC_STATE);
 
 		int PCB_EXECUTE = 1;
 		while(PCB_EXECUTE) {
@@ -228,6 +228,7 @@ void *short_term_scheduler(void *parameter) {
 
 				case INTERRUPTION_EVICTION_REASON:
 					// FALTARÍA DISTINGUIR SI LA INTERRUPCIÓN FUE POR FIN DE QUANTUM O POR KILL
+					log_debug(MINIMAL_LOGGER, "PID: <%d> - Desalojado por fin de Quantum", (int) pcb->PID);
 					switch_process_state(pcb, READY_STATE);
 					PCB_EXECUTE = 0;
 					break;
@@ -338,12 +339,12 @@ bool _remover_por_pid(void *element) {
 					list_remove_by_condition(LIST_READY, _remover_por_pid);
 				pthread_mutex_unlock(&MUTEX_LIST_READY);
 				break;
-			case EXECUTING_STATE:
+			case EXEC_STATE:
 			{
-				previous_state_name="EXECUTING";
-				pthread_mutex_lock(&MUTEX_LIST_EXECUTING);
-					list_remove_by_condition(LIST_EXECUTING, _remover_por_pid);
-				pthread_mutex_unlock(&MUTEX_LIST_EXECUTING);
+				previous_state_name="EXEC";
+				pthread_mutex_lock(&MUTEX_LIST_EXEC);
+					list_remove_by_condition(LIST_EXEC, _remover_por_pid);
+				pthread_mutex_unlock(&MUTEX_LIST_EXEC);
 				break;
 			}
 			case BLOCKED_STATE:
@@ -368,7 +369,7 @@ bool _remover_por_pid(void *element) {
 				pthread_mutex_lock(&MUTEX_LIST_NEW);
 					list_add(LIST_NEW, pcb);
 				pthread_mutex_unlock(&MUTEX_LIST_NEW);
-				log_info(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
+				log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW" ,pcb->PID);
 				break;
 			}
 			case READY_STATE:
@@ -380,10 +381,14 @@ bool _remover_por_pid(void *element) {
 						if(pcb->quantum < QUANTUM) {
 							pthread_mutex_lock(&MUTEX_LIST_READY_PRIORITARY);
 								list_add(LIST_READY_PRIORITARY, pcb);
+								log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->PID, previous_state_name);
+								log_state_list(MODULE_LOGGER, "Ready Prioridad", LIST_READY_PRIORITARY);
 							pthread_mutex_unlock(&MUTEX_LIST_READY_PRIORITARY);
 						} else {
 							pthread_mutex_lock(&MUTEX_LIST_READY);
 								list_add(LIST_READY, pcb);
+								log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->PID, previous_state_name);
+								log_state_list(MODULE_LOGGER, "Cola Ready", LIST_READY);
 							pthread_mutex_unlock(&MUTEX_LIST_READY);
 						}
 						break;
@@ -391,20 +396,21 @@ bool _remover_por_pid(void *element) {
 					case FIFO_SCHEDULING_ALGORITHM:
 						pthread_mutex_lock(&MUTEX_LIST_READY);
 							list_add(LIST_READY, pcb);
+							log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->PID, previous_state_name);
+							log_state_list(MODULE_LOGGER, "Cola Ready", LIST_READY);
 						pthread_mutex_unlock(&MUTEX_LIST_READY);
 						break;
 				}
 
-				log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", pcb->PID, previous_state_name);
 				sem_post(&SEM_SHORT_TERM_SCHEDULER);
 				break;
 			}
-			case EXECUTING_STATE: {
+			case EXEC_STATE: {
 				
-				pthread_mutex_lock(&MUTEX_LIST_EXECUTING);
-					list_add(LIST_EXECUTING, pcb);
-				pthread_mutex_unlock(&MUTEX_LIST_EXECUTING);
-				log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXECUTING>",pcb->PID, previous_state_name);
+				pthread_mutex_lock(&MUTEX_LIST_EXEC);
+					list_add(LIST_EXEC, pcb);
+				pthread_mutex_unlock(&MUTEX_LIST_EXEC);
+				log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXEC>",pcb->PID, previous_state_name);
 		
 				break;
 			}
@@ -413,7 +419,7 @@ bool _remover_por_pid(void *element) {
 				pthread_mutex_lock(&MUTEX_LIST_BLOCKED);
 					list_add(LIST_BLOCKED, pcb);
 				pthread_mutex_unlock(&MUTEX_LIST_BLOCKED);
-				log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->PID, previous_state_name);
+				log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>",pcb->PID, previous_state_name);
 				break;
 			}
 			case EXIT_STATE:
@@ -421,7 +427,7 @@ bool _remover_por_pid(void *element) {
 				pthread_mutex_lock(&MUTEX_LIST_EXIT);
 					list_add(LIST_EXIT, pcb);
 				pthread_mutex_unlock(&MUTEX_LIST_EXIT);
-				log_info(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXIT>",pcb->PID, previous_state_name);
+				log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXIT>",pcb->PID, previous_state_name);
 
 				sem_post(&SEM_LONG_TERM_SCHEDULER_EXIT);
 				
@@ -430,6 +436,27 @@ bool _remover_por_pid(void *element) {
 		}
 
 	signal_list_process_states();
+}
+
+void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list) {
+	char *pid_string = pcb_list_to_pid_string(pcb_list);
+	log_info(logger, "%s: %s", state_name, pid_string);
+	free(pid_string);
+}
+
+char *pcb_list_to_pid_string(t_list *pcb_list) {
+    char *string = string_new();
+    char *pid_as_string;
+    string_append(&string, "[");
+    for(register int i = 0; i < list_size(pcb_list); i++) {
+        pid_as_string = string_from_format("%" PRIu32, ((t_PCB *) list_get(pcb_list, i))->PID);
+        string_append(&string, pid_as_string);
+        free(pid_as_string);
+        if(i < list_size(pcb_list) - 1)
+            string_append(&string, " , ");
+    }
+    string_append(&string, "]");
+    return string;
 }
 
 t_PCB *pcb_create() {

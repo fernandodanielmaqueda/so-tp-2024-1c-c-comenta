@@ -46,7 +46,7 @@ extern int QUANTUM_INTERRUPT;
 extern t_list *LIST_NEW;
 extern t_list *LIST_READY;
 extern t_list *LIST_READY_PRIORITARY;
-extern t_list *LIST_EXECUTING;
+extern t_list *LIST_EXEC;
 extern t_list *LIST_BLOCKED;
 extern t_list *LIST_EXIT;
 
@@ -54,7 +54,7 @@ extern pthread_mutex_t MUTEX_LIST_NEW;
 extern pthread_mutex_t MUTEX_LIST_READY;
 extern pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
 extern pthread_mutex_t MUTEX_LIST_BLOCKED;
-extern pthread_mutex_t MUTEX_LIST_EXECUTING;
+extern pthread_mutex_t MUTEX_LIST_EXEC;
 extern pthread_mutex_t MUTEX_LIST_EXIT;
 
 /*
@@ -99,6 +99,8 @@ t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);
 void switch_process_state(t_PCB* pcb, e_Process_State NEW_STATE);
+void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list);
+char *pcb_list_to_pid_string(t_list *pcb_list);
 t_PCB *pcb_create();
 void* start_quantum();
 void stop_planificacion(void);

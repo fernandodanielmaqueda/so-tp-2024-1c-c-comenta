@@ -4,12 +4,19 @@
 #include "utils/serialize/text.h"
 
 void text_serialize(t_Payload *payload, char *source) {
-  if(payload == NULL || source == NULL)
+  if(payload == NULL)
     return;
+  
+  t_StringLength textSize;
 
-  t_StringLength textSize = (t_StringLength) strlen(source) + 1;
-  payload_enqueue(payload, (void *) &(textSize), sizeof(t_StringLength));
-  payload_enqueue(payload, (void *) source, textSize);
+  if(source == NULL) {
+    textSize = 0;
+    payload_enqueue(payload, (void *) &(textSize), sizeof(t_StringLength));
+  } else {
+    textSize = (t_StringLength) strlen(source) + 1;
+    payload_enqueue(payload, (void *) &(textSize), sizeof(t_StringLength));
+    payload_enqueue(payload, (void *) source, textSize);
+  }
 
   text_log(source);
 }
@@ -21,23 +28,25 @@ void text_deserialize(t_Payload *payload, char **destination) {
   t_StringLength textSize;
   payload_dequeue(payload, (void *) &(textSize), sizeof(t_StringLength));
 
-  *destination = malloc((size_t) textSize);
-  if(*destination == NULL) {
-    log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena de destino");
-    exit(EXIT_FAILURE);
+  if(!textSize) {
+    *destination = NULL;
+  } else {
+    *destination = malloc((size_t) textSize);
+    if(*destination == NULL) {
+      log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para la cadena de destino");
+      exit(EXIT_FAILURE);
+    }
+    
+    payload_dequeue(payload, (void *) *destination, (size_t) textSize);
   }
-  
-  payload_dequeue(payload, (void *) *destination, (size_t) textSize);
 
   text_log(*destination);
 }
 
 void text_log(char *text) {
-  if(text == NULL)
-    return;
 
   log_info(SERIALIZE_LOGGER,
     "text: %s"
-    , text
+    , (text != NULL) ? text : "(NULL)"
     );
 }

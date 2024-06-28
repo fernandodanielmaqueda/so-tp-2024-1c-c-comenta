@@ -121,23 +121,26 @@ void instruction_cycle(void)
         while(1) {
 
             // Fetch
-            log_info(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB.PID, PCB.PC);
+            log_debug(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB.PID, PCB.PC);
             cpu_fetch_next_instruction(&IR);
-            // FALTA CONSIDERAR QUE EL FETCH FALLE YA SEA PORQUE NO HAY MÁS INSTRUCCIONES QUE EJECUTAR O PORQUE HUBO UN ERROR DE LECTURA
-
-            // Decode
-            arguments_add(arguments, IR);
-            // FALTA VALIDAR LA SALIDA DE arguments_add
-            if(decode_instruction(arguments->argv[0], &cpu_opcode)) {
-                log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
+            if(IR == NULL) {
+                log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
                 exit_status = 1;
             } else {
-                // Execute
-                exit_status = CPU_OPERATIONS[cpu_opcode].function(arguments->argc, arguments->argv);
-            }
+                // Decode
+                arguments_add(arguments, IR);
+                // FALTA VALIDAR LA SALIDA DE arguments_add
+                if(decode_instruction(arguments->argv[0], &cpu_opcode)) {
+                    log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
+                    exit_status = 1;
+                } else {
+                    // Execute
+                    exit_status = CPU_OPERATIONS[cpu_opcode].function(arguments->argc, arguments->argv);
+                }
 
-            arguments_remove(arguments);
-            free(IR);
+                arguments_remove(arguments);
+                free(IR);
+            }
 
             // Check interrupts
             if (exit_status) {
@@ -210,8 +213,8 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
     if (frame_tlb != -1)
     {
         nro_frame_required = frame_tlb;
-        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
-        log_info(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
+        log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
+        log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
         tlb_access(pid, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
         dir_fisica = nro_frame_required * tamanio_pagina + offset;
@@ -222,7 +225,7 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
     {
         request_frame_memory(pid, nro_page);
         //Obtener Marco: “PID: <PID> - OBTENER MARCO - Página: <NUMERO_PAGINA> - Marco: <NUMERO_MARCO>”.
-        log_info(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
+        log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
 
         t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
         t_PID pidBuscado;
@@ -246,7 +249,7 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
                 log_trace(MODULE_LOGGER, "Reemplazo entrada a la TLB");
             }
 
-            log_info(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pid, nro_page);
+            log_debug(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i", pid, nro_page);
             package_destroy(package);
         }
 

@@ -28,7 +28,7 @@ typedef enum e_Exit_Reason {
 typedef enum e_Process_State {
     NEW_STATE,
     READY_STATE,
-    EXECUTING_STATE,
+    EXEC_STATE,
     BLOCKED_STATE, 
 	EXIT_STATE
 } e_Process_State;

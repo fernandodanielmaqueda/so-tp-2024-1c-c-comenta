@@ -140,7 +140,7 @@ void create_process(t_Payload *process_data) {
     log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
 
     
-    log_debug(MODULE_LOGGER, "PID: <%d> - Tamaño: <0>", new_process->PID);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <0>", (int) new_process->PID);
 
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_CREATE_HEADER, 0, FD_CLIENT_KERNEL);
@@ -165,10 +165,8 @@ void kill_process (t_Payload *payload){
         free(paginaBuscada);
     }
     free(process);
-
     
-    log_debug(MODULE_LOGGER,
-        "PID: <%d> - Tamaño: <%d>", pid, size);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <%d>", (int) pid, size);
     
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, FD_CLIENT_KERNEL);
@@ -328,9 +326,12 @@ void seek_instruccion(t_Payload* payload) {
     payload_dequeue(payload, &PID, sizeof(PID));
     payload_dequeue(payload, &PC, sizeof(PC));
     
-    t_Process* procesoBuscado = seek_process_by_pid(PID);
-    //Suponemos que la instruccion es encontrada siempre
-    char* instruccionBuscada = list_get(procesoBuscado->instructions_list, PC);
+    t_Process *procesoBuscado = seek_process_by_pid(PID);
+
+    char* instruccionBuscada = NULL;
+    if(PC < list_size(procesoBuscado->instructions_list)) {
+        instruccionBuscada = list_get(procesoBuscado->instructions_list, PC);
+    }
 
     usleep(RETARDO_RESPUESTA * 1000);
     send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, FD_CLIENT_CPU);
@@ -386,7 +387,7 @@ void respond_frame_request(t_Payload* payload){
     int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
 
             
-    log_debug(MODULE_LOGGER, "PID: <%d> - Pagina: <%d> - Marco: <%d>", pidProceso, pageBuscada, marcoEncontrado);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Pagina: <%d> - Marco: <%d>", (int) pidProceso, pageBuscada, marcoEncontrado);
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
@@ -438,8 +439,7 @@ void read_memory(t_Payload* payload, int socket) {
     pidBuscado = frame->PID;
 
     
-    log_debug(MODULE_LOGGER,
-        "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", pidBuscado, dir_fisica, bytes);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", (int) pidBuscado, dir_fisica, bytes);
 
     if(pages < 2){//En caso de que sea menor a 2 pagina
         memcpy(&lectura_final, posicion, bytes);  
@@ -502,8 +502,7 @@ void write_memory(t_Payload* payload, int socket){
     pidBuscado = frame->PID;
     
     
-    log_debug(MODULE_LOGGER,
-        "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", pidBuscado, dir_fisica, bytes);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", (int) pidBuscado, dir_fisica, bytes);
 
 //COMIENZA LA ESCRITURA
     if(pages < 2){//En caso de que sea menor a 2 pagina
@@ -614,8 +613,7 @@ void resize_process(t_Payload* payload){
         }
         else{
             
-            log_debug(MODULE_LOGGER,
-                "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Ampliar: <%d>", pid, size, paginas);
+            log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Ampliar: <%d>", (int) pid, size, paginas);
 
                 //CASO: HAY ESPACIO Y SUMA PAGINAS
                 for (size_t i = size; i < paginas; i++)
@@ -646,8 +644,7 @@ void resize_process(t_Payload* payload){
     }
     if(size>paginas){ //RESTA paginas
             
-        log_debug(MODULE_LOGGER,
-            "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Reducir: <%d>", pid, size, paginas);
+        log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Reducir: <%d>", (int) pid, size, paginas);
          
         for (size_t i = size; i > paginas; i--)
         {

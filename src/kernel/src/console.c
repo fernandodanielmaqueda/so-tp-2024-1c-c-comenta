@@ -190,7 +190,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
         pthread_mutex_unlock(&MUTEX_LIST_NEW);
     signal_list_process_states();
 
-    log_info(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
+    log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
 
     sem_post(&SEM_LONG_TERM_SCHEDULER_NEW);
 
@@ -302,7 +302,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
 
         char *pid_string_new = pcb_list_to_pid_string(LIST_NEW);
         char *pid_string_ready = pcb_list_to_pid_string(LIST_READY);
-        char *pid_string_executing = pcb_list_to_pid_string(LIST_EXECUTING);
+        char *pid_string_exec = pcb_list_to_pid_string(LIST_EXEC);
         char *pid_string_blocked = pcb_list_to_pid_string(LIST_BLOCKED);
         char *pid_string_exit = pcb_list_to_pid_string(LIST_EXIT);
 
@@ -320,31 +320,16 @@ int kernel_command_process_states(int argc, char* argv[]) {
         "* EXIT: %s"
         , pid_string_new
         , pid_string_ready
-        , pid_string_executing
+        , pid_string_exec
         , pid_string_blocked
         , pid_string_exit
     );
 
     free(pid_string_new);
     free(pid_string_ready);
-    free(pid_string_executing);
+    free(pid_string_exec);
     free(pid_string_blocked);
     free(pid_string_exit);
 
     return 0;
-}
-
-char *pcb_list_to_pid_string(t_list *pcb_list) {
-    char *string = string_new();
-    char *pid_as_string;
-    string_append(&string, "[");
-    for(register int i = 0; i < list_size(pcb_list); i++) {
-        pid_as_string = string_from_format("%" PRIu32, ((t_PCB *) list_get(pcb_list, i))->PID);
-        string_append(&string, pid_as_string);
-        free(pid_as_string);
-        if(i < list_size(pcb_list) - 1)
-            string_append(&string, " , ");
-    }
-    string_append(&string, "]");
-    return string;
 }

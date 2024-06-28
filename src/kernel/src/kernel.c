@@ -22,7 +22,7 @@ int module(int argc, char *argv[]) {
 	LIST_NEW = list_create();
 	LIST_READY = list_create();
 	LIST_READY_PRIORITARY = list_create();
-	LIST_EXECUTING = list_create();
+	LIST_EXEC = list_create();
 	LIST_BLOCKED = list_create();
 	LIST_EXIT = list_create();
 
@@ -52,7 +52,7 @@ void initialize_mutexes(void) {
 	pthread_mutex_init(&MUTEX_LIST_NEW, NULL);
 	pthread_mutex_init(&MUTEX_LIST_READY, NULL);
 	pthread_mutex_init(&MUTEX_LIST_READY_PRIORITARY, NULL);
-	pthread_mutex_init(&MUTEX_LIST_EXECUTING, NULL);
+	pthread_mutex_init(&MUTEX_LIST_EXEC, NULL);
 	pthread_mutex_init(&MUTEX_LIST_BLOCKED, NULL);
 	pthread_mutex_init(&MUTEX_LIST_EXIT, NULL);
 	pthread_mutex_init(&MUTEX_MULTIPROGRAMMING_DIFFERENCE, NULL);
@@ -66,7 +66,7 @@ void finish_mutexes(void) {
 	pthread_mutex_destroy(&MUTEX_LIST_NEW);
 	pthread_mutex_destroy(&MUTEX_LIST_READY);
 	pthread_mutex_destroy(&MUTEX_LIST_READY_PRIORITARY);
-	pthread_mutex_destroy(&MUTEX_LIST_EXECUTING);
+	pthread_mutex_destroy(&MUTEX_LIST_EXEC);
 	pthread_mutex_destroy(&MUTEX_LIST_BLOCKED);
 	pthread_mutex_destroy(&MUTEX_LIST_EXIT);
 	pthread_mutex_destroy(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
