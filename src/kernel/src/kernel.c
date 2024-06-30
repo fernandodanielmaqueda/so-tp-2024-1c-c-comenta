@@ -18,22 +18,13 @@ int module(int argc, char *argv[]) {
 	initialize_mutexes();
 	initialize_semaphores();
 	initialize_sockets();
-
-	LIST_NEW = list_create();
-	LIST_READY = list_create();
-	LIST_READY_PRIORITARY = list_create();
-	LIST_EXEC = list_create();
-	LIST_BLOCKED = list_create();
-	LIST_EXIT = list_create();
+	initialize_scheduling();
 
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
-	//UN HILO PARA CADA PROCESO
-	initialize_long_term_scheduler();
-	initialize_short_term_scheduler();
-
 	initialize_kernel_console(NULL);
 
+	finish_scheduling();
 	//finish_threads();
 	finish_sockets();
 	//finish_configs();
@@ -45,31 +36,41 @@ int module(int argc, char *argv[]) {
 }
 
 void initialize_mutexes(void) {
-	pthread_mutex_init(&MUTEX_QUANTUM_INTERRUPT, NULL);
-	pthread_mutex_init(&MUTEX_LIST_PROCESS_STATES, NULL);
-	pthread_cond_init(&COND_LIST_PROCESS_STATES, NULL);
-	pthread_cond_init(&COND_SWITCHING_STATES, NULL);
+	pthread_mutex_init(&MUTEX_PID_COUNTER, NULL);
+	pthread_mutex_init(&MUTEX_PCB_ARRAY, NULL);
+	pthread_mutex_init(&MUTEX_LIST_RELEASED_PIDS, NULL);
+	pthread_cond_init(&COND_LIST_RELEASED_PIDS, NULL);
 	pthread_mutex_init(&MUTEX_LIST_NEW, NULL);
 	pthread_mutex_init(&MUTEX_LIST_READY, NULL);
 	pthread_mutex_init(&MUTEX_LIST_READY_PRIORITARY, NULL);
 	pthread_mutex_init(&MUTEX_LIST_EXEC, NULL);
 	pthread_mutex_init(&MUTEX_LIST_BLOCKED, NULL);
 	pthread_mutex_init(&MUTEX_LIST_EXIT, NULL);
+	pthread_mutex_init(&MUTEX_QUANTUM_INTERRUPT, NULL);
 	pthread_mutex_init(&MUTEX_MULTIPROGRAMMING_DIFFERENCE, NULL);
+
+	pthread_mutex_init(&MUTEX_LIST_PROCESS_STATES, NULL);
+	pthread_cond_init(&COND_LIST_PROCESS_STATES, NULL);
+	pthread_cond_init(&COND_SWITCHING_STATES, NULL);
 }
 
 void finish_mutexes(void) {
-	pthread_mutex_destroy(&MUTEX_QUANTUM_INTERRUPT);
-	pthread_mutex_destroy(&MUTEX_LIST_PROCESS_STATES);
-	pthread_cond_destroy(&COND_LIST_PROCESS_STATES);
-	pthread_cond_destroy(&COND_SWITCHING_STATES);
+	pthread_mutex_destroy(&MUTEX_PID_COUNTER);
+	pthread_mutex_destroy(&MUTEX_PCB_ARRAY);
+	pthread_mutex_destroy(&MUTEX_LIST_RELEASED_PIDS);
+	pthread_cond_destroy(&COND_LIST_RELEASED_PIDS);
 	pthread_mutex_destroy(&MUTEX_LIST_NEW);
 	pthread_mutex_destroy(&MUTEX_LIST_READY);
 	pthread_mutex_destroy(&MUTEX_LIST_READY_PRIORITARY);
 	pthread_mutex_destroy(&MUTEX_LIST_EXEC);
 	pthread_mutex_destroy(&MUTEX_LIST_BLOCKED);
 	pthread_mutex_destroy(&MUTEX_LIST_EXIT);
+	pthread_mutex_destroy(&MUTEX_QUANTUM_INTERRUPT);
 	pthread_mutex_destroy(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
+
+	pthread_mutex_destroy(&MUTEX_LIST_PROCESS_STATES);
+	pthread_cond_destroy(&COND_LIST_PROCESS_STATES);
+	pthread_cond_destroy(&COND_SWITCHING_STATES);
 }
 
 void initialize_semaphores(void) {

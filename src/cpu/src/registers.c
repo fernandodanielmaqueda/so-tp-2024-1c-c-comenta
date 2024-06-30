@@ -4,6 +4,8 @@
 #include "registers.h"
 
 const t_CPU_Register_Info CPU_REGISTERS[] = {
+    [PC_REGISTER] = {.name = "PC" , .dataType = UINT32_DATATYPE},
+
     [AX_REGISTER] = {.name = "AX" , .dataType = UINT8_DATATYPE},
     [BX_REGISTER] = {.name = "BX" , .dataType = UINT8_DATATYPE},
     [CX_REGISTER] = {.name = "CX" , .dataType = UINT8_DATATYPE},
@@ -40,6 +42,10 @@ t_CPU_Register_Accessor get_register_accessor(t_PCB *pcb, e_CPU_Register cpu_reg
     register_accessor.register_pointer = NULL;
 
     switch (cpu_register) {
+        case PC_REGISTER:
+            register_accessor.register_pointer = &(pcb->PC);
+            break;
+            
         case AX_REGISTER:
             register_accessor.register_pointer = &(pcb->cpu_registers.AX);
             break;

@@ -34,28 +34,55 @@ typedef struct t_Scheduling_Algorithm {
     t_PCB *(*function_fetcher) (void);
 } t_Scheduling_Algorithm;
 
-extern e_Scheduling_Algorithm SCHEDULING_ALGORITHM;
+extern t_PID PID_COUNTER;
+extern pthread_mutex_t MUTEX_PID_COUNTER;
+extern t_PCB **PCB_ARRAY;
+extern pthread_mutex_t MUTEX_PCB_ARRAY;
+extern t_list *LIST_RELEASED_PIDS; // LIFO
+extern pthread_mutex_t MUTEX_LIST_RELEASED_PIDS;
+extern pthread_cond_t COND_LIST_RELEASED_PIDS;
 
-extern const char *EXIT_REASONS[];
+extern const char *STATE_NAMES[];
+
+extern t_list *LIST_NEW;
+extern pthread_mutex_t MUTEX_LIST_NEW;
+extern t_list *LIST_READY;
+extern pthread_mutex_t MUTEX_LIST_READY;
+extern t_list *LIST_READY_PRIORITARY;
+extern pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
+extern t_list *LIST_EXEC;
+extern pthread_mutex_t MUTEX_LIST_EXEC;
+extern t_list *LIST_BLOCKED;
+extern pthread_mutex_t MUTEX_LIST_BLOCKED;
+extern t_list *LIST_EXIT;
+extern pthread_mutex_t MUTEX_LIST_EXIT;
+
+extern pthread_t THREAD_LONG_TERM_SCHEDULER_NEW;
+extern sem_t SEM_LONG_TERM_SCHEDULER_NEW;
+extern pthread_t THREAD_LONG_TERM_SCHEDULER_EXIT;
+extern sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
+extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
+extern sem_t SEM_SHORT_TERM_SCHEDULER;
+
+extern t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[];
+
+extern e_Scheduling_Algorithm SCHEDULING_ALGORITHM;
 
 extern t_Quantum QUANTUM;
 extern pthread_t THREAD_QUANTUM_INTERRUPT;
 extern pthread_mutex_t MUTEX_QUANTUM_INTERRUPT;
 extern int QUANTUM_INTERRUPT;
 
-extern t_list *LIST_NEW;
-extern t_list *LIST_READY;
-extern t_list *LIST_READY_PRIORITARY;
-extern t_list *LIST_EXEC;
-extern t_list *LIST_BLOCKED;
-extern t_list *LIST_EXIT;
+extern t_temporal *TEMPORAL_DISPATCHED;
 
-extern pthread_mutex_t MUTEX_LIST_NEW;
-extern pthread_mutex_t MUTEX_LIST_READY;
-extern pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
-extern pthread_mutex_t MUTEX_LIST_BLOCKED;
-extern pthread_mutex_t MUTEX_LIST_EXEC;
-extern pthread_mutex_t MUTEX_LIST_EXIT;
+extern const char *EXIT_REASONS[];
+
+extern unsigned int MULTIPROGRAMMING_LEVEL;
+extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
+extern unsigned int MULTIPROGRAMMING_DIFFERENCE;
+extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
+extern sem_t SEM_MULTIPROGRAMMING_POSTER;
+extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 
 /*
 extern sem_t sem_detener_execute;
@@ -65,30 +92,17 @@ extern sem_t sem_detener_block;
 extern sem_t sem_detener_planificacion;
 */
 
-extern pthread_t THREAD_LONG_TERM_SCHEDULER_NEW;
-extern pthread_t THREAD_LONG_TERM_SCHEDULER_EXIT;
-extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
-
-extern sem_t SEM_LONG_TERM_SCHEDULER_NEW;
-extern sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
-extern sem_t SEM_SHORT_TERM_SCHEDULER;
-
-extern unsigned int MULTIPROGRAMMING_LEVEL;
-extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
-extern unsigned int MULTIPROGRAMMING_DIFFERENCE;
-extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
-extern sem_t SEM_MULTIPROGRAMMING_POSTER;
-extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
-
 extern int LIST_PROCESS_STATES;
 extern pthread_mutex_t MUTEX_LIST_PROCESS_STATES;
 extern pthread_cond_t COND_LIST_PROCESS_STATES;
 extern sem_t SEM_SWITCHING_STATES_COUNT;
 extern pthread_cond_t COND_SWITCHING_STATES;
 
-extern t_PID PID_COUNTER;
-
 int find_scheduling_algorithm(char *name, e_Scheduling_Algorithm *destination);
+void initialize_scheduling(void);
+void pause_scheduling(void);
+void resume_scheduling(void);
+void finish_scheduling(void);
 void initialize_long_term_scheduler(void);
 void initialize_short_term_scheduler(void);
 void *long_term_scheduler_new(void*);
@@ -99,11 +113,12 @@ t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);
 void switch_process_state(t_PCB* pcb, e_Process_State NEW_STATE);
+t_PCB *remove_pcb_from_list_by_pid(t_list *pcb_list, t_PID pid);
 void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list);
-char *pcb_list_to_pid_string(t_list *pcb_list);
-t_PCB *pcb_create();
-void* start_quantum();
-void stop_planificacion(void);
-void init_planificacion(void);
+void pcb_list_to_pid_string(t_list *pcb_list, char **destination);
+t_PCB *pcb_create(void);
+t_PID pid_assign(t_PCB *pcb);
+void pid_release(t_PID pid);
+void* start_quantum(void *pcb_parameter);
 
 #endif // KERNEL_SCHEDULER_H

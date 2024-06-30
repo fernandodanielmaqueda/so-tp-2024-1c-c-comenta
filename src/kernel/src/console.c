@@ -8,8 +8,8 @@ t_Command CONSOLE_COMMANDS[] = {
   { .name = "EJECUTAR_SCRIPT", .function = kernel_command_run_script },
   { .name = "INICIAR_PROCESO", .function = kernel_command_start_process },
   { .name = "FINALIZAR_PROCESO", .function = kernel_command_kill_process },
-  { .name = "DETENER_PLANIFICACION", .function = kernel_command_stop_scheduling },
-  { .name = "INICIAR_PLANIFICACION", .function = kernel_command_start_scheduling },
+  { .name = "DETENER_PLANIFICACION", .function = kernel_command_pause_scheduling },
+  { .name = "INICIAR_PLANIFICACION", .function = kernel_command_resume_scheduling },
   { .name = "MULTIPROGRAMACION", .function = kernel_command_multiprogramming },
   { .name = "PROCESO_ESTADO", .function = kernel_command_process_states },
   { .name = NULL, .function = NULL }
@@ -206,12 +206,53 @@ int kernel_command_kill_process(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "FINALIZAR_PROCESO %s", argv[1]);
 
-    // TODO: Implementación
+    char *end;
+    t_PID pid = (t_PID) strtoul(argv[1], &end, 10);
+    if(!*(argv[1]) || *end) {
+        log_error(MODULE_LOGGER, "%s: No es un PID valido", argv[1]);
+        return 1;
+    }
+
+    wait_switching_states();
+
+        t_PCB *pcb = PCB_ARRAY[pid];
+        if(pcb == NULL) {
+            log_error(MODULE_LOGGER, "No existe el PID <%d>", (int) pid);
+            signal_switching_states();
+            return 1;
+        }
+
+        switch(pcb->current_state) {
+            case NEW_STATE:
+                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                switch_process_state(pcb, EXIT_STATE);
+                break;
+
+            case READY_STATE:
+                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                switch_process_state(pcb, EXIT_STATE);
+                break;
+
+            case EXEC_STATE:
+                //pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->PID, CONNECTION_CPU_INTERRUPT.fd_connection);
+                break;
+
+            case BLOCKED_STATE:
+                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                // TODO: Liberar recursos
+                switch_process_state(pcb, EXIT_STATE);
+                break;
+
+            case EXIT_STATE:
+                break;
+        }
+    signal_switching_states();
 
     return 0;
 }
 
-int kernel_command_stop_scheduling(int argc, char* argv[]) {
+int kernel_command_pause_scheduling(int argc, char* argv[]) {
 
     if(argc != 1) {
         log_warning(CONSOLE_LOGGER, "Uso: DETENER_PLANIFICACION");
@@ -225,7 +266,7 @@ int kernel_command_stop_scheduling(int argc, char* argv[]) {
     return 0;
 }
 
-int kernel_command_start_scheduling(int argc, char* argv[]) {
+int kernel_command_resume_scheduling(int argc, char* argv[]) {
 
     if(argc != 1) {
         log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PLANIFICACION");
@@ -286,38 +327,32 @@ int kernel_command_process_states(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "PROCESO_ESTADO");
 
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-        LIST_PROCESS_STATES = 1;
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+    char *pid_string_new = string_new();
+    char *pid_string_ready = string_new();
+    char *pid_string_exec = string_new();
+    char *pid_string_blocked = string_new();
+    char *pid_string_exit = string_new();
 
-    int sem_value;
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-    while(1) {
-        sem_getvalue(&SEM_SWITCHING_STATES_COUNT, &sem_value);
-        if(!sem_value)
-            break;
-        pthread_cond_wait(&COND_SWITCHING_STATES, &MUTEX_LIST_PROCESS_STATES);
-    }
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+    wait_switching_states();
+        pcb_list_to_pid_string(LIST_NEW, &pid_string_new);
 
-        char *pid_string_new = pcb_list_to_pid_string(LIST_NEW);
-        char *pid_string_ready = pcb_list_to_pid_string(LIST_READY);
-        char *pid_string_exec = pcb_list_to_pid_string(LIST_EXEC);
-        char *pid_string_blocked = pcb_list_to_pid_string(LIST_BLOCKED);
-        char *pid_string_exit = pcb_list_to_pid_string(LIST_EXIT);
+        pcb_list_to_pid_string(LIST_READY, &pid_string_ready);
+        pcb_list_to_pid_string(LIST_READY_PRIORITARY, &pid_string_ready);
 
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-        LIST_PROCESS_STATES = 0;
-        pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+        pcb_list_to_pid_string(LIST_EXEC, &pid_string_exec);
+
+        pcb_list_to_pid_string(LIST_BLOCKED, &pid_string_blocked);
+
+        pcb_list_to_pid_string(LIST_EXIT, &pid_string_exit);
+    signal_switching_states();
 
     log_info(CONSOLE_LOGGER,
         "Lista de proceso por estado:\n"
-        "* NEW: %s\n"
-        "* READY: %s\n"
-        "* EXEC: %s\n"
-        "* BLOCKED: %s\n"
-        "* EXIT: %s"
+        "* NEW: [%s]\n"
+        "* READY: [%s]\n"
+        "* EXEC: [%s]\n"
+        "* BLOCKED: [%s]\n"
+        "* EXIT: [%s]"
         , pid_string_new
         , pid_string_ready
         , pid_string_exec
@@ -332,4 +367,27 @@ int kernel_command_process_states(int argc, char* argv[]) {
     free(pid_string_exit);
 
     return 0;
+}
+
+void wait_switching_states(void) {
+    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
+        LIST_PROCESS_STATES = 1;
+    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+
+    int sem_value;
+    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
+    while(1) {
+        sem_getvalue(&SEM_SWITCHING_STATES_COUNT, &sem_value);
+        if(!sem_value)
+            break;
+        pthread_cond_wait(&COND_SWITCHING_STATES, &MUTEX_LIST_PROCESS_STATES);
+    }
+    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+}
+
+void signal_switching_states(void) {
+    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
+        LIST_PROCESS_STATES = 0;
+        pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
+    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
 }

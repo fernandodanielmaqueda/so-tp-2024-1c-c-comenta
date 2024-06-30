@@ -11,9 +11,6 @@ char *MODULE_LOG_PATHNAME = "cpu.log";
 char *MODULE_CONFIG_PATHNAME = "cpu.config";
 t_config *MODULE_CONFIG;
 
-// Tipos de interrupciones para el ciclo
-int interruption_io;
-
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
 
@@ -29,9 +26,16 @@ uint32_t value = 0;
 // char *recurso = NULL;
 // no sirveaca me aprece--> t_PCB new_pcb;
 
-e_Kernel_Interrupt KERNEL_INTERRUPT;
-int SYSCALL_CALLED;
 t_PCB PCB;
+pthread_mutex_t MUTEX_PCB;
+
+int EXECUTING = 0;
+pthread_mutex_t MUTEX_EXECUTING;
+
+e_Kernel_Interrupt KERNEL_INTERRUPT;
+pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
+
+int SYSCALL_CALLED;
 t_Payload *SYSCALL_INSTRUCTION;
 
 int dir_logica_origin = 0;
@@ -75,10 +79,16 @@ int module(int argc, char *argv[])
 }
 
 void initialize_mutexes(void) {
+    pthread_mutex_init(&MUTEX_PCB, NULL);
+    pthread_mutex_init(&MUTEX_EXECUTING, NULL);
+    pthread_mutex_init(&MUTEX_KERNEL_INTERRUPT, NULL);    
     pthread_mutex_init(&MUTEX_TLB, NULL);
 }
 
 void finish_mutexes(void) {
+    pthread_mutex_destroy(&MUTEX_PCB);
+    pthread_mutex_destroy(&MUTEX_EXECUTING);
+    pthread_mutex_destroy(&MUTEX_KERNEL_INTERRUPT);    
     pthread_mutex_destroy(&MUTEX_TLB);
 }
 
@@ -112,11 +122,21 @@ void instruction_cycle(void)
 
     while(1) {
 
-        receive_process_dispatch(&PCB, SERVER_CPU_DISPATCH.client.fd_client);
-        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB.PID);
-        
-        KERNEL_INTERRUPT = NONE_KERNEL_INTERRUPT;
+        pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+            KERNEL_INTERRUPT = NONE_KERNEL_INTERRUPT;
+        pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+
         SYSCALL_INSTRUCTION = payload_create();
+
+        pthread_mutex_lock(&MUTEX_PCB);
+            receive_process_dispatch(&PCB, SERVER_CPU_DISPATCH.client.fd_client);
+        pthread_mutex_unlock(&MUTEX_PCB);
+
+        pthread_mutex_lock(&MUTEX_EXECUTING);
+            EXECUTING = 1;
+        pthread_mutex_unlock(&MUTEX_EXECUTING);
+
+        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB.PID);
 
         while(1) {
 
@@ -154,30 +174,41 @@ void instruction_cycle(void)
                 break;
             }
 
-            if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
-                eviction_reason = INTERRUPTION_EVICTION_REASON;
-                break;
-            }
+            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+                if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
+                    pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+                    break;
+                }
+            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
 
             if (SYSCALL_CALLED) {
                 eviction_reason = SYSCALL_EVICTION_REASON;
                 break;
             }
 
-            if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
-                eviction_reason = INTERRUPTION_EVICTION_REASON;
-                break;
-            }
+            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+                if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
+                    pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+                    break;
+                }
+            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
         }
 
-        send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, SERVER_CPU_DISPATCH.client.fd_client);
+        pthread_mutex_lock(&MUTEX_EXECUTING);
+            EXECUTING = 0;
+        pthread_mutex_unlock(&MUTEX_EXECUTING);
+
+        pthread_mutex_lock(&MUTEX_PCB);
+            send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, SERVER_CPU_DISPATCH.client.fd_client);
+        pthread_mutex_unlock(&MUTEX_PCB);
 
         payload_destroy(SYSCALL_INSTRUCTION);
     }
 }
 
-void *kernel_cpu_interrupt_handler(void *NULL_parameter)
-{
+void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 
     cpu_start_server_for_kernel((void *) &SERVER_CPU_INTERRUPT);
     sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
@@ -189,9 +220,26 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter)
 
         receive_kernel_interrupt(&kernel_interrupt, &pid, SERVER_CPU_INTERRUPT.client.fd_client);
 
-        // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
-        if (KERNEL_INTERRUPT < kernel_interrupt)
-            KERNEL_INTERRUPT = kernel_interrupt;
+        pthread_mutex_lock(&MUTEX_EXECUTING);
+            if(!EXECUTING) {
+                pthread_mutex_unlock(&MUTEX_EXECUTING);
+                continue;
+            }
+        pthread_mutex_unlock(&MUTEX_EXECUTING);
+
+        pthread_mutex_lock(&MUTEX_PCB);
+        if(pid == PCB.PID) {
+            pthread_mutex_unlock(&MUTEX_PCB);
+
+            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+                // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
+                if (KERNEL_INTERRUPT < kernel_interrupt)
+                    KERNEL_INTERRUPT = kernel_interrupt;
+            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+        } else {
+            pthread_mutex_unlock(&MUTEX_PCB);
+        }
+
     }
 
     return NULL;

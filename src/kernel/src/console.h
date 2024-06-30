@@ -46,9 +46,11 @@ t_Command *find_command(char *name);
 int kernel_command_run_script(int argc, char* argv[]);
 int kernel_command_start_process(int argc, char* argv[]);
 int kernel_command_kill_process(int argc, char* argv[]);
-int kernel_command_stop_scheduling(int argc, char* argv[]);
-int kernel_command_start_scheduling(int argc, char* argv[]);
+int kernel_command_pause_scheduling(int argc, char* argv[]);
+int kernel_command_resume_scheduling(int argc, char* argv[]);
 int kernel_command_multiprogramming(int argc, char* argv[]);
 int kernel_command_process_states(int argc, char* argv[]);
+void wait_switching_states(void);
+void signal_switching_states(void);
 
 #endif // KERNEL_CONSOLE_H

@@ -50,7 +50,9 @@ typedef struct t_CPU_Registers {
     uint32_t DI;
 } t_CPU_Registers;
 
-typedef uint32_t t_PID;
+typedef uint16_t t_PID;
+#define PID_MAX UINT32_MAX
+
 typedef uint32_t t_PC;
 typedef uint32_t t_MemorySize;
 typedef uint64_t t_Quantum;

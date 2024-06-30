@@ -47,6 +47,6 @@ void text_log(char *text) {
 
   log_info(SERIALIZE_LOGGER,
     "text: %s"
-    , (text != NULL) ? text : "(NULL)"
+    , (text != NULL) ? text : "(nil)"
     );
 }

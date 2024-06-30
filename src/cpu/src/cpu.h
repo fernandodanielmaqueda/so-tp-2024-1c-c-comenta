@@ -44,39 +44,29 @@ typedef struct t_TLB {
     int time; //para el LRU
 } t_TLB;
 
-/*
-typedef struct t_Pages_Table{
-    t_PID PID;
-    int page_number;
-	int frame;
-}t_Pages_Table;
-*/
-
 extern t_log *MODULE_LOGGER;
 extern t_log *SOCKET_LOGGER;
 extern t_config *MODULE_CONFIG;
 
-// Tipos de interrupciones para el ciclo
-extern int interruption_io;
+extern t_PCB PCB;
+extern pthread_mutex_t MUTEX_PCB;
 
-extern int CANTIDAD_ENTRADAS_TLB;
-extern char *ALGORITMO_TLB;
+extern int EXECUTING;
+extern pthread_mutex_t MUTEX_EXECUTING;
+
+extern e_Kernel_Interrupt KERNEL_INTERRUPT;
+extern pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
 
 extern int SYSCALL_CALLED;
 extern t_Payload *SYSCALL_INSTRUCTION;
+
+extern int CANTIDAD_ENTRADAS_TLB;
+extern char *ALGORITMO_TLB;
 
 extern int size_pag;
 extern long timestamp;
 extern int direccion_logica; // momentaneo hasta ver de donde la saco
 extern t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
-
-// Variables para trabajar con las instrucciones
-//extern t_Page nro_page;
-//extern uint32_t value;
-
-extern t_PCB PCB;
-
-extern e_Eviction_Reason EVICTION_REASON;
 
 extern int dir_logica_origin;
 extern int dir_logica_destination;
