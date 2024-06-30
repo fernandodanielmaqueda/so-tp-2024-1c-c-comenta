@@ -104,5 +104,6 @@ void request_frame_memory(t_Page page, t_PID pid);
 void add_to_tlb(t_PID pid , t_Page page, t_Frame frame);
 void replace_tlb_input(t_PID pid, t_Page page, t_Frame frame);
 void cpu_fetch_next_instruction(char **line);
+void ask_memory_page_size();
 
 #endif /* CPU_H */

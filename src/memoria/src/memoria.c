@@ -520,7 +520,7 @@ void write_memory(t_Payload* payload, int socket){
             if (i == pages)
             {
                 contenido_aux = string_substring(contenido, (paginas_copiadas * bytes) , bytes_restantes);
-                memcpy(posicion, &contenido, bytes_restantes);
+                memcpy(posicion, &contenido_aux, bytes_restantes);
             }
             if(i<pages){ 
                 //Substring recibe Texto = contenido / start 
