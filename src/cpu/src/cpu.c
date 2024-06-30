@@ -17,7 +17,7 @@ int interruption_io;
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
 
-int size_pag;
+t_MemorySize size_pag;
 long timestamp;
 int direccion_logica; // momentaneo hasta ver de donde la saco
 t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
@@ -109,6 +109,10 @@ void instruction_cycle(void)
     int exit_status;
 
     tlb = list_create();
+
+    //Se pide a memoria el tamaño de pagina y lo setea como dato global
+    ask_memory_page_size();
+
 
     while(1) {
 
@@ -205,6 +209,8 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
     int nro_frame_required = 0;
     int dir_fisica = 0;
 
+    int required_pages = 0;
+
     // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
     pthread_mutex_lock(&MUTEX_TLB);
     int frame_tlb = check_tlb(pid, nro_page);
@@ -224,7 +230,6 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
     else
     {
         request_frame_memory(pid, nro_page);
-        //Obtener Marco: “PID: <PID> - OBTENER MARCO - Página: <NUMERO_PAGINA> - Marco: <NUMERO_MARCO>”.
         log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
 
         t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
@@ -380,4 +385,14 @@ void cpu_fetch_next_instruction(char **line)
 {
     send_instruction_request(PCB.PID, PCB.PC, CONNECTION_MEMORY.fd_connection);
     receive_text_with_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
+}
+
+
+void ask_memory_page_size(){
+    t_Package* package_request = package_create_with_header(PAGE_SIZE_REQUEST);
+    package_send(package_request, CONNECTION_MEMORY.fd_connection);
+    package_destroy(package_request);
+    t_Package *package_answer = package_receive(CONNECTION_MEMORY.fd_connection);
+    payload_dequeue(package_answer->payload, &size_pag, sizeof(t_MemorySize) );
+    package_destroy(package_answer);
 }
