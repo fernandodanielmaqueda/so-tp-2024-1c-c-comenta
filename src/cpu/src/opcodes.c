@@ -88,19 +88,21 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "MOV_IN %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_origin;
-    e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_origin)) {
+    e_CPU_Register register_origin; //Registro DL
+    e_CPU_Register register_destination; //registro datos-destino
+    if(decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
-    if (decode_register(argv[2], &register_destination)) {
+    if (decode_register(argv[2], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
 
     dir_logica_origin = atoi(argv[1]);
     dir_logica_destination = atoi(argv[2]);
+
+    int bytes = get_register_size(register_destination);
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
 

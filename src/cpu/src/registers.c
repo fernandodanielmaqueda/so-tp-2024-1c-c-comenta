@@ -103,3 +103,36 @@ void set_register_value(t_CPU_Register_Accessor register_accessor, uint32_t valu
             break;
     }
 }
+
+
+int get_register_size(e_CPU_Register registro){
+    int bytes = 0;
+    switch (CPU_REGISTERS[registro].dataType) {
+        case UINT8_DATATYPE:
+            bytes = sizeof(uint8_t);
+            break;
+        case UINT32_DATATYPE:
+            bytes = sizeof(uint32_t);
+            break;
+    }
+
+    return bytes;
+}
+
+
+/*
+Hay una función decode_register que se encarga primero de convertir el nombre del registro de char* a un enum e_Register
+Después si le pasás un PCB y ese enum e_Register a la otra función get_register_accessor, vas a obtener un t_Register_Accessor que sirve 
+como wrapper para leer ó escribir de un registro
+Eso te va a dar un t_Register_Accessor que es específico para acceder a un registro de un PCB en particular.
+
+Dentro de esa estructura vas a tener dos cosas: 
+un enum e_Register_DataType que te va a indicar si el registro es de tipo uint8_t o uint32_t
+Y un void* que es un puntero a la dirección de memoria del registro en en el PCB en concreto
+Si lo que querés hacer es leer del registro, hacés un switch del enum e_Register_DataType para saber si al void* lo tendrías 
+que convertir a uint8_t* ó uint32_t* y ahí sí hacés las lecturas
+
+int decode_register(char *name, e_CPU_Register *destination);
+t_CPU_Register_Accessor get_register_accessor(t_PCB *pcb, e_CPU_Register cpu_register);
+void set_register_value(t_CPU_Register_Accessor register_accessor, uint32_t value);
+*/
