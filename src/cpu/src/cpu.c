@@ -44,6 +44,8 @@ int dir_logica_destination = 0;
 int dir_fisica_origin = 0;
 int dir_fisica_destination = 0;
 
+int tlb_replace_index_fifo = 0;
+
 uint32_t unit_work = 0;
 char *interfaz = NULL;
 
@@ -270,11 +272,11 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
     return NULL;
 }
 
-int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin, int register_destination, int in_out)
+int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin, e_CPU_Register register_destination, int in_out)
 {
 
-    t_Page nro_page = (t_Page) floor(dir_logica / tamanio_pagina);
-    int offset = dir_logica - nro_page * tamanio_pagina;
+    t_Page nro_page = (t_Page) floor(dir_logica / PAGE_SIZE);
+    int offset = dir_logica - nro_page * PAGE_SIZE;
     int nro_frame_required = 0;
     int dir_fisica = 0;
 
@@ -292,7 +294,7 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
         log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
         tlb_access(pid, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
-        dir_fisica = nro_frame_required * tamanio_pagina + offset;
+        dir_fisica = nro_frame_required * PAGE_SIZE + offset;
 
         return dir_fisica;       
     }
@@ -327,7 +329,7 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
             package_destroy(package);
         }
 
-        dir_fisica = nro_frame_required * tamanio_pagina + offset;
+        dir_fisica = nro_frame_required * PAGE_SIZE + offset;
         return dir_fisica;
     }
 }
@@ -363,9 +365,10 @@ void tlb_access(t_PID pid, t_Page nro_page, int frame_number_required, int direc
     if (in_out == IN)
     {
 
-        package = package_create_with_header(WRITE_REQUEST);
+        package = package_create_with_header(READ_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
         payload_enqueue(package->payload, &nro_page, sizeof(t_Page) );
+        payload_enqueue(package->payload, &nro_page, sizeof(t_MemorySize) );
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
 
@@ -376,8 +379,7 @@ void tlb_access(t_PID pid, t_Page nro_page, int frame_number_required, int direc
             exit(EXIT_FAILURE);
         }  else
         {
-            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR  - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
-           
+            log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
         }
         
     }                
@@ -397,11 +399,10 @@ void tlb_access(t_PID pid, t_Page nro_page, int frame_number_required, int direc
             exit(EXIT_FAILURE);
         }  else
         {
-            log_info(MODULE_LOGGER, "PID: %i -Accion:ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
+            log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
         }
     }
 
-   // package_destroy(package);
 }
 
 
@@ -419,28 +420,47 @@ void add_to_tlb(t_PID pid , t_Page page, t_Frame frame)
 
 void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
 {
-    t_TLB *tlb_aux = list_get(tlb, 0);
-    int replace_value = tlb_aux->time + 1;
-    int index_replace = 0;
-        for(int i = 0; i < list_size(tlb); i++){
+    t_TLB *tlb_aux;
+    
+    if (strcmp(ALGORITMO_TLB, "LRU") == 0)
+    {
+        tlb_aux = list_get(tlb, 0);
+        int replace_value = tlb_aux->time + 1;
+        int index_replace = 0;
+            for(int i = 0; i < list_size(tlb); i++){
 
-            t_TLB *replaced_tlb = list_get(tlb, i);
-            if(replaced_tlb->time < replace_value){
-                replace_value = replaced_tlb->time;
-                index_replace = i;
-            } //guardo el d emenor tiempo
-        }
+                t_TLB *replaced_tlb = list_get(tlb, i);
+                if(replaced_tlb->time < replace_value){
+                    replace_value = replaced_tlb->time;
+                    index_replace = i;
+                } //guardo el d emenor tiempo
+            }
 
-    tlb_aux = list_get(tlb, index_replace);
-    tlb_aux->PID = pid;
-    tlb_aux->page_number = page;
-    tlb_aux->frame = frame;
-    tlb_aux->time = timestamp;
-    timestamp++;
+        tlb_aux = list_get(tlb, index_replace);
+        tlb_aux->PID = pid;
+        tlb_aux->page_number = page;
+        tlb_aux->frame = frame;
+        tlb_aux->time = timestamp;
+        timestamp++;
+    }
+    else //CASO FIFO
+    {
+        
+        tlb_aux = list_get(tlb, tlb_replace_index_fifo);
+        tlb_aux->PID = pid;
+        tlb_aux->page_number = page;
+        tlb_aux->frame = frame;
+        tlb_aux->time = timestamp;
+        timestamp++;
+
+        tlb_replace_index_fifo++;
+        if (tlb_replace_index_fifo == list_size(tlb)) tlb_replace_index_fifo = 0;
+        
+    }
     
 }
 
-void request_frame_memory(t_Page page, t_PID pid)
+void request_frame_memory( t_PID pid, t_Page page)
 {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
     payload_enqueue(package->payload, &page, sizeof(t_Page));

@@ -376,15 +376,15 @@ void respond_frame_request(t_Payload* payload){
   int pidProceso = *(int*)list_get(propiedadesPlanas, cursor);
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
 */
-    int pageBuscada;
+    uint32_t pageBuscada;
     t_PID pidProceso;
 
-    payload_dequeue(payload, &pageBuscada, sizeof(int) );
+    payload_dequeue(payload, &pageBuscada, sizeof(uint32_t) );
     payload_dequeue(payload, &pidProceso, sizeof(t_PID) );
 
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
-    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
+    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, (int) pageBuscada);
 
             
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Pagina: <%d> - Marco: <%d>", (int) pidProceso, pageBuscada, marcoEncontrado);
