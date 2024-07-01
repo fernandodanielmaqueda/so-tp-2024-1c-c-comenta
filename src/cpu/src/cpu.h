@@ -95,7 +95,7 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
 void *kernel_cpu_interrupt_handler(void *NULL_parameter);
-t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes_contenido, e_CPU_Register register_otrigin , e_CPU_Register register_destination, int in_out);
+t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes_contenido);
 int check_tlb(t_PID process_id, t_Page nro_page);
 void tlb_access(t_PID pid, t_Page nro_page, int nro_frame_required, int direc, int register_origin, int register_destination, int in_out);
 void request_data_in_memory(int nro_frame_required, t_PID pid, t_Page nro_page, int direc, int register_origin, int register_destination);
@@ -106,6 +106,6 @@ void replace_tlb_input(t_PID pid, t_Page page, t_Frame frame);
 void cpu_fetch_next_instruction(char **line);
 void ask_memory_page_size();
 int seek_quantity_pages_required(int dir_log, int bytes);
-void attend_write_read(t_PID pid, t_list*  lista_df, e_CPU_Register register_origin, e_CPU_Register register_destination, int in_out);
+void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register register_origin, e_CPU_Register register_destination, int in_out);
 
 #endif /* CPU_H */

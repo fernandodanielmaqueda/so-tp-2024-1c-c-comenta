@@ -272,7 +272,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
     return NULL;
 }
 
-t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes, e_CPU_Register register_otrigin, e_CPU_Register register_destination, int in_out)
+t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
 {
     t_Page nro_page = (t_Page) floor(dir_logica / PAGE_SIZE);
     int offset = dir_logica - nro_page * PAGE_SIZE;
@@ -490,7 +490,7 @@ void ask_memory_page_size(){
     package_destroy(package);
 }
 
-void attend_write_read(t_PID pid, t_list*  lista_df, e_CPU_Register register_origin, e_CPU_Register register_destination, int in_out)
+void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register register_origin, e_CPU_Register register_destination, int in_out)
 {
     int size = list_size(lista_df);
     t_Package* package;
@@ -500,7 +500,7 @@ void attend_write_read(t_PID pid, t_list*  lista_df, e_CPU_Register register_ori
 
         package = package_create_with_header(READ_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        //payload_enqueue(package->payload, &nro_page, sizeof(t_MemorySize) );
+        payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
         payload_enqueue(package->payload, &size, sizeof(uint32_t) );
         for (size_t i = 0; i < size; i++)
         {
@@ -528,7 +528,7 @@ void attend_write_read(t_PID pid, t_list*  lista_df, e_CPU_Register register_ori
 
         package = package_create_with_header(WRITE_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        //payload_enqueue(package->payload, &nro_page, sizeof(t_MemorySize) );
+        payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
         payload_enqueue(package->payload, &size, sizeof(uint32_t) );
         for (size_t i = 0; i < size; i++)
         {

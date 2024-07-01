@@ -44,4 +44,5 @@ extern const t_CPU_Register_Info CPU_REGISTERS[];
 int decode_register(char *name, e_CPU_Register *destination);
 t_CPU_Register_Accessor get_register_accessor(t_PCB *pcb, e_CPU_Register cpu_register);
 void set_register_value(t_CPU_Register_Accessor register_accessor, uint32_t value);
+void get_register_value(t_PCB *pcb, e_CPU_Register cpu_register, uint32_t* value);
 int get_register_size(e_CPU_Register registro);
