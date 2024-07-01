@@ -287,27 +287,29 @@ int mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, int register_otrigin
     int frame_tlb = check_tlb(pid, nro_page);
     pthread_mutex_unlock(&MUTEX_TLB);
 
-    if (frame_tlb != -1)
+    if (frame_tlb != -1) //HIT
     {
-        nro_frame_required = frame_tlb;
-        log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
         log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
+        nro_frame_required = frame_tlb;
+        log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, nro_page, nro_frame_required);
         tlb_access(pid, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
         dir_fisica = nro_frame_required * PAGE_SIZE + offset;
 
         return dir_fisica;       
     }
-    else
+    else //NO HAY HIT
     {
+        log_debug(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i ", pid, nro_page);
         request_frame_memory(pid, nro_page);
-        log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i", pid, nro_page);
 
         t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
         t_PID pidBuscado;
         t_Frame frame;
         payload_dequeue(package->payload, &pidBuscado, sizeof(t_PID) );
         payload_dequeue(package->payload, &frame, sizeof(t_Frame) );
+        
+        log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, nro_page, frame);
 
         if (CANTIDAD_ENTRADAS_TLB > 0)
         {
@@ -460,7 +462,7 @@ void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
     
 }
 
-void request_frame_memory( t_PID pid, t_Page page)
+void request_frame_memory(t_PID pid, t_Page page)
 {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
     payload_enqueue(package->payload, &page, sizeof(t_Page));
