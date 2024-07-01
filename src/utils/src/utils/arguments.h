@@ -21,13 +21,12 @@
 typedef struct t_Arguments {
     uint8_t argc;
     char **argv;
-    const bool duplicate_lines;
     const int max_argc;
 } t_Arguments;
 
 
-t_Arguments *arguments_create(int max_argc, bool duplicate_lines);
-void arguments_add(t_Arguments *arguments, char *line);
+t_Arguments *arguments_create(int max_argc);
+int arguments_use(t_Arguments *arguments, char *line);
 void arguments_remove(t_Arguments *arguments);
 void arguments_destroy(t_Arguments *arguments);
 char *strip_whitespaces(char *string);

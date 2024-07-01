@@ -14,7 +14,7 @@ t_config *MODULE_CONFIG;
 int CANTIDAD_ENTRADAS_TLB;
 char *ALGORITMO_TLB;
 
-t_MemorySize size_pag;
+t_MemorySize PAGE_SIZE;
 long timestamp;
 int direccion_logica; // momentaneo hasta ver de donde la saco
 t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
@@ -112,17 +112,16 @@ void read_module_config(t_config *MODULE_CONFIG)
 void instruction_cycle(void)
 {
 
-    char *IR;
-    t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS, false);
-    e_Eviction_Reason eviction_reason = INTERRUPTION_EVICTION_REASON;
-    e_CPU_OpCode cpu_opcode;
-    int exit_status;
-
     tlb = list_create();
 
     //Se pide a memoria el tamaño de pagina y lo setea como dato global
     ask_memory_page_size();
 
+    char *IR;
+    t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS);
+    e_Eviction_Reason eviction_reason = INTERRUPTION_EVICTION_REASON;
+    e_CPU_OpCode cpu_opcode;
+    int exit_status;
 
     while(1) {
 
@@ -150,54 +149,74 @@ void instruction_cycle(void)
             if(IR == NULL) {
                 log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
                 exit_status = 1;
-            } else {
-                // Decode
-                arguments_add(arguments, IR);
-                // FALTA VALIDAR LA SALIDA DE arguments_add
-                if(decode_instruction(arguments->argv[0], &cpu_opcode)) {
-                    log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
-                    exit_status = 1;
-                } else {
-                    // Execute
-                    exit_status = CPU_OPERATIONS[cpu_opcode].function(arguments->argc, arguments->argv);
-                }
+                goto check_interrupts;
+            }
 
+            // Decode
+            exit_status = arguments_use(arguments, IR);
+            if(exit_status) {
+                switch(errno) {
+                    case E2BIG:
+                        log_error(MODULE_LOGGER, "%s: Demasiados argumentos en la instruccion", IR);
+                        break;
+                    case ENOMEM:
+                        log_error(MODULE_LOGGER, "arguments_use: Error al reservar memoria para los argumentos");
+                        exit(EXIT_FAILURE);
+                    default:
+                        log_error(MODULE_LOGGER, "arguments_use: %s", strerror(errno));
+                        break;
+                }
                 arguments_remove(arguments);
                 free(IR);
+                goto check_interrupts;
             }
 
-            // Check interrupts
-            if (exit_status) {
-                log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
-                eviction_reason = ERROR_EVICTION_REASON;
-                break;
+            if(decode_instruction(arguments->argv[0], &cpu_opcode)) {
+                log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
+                exit_status = 1;
+                arguments_remove(arguments);
+                free(IR);
+                goto check_interrupts;
             }
 
-            if(cpu_opcode == EXIT_CPU_OPCODE) {
-                eviction_reason = EXIT_EVICTION_REASON;
-                break;
-            }
+            // Execute
+            exit_status = CPU_OPERATIONS[cpu_opcode].function(arguments->argc, arguments->argv);
 
-            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
-                if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
-                    pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+            arguments_remove(arguments);
+            free(IR);
+
+            check_interrupts:
+                if (exit_status) {
+                    log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
+                    eviction_reason = ERROR_EVICTION_REASON;
                     break;
                 }
-            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
 
-            if (SYSCALL_CALLED) {
-                eviction_reason = SYSCALL_EVICTION_REASON;
-                break;
-            }
-
-            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
-                if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
-                    pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+                if(cpu_opcode == EXIT_CPU_OPCODE) {
+                    eviction_reason = EXIT_EVICTION_REASON;
                     break;
                 }
-            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+
+                pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+                    if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
+                        pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+                        eviction_reason = INTERRUPTION_EVICTION_REASON;
+                        break;
+                    }
+                pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+
+                if (SYSCALL_CALLED) {
+                    eviction_reason = SYSCALL_EVICTION_REASON;
+                    break;
+                }
+
+                pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+                    if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
+                        pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+                        eviction_reason = INTERRUPTION_EVICTION_REASON;
+                        break;
+                    }
+                pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
         }
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
@@ -210,6 +229,8 @@ void instruction_cycle(void)
 
         payload_destroy(SYSCALL_INSTRUCTION);
     }
+
+    arguments_destroy(arguments);
 }
 
 void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
@@ -437,10 +458,9 @@ void cpu_fetch_next_instruction(char **line)
 
 
 void ask_memory_page_size(){
-    t_Package* package_request = package_create_with_header(PAGE_SIZE_REQUEST);
-    package_send(package_request, CONNECTION_MEMORY.fd_connection);
-    package_destroy(package_request);
-    t_Package *package_answer = package_receive(CONNECTION_MEMORY.fd_connection);
-    payload_dequeue(package_answer->payload, &size_pag, sizeof(t_MemorySize) );
-    package_destroy(package_answer);
+    send_header(PAGE_SIZE_REQUEST, CONNECTION_MEMORY.fd_connection);
+
+    t_Package* package = package_receive(CONNECTION_MEMORY.fd_connection);
+    payload_dequeue(package->payload, &PAGE_SIZE, sizeof(t_MemorySize) );
+    package_destroy(package);
 }

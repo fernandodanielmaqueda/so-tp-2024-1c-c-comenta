@@ -60,11 +60,8 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter) {
 
             if (client->fd_client != -1)
                 break;
-            else
-            {
-                log_warning(SOCKET_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
-                continue;
-            }
+            
+            log_warning(SOCKET_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
         }
 
         log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
@@ -89,21 +86,19 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter) {
 
         if ((e_PortType)handshake == server->clients_type)
             break;
-        else
-        {
-            log_warning(SOCKET_LOGGER, "Error de Handshake con [Cliente] No reconocido");
-            handshake = -1;
-            bytes = send(client->fd_client, &handshake, sizeof(t_Handshake), 0);
-            close(client->fd_client);
 
-            if (bytes == -1) {
-                log_error(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
-                continue;
-            }
-            if (bytes != sizeof(t_Handshake)) {
-                log_error(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
-                continue;
-            }
+        log_warning(SOCKET_LOGGER, "Error de Handshake con [Cliente] No reconocido");
+        handshake = -1;
+        bytes = send(client->fd_client, &handshake, sizeof(t_Handshake), 0);
+        close(client->fd_client);
+
+        if (bytes == -1) {
+            log_error(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
+            continue;
+        }
+        if (bytes != sizeof(t_Handshake)) {
+            log_error(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
+            continue;
         }
     }
 

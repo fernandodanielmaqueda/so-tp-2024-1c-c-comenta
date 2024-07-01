@@ -172,7 +172,7 @@ void *long_term_scheduler_new(void *parameter) {
 					continue;
 				}
 
-				pcb = (t_PCB *) LIST_NEW->head;
+				pcb = (t_PCB *) LIST_NEW->head->data;
 			pthread_mutex_unlock(&MUTEX_LIST_NEW);
 
 			switch_process_state(pcb, READY_STATE);
@@ -602,29 +602,29 @@ t_PID pid_assign(t_PCB *pcb) {
 		pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
 
 		return PID_COUNTER++;
-	} else {
-
-		while(LIST_RELEASED_PIDS->head == NULL)
-			pthread_cond_wait(&COND_LIST_RELEASED_PIDS, &MUTEX_LIST_RELEASED_PIDS);
-	
-		t_link_element *element = LIST_RELEASED_PIDS->head;
-
-		LIST_RELEASED_PIDS->head = element->next;
-		LIST_RELEASED_PIDS->elements_count--;
-
-		pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
-
-		t_PID pid = (*(t_PID *) element->data);
-
-		free(element->data);
-		free(element);
-
-		pthread_mutex_lock(&MUTEX_PCB_ARRAY);
-			PCB_ARRAY[pid] = pcb;
-		pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
-
-		return pid;
 	}
+
+	while(LIST_RELEASED_PIDS->head == NULL)
+		pthread_cond_wait(&COND_LIST_RELEASED_PIDS, &MUTEX_LIST_RELEASED_PIDS);
+
+	t_link_element *element = LIST_RELEASED_PIDS->head;
+
+	LIST_RELEASED_PIDS->head = element->next;
+	LIST_RELEASED_PIDS->elements_count--;
+
+	pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
+
+	t_PID pid = (*(t_PID *) element->data);
+
+	free(element->data);
+	free(element);
+
+	pthread_mutex_lock(&MUTEX_PCB_ARRAY);
+		PCB_ARRAY[pid] = pcb;
+	pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
+
+	return pid;
+
 }
 
 void pid_release(t_PID pid) {

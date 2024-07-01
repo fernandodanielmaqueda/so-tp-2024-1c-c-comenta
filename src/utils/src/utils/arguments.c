@@ -3,33 +3,25 @@
 
 #include "utils/arguments.h"
 
-t_Arguments *arguments_create(int max_argc, bool duplicate_lines) {
+t_Arguments *arguments_create(int max_argc) {
   t_Arguments *arguments = malloc(sizeof(t_Arguments));
   if(arguments == NULL) {
-      log_error(MODULE_LOGGER, "No se pudo reservar memoria para los argumentos.");
-      exit(EXIT_FAILURE);
+    errno = ENOMEM;
+    return NULL;
   }
 
   arguments->argc = 0;
   arguments->argv = NULL;
   *(int *)&(arguments->max_argc) = max_argc;
-  *(bool *)&(arguments->duplicate_lines) = duplicate_lines;
 
   return arguments;
 }
 
-void arguments_add(t_Arguments *arguments, char *line) {
+int arguments_use(t_Arguments *arguments, char *line) {
 
   char *subline = strip_whitespaces(line);
 
   char *work_line = subline;
-  if(arguments->duplicate_lines) {
-    if((work_line = strdup(subline)) == NULL) {
-        log_error(MODULE_LOGGER, "No se pudo duplicar la línea de argumentos.");
-        free(arguments);
-        exit(EXIT_FAILURE);
-    }
-  }
 
   register int i = 0;
   char **new_argv;
@@ -42,22 +34,14 @@ void arguments_add(t_Arguments *arguments, char *line) {
       break;
     
     if(arguments->argc == arguments->max_argc) {
-      log_error(MODULE_LOGGER, "Se excedió la cantidad máxima de argumentos permitidos.");
-      if (arguments->duplicate_lines)
-        free(work_line);
-      free(arguments->argv);
-      free(arguments);
-      exit(EXIT_FAILURE);
+      errno = E2BIG;
+      return 1;
     }
 
-    new_argv = realloc(arguments->argv, ++arguments->argc * sizeof(char *));
+    new_argv = realloc(arguments->argv, (++(arguments->argc)) * sizeof(char *));
     if(new_argv == NULL) {
-      log_error(MODULE_LOGGER, "No se pudo reservar memoria para los argumentos.");
-      if (arguments->duplicate_lines)
-        free(work_line);
-      free(arguments->argv);
-      free(arguments);
-      exit(EXIT_FAILURE);
+      errno = ENOMEM;
+      return 1;
     }
     arguments->argv = new_argv;
     arguments->argv[arguments->argc - 1] = work_line + i;
@@ -68,15 +52,13 @@ void arguments_add(t_Arguments *arguments, char *line) {
     if(work_line[i])
         work_line[i++] = '\0';
   }
+
+  return 0;
 }
 
 void arguments_remove(t_Arguments *arguments) {
   if(arguments == NULL)
       return;
-
-  if(arguments->duplicate_lines)
-    if(arguments->argv != NULL)
-      free(*(arguments->argv));
 
   free(arguments->argv);
   arguments->argc = 0;

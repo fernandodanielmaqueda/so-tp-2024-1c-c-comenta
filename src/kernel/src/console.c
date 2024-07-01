@@ -97,17 +97,39 @@ char *command_generator(const char *text, int state) {
 /* Execute a command line. */
 int execute_line(char *line) {
 
-    t_Arguments *arguments = arguments_create(MAX_CONSOLE_ARGC, false);
-    arguments_add(arguments, line);
+    t_Arguments *arguments = arguments_create(MAX_CONSOLE_ARGC);
+    if(arguments == NULL) {
+        log_error(CONSOLE_LOGGER, "arguments_create: Error al reservar memoria para los argumentos");
+        exit(EXIT_FAILURE);
+    }
+
+    if(arguments_use(arguments, line)) {
+        switch(errno) {
+            case E2BIG:
+                log_error(CONSOLE_LOGGER, "%s: Demasiados argumentos en el comando", line);
+                break;
+            case ENOMEM:
+                log_error(CONSOLE_LOGGER, "arguments_use: Error al reservar memoria para los argumentos");
+                exit(EXIT_FAILURE);
+            default:
+                log_error(CONSOLE_LOGGER, "arguments_use: %s", strerror(errno));
+                break;
+        }
+        arguments_destroy(arguments);
+        return 1;
+    }
 
     t_Command *command = find_command(arguments->argv[0]);
     if (command == NULL) {
         log_warning(CONSOLE_LOGGER, "%s: No existe el comando especificado.", arguments->argv[0]);
+        arguments_destroy(arguments);
         return 1;
     }
 
     // Call the function
-    return ((*(command->function)) (arguments->argc, arguments->argv));
+    int exit_status = ((*(command->function)) (arguments->argc, arguments->argv));
+    arguments_destroy(arguments);
+    return exit_status;
 }
 
 t_Command *find_command (char *name) {
@@ -185,9 +207,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
     }
 
     wait_list_process_states();
-        pthread_mutex_lock(&MUTEX_LIST_NEW);
-            list_add(LIST_NEW, pcb);
-        pthread_mutex_unlock(&MUTEX_LIST_NEW);
+        list_add(LIST_NEW, pcb);
     signal_list_process_states();
 
     log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
@@ -213,11 +233,16 @@ int kernel_command_kill_process(int argc, char* argv[]) {
         return 1;
     }
 
+    if(pid >= PID_COUNTER) {
+        log_error(MODULE_LOGGER, "No existe un proceso con PID <%d>", (int) pid);
+        return 1;
+    }
+
     wait_switching_states();
 
         t_PCB *pcb = PCB_ARRAY[pid];
         if(pcb == NULL) {
-            log_error(MODULE_LOGGER, "No existe el PID <%d>", (int) pid);
+            log_error(MODULE_LOGGER, "No existe un proceso con PID <%d>", (int) pid);
             signal_switching_states();
             return 1;
         }
@@ -247,6 +272,7 @@ int kernel_command_kill_process(int argc, char* argv[]) {
             case EXIT_STATE:
                 break;
         }
+
     signal_switching_states();
 
     return 0;
@@ -298,19 +324,18 @@ int kernel_command_multiprogramming(int argc, char* argv[]) {
     if (value >= MULTIPROGRAMMING_LEVEL) {
         for(register int i = value - MULTIPROGRAMMING_LEVEL; i > 0; i--)
             sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
-        
     } else
         for(register int i = MULTIPROGRAMMING_LEVEL - value; i > 0; i--)
             if(sem_trywait(&SEM_MULTIPROGRAMMING_LEVEL)) {
-                if(errno == EAGAIN) {
-                    pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
-                        MULTIPROGRAMMING_DIFFERENCE+= i;
-                    pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
-                    sem_post(&SEM_MULTIPROGRAMMING_POSTER);
-                } else {
+                if(errno != EAGAIN) {
                     log_warning(CONSOLE_LOGGER, "sem_trywait: %s", strerror(errno));
                     return 1;
                 }
+
+                pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
+                MULTIPROGRAMMING_DIFFERENCE+= i;
+                pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
+                sem_post(&SEM_MULTIPROGRAMMING_POSTER);
             }
 
     MULTIPROGRAMMING_LEVEL = value;

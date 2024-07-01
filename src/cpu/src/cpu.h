@@ -63,7 +63,7 @@ extern t_Payload *SYSCALL_INSTRUCTION;
 extern int CANTIDAD_ENTRADAS_TLB;
 extern char *ALGORITMO_TLB;
 
-extern int size_pag;
+extern t_MemorySize PAGE_SIZE;
 extern long timestamp;
 extern int direccion_logica; // momentaneo hasta ver de donde la saco
 extern t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
