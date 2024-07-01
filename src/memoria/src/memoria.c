@@ -418,22 +418,29 @@ void read_memory(t_Payload* payload, int socket) {
     int dir_fisica = 0;
     t_PID pidBuscado = 0;
     t_MemorySize bytes = 0;
+    int size = 0;
+    t_list* lista_dfs;
 
     payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
-    payload_dequeue(payload, &dir_fisica, sizeof(int) );
     payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
+    payload_dequeue(payload, &size, sizeof(uint32_t) );
+        for (size_t i = 0; i < size; i++)
+        {
+            payload_dequeue(payload, &dir_fisica, sizeof(uint32_t) );
+            list_add(lista_dfs, dir_fisica);
+        }
 
     char* lectura;
     char* lectura_final = "";
     int temp_dir_fis = -1;
 
+    dir_fisica = (int) list_get(lista_dfs,0);
     void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
     
     t_MemorySize pages = bytes/TAM_PAGINA;
     t_MemorySize resto = bytes % TAM_PAGINA;
     if (resto != 0) pages += 1;
-
-    //memcpy(&lectura, posicion, bytes);    
+ 
     int current_frame = dir_fisica / TAM_PAGINA;
     t_Frame* frame = list_get(lista_marcos, current_frame);
     pidBuscado = frame->PID;

@@ -557,6 +557,7 @@ void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register r
             log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
             //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
         }
+        package_destroy(package);
     }
 
 }
