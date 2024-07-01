@@ -272,19 +272,19 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
     return NULL;
 }
 
-t_list* mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, e_CPU_Register register_otrigin, e_CPU_Register register_destination, int in_out)
+t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes, e_CPU_Register register_otrigin, e_CPU_Register register_destination, int in_out)
 {
     t_Page nro_page = (t_Page) floor(dir_logica / PAGE_SIZE);
+    int offset = dir_logica - nro_page * PAGE_SIZE;
     int nro_frame_required = 0;
     int dir_fisica = 0;
 
     t_list* list_pages;
-    int required_pages = 1;//floor(register_otrigin / PAGE_SIZE);
+    int required_pages = seek_quantity_pages_required(dir_logica, bytes);
 
     for (size_t i = 0; i < required_pages; i++)
     {
         nro_page += i;
-        int offset = dir_logica - nro_page * PAGE_SIZE;
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
         pthread_mutex_lock(&MUTEX_TLB);
@@ -299,6 +299,7 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, e_CPU_Register r
             //tlb_access(pid, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
             dir_fisica = nro_frame_required * PAGE_SIZE + offset;
+            if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
             //return dir_fisica;   
             list_add(list_pages, dir_fisica);    
@@ -310,28 +311,28 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int tamanio_pagina, e_CPU_Register r
 
             t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
             t_PID pidBuscado;
-            t_Frame frame;
             payload_dequeue(package->payload, &pidBuscado, sizeof(t_PID) );
-            payload_dequeue(package->payload, &frame, sizeof(t_Frame) );
+            payload_dequeue(package->payload, &nro_frame_required, sizeof(t_Frame) );
             package_destroy(package);
             
-            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, nro_page, frame);
+            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, nro_page, nro_frame_required);
 
             if (CANTIDAD_ENTRADAS_TLB > 0)
             {
                 if (list_size(tlb) < CANTIDAD_ENTRADAS_TLB)
                 {
-                    add_to_tlb(pid, nro_page, frame);
+                    add_to_tlb(pid, nro_page, nro_frame_required);
                     log_trace(MODULE_LOGGER, "Agrego entrada a la TLB");
                 }
                 else
                 {
-                    replace_tlb_input(pid, nro_page, frame);
+                    replace_tlb_input(pid, nro_page, nro_frame_required);
                     log_trace(MODULE_LOGGER, "Reemplazo entrada a la TLB");
                 }
             }
 
             dir_fisica = nro_frame_required * PAGE_SIZE + offset;
+            if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
             list_add(list_pages, dir_fisica);
             //return dir_fisica;
         }
@@ -550,4 +551,20 @@ void attend_write_read(t_PID pid, t_list*  lista_df, e_CPU_Register register_ori
         }
     }
 
+}
+
+int seek_quantity_pages_required(int dir_log, int bytes){
+    int quantity_pages = 0;
+
+    t_Page nro_page = (t_Page) floor(dir_log / PAGE_SIZE);
+    int offset = dir_log - nro_page * PAGE_SIZE;
+
+    if (offset != 0)
+    {
+        bytes -= (PAGE_SIZE - offset);
+        quantity_pages++;
+    }
+
+    quantity_pages += (int) floor(bytes / PAGE_SIZE);
+    
 }
