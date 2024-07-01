@@ -112,7 +112,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     //dir_fisica_origin = mmu(dir_logica_origin, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
     //dir_fisica_destination = mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
     t_list* list_dir_fis = mmu(dir_logica_origin, PCB.PID, bytes);
-    attend_write_read(PCB.PID, list_dir_fis, bytes, register_origin, register_destination, IN);
+    attend_write_read(PCB.PID, list_dir_fis, bytes, register_destination, IN);
 
     //dir_fisica_destination = dir_fisica_origin;
 

@@ -106,6 +106,6 @@ void replace_tlb_input(t_PID pid, t_Page page, t_Frame frame);
 void cpu_fetch_next_instruction(char **line);
 void ask_memory_page_size();
 int seek_quantity_pages_required(int dir_log, int bytes);
-void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register register_origin, e_CPU_Register register_destination, int in_out);
+void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register register_destination, int in_out);
 
 #endif /* CPU_H */

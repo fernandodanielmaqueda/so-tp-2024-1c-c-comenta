@@ -490,7 +490,7 @@ void ask_memory_page_size(){
     package_destroy(package);
 }
 
-void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register register_origin, e_CPU_Register register_destination, int in_out)
+void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register register_destination, int in_out)
 {
     int size = list_size(lista_df);
     t_Package* package;
@@ -518,9 +518,17 @@ void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register r
             exit(EXIT_FAILURE);
         }  else
         {
-            log_info(MODULE_LOGGER, "PID: %i -Accion: LEER OK", pid);
+            log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
+
+            char* contenido;
+            text_deserialize(package->payload, &contenido);
+
+            t_CPU_Register_Accessor register_accessor = get_register_accessor(&PCB, register_destination);
+            set_register_value(register_accessor, (uint32_t) atoi(contenido));
+
             //log_info(MODULE_LOGGER, "PID: %i -Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
         }
+            package_destroy(package);
         
     }                
       else //out
