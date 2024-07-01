@@ -104,10 +104,12 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
 
-    dir_fisica_origin = mmu(dir_logica_origin, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
-    dir_fisica_destination = mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
+    //dir_fisica_origin = mmu(dir_logica_origin, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
+    //dir_fisica_destination = mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
+    t_list* list_dir_fis = mmu(dir_logica_origin, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
+    attend_write_read(PCB.PID, list_dir_fis, register_origin, register_destination, IN);
 
-    dir_fisica_destination = dir_fisica_origin;
+    //dir_fisica_destination = dir_fisica_origin;
 
     PCB.PC++;
 
