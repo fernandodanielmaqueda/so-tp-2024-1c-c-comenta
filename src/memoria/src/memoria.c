@@ -432,7 +432,7 @@ void read_memory(t_Payload* payload, int socket) {
 
     char* lectura;
     char* lectura_final = "";
-    int temp_dir_fis = -1;
+    //int temp_dir_fis = -1;
     int current_frame;
 
     dir_fisica = (int) list_get(lista_dfs,0);
@@ -478,7 +478,7 @@ void read_memory(t_Payload* payload, int socket) {
                 string_append(&lectura_final, lectura);
                 update_page(current_frame);
             }
-            if(i<pages){//Paginas del medio
+            else{//Paginas del medio
                 memcpy(&lectura, posicion, TAM_PAGINA);  
                 string_append(&lectura_final, lectura);
                 update_page(current_frame);
