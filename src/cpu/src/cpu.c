@@ -296,12 +296,10 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
             log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
             nro_frame_required = frame_tlb;
             log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, nro_page, nro_frame_required);
-            //tlb_access(pid, nro_page, nro_frame_required, dir_logica, register_otrigin, register_destination, in_out);
 
             dir_fisica = nro_frame_required * PAGE_SIZE + offset;
             if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
-            //return dir_fisica;   
             list_add(list_pages, dir_fisica);    
         }
         else //NO HAY HIT
@@ -334,7 +332,6 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
             dir_fisica = nro_frame_required * PAGE_SIZE + offset;
             if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
             list_add(list_pages, dir_fisica);
-            //return dir_fisica;
         }
     }
     
@@ -423,6 +420,40 @@ void add_to_tlb(t_PID pid , t_Page page, t_Frame frame)
     timestamp++;
     list_add(tlb, tlb_entry);
 
+}
+
+void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number){
+    t_TLB *tlb_entry;
+    int size = list_size(tlb);
+
+    if(size != 0){
+
+        for (size_t i = (size -1); i != -1; i--)
+        {
+            tlb_entry = list_get(tlb, i);
+            if((tlb_entry->PID == pid) && (tlb_entry->page_number >= (resize_number -1))){
+                list_remove(tlb, i);
+                free(tlb_entry);
+            }
+        }
+    }
+}
+
+void delete_tlb_entry_by_pid_deleted(t_PID pid){
+    t_TLB *tlb_entry;
+    int size = list_size(tlb);
+
+    if(size != 0){
+
+        for (size_t i = (size -1); i != -1; i--)
+        {
+            tlb_entry = list_get(tlb, i);
+            if(tlb_entry->PID == pid) {
+                list_remove(tlb, i);
+                free(tlb_entry);
+            }
+        }
+    }
 }
 
 void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
@@ -576,4 +607,5 @@ int seek_quantity_pages_required(int dir_log, int bytes){
 
     quantity_pages += (int) floor(bytes / PAGE_SIZE);
     
+    return quantity_pages;
 }

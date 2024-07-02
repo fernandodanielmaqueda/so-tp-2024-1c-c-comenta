@@ -88,33 +88,26 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "MOV_IN %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_origin; //Registro DL
+    e_CPU_Register register_dir_log; //Registro DL
     e_CPU_Register register_destination; //registro datos-destino
     if(decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
-    if (decode_register(argv[2], &register_origin)) {
+    if (decode_register(argv[2], &register_dir_log)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
 
-    //dir_logica_origin = atoi(argv[1]);
-    //dir_logica_destination = atoi(argv[2]);
-
     //Busco el valor (DL) del registro y lo asigno a la variable dir_logica_origin
-    get_register_value(&PCB, register_origin, &dir_logica_origin);
+    get_register_value(&PCB, register_dir_log, &dir_logica_origin);
 
     int bytes = get_register_size(register_destination);
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
 
-    //dir_fisica_origin = mmu(dir_logica_origin, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
-    //dir_fisica_destination = mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
     t_list* list_dir_fis = mmu(dir_logica_origin, PCB.PID, bytes);
     attend_write_read(PCB.PID, list_dir_fis, bytes, register_destination, IN);
-
-    //dir_fisica_destination = dir_fisica_origin;
 
     PCB.PC++;
 

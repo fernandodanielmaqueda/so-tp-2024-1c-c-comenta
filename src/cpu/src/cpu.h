@@ -103,6 +103,8 @@ void request_data_out_memory(int nro_frame_required, t_PID pid, t_Page nro_page,
 void request_frame_memory(t_PID pid, t_Page page);
 void add_to_tlb(t_PID pid , t_Page page, t_Frame frame);
 void replace_tlb_input(t_PID pid, t_Page page, t_Frame frame);
+void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number);
+void delete_tlb_entry_by_pid_deleted(t_PID pid);
 void cpu_fetch_next_instruction(char **line);
 void ask_memory_page_size();
 int seek_quantity_pages_required(int dir_log, int bytes);
