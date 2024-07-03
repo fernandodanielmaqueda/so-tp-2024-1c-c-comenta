@@ -8,17 +8,6 @@
 #include "commons/log.h"
 #include "commons/config.h"
 
-typedef enum e_PortType {
-    KERNEL_PORT_TYPE,
-    CPU_PORT_TYPE,
-    CPU_DISPATCH_PORT_TYPE,
-    CPU_INTERRUPT_PORT_TYPE,
-    MEMORY_PORT_TYPE,
-    IO_PORT_TYPE,
-    TO_BE_IDENTIFIED_PORT_TYPE
-} e_PortType;
-#define PortType_Count 7
-
 extern char *MODULE_NAME;
 
 extern t_log *MINIMAL_LOGGER;

@@ -77,6 +77,9 @@ extern t_temporal *TEMPORAL_DISPATCHED;
 
 extern const char *EXIT_REASONS[];
 
+extern int KILL_EXECUTING_PROCESS;
+extern pthread_mutex_t MUTEX_KILL_EXECUTING_PROCESS;
+
 extern unsigned int MULTIPROGRAMMING_LEVEL;
 extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
 extern unsigned int MULTIPROGRAMMING_DIFFERENCE;

@@ -47,9 +47,7 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter) {
     t_Server *server = &(single_client_server->server);
     t_Client *client = &(single_client_server->client);
 
-    ssize_t bytes;
-
-    t_Handshake handshake;
+    e_PortType port_type;
 
     server_start(server);
 
@@ -66,45 +64,18 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter) {
 
         log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 
-        bytes = recv(client->fd_client, &handshake, sizeof(t_Handshake), MSG_WAITALL);
+        receive_port_type(&port_type, client->fd_client);
 
-        if (bytes == 0) {
-            log_error(SOCKET_LOGGER, "Desconectado [Cliente] %s en Puerto: %s\n", PORT_NAMES[server->clients_type], server->port);
-            close(client->fd_client);
-            continue;
-        }
-        if (bytes == -1) {
-            log_error(SOCKET_LOGGER, "Funcion recv: %s\n", strerror(errno));
-            close(client->fd_client);
-            continue;
-        }
-        if (bytes != sizeof(t_Handshake)) {
-            log_error(SOCKET_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_Handshake), bytes);
-            close(client->fd_client);
-            continue;
-        }
-
-        if ((e_PortType)handshake == server->clients_type)
+        if (port_type == server->clients_type)
             break;
 
         log_warning(SOCKET_LOGGER, "Error de Handshake con [Cliente] No reconocido");
-        handshake = -1;
-        bytes = send(client->fd_client, &handshake, sizeof(t_Handshake), 0);
+        send_port_type(TO_BE_IDENTIFIED_PORT_TYPE, client->fd_client);
         close(client->fd_client);
-
-        if (bytes == -1) {
-            log_error(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
-            continue;
-        }
-        if (bytes != sizeof(t_Handshake)) {
-            log_error(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
-            continue;
-        }
     }
 
     log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
-    handshake = 0;
-    bytes = send(client->fd_client, &handshake, sizeof(t_Handshake), 0);
+    send_port_type(server->server_type, client->fd_client);
 
     return NULL;
 }

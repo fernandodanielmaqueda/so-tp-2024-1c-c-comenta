@@ -9,10 +9,17 @@
 #include "utils/serialize/eviction_reason.h"
 #include "utils/serialize/kernel_interrupt.h"
 #include "utils/serialize/pcb.h"
+#include "utils/serialize/port_type.h"
 #include "utils/serialize/return_value.h"
 #include "utils/serialize/subheader.h"
 #include "utils/serialize/subpayload.h"
 #include "utils/serialize/text.h"
+
+
+void send_port_type(e_PortType port_type, int fd_socket);
+
+
+void receive_port_type(e_PortType *port_type, int fd_socket);
 
 
 /**

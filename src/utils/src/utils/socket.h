@@ -16,14 +16,11 @@
 #include "commons/config.h"
 #include "commons/string.h"
 #include "utils/module.h"
+#include "utils/send.h"
 
 #define RETRY_CONNECTION_IN_SECONDS 10
 #define MAX_CONNECTION_ATTEMPS 10
 
-typedef uint32_t t_Handshake;
-
-extern const char *PORT_NAMES[PortType_Count];
-//extern const int32_t HANDSHAKES[PortType_Count];
 typedef struct t_Connection {
     int fd_connection;
     enum e_PortType client_type;
@@ -35,7 +32,7 @@ typedef struct t_Connection {
 typedef struct t_Client {
     int fd_client;
     enum e_PortType client_type;
-    // pthread_t client_thread;
+    pthread_t thread_client_handler;
 } t_Client;
 
 typedef struct t_Server {
@@ -43,7 +40,8 @@ typedef struct t_Server {
     enum e_PortType server_type;
     enum e_PortType clients_type;
     char *port;
-    // t_list *clients;
+    pthread_t thread_server;
+    t_list *clients;
 } t_Server;
 
 typedef struct t_Single_Client_Server {

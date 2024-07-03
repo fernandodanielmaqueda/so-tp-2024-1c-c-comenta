@@ -59,6 +59,9 @@ const char *EXIT_REASONS[] = {
 	[INTERRUPTED_BY_USER_EXIT_REASON] = "INTERRUPTED_BY_USER"
 };
 
+int KILL_EXECUTING_PROCESS = 0;
+pthread_mutex_t MUTEX_KILL_EXECUTING_PROCESS;
+
 unsigned int MULTIPROGRAMMING_LEVEL;
 sem_t SEM_MULTIPROGRAMMING_LEVEL;
 unsigned int MULTIPROGRAMMING_DIFFERENCE = 0;
@@ -195,7 +198,9 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 			pthread_mutex_unlock(&MUTEX_LIST_EXIT);
 		signal_list_process_states();
 
-		send_process_destroy(pcb->PID, CONNECTION_MEMORY.fd_connection); 
+		send_process_destroy(pcb->PID, CONNECTION_MEMORY.fd_connection);
+
+		// TODO: Falta liberar recursos asignados al proceso
 
 		receive_return_value_with_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
 		if(return_value) {
@@ -563,7 +568,7 @@ t_PCB *pcb_create() {
 	}
 
 	pcb->PID = pid_assign(pcb);
-    pcb->PC = 0; 
+    pcb->PC = 0;
     pcb->cpu_registers.AX = 0;
     pcb->cpu_registers.BX = 0;
     pcb->cpu_registers.CX = 0;

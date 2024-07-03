@@ -1,0 +1,45 @@
+/* En los archivos (*.c) se pueden poner tanto DECLARACIONES como DEFINICIONES de C, así como directivas de preprocesador */
+/* Recordar solamente indicar archivos *.h en las directivas de preprocesador #include, nunca archivos *.c */
+
+#include "utils/serialize/port_type.h"
+
+const char *PORT_NAMES[] = {
+  [KERNEL_PORT_TYPE] = "Kernel",
+  [CPU_PORT_TYPE] = "CPU",
+  [CPU_DISPATCH_PORT_TYPE] = "CPU (Dispatch)",
+  [CPU_INTERRUPT_PORT_TYPE] = "CPU (Interrupt)",
+  [MEMORY_PORT_TYPE] = "Memoria",
+  [IO_PORT_TYPE] = "Entrada/Salida",
+  [TO_BE_IDENTIFIED_PORT_TYPE] = "A identificar"
+};
+
+void port_type_serialize(t_Payload *payload, e_PortType source) {
+  if(payload == NULL)
+    return;
+
+  t_EnumValue aux;
+  
+    aux = (t_EnumValue) source;
+  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
+
+  port_type_log(source);
+}
+
+void port_type_deserialize(t_Payload *payload, e_PortType *destination) {
+  if(payload == NULL || destination == NULL)
+    return;
+
+  t_EnumValue aux;
+  
+  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+    *destination = (e_PortType) aux;
+
+  port_type_log(*destination);
+}
+
+void port_type_log(e_PortType port_type) {
+  log_info(SERIALIZE_LOGGER,
+    "e_PortType: %d"
+    , port_type
+  );
+}

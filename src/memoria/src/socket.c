@@ -65,49 +65,15 @@ void *memory_start_server(void *server_parameter) {
 void *memory_client_handler(void *fd_new_client_parameter) {
 	int *fd_new_client = (int *) fd_new_client_parameter;
 
-    ssize_t bytes;
-    t_Handshake handshake;
+    e_PortType port_type;
 
-    bytes = recv(*fd_new_client, &handshake, sizeof(t_Handshake), MSG_WAITALL);
+    receive_port_type(&port_type, *fd_new_client);
 
-    if (bytes == 0) {
-        log_warning(SOCKET_LOGGER, "Desconectado [Cliente] No reconocido\n");
-        close(*fd_new_client);
-        free(fd_new_client);
-        return NULL;
-    }
-    if (bytes == -1) {
-        log_warning(SOCKET_LOGGER, "Funcion recv: %s\n", strerror(errno));
-        close(*fd_new_client);
-        free(fd_new_client);
-        return NULL;
-    }
-    if (bytes != sizeof(t_Handshake)) {
-        log_warning(SOCKET_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_Handshake), bytes);
-        close(*fd_new_client);
-        free(fd_new_client);
-        return NULL;
-    }
-
-    switch((e_PortType) handshake) {
+    switch(port_type) {
         case KERNEL_PORT_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
-            handshake = 0;
-            bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
-
-            if (bytes == -1) {
-                log_warning(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
-            if (bytes != sizeof(t_Handshake)) {
-                log_warning(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
+            send_port_type(MEMORY_PORT_TYPE, *fd_new_client);
 
             FD_CLIENT_KERNEL = *fd_new_client;
             sem_post(&sem_coordinator_kernel_client_connected);
@@ -116,21 +82,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
         case CPU_PORT_TYPE:
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
-            handshake = 0;
-            bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
-
-            if (bytes == -1) {
-                log_warning(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
-            if (bytes != sizeof(t_Handshake)) {
-                log_warning(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
+            send_port_type(MEMORY_PORT_TYPE, *fd_new_client);
 
             FD_CLIENT_CPU = *fd_new_client;
             sem_post(&sem_coordinator_cpu_client_connected);
@@ -138,21 +90,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             return NULL;
         case IO_PORT_TYPE:
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
-            handshake = 0;
-            bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
-
-            if (bytes == -1) {
-                log_warning(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
-            if (bytes != sizeof(t_Handshake)) {
-                log_warning(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
+            send_port_type(MEMORY_PORT_TYPE, *fd_new_client);
 
             listen_io(*fd_new_client);
             close(*fd_new_client);
@@ -160,21 +98,7 @@ void *memory_client_handler(void *fd_new_client_parameter) {
             return NULL;
         default:
             log_warning(SOCKET_LOGGER, "Error Handshake con [Cliente] No reconocido");
-            handshake = -1;
-            bytes = send(*fd_new_client, &handshake, sizeof(t_Handshake), 0);
-
-            if (bytes == -1) {
-                log_warning(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
-            if (bytes != sizeof(t_Handshake)) {
-                log_warning(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", sizeof(t_Handshake), bytes);
-                close(*fd_new_client);
-                free(fd_new_client);
-                return NULL;
-            }
+            send_port_type(TO_BE_IDENTIFIED_PORT_TYPE, *fd_new_client);
 
             close(*fd_new_client);
             free(fd_new_client);

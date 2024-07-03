@@ -29,7 +29,7 @@ typedef enum e_Process_State {
     NEW_STATE,
     READY_STATE,
     EXEC_STATE,
-    BLOCKED_STATE, 
+    BLOCKED_STATE,
 	EXIT_STATE
 } e_Process_State;
 
@@ -51,7 +51,7 @@ typedef struct t_CPU_Registers {
 } t_CPU_Registers;
 
 typedef uint16_t t_PID;
-#define PID_MAX UINT32_MAX
+#define PID_MAX UINT16_MAX
 
 typedef uint32_t t_PC;
 typedef uint32_t t_MemorySize;

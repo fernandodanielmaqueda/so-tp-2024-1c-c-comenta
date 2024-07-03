@@ -17,6 +17,7 @@
 typedef enum e_Header {
     // USO GENERAL
     DISCONNECTING_HEADER,
+    PORT_TYPE_HEADER,
     // Kernel - CPU
     PROCESS_DISPATCH_HEADER,
     PROCESS_EVICTION_HEADER,
