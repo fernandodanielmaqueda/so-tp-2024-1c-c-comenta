@@ -103,3 +103,36 @@ void set_register_value(t_CPU_Register_Accessor register_accessor, uint32_t valu
             break;
     }
 }
+
+
+void get_register_value(t_PCB *pcb, e_CPU_Register cpu_register, uint32_t* value)
+{    
+    t_CPU_Register_Accessor register_accessor = get_register_accessor(pcb, cpu_register);
+
+    switch (register_accessor.register_dataType) {
+        case UINT8_DATATYPE:
+            *value = *(uint8_t *) register_accessor.register_pointer;
+            break;
+        case UINT32_DATATYPE:
+            *value = *(uint32_t *) register_accessor.register_pointer;
+            break;
+        default://Caso tipo de dato diferente
+            *value = 0;
+            break;
+    }
+}
+
+
+int get_register_size(e_CPU_Register registro){
+    int bytes = 0;
+    switch (CPU_REGISTERS[registro].dataType) {
+        case UINT8_DATATYPE:
+            bytes = sizeof(uint8_t);
+            break;
+        case UINT32_DATATYPE:
+            bytes = sizeof(uint32_t);
+            break;
+    }
+
+    return bytes;
+}

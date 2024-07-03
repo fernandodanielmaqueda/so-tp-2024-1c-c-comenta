@@ -376,15 +376,15 @@ void respond_frame_request(t_Payload* payload){
   int pidProceso = *(int*)list_get(propiedadesPlanas, cursor);
   list_destroy_and_destroy_elements(propiedadesPlanas, &free);
 */
-    int pageBuscada;
+    uint32_t pageBuscada;
     t_PID pidProceso;
 
-    payload_dequeue(payload, &pageBuscada, sizeof(int) );
+    payload_dequeue(payload, &pageBuscada, sizeof(uint32_t) );
     payload_dequeue(payload, &pidProceso, sizeof(t_PID) );
 
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
-    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, pageBuscada);
+    int marcoEncontrado = seek_marco_with_page_on_TDP(procesoBuscado->pages_table, (int) pageBuscada);
 
             
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Pagina: <%d> - Marco: <%d>", (int) pidProceso, pageBuscada, marcoEncontrado);
@@ -418,25 +418,33 @@ void read_memory(t_Payload* payload, int socket) {
     int dir_fisica = 0;
     t_PID pidBuscado = 0;
     t_MemorySize bytes = 0;
+    int pages = 0;
+    t_list* lista_dfs;
 
     payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
-    payload_dequeue(payload, &dir_fisica, sizeof(int) );
     payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
+    payload_dequeue(payload, &pages, sizeof(uint32_t) );
+        for (size_t i = 0; i < pages; i++)
+        {
+            payload_dequeue(payload, &dir_fisica, sizeof(uint32_t) );
+            list_add(lista_dfs, dir_fisica);
+        }
 
     char* lectura;
     char* lectura_final = "";
-    int temp_dir_fis = -1;
+    //int temp_dir_fis = -1;
+    int current_frame;
 
+    dir_fisica = (int) list_get(lista_dfs,0);
     void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
     
-    t_MemorySize pages = bytes/TAM_PAGINA;
-    t_MemorySize resto = bytes % TAM_PAGINA;
-    if (resto != 0) pages += 1;
-
-    //memcpy(&lectura, posicion, bytes);    
-    int current_frame = dir_fisica / TAM_PAGINA;
-    t_Frame* frame = list_get(lista_marcos, current_frame);
-    pidBuscado = frame->PID;
+    //t_MemorySize pages = bytes/TAM_PAGINA;
+    //t_MemorySize resto = bytes % TAM_PAGINA;
+    //if (resto != 0) pages += 1;
+ 
+    //int current_frame = dir_fisica / TAM_PAGINA;
+    //t_Frame* frame = list_get(lista_marcos, current_frame);
+    //pidBuscado = frame->PID;
 
     
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", (int) pidBuscado, dir_fisica, bytes);
@@ -444,28 +452,42 @@ void read_memory(t_Payload* payload, int socket) {
     if(pages < 2){//En caso de que sea menor a 2 pagina
         memcpy(&lectura_final, posicion, bytes);  
          //Actualizar pagina/TDP
+        current_frame = dir_fisica / TAM_PAGINA;
         update_page(current_frame);
     }
     else{//En caso de que el contenido supere a 1 pagina
         t_MemorySize bytes_restantes = bytes;
+        int bytes_inicial = TAM_PAGINA - (dir_fisica - (current_frame * TAM_PAGINA));
         for (t_MemorySize i = 1; i > pages; i++)
         {
-            if (i == pages)
+            dir_fisica = (int) list_get(lista_dfs,(i-1));
+            current_frame = dir_fisica / TAM_PAGINA;
+            //Posicion de la proxima escritura
+            posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
+
+            if (i == 1)//Primera pagina
+            {
+                memcpy(&lectura, posicion, bytes_inicial);  
+                string_append(&lectura_final, lectura);
+                update_page(current_frame);
+                bytes_restantes -= bytes_inicial;
+            }
+            if (i == pages)//Ultima pagina
             {
                 memcpy(&lectura, posicion, bytes_restantes);  
                 string_append(&lectura_final, lectura);
                 update_page(current_frame);
             }
-            if(i<pages){
+            else{//Paginas del medio
                 memcpy(&lectura, posicion, TAM_PAGINA);  
                 string_append(&lectura_final, lectura);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
 
-                temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
-                current_frame = temp_dir_fis / TAM_PAGINA;
+                //temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
+                //current_frame = temp_dir_fis / TAM_PAGINA;
                 //Posicion de la proxima escritura
-                posicion = (void *)(((uint8_t *) memoria_principal) + temp_dir_fis);
+                //posicion = (void *)(((uint8_t *) memoria_principal) + temp_dir_fis);
             }
             
         }
