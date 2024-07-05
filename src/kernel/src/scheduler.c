@@ -202,7 +202,7 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 
 		// TODO: Falta liberar recursos asignados al proceso
 
-		receive_return_value_with_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
+		receive_return_value_with_expected_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
 		if(return_value) {
 			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo FINALIZAR_PROCESO %" PRIu32, pcb->PID);
 		} else {

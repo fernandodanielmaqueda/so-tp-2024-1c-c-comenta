@@ -5,15 +5,11 @@
 
 char *MODULE_NAME = "entradasalida";
 char *MODULE_LOG_PATHNAME = "entradasalida.log";
-char *MODULE_CONFIG_PATHNAME = "entradasalida.config";
 
-t_log* MODULE_LOGGER;
-extern t_log *MODULE_LOGGER;
-extern t_log *SOCKET_LOGGER;
-t_config* MODULE_CONFIG;
+t_log *MODULE_LOGGER;
+t_config *MODULE_CONFIG;
 
-char *TIPO_INTERFAZ;
-int TIEMPO_UNIDAD_TRABAJO;
+int UNIT_WORK_TIME;
 
 t_Connection CONNECTION_KERNEL;
 t_Connection CONNECTION_MEMORY;
@@ -21,16 +17,16 @@ t_Connection CONNECTION_MEMORY;
 char *PATH_BASE_DIALFS;
 int BLOCK_SIZE;
 int BLOCK_COUNT;
+int COMPRESSION_DELAY;
 
 t_IO_Type IO_TYPES[] = {
-    {.name = "GENERIC", .type = GENERIC_IO_TYPE, .function = generic_function },
-    {.name = "STDIN", .type = STDIN_IO_TYPE, .function = stdin_function },
-    {.name = "STDOUT", .type = STDOUT_IO_TYPE, .function = stdout_function },
-    {.name = "DIALFS", .type = DIALFS_IO_TYPE, .function = NULL},
-    {.name = NULL}
+    [GENERIC_IO_TYPE] = {.name = "GENERIC", .function = generic_function },
+    [STDIN_IO_TYPE] = {.name = "STDIN", .function = stdin_function },
+    [STDOUT_IO_TYPE] = {.name = "STDOUT", .function = stdout_function },
+    [DIALFS_IO_TYPE] = {.name = "DIALFS", .function = NULL}
 };
 
-t_IO_Type *IO_TYPE;
+enum e_IO_Type IO_TYPE;
 
 t_IO_Operation IO_OPERATIONS[] = {
     [IO_GEN_SLEEP_CPU_OPCODE] = {.name = "IO_GEN_SLEEP" , .function = io_gen_sleep_io_operation},
@@ -43,26 +39,25 @@ t_IO_Operation IO_OPERATIONS[] = {
     [IO_FS_READ_CPU_OPCODE] = {.name = "IO_FS_READ" , .function = io_fs_read_io_operation},
 };
 
-int module(int argc, char* argv[]) {
+int module(int argc, char *argv[]) {
 
-	initialize_loggers();
-	initialize_configs(argv[2]);
-	initialize_sockets();
-
-	log_info(MODULE_LOGGER, "el parametro 1 es: %s", argv[1]);
-	log_info(MODULE_LOGGER, "el parametro 2 es: %s", argv[2]);
-	log_info(MODULE_LOGGER, "El tipo del modulo es: %s",TIPO_INTERFAZ);
-
-	IO_TYPE = io_type_find(TIPO_INTERFAZ);
-	if(IO_TYPE == NULL) {
-		log_error(MODULE_LOGGER, "No se reconoce el tipo de interfaz");
+	if(argc != 2) {
+		log_error(MODULE_LOGGER, "Uso: <NOMBRE_INTERFAZ> <ARCHIVO_DE_CONFIGURACION>");
 		exit(EXIT_FAILURE);
 	}
 
-	// Invoco a la funcion que corresponda
-	IO_TYPE->function();
+	initialize_loggers();
+	initialize_configs(argv[2]);
 
-    log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+	initialize_sockets();
+
+	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+
+	receive_expected_header(INTERFACE_NAME_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);
+	send_text_with_header(INTERFACE_NAME_REQUEST_HEADER, argv[1], CONNECTION_KERNEL.fd_connection);
+
+	// Invoco a la funcion que corresponda
+	IO_TYPES[IO_TYPE].function();
 
 	//finish_threads();
 	finish_sockets();
@@ -72,12 +67,18 @@ int module(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-t_IO_Type *io_type_find(char *name) {
-    for(register int i = 0; IO_TYPES[i].name != NULL; i++)
-        if(!strcmp(IO_TYPES[i].name, name))
-            return (&IO_TYPES[i]);
+int io_type_find(char *name, e_IO_Type *destination) {
+    if(name == NULL || destination == NULL)
+        return 1;
+    
+    size_t io_types_number = sizeof(IO_TYPES) / sizeof(IO_TYPES[0]);
+    for (register e_IO_Type io_type = 0; io_type < io_types_number; io_type++)
+        if (!strcmp(IO_TYPES[io_type].name, name)) {
+            *destination = io_type;
+            return 0;
+        }
 
-    return NULL;
+    return 1;
 }
 
 int io_operation_execute(t_Payload *operation) {
@@ -96,13 +97,31 @@ int io_operation_execute(t_Payload *operation) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    TIPO_INTERFAZ = config_get_string_value(MODULE_CONFIG, "TIPO_INTERFAZ");
-    TIEMPO_UNIDAD_TRABAJO = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
-    CONNECTION_KERNEL = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = KERNEL_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
-    CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    PATH_BASE_DIALFS = config_get_string_value(MODULE_CONFIG, "PATH_BASE_DIALFS");
-    BLOCK_SIZE = config_get_int_value(MODULE_CONFIG, "BLOCK_SIZE");
-    BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");
+    char *io_type_name = config_get_string_value(MODULE_CONFIG, "TIPO_INTERFAZ");
+	if(io_type_find(io_type_name, &IO_TYPE)) {
+		log_error(MODULE_LOGGER, "%s: No se reconoce el TIPO_INTERFAZ", io_type_name);
+		exit(EXIT_FAILURE);
+	}
+
+	CONNECTION_KERNEL = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = KERNEL_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
+
+	switch(IO_TYPE) {
+		case GENERIC_IO_TYPE:
+		    UNIT_WORK_TIME = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
+			break;
+		case STDIN_IO_TYPE:
+		case STDOUT_IO_TYPE:
+			CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+			break;
+		case DIALFS_IO_TYPE:
+			UNIT_WORK_TIME = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
+			CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+			PATH_BASE_DIALFS = config_get_string_value(MODULE_CONFIG, "PATH_BASE_DIALFS");
+			BLOCK_SIZE = config_get_int_value(MODULE_CONFIG, "BLOCK_SIZE");
+			BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");
+			COMPRESSION_DELAY = config_get_int_value(MODULE_CONFIG, "RETRASO_COMPACTACION");
+			break;
+	}
 }
 
 void initialize_sockets(void) {
@@ -186,10 +205,10 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
 
-	switch(IO_TYPE->type) {
+	switch(IO_TYPE) {
 		case GENERIC_IO_TYPE:
 		// LA PUEDE HACER (Y LA HACE)
-			//sleep(atoi(argv[2]) * TIEMPO_UNIDAD_TRABAJO);
+			//sleep(atoi(argv[2]) * UNIT_WORK_TIME);
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
@@ -207,7 +226,7 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 	uint32_t registro_direccion;
 	int registro_tamanio;
 
-	switch(IO_TYPE->type){
+	switch(IO_TYPE){
 		case STDIN_IO_TYPE:
 			//registro_direccion = atoi(argv[2]);
 			//registro_tamanio = atoi(argv[3]);
@@ -245,7 +264,7 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 	//t_Arguments* instruction;
 	//int registro_tamanio;
 
-	switch(IO_TYPE->type){
+	switch(IO_TYPE){
 		case STDOUT_IO_TYPE:
 /*
 			package = package_create_with_header(STRING_HEADER);

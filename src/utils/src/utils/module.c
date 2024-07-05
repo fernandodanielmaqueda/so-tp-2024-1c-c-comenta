@@ -30,7 +30,7 @@ void initialize_configs(char *pathname) {
 	MODULE_CONFIG = config_create(pathname);
 
 	if(MODULE_CONFIG == NULL) {
-		log_error(MODULE_LOGGER, "No se pudo abrir el archivo config del modulo %s: %s", MODULE_NAME, pathname);
+		log_error(MODULE_LOGGER, "%s: No se pudo abrir el archivo de configuracion", pathname);
         exit(EXIT_FAILURE);
 	}
 

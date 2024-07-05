@@ -15,11 +15,11 @@ void initialize_sockets(void) {
     pthread_t thread_cpu_connect_to_memory;
 
     // [Server] CPU (Dispatch) <- [Cliente] Kernel
-    pthread_create(&(SERVER_CPU_DISPATCH.thread_server), NULL, cpu_start_server_for_kernel, (void *)&SERVER_CPU_DISPATCH);
+    pthread_create(&(SERVER_CPU_DISPATCH.thread_server), NULL, cpu_start_server_for_kernel, (void *) &SERVER_CPU_DISPATCH);
     // [Server] CPU (Interrupt) <- [Cliente] Kernel
     pthread_create(&(SERVER_CPU_INTERRUPT.thread_server), NULL, kernel_cpu_interrupt_handler, NULL);
     // [Client] CPU -> [Server] Memoria
-    pthread_create(&thread_cpu_connect_to_memory, NULL, client_thread_connect_to_server, (void *)&CONNECTION_MEMORY);
+    pthread_create(&thread_cpu_connect_to_memory, NULL, client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
 
     // Se bloquea hasta que se realicen todas las conexiones
     pthread_join(SERVER_CPU_DISPATCH.thread_server, NULL);

@@ -31,6 +31,15 @@ void send_header(e_Header header, int fd_socket) {
   package_destroy(package);
 }
 
+void receive_header(e_Header expected_header, int fd_socket) {
+  t_Package *package = package_receive(fd_socket);
+  if(package->header != expected_header) {
+    log_error(MODULE_LOGGER, "Header invalido");
+    exit(EXIT_FAILURE);
+  }
+  package_destroy(package);
+}
+
 void send_text_with_header(e_Header header, char *text, int fd_socket) {
   t_Package *package = package_create_with_header(header);
   text_serialize(package->payload, text);
@@ -38,7 +47,7 @@ void send_text_with_header(e_Header header, char *text, int fd_socket) {
   package_destroy(package);
 }
 
-void receive_text_with_header(e_Header expected_header, char **text, int fd_socket) {
+void receive_text_with_expected_header(e_Header expected_header, char **text, int fd_socket) {
   t_Package *package = package_receive(fd_socket);
   if(package->header == expected_header)
       text_deserialize(package->payload, text);
@@ -56,7 +65,7 @@ void send_return_value_with_header(e_Header header, t_Return_Value return_value,
   package_destroy(package);
 }
 
-void receive_return_value_with_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket) {
+void receive_return_value_with_expected_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket) {
   t_Package *package = package_receive(fd_socket);
   if(package->header == expected_header)
     return_value_deserialize(package->payload, return_value);

@@ -482,7 +482,7 @@ void request_frame_memory(t_PID pid, t_Page_Number page) {
 
 void cpu_fetch_next_instruction(char **line) {
     send_instruction_request(PCB.PID, PCB.PC, CONNECTION_MEMORY.fd_connection);
-    receive_text_with_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
+    receive_text_with_expected_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
 }
 
 

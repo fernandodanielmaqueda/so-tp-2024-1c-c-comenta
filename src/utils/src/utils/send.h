@@ -24,29 +24,22 @@ void send_port_type(e_Port_Type port_type, int fd_socket);
 void receive_port_type(e_Port_Type *port_type, int fd_socket);
 
 
-/**
- * @brief Enviar interrupt (incluye el serializado)
- * @param interrupt t_Interrupt a enviar.
- * @param fd_socket Socket desde donde se va a recibir el interrupt.
- */
 void send_header(e_Header header, int fd_socket);
 
 
-/**
- * @brief Enviar texto (incluye el serializado)
- * @param string Texto a enviar.
- * @param fd_socket Socket desde donde se va a recibir el texto.
- */
+void receive_expected_header(e_Header header, int fd_socket);
+
+
 void send_text_with_header(e_Header header, char *text, int fd_socket);
 
 
-void receive_text_with_header(e_Header header, char **text, int fd_socket);
+void receive_text_with_expected_header(e_Header header, char **text, int fd_socket);
 
 
 void send_return_value_with_header(e_Header header, t_Return_Value return_value, int fd_socket);
 
 
-void receive_return_value_with_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket);
+void receive_return_value_with_expected_header(e_Header expected_header, t_Return_Value *return_value, int fd_socket);
 
 
 void send_process_create(char *instructions_path, t_PID pid, int fd_socket);
@@ -55,11 +48,6 @@ void send_process_create(char *instructions_path, t_PID pid, int fd_socket);
 void send_process_destroy(t_PID pid, int fd_socket);
 
 
-/**
- * @brief Enviar pcb (incluye el serializado)
- * @param pcb t_PCB a enviar.
- * @param fd_socket Socket desde donde se va a recibir el pcb.
- */
 void send_process_dispatch(t_PCB pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
 
 

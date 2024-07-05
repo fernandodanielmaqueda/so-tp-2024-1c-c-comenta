@@ -30,23 +30,32 @@ typedef enum e_IO_Type {
 
 typedef struct t_IO_Type {
     char *name;
-    enum e_IO_Type type;
     void (*function) (void);
 } t_IO_Type;
 
 extern t_IO_Type IO_TYPES[];
-extern t_IO_Type *IO_TYPE;
+extern e_IO_Type IO_TYPE;
 
 typedef struct t_IO_Operation {
     char *name;
     int (*function) (t_Payload *);
 } t_IO_Operation;
 
+extern int UNIT_WORK_TIME;
+
+extern t_Connection CONNECTION_KERNEL;
+extern t_Connection CONNECTION_MEMORY;
+
+extern char *PATH_BASE_DIALFS;
+extern int BLOCK_SIZE;
+extern int BLOCK_COUNT;
+extern int COMPRESSION_DELAY;
+
 extern t_IO_Operation IO_OPERATIONS[];
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
-t_IO_Type *io_type_find(char *name);
+int io_type_find(char *name, e_IO_Type *destination);
 int io_operation_execute(t_Payload *operation);
 void generic_function(void);
 void initialize_sockets(void);

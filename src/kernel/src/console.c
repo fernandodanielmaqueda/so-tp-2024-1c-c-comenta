@@ -200,7 +200,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
     send_process_create(argv[1], pcb->PID, CONNECTION_MEMORY.fd_connection);
 
     t_Return_Value return_value;
-    receive_return_value_with_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
+    receive_return_value_with_expected_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
     if(return_value) {
         log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", argv[1]);
         return 1;

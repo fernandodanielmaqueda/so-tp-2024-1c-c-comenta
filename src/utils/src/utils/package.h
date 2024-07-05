@@ -15,13 +15,19 @@
 #include "utils/module.h"
 
 typedef enum e_Header {
-    // USO GENERAL
+    // Uso general
     DISCONNECTING_HEADER,
+    // Handshake
     PORT_TYPE_HEADER,
     // Kernel - CPU
     PROCESS_DISPATCH_HEADER,
     PROCESS_EVICTION_HEADER,
     KERNEL_INTERRUPT_HEADER,
+    // Kernel - Memoria
+    PROCESS_CREATE_HEADER,
+    PROCESS_DESTROY_HEADER,
+    //Kernel - IO
+    INTERFACE_NAME_REQUEST_HEADER,
     // CPU - Memoria
     INSTRUCTION_REQUEST,
     READ_REQUEST, //utilizado en MEMORIA-IO
@@ -31,16 +37,9 @@ typedef enum e_Header {
     FRAME_ACCESS,    //PARA MEMORIA Y REVISAR LA TLB
     FRAME_REQUEST,
     PAGE_SIZE_REQUEST,
-    //Kernel - Memoria
-    PROCESS_CREATE_HEADER,
-    PROCESS_DESTROY_HEADER,
-    //Kernel - IO
-    //Kernel - CPU
-    STDIN_REQUEST,
-    STDOUT_REQUEST,
+    //IO - Memoria
     IO_STDIN_WRITE_MEMORY,
     IO_STDOUT_READ_MEMORY
-    //IO - Memoria
 } e_Header;
 
 typedef struct t_Package {
