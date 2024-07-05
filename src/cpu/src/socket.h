@@ -25,8 +25,8 @@
 #include "utils/socket.h"
 #include "cpu.h"
 
-extern t_Single_Client_Server SERVER_CPU_DISPATCH;
-extern t_Single_Client_Server SERVER_CPU_INTERRUPT;
+extern t_Server SERVER_CPU_DISPATCH;
+extern t_Server SERVER_CPU_INTERRUPT;
 extern t_Connection CONNECTION_MEMORY;
 
 extern sem_t CONNECTED_KERNEL_CPU_INTERRUPT;

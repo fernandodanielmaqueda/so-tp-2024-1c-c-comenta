@@ -106,17 +106,17 @@ void read_module_config(t_config* MODULE_CONFIG) {
 }
 
 void initialize_sockets(void) {
-	pthread_t thread_io_connect_to_memory;
 	pthread_t thread_io_connect_to_kernel;
+	pthread_t thread_io_connect_to_memory;
 
-	// [Client] Entrada/Salida -> [Server] Memoria
-	pthread_create(&thread_io_connect_to_memory, NULL, client_thread_connect_to_server, (void*) &CONNECTION_MEMORY);
 	// [Client] Entrada/Salida -> [Server] Kernel
 	pthread_create(&thread_io_connect_to_kernel, NULL, client_thread_connect_to_server, (void*) &CONNECTION_KERNEL);
+	// [Client] Entrada/Salida -> [Server] Memoria
+	pthread_create(&thread_io_connect_to_memory, NULL, client_thread_connect_to_server, (void*) &CONNECTION_MEMORY);
 
 	// Se bloquea hasta que se realicen todas las conexiones
-	pthread_join(thread_io_connect_to_memory, NULL);
 	pthread_join(thread_io_connect_to_kernel, NULL);
+	pthread_join(thread_io_connect_to_memory, NULL);
 }
 
 void finish_sockets(void) {

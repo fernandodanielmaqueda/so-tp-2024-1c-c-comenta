@@ -17,9 +17,9 @@ void *memoria_principal;
 pthread_t hilo_kernel;
 pthread_t hilo_cpu;
 pthread_t hilo_io;
-t_list* lista_procesos;
-t_list* lista_marcos;
-t_list* lista_marcos_libres;
+t_list *lista_procesos;
+t_list *lista_marcos;
+t_list *lista_marcos_libres;
 
 t_MemorySize TAM_MEMORIA;
 t_MemorySize TAM_PAGINA;
@@ -30,8 +30,10 @@ int module(int argc, char* argv[]) {
 
 	initialize_loggers();
 	initialize_configs(MODULE_CONFIG_PATHNAME);
+    initialize_mutexes();
+	initialize_semaphores();
 
-    memoria_principal = (void*) malloc(TAM_MEMORIA);
+    memoria_principal = (void *) malloc(TAM_MEMORIA);
     memset(memoria_principal, (u_int32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
     lista_procesos = list_create();
     create_marcos();
@@ -40,18 +42,36 @@ int module(int argc, char* argv[]) {
 
     log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
-    listen_kernel(FD_CLIENT_KERNEL);
+    listen_kernel(CLIENT_KERNEL->fd_client);
 
 	//finish_threads();
 	finish_sockets();
 	//finish_configs();
 	finish_loggers();
+	finish_semaphores();
+	finish_mutexes();
 
    return EXIT_SUCCESS;
 }
 
+void initialize_mutexes(void) {
+    pthread_mutex_init(&(COORDINATOR_MEMORY.mutex_clients), NULL);
+}
+
+void finish_mutexes(void) {
+    pthread_mutex_destroy(&(COORDINATOR_MEMORY.mutex_clients));
+}
+
+void initialize_semaphores(void) {
+    
+}
+
+void finish_semaphores(void) {
+    
+}
+
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA"), .clients = list_create()};
     TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
@@ -128,7 +148,7 @@ void create_process(t_Payload *process_data) {
     //CREAR LISTA INST CON EL PARSER
     if(parser_file(target_path, instructions_list)) {
         //ENVIAR RTA ERROR A KERNEL
-        send_return_value_with_header(PROCESS_CREATE_HEADER, 1, FD_CLIENT_KERNEL);
+        send_return_value_with_header(PROCESS_CREATE_HEADER, 1, CLIENT_KERNEL->fd_client);
         return;
     }
 
@@ -143,7 +163,7 @@ void create_process(t_Payload *process_data) {
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <0>", (int) new_process->PID);
 
     //ENVIAR RTA OK A KERNEL
-    send_return_value_with_header(PROCESS_CREATE_HEADER, 0, FD_CLIENT_KERNEL);
+    send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client);
     
 }
 
@@ -169,7 +189,7 @@ void kill_process (t_Payload *payload){
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <%d>", (int) pid, size);
     
     //ENVIAR RTA OK A KERNEL
-    send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, FD_CLIENT_KERNEL);
+    send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, CLIENT_KERNEL->fd_client);
     
 }
 
@@ -241,7 +261,7 @@ void listen_cpu(int fd_cpu) {
 
                 package = package_create_with_header(PAGE_SIZE_REQUEST);
                 payload_enqueue(package->payload, &TAM_PAGINA, sizeof(TAM_PAGINA));
-                package_send(package, FD_CLIENT_CPU);
+                package_send(package, CLIENT_CPU->fd_client);
                 package_destroy(package);
 
                 break;
@@ -254,13 +274,13 @@ void listen_cpu(int fd_cpu) {
                 
             case READ_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                read_memory(package->payload, FD_CLIENT_CPU);
+                read_memory(package->payload, CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
                 
             case WRITE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                write_memory(package->payload, FD_CLIENT_CPU);
+                write_memory(package->payload, CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
             
@@ -334,7 +354,7 @@ void seek_instruccion(t_Payload* payload) {
     }
 
     usleep(RETARDO_RESPUESTA * 1000);
-    send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, FD_CLIENT_CPU);
+    send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, CLIENT_CPU->fd_client);
     log_info(MODULE_LOGGER, "Instruccion enviada.");
 }
 
@@ -395,7 +415,7 @@ void respond_frame_request(t_Payload* payload){
     t_Package* package = package_create_with_header(FRAME_REQUEST);
     payload_enqueue(package->payload, &pidProceso, sizeof(t_PID));
     payload_enqueue(package->payload, &marcoEncontrado, sizeof(int));
-    package_send(package, FD_CLIENT_CPU);
+    package_send(package, CLIENT_CPU->fd_client);
     
 }
 
@@ -630,7 +650,7 @@ void resize_process(t_Payload* payload){
         {
             package = package_create_with_header(OUT_OF_MEMORY);
             payload_enqueue(package->payload, &pid, sizeof(t_PID) );
-            package_send(package, FD_CLIENT_CPU);
+            package_send(package, CLIENT_CPU->fd_client);
             package_destroy(package);
         }
         else{
@@ -659,7 +679,7 @@ void resize_process(t_Payload* payload){
                 
             package = package_create_with_header(RESIZE_REQUEST);
             payload_enqueue(package->payload, &pid, sizeof(t_PID) );
-            package_send(package, FD_CLIENT_CPU);
+            package_send(package, CLIENT_CPU->fd_client);
             package_destroy(package);
         }
         
@@ -681,7 +701,7 @@ void resize_process(t_Payload* payload){
         
             t_Package* package = package_create_with_header(RESIZE_REQUEST);
             payload_enqueue(package->payload, &pid, sizeof(t_PID) );
-            package_send(package, FD_CLIENT_CPU);
+            package_send(package, CLIENT_CPU->fd_client);
             package_destroy(package);
         
     }

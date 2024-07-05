@@ -42,12 +42,8 @@ typedef struct t_Server {
     char *port;
     pthread_t thread_server;
     t_list *clients;
+    pthread_mutex_t mutex_clients;
 } t_Server;
-
-typedef struct t_Single_Client_Server {
-    t_Server server;
-    t_Client client;
-} t_Single_Client_Server;
 
 void *client_thread_connect_to_server(void *connection_parameter);
 int client_start_try(char* ip, char* port);

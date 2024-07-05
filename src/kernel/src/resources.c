@@ -39,7 +39,8 @@ void resources_read_module_config(t_config *module_config) {
 		RESOURCES[i].name = resource_names[i];
 		RESOURCES[i].available = instances;
 		RESOURCES[i].total = instances;
-		RESOURCES[i].blocked_queue = list_create();
+		RESOURCES[i].list_blocked = list_create();
+		pthread_mutex_init(&(RESOURCES[i].mutex_list_blocked), NULL);
 	}
 
 	RESOURCES[RESOURCE_QUANTITY].name = NULL;

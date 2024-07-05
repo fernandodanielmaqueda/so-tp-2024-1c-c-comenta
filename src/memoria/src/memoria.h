@@ -46,6 +46,10 @@ typedef struct t_Frame {
 } t_Frame;
 
 int module(int, char*[]);
+void initialize_mutexes(void);
+void finish_mutexes(void);
+void initialize_semaphores(void);
+void finish_semaphores(void);
 void read_module_config(t_config *module_config);
 
 /**

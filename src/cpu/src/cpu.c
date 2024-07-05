@@ -65,6 +65,9 @@ int module(int argc, char *argv[])
 }
 
 void initialize_mutexes(void) {
+    pthread_mutex_init(&(SERVER_CPU_DISPATCH.mutex_clients), NULL);
+    pthread_mutex_init(&(SERVER_CPU_INTERRUPT.mutex_clients), NULL);
+
     pthread_mutex_init(&MUTEX_PCB, NULL);
     pthread_mutex_init(&MUTEX_EXECUTING, NULL);
     pthread_mutex_init(&MUTEX_KERNEL_INTERRUPT, NULL);    
@@ -72,6 +75,9 @@ void initialize_mutexes(void) {
 }
 
 void finish_mutexes(void) {
+    pthread_mutex_destroy(&(SERVER_CPU_DISPATCH.mutex_clients));
+    pthread_mutex_destroy(&(SERVER_CPU_INTERRUPT.mutex_clients));
+    
     pthread_mutex_destroy(&MUTEX_PCB);
     pthread_mutex_destroy(&MUTEX_EXECUTING);
     pthread_mutex_destroy(&MUTEX_KERNEL_INTERRUPT);    
@@ -89,8 +95,8 @@ void finish_semaphores(void) {
 void read_module_config(t_config *MODULE_CONFIG)
 {
     CONNECTION_MEMORY = (t_Connection){.client_type = CPU_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    SERVER_CPU_DISPATCH = (t_Single_Client_Server){.server = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")}};
-    SERVER_CPU_INTERRUPT = (t_Single_Client_Server){.server = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")}};
+    SERVER_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH"), .clients = list_create()};
+    SERVER_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT"), .clients = list_create()};
     CANTIDAD_ENTRADAS_TLB = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
     ALGORITMO_TLB = config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB");
 }
@@ -118,7 +124,7 @@ void instruction_cycle(void)
         SYSCALL_INSTRUCTION = payload_create();
 
         pthread_mutex_lock(&MUTEX_PCB);
-            receive_process_dispatch(&PCB, SERVER_CPU_DISPATCH.client.fd_client);
+            receive_process_dispatch(&PCB, ((t_Client *) list_get(SERVER_CPU_DISPATCH.clients, 0))->fd_client);
         pthread_mutex_unlock(&MUTEX_PCB);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
@@ -210,7 +216,7 @@ void instruction_cycle(void)
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
         pthread_mutex_lock(&MUTEX_PCB);
-            send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, SERVER_CPU_DISPATCH.client.fd_client);
+            send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.clients, 0))->fd_client);
         pthread_mutex_unlock(&MUTEX_PCB);
 
         payload_destroy(SYSCALL_INSTRUCTION);
@@ -229,7 +235,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 
     while(1) {
 
-        receive_kernel_interrupt(&kernel_interrupt, &pid, SERVER_CPU_INTERRUPT.client.fd_client);
+        receive_kernel_interrupt(&kernel_interrupt, &pid, ((t_Client *) list_get(SERVER_CPU_INTERRUPT.clients, 0))->fd_client);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
             if(!EXECUTING) {
@@ -256,8 +262,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
     return NULL;
 }
 
-t_list *mmu(t_Logical_Address logical_address, t_PID pid, size_t bytes)
-{
+t_list *mmu(t_Logical_Address logical_address, t_PID pid, size_t bytes) {
     t_Page_Number nro_page = (t_Page_Number) floor(logical_address / PAGE_SIZE);
     t_Offset offset = (t_Offset) (logical_address - nro_page * PAGE_SIZE);
     t_Frame_Number nro_frame_required = 0;
@@ -266,29 +271,14 @@ t_list *mmu(t_Logical_Address logical_address, t_PID pid, size_t bytes)
     t_list *list_pages = list_create();
     t_Page_Quantity required_pages = seek_quantity_pages_required(logical_address, bytes);
 
-    for (size_t i = 0; i < required_pages; i++)
-    {
+    for (size_t i = 0; i < required_pages; i++) {
         nro_page += i;
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
         pthread_mutex_lock(&MUTEX_TLB);
-            int frame_tlb = check_tlb(pid, nro_page);
-        pthread_mutex_unlock(&MUTEX_TLB);
+        if(check_tlb(pid, nro_page, &nro_frame_required)) { // NO HAY HIT
+            pthread_mutex_unlock(&MUTEX_TLB);
 
-        if (frame_tlb != -1) //HIT
-        {
-            log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
-            nro_frame_required = frame_tlb;
-            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, nro_page, nro_frame_required);
-
-            dir_fisica = nro_frame_required * PAGE_SIZE + offset;
-            if(offset != 0)
-                offset = 0; //El offset solo es importante en la 1ra pagina buscada
-
-            list_add(list_pages, &dir_fisica);    
-        }
-        else //NO HAY HIT
-        {
             log_debug(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i ", pid, nro_page);
             request_frame_memory(pid, nro_page);
 
@@ -317,6 +307,18 @@ t_list *mmu(t_Logical_Address logical_address, t_PID pid, size_t bytes)
             dir_fisica = nro_frame_required * PAGE_SIZE + offset;
             if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
             list_add(list_pages, &dir_fisica);
+
+        } else { // HAY HIT
+            pthread_mutex_unlock(&MUTEX_TLB);
+
+            log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
+            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, nro_page, nro_frame_required);
+
+            dir_fisica = nro_frame_required * PAGE_SIZE + offset;
+            if(offset != 0)
+                offset = 0; //El offset solo es importante en la 1ra pagina buscada
+
+            list_add(list_pages, &dir_fisica);    
         }
     }
     

@@ -22,12 +22,12 @@
 #include "memoria.h"
 
 extern t_Server COORDINATOR_MEMORY;
-extern int FD_CLIENT_KERNEL;
-extern int FD_CLIENT_CPU;
+extern t_Client *CLIENT_KERNEL;
+extern t_Client *CLIENT_CPU;
 
 void initialize_sockets(void);
 void finish_sockets(void);
 void *memory_start_server(void *server_parameter);
-void *memory_client_handler(void *fd_new_client_parameter);
+void *memory_client_handler(void *new_client_parameter);
 
 #endif /* MEMORIA_SOCKET_H */

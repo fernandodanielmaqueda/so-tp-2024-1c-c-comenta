@@ -36,6 +36,8 @@ int module(int argc, char *argv[]) {
 }
 
 void initialize_mutexes(void) {
+	pthread_mutex_init(&COORDINATOR_IO.mutex_clients, NULL);
+
 	pthread_mutex_init(&MUTEX_PID_COUNTER, NULL);
 	pthread_mutex_init(&MUTEX_PCB_ARRAY, NULL);
 	pthread_mutex_init(&MUTEX_LIST_RELEASED_PIDS, NULL);
@@ -60,6 +62,8 @@ void initialize_mutexes(void) {
 }
 
 void finish_mutexes(void) {
+	pthread_mutex_destroy(&COORDINATOR_IO.mutex_clients);
+
 	pthread_mutex_destroy(&MUTEX_PID_COUNTER);
 	pthread_mutex_destroy(&MUTEX_PCB_ARRAY);
 	pthread_mutex_destroy(&MUTEX_LIST_RELEASED_PIDS);
@@ -118,7 +122,7 @@ void signal_list_process_states(void) {
 }
 
 void read_module_config(t_config *module_config) {
-	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_PORT_TYPE, .clients_type = IO_PORT_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA")};
+	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_PORT_TYPE, .clients_type = IO_PORT_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA"), .clients = list_create()};
 	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
 	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = CPU_DISPATCH_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH")};
 	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = CPU_INTERRUPT_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_INTERRUPT")};
