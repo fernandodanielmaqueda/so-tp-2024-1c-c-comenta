@@ -54,5 +54,6 @@ int io_fs_truncate_cpu_operation(int argc, char **argv);
 int io_fs_write_cpu_operation(int argc, char **argv);
 int io_fs_read_cpu_operation(int argc, char **argv);
 int exit_cpu_operation(int argc, char **argv);
+int str_to_uint32(char *string, uint32_t *destination);
 
 #endif // CPU_OPCODES_H

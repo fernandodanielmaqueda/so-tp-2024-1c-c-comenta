@@ -13,7 +13,7 @@ const char *PORT_NAMES[] = {
   [TO_BE_IDENTIFIED_PORT_TYPE] = "A identificar"
 };
 
-void port_type_serialize(t_Payload *payload, e_PortType source) {
+void port_type_serialize(t_Payload *payload, e_Port_Type source) {
   if(payload == NULL)
     return;
 
@@ -25,21 +25,21 @@ void port_type_serialize(t_Payload *payload, e_PortType source) {
   port_type_log(source);
 }
 
-void port_type_deserialize(t_Payload *payload, e_PortType *destination) {
+void port_type_deserialize(t_Payload *payload, e_Port_Type *destination) {
   if(payload == NULL || destination == NULL)
     return;
 
   t_EnumValue aux;
   
   payload_dequeue(payload, &aux, sizeof(t_EnumValue));
-    *destination = (e_PortType) aux;
+    *destination = (e_Port_Type) aux;
 
   port_type_log(*destination);
 }
 
-void port_type_log(e_PortType port_type) {
+void port_type_log(e_Port_Type port_type) {
   log_info(SERIALIZE_LOGGER,
-    "e_PortType: %d"
+    "e_Port_Type: %d"
     , port_type
   );
 }

@@ -58,9 +58,8 @@ int set_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    char *end;
-    uint32_t value = (uint32_t) strtoul(argv[2], &end, 10);
-    if(!*(argv[2]) || *end) {
+    uint32_t value;
+    if(str_to_uint32(argv[2], &value)) {
         log_error(MODULE_LOGGER, "%s: No es un valor valido", argv[2]);
         return 1;
     }
@@ -88,26 +87,27 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "MOV_IN %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_dir_log; //Registro DL
-    e_CPU_Register register_destination; //registro datos-destino
-    if(decode_register(argv[1], &register_destination)) {
+    e_CPU_Register register_data; //Registro DL
+    e_CPU_Register register_address; //registro datos-destino
+    if (decode_register(argv[1], &register_data)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
-    if (decode_register(argv[2], &register_dir_log)) {
+    if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
 
-    //Busco el valor (DL) del registro y lo asigno a la variable dir_logica_origin
-    get_register_value(&PCB, register_dir_log, &dir_logica_origin);
+    //Busco el valor (DL) del registro y lo asigno a la variable logical_address
+    t_Logical_Address logical_address;
+    get_register_value(&PCB, register_data, &logical_address);
 
-    int bytes = get_register_size(register_destination);
+    size_t bytes = get_register_size(register_address);
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
 
-    t_list* list_dir_fis = mmu(dir_logica_origin, PCB.PID, bytes);
-    attend_write_read(PCB.PID, list_dir_fis, bytes, register_destination, IN);
+    t_list* list_dir_fis = mmu(logical_address, PCB.PID, bytes);
+    attend_write_read(PCB.PID, list_dir_fis, bytes, register_address, IN);
 
     PCB.PC++;
 
@@ -138,15 +138,7 @@ int mov_out_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    dir_logica_origin = atoi(argv[1]);
-    dir_logica_destination = atoi(argv[2]);
-
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", PCB.PID, argv[0], argv[1], argv[2]);
-
-    //dir_fisica_origin = mmu(dir_logica_origin, PCB.PID, PAGE_SIZE, register_origin, register_destination, OUT);
-    //dir_fisica_destination = mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, OUT);
-
-    //dir_fisica_destination = dir_fisica_origin;
 
     PCB.PC++;
 
@@ -166,18 +158,18 @@ int sum_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "SUM %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_origin;
     e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_origin)) {
+    e_CPU_Register register_origin;
+    if (decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
-    if (decode_register(argv[2], &register_destination)) {
+    if(decode_register(argv[2], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
+
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", PCB.PID, argv[0], argv[1], argv[2]);
-    register_destination = register_destination + register_origin;
 
     PCB.PC++;
 
@@ -197,18 +189,18 @@ int sub_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "SUB %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_origin;
     e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_origin)) {
+    e_CPU_Register register_origin;
+    if (decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
-    if (decode_register(argv[2], &register_destination)) {
+    if(decode_register(argv[2], &register_origin)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
+
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", PCB.PID, argv[0], argv[1], argv[2]);
-    register_destination = register_destination - register_origin;
 
     PCB.PC++;
 
@@ -228,17 +220,13 @@ int jnz_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "JNZ %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_destination)) {
+    e_CPU_Register register_name;
+    if(decode_register(argv[1], &register_name)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
-    //value = atoi(argv[2]);
+
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB.PID, argv[0], argv[1], argv[2]);
-    if (register_destination != 0)
-    {
-        //PCB->PC = value;
-    }
 
     PCB.PC++;
 
@@ -304,22 +292,6 @@ int copy_string_cpu_operation(int argc, char **argv)
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB.PID, argv[0], argv[1]);
 
     // COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI.
-    e_CPU_Register register_origin;
-    e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_origin)) {
-        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return 1;
-    }
-    if (decode_register(argv[2], &register_destination)) {
-        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
-        return 1;
-    }
-
-    dir_logica_origin = atoi(argv[1]);
-    dir_logica_destination = atoi(argv[2]);
-
-    //dir_fisica_origin = mmu(dir_logica_origin, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
-    //dir_fisica_destination = mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, IN);
 
     PCB.PC++;
 
@@ -399,35 +371,26 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
-    e_CPU_Register register_origin;
-    e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_origin)) {
-        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return 1;
-    }
-    if (decode_register(argv[2], &register_destination)) {
+    e_CPU_Register register_address;
+    e_CPU_Register register_size;
+    if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
-
-    dir_logica_origin = atoi(argv[1]);
-    dir_logica_destination = atoi(argv[2]);
+    if (decode_register(argv[3], &register_size)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[3]);
+        return 1;
+    }
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro tamanio: %s", PCB.PID, argv[0], argv[1], argv[2]);
-
-    
-   //int direct_fisica =  mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, NULL);
-
-    //ENVIO PAQUETE A KERNEL
-    //send_2int(direct_fisica, dir_logica_destination , SERVER_CPU_DISPATCH.client.fd_client, STDIN_REQUEST);
 
     PCB.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_STDIN_READ_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
-    payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
-    payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
+    //payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
+    //payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
 
     return 0;
 }
@@ -443,32 +406,24 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
-    e_CPU_Register register_origin;
-    e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_origin)) {
-        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
-        return 1;
-    }
-    if (decode_register(argv[2], &register_destination)) {
+    e_CPU_Register register_address;
+    e_CPU_Register register_size;
+    if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
-
-    dir_logica_origin = atoi(argv[1]);
-    dir_logica_destination = atoi(argv[2]);
-
-    //int direct_fisica = mmu(dir_logica_destination, PCB.PID, PAGE_SIZE, register_origin, register_destination, NULL);
-    
-    //ENVIO PAQUETE A KERNEL
-    //send_2int(direct_fisica, dir_logica_destination , SERVER_CPU_DISPATCH.client.fd_client, STDOUT_REQUEST);
+    if (decode_register(argv[3], &register_size)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[3]);
+        return 1;
+    }
 
     PCB.PC++;
     
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_STDOUT_WRITE_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
-    payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
-    payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
+    //payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
+    //payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
 
     return 0;
 }
@@ -612,5 +567,17 @@ int exit_cpu_operation(int argc, char **argv)
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, EXIT_CPU_OPCODE);
 
+    return 0;
+}
+
+int str_to_uint32(char *string, uint32_t *destination)
+{
+    char *end;
+
+    *destination = (uint32_t) strtoul(string, &end, 10);
+
+    if(!*string || *end)
+        return 1;
+        
     return 0;
 }

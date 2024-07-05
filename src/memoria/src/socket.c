@@ -65,7 +65,7 @@ void *memory_start_server(void *server_parameter) {
 void *memory_client_handler(void *fd_new_client_parameter) {
 	int *fd_new_client = (int *) fd_new_client_parameter;
 
-    e_PortType port_type;
+    e_Port_Type port_type;
 
     receive_port_type(&port_type, *fd_new_client);
 

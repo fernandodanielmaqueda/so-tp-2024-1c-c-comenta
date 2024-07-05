@@ -16,15 +16,8 @@ char *ALGORITMO_TLB;
 
 t_MemorySize PAGE_SIZE;
 long timestamp;
-int direccion_logica; // momentaneo hasta ver de donde la saco
+t_Logical_Address direccion_logica; // momentaneo hasta ver de donde la saco
 t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
-
-// Variables para trabajar con las instrucciones
-//t_Page nro_page = 0;
-uint32_t value = 0;
-
-// char *recurso = NULL;
-// no sirveaca me aprece--> t_PCB new_pcb;
 
 t_PCB PCB;
 pthread_mutex_t MUTEX_PCB;
@@ -38,16 +31,7 @@ pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
 int SYSCALL_CALLED;
 t_Payload *SYSCALL_INSTRUCTION;
 
-int dir_logica_origin = 0;
-int dir_logica_destination = 0;
-
-int dir_fisica_origin = 0;
-int dir_fisica_destination = 0;
-
 int tlb_replace_index_fifo = 0;
-
-uint32_t unit_work = 0;
-char *interfaz = NULL;
 
 pthread_mutex_t MUTEX_TLB;
 
@@ -150,8 +134,8 @@ void instruction_cycle(void)
             cpu_fetch_next_instruction(&IR);
             if(IR == NULL) {
                 log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
-                exit_status = 1;
-                goto check_interrupts;
+                eviction_reason = ERROR_EVICTION_REASON;
+                break;
             }
 
             // Decode
@@ -170,15 +154,16 @@ void instruction_cycle(void)
                 }
                 arguments_remove(arguments);
                 free(IR);
-                goto check_interrupts;
+                eviction_reason = ERROR_EVICTION_REASON;
+                break;
             }
 
             if(decode_instruction(arguments->argv[0], &cpu_opcode)) {
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
-                exit_status = 1;
                 arguments_remove(arguments);
                 free(IR);
-                goto check_interrupts;
+                eviction_reason = ERROR_EVICTION_REASON;
+                break;
             }
 
             // Execute
@@ -187,38 +172,37 @@ void instruction_cycle(void)
             arguments_remove(arguments);
             free(IR);
 
-            check_interrupts:
-                if (exit_status) {
-                    log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
-                    eviction_reason = ERROR_EVICTION_REASON;
+            if (exit_status) {
+                log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
+                eviction_reason = ERROR_EVICTION_REASON;
+                break;
+            }
+
+            if(cpu_opcode == EXIT_CPU_OPCODE) {
+                eviction_reason = EXIT_EVICTION_REASON;
+                break;
+            }
+
+            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+                if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
+                    pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+                    eviction_reason = INTERRUPTION_EVICTION_REASON;
                     break;
                 }
+            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
 
-                if(cpu_opcode == EXIT_CPU_OPCODE) {
-                    eviction_reason = EXIT_EVICTION_REASON;
+            if (SYSCALL_CALLED) {
+                eviction_reason = SYSCALL_EVICTION_REASON;
+                break;
+            }
+
+            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+                if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
+                    pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+                    eviction_reason = INTERRUPTION_EVICTION_REASON;
                     break;
                 }
-
-                pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
-                    if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
-                        pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                        eviction_reason = INTERRUPTION_EVICTION_REASON;
-                        break;
-                    }
-                pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-
-                if (SYSCALL_CALLED) {
-                    eviction_reason = SYSCALL_EVICTION_REASON;
-                    break;
-                }
-
-                pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
-                    if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
-                        pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                        eviction_reason = INTERRUPTION_EVICTION_REASON;
-                        break;
-                    }
-                pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
+            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
         }
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
@@ -255,32 +239,32 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
         pthread_mutex_lock(&MUTEX_PCB);
-        if(pid == PCB.PID) {
-            pthread_mutex_unlock(&MUTEX_PCB);
+            if(pid == PCB.PID) {
+                pthread_mutex_unlock(&MUTEX_PCB);
+                continue;
+            }
+        pthread_mutex_unlock(&MUTEX_PCB);
 
-            pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
-                // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
-                if (KERNEL_INTERRUPT < kernel_interrupt)
-                    KERNEL_INTERRUPT = kernel_interrupt;
-            pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-        } else {
-            pthread_mutex_unlock(&MUTEX_PCB);
-        }
+        pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
+            // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
+            if (KERNEL_INTERRUPT < kernel_interrupt)
+                KERNEL_INTERRUPT = kernel_interrupt;
+        pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
 
     }
 
     return NULL;
 }
 
-t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
+t_list *mmu(t_Logical_Address logical_address, t_PID pid, size_t bytes)
 {
-    t_Page nro_page = (t_Page) floor(dir_logica / PAGE_SIZE);
-    int offset = dir_logica - nro_page * PAGE_SIZE;
-    int nro_frame_required = 0;
-    int dir_fisica = 0;
+    t_Page_Number nro_page = (t_Page_Number) floor(logical_address / PAGE_SIZE);
+    t_Offset offset = (t_Offset) (logical_address - nro_page * PAGE_SIZE);
+    t_Frame_Number nro_frame_required = 0;
+    t_Physical_Address dir_fisica = 0;
 
-    t_list* list_pages;
-    int required_pages = seek_quantity_pages_required(dir_logica, bytes);
+    t_list *list_pages = list_create();
+    t_Page_Quantity required_pages = seek_quantity_pages_required(logical_address, bytes);
 
     for (size_t i = 0; i < required_pages; i++)
     {
@@ -288,7 +272,7 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
         pthread_mutex_lock(&MUTEX_TLB);
-        int frame_tlb = check_tlb(pid, nro_page);
+            int frame_tlb = check_tlb(pid, nro_page);
         pthread_mutex_unlock(&MUTEX_TLB);
 
         if (frame_tlb != -1) //HIT
@@ -298,9 +282,10 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
             log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, nro_page, nro_frame_required);
 
             dir_fisica = nro_frame_required * PAGE_SIZE + offset;
-            if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
+            if(offset != 0)
+                offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
-            list_add(list_pages, dir_fisica);    
+            list_add(list_pages, &dir_fisica);    
         }
         else //NO HAY HIT
         {
@@ -310,7 +295,7 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
             t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
             t_PID pidBuscado;
             payload_dequeue(package->payload, &pidBuscado, sizeof(t_PID) );
-            payload_dequeue(package->payload, &nro_frame_required, sizeof(t_Frame) );
+            payload_dequeue(package->payload, &nro_frame_required, sizeof(t_Frame_Number) );
             package_destroy(package);
             
             log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, nro_page, nro_frame_required);
@@ -331,47 +316,43 @@ t_list* mmu(uint32_t dir_logica, t_PID pid, int bytes)
 
             dir_fisica = nro_frame_required * PAGE_SIZE + offset;
             if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
-            list_add(list_pages, dir_fisica);
+            list_add(list_pages, &dir_fisica);
         }
     }
     
     return list_pages;
 }
 
-int check_tlb(t_PID process_id, t_Page page_number)
-{
+int check_tlb(t_PID process_id, t_Page_Number page_number, t_Frame_Number *destination) {
 
     t_TLB *tlb_entry = NULL;
-    t_Frame frame_number = -1;
-    for (int i = 0; i < list_size(tlb); i++)
-    {
+    for (int i = 0; i < list_size(tlb); i++) {
 
-        tlb_entry = list_get(tlb, i);
-        if (tlb_entry->PID == process_id && tlb_entry->page_number == page_number)
-        {
-            frame_number = tlb_entry->frame;
+        tlb_entry = (t_TLB *) list_get(tlb, i);
+        if (tlb_entry->PID == process_id && tlb_entry->page_number == page_number) {
+            *destination = tlb_entry->frame;
 
-            if (strcmp(ALGORITMO_TLB, "LRU") == 0)
-            {
+            if (strcmp(ALGORITMO_TLB, "LRU") == 0) {
                 tlb_entry->time = timestamp;
                 timestamp++;
             }
+
+            return 0;
         }
     }
-    return frame_number;
+
+    return 1;
 }
 
-void tlb_access(t_PID pid, t_Page nro_page, int frame_number_required, int direc, int register_origin, int register_destination, int in_out)
-{
+void tlb_access(t_PID pid, t_Page_Number nro_page, t_Frame_Number frame_number_required, t_Physical_Address direc, e_In_Out in_out) {
 
     t_Package* package;
 
-    if (in_out == IN)
-    {
+    if (in_out == IN) {
 
         package = package_create_with_header(READ_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        payload_enqueue(package->payload, &nro_page, sizeof(t_Page) );
+        payload_enqueue(package->payload, &nro_page, sizeof(t_Page_Number) );
         payload_enqueue(package->payload, &nro_page, sizeof(t_MemorySize) );
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
@@ -392,7 +373,7 @@ void tlb_access(t_PID pid, t_Page nro_page, int frame_number_required, int direc
 
         package = package_create_with_header(WRITE_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        payload_enqueue(package->payload, &nro_page, sizeof(t_Page) );
+        payload_enqueue(package->payload, &nro_page, sizeof(t_Page_Number) );
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
 
@@ -406,12 +387,9 @@ void tlb_access(t_PID pid, t_Page nro_page, int frame_number_required, int direc
             log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
         }
     }
-
 }
 
-
-void add_to_tlb(t_PID pid , t_Page page, t_Frame frame)
-{
+void add_to_tlb(t_PID pid , t_Page_Number page, t_Frame_Number frame) {
     t_TLB *tlb_entry = malloc(sizeof(t_TLB));
     tlb_entry->PID = pid;
     tlb_entry->page_number = page;
@@ -419,10 +397,9 @@ void add_to_tlb(t_PID pid , t_Page page, t_Frame frame)
     tlb_entry->time = timestamp;
     timestamp++;
     list_add(tlb, tlb_entry);
-
 }
 
-void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number){
+void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number) {
     t_TLB *tlb_entry;
     int size = list_size(tlb);
 
@@ -439,14 +416,13 @@ void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number){
     }
 }
 
-void delete_tlb_entry_by_pid_deleted(t_PID pid){
+void delete_tlb_entry_by_pid_deleted(t_PID pid) {
     t_TLB *tlb_entry;
     int size = list_size(tlb);
 
-    if(size != 0){
+    if(size != 0) {
 
-        for (size_t i = (size -1); i != -1; i--)
-        {
+        for (size_t i = (size -1); i != -1; i--) {
             tlb_entry = list_get(tlb, i);
             if(tlb_entry->PID == pid) {
                 list_remove(tlb, i);
@@ -456,8 +432,7 @@ void delete_tlb_entry_by_pid_deleted(t_PID pid){
     }
 }
 
-void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
-{
+void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
     t_TLB *tlb_aux;
     
     if (strcmp(ALGORITMO_TLB, "LRU") == 0)
@@ -496,24 +471,20 @@ void replace_tlb_input(t_PID pid, t_Page page, t_Page frame)
     
 }
 
-void request_frame_memory(t_PID pid, t_Page page)
-{
+void request_frame_memory(t_PID pid, t_Page_Number page) {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
-    payload_enqueue(package->payload, &page, sizeof(t_Page));
+    payload_enqueue(package->payload, &page, sizeof(t_Page_Number));
     payload_enqueue(package->payload, &pid, sizeof(t_PID));
     package_send(package, CONNECTION_MEMORY.fd_connection);
 }
 
-
-
-void cpu_fetch_next_instruction(char **line)
-{
+void cpu_fetch_next_instruction(char **line) {
     send_instruction_request(PCB.PID, PCB.PC, CONNECTION_MEMORY.fd_connection);
     receive_text_with_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
 }
 
 
-void ask_memory_page_size(){
+void ask_memory_page_size(void) {
     send_header(PAGE_SIZE_REQUEST, CONNECTION_MEMORY.fd_connection);
 
     t_Package* package = package_receive(CONNECTION_MEMORY.fd_connection);
@@ -521,21 +492,18 @@ void ask_memory_page_size(){
     package_destroy(package);
 }
 
-void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register register_destination, int in_out)
-{
-    int size = list_size(lista_df);
+void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU_Register register_destination, e_In_Out in_out) {
+    int size = list_size(list_physical_addresses);
     t_Package* package;
 
-    if (in_out == IN)
-    {
+    if (in_out == IN) {
 
         package = package_create_with_header(READ_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
         payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
         payload_enqueue(package->payload, &size, sizeof(uint32_t) );
-        for (size_t i = 0; i < size; i++)
-        {
-            int value_aux = list_get(lista_df, i);
+        for (size_t i = 0; i < size; i++) {
+            int value_aux = *((int *) list_get(list_physical_addresses, i));
             payload_enqueue(package->payload, &value_aux, sizeof(uint32_t) );
         }
         
@@ -551,7 +519,7 @@ void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register r
         {
             log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
 
-            char* contenido;
+            char *contenido;
             text_deserialize(package->payload, &contenido);
 
             t_CPU_Register_Accessor register_accessor = get_register_accessor(&PCB, register_destination);
@@ -561,17 +529,14 @@ void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register r
         }
             package_destroy(package);
         
-    }                
-      else //out
-    {
+    } else { //out
 
         package = package_create_with_header(WRITE_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
         payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
         payload_enqueue(package->payload, &size, sizeof(uint32_t) );
-        for (size_t i = 0; i < size; i++)
-        {
-            int value_aux = list_get(lista_df, i);
+        for (size_t i = 0; i < size; i++) {
+            int value_aux = (*(int *) list_get(list_physical_addresses, i));
             payload_enqueue(package->payload, &value_aux, sizeof(uint32_t) );
         }
         
@@ -579,25 +544,22 @@ void attend_write_read(t_PID pid, t_list*  lista_df, int bytes, e_CPU_Register r
         package_destroy(package);
 
         package = package_receive(CONNECTION_MEMORY.fd_connection);
-        if (package == NULL)
-        {
+        if (package == NULL) {
             log_error(MODULE_LOGGER, "Error al recibir el paquete");
             exit(EXIT_FAILURE);
-        }  else
-        {
+        } else {
             log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
             //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
         }
         package_destroy(package);
     }
-
 }
 
-int seek_quantity_pages_required(int dir_log, int bytes){
-    int quantity_pages = 0;
+t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t bytes){
+    t_Page_Quantity quantity_pages = 0;
 
-    t_Page nro_page = (t_Page) floor(dir_log / PAGE_SIZE);
-    int offset = dir_log - nro_page * PAGE_SIZE;
+    t_Page_Number nro_page = (t_Page_Number) floor(dir_log / PAGE_SIZE);
+    t_Offset offset = (t_Offset) (dir_log - nro_page * PAGE_SIZE);;
 
     if (offset != 0)
     {
@@ -605,7 +567,7 @@ int seek_quantity_pages_required(int dir_log, int bytes){
         quantity_pages++;
     }
 
-    quantity_pages += (int) floor(bytes / PAGE_SIZE);
+    quantity_pages += (t_Page_Quantity) floor(bytes / PAGE_SIZE);
     
     return quantity_pages;
 }

@@ -17,21 +17,12 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
-typedef enum e_Exit_Reason {
-    SUCCESS_EXIT_REASON,
-    INVALID_RESOURCE_EXIT_REASON,
-    INVALID_INTERFACE_EXIT_REASON,
-    OUT_OF_MEMORY_EXIT_REASON,
-    INTERRUPTED_BY_USER_EXIT_REASON
-} e_Exit_Reason;
+typedef uint16_t t_PID;
+#define PID_MAX UINT16_MAX
 
-typedef enum e_Process_State {
-    NEW_STATE,
-    READY_STATE,
-    EXEC_STATE,
-    BLOCKED_STATE,
-	EXIT_STATE
-} e_Process_State;
+typedef uint32_t t_PC;
+
+typedef uint64_t t_Quantum;
 
 typedef struct t_CPU_Registers {
     uint8_t AX;
@@ -50,12 +41,21 @@ typedef struct t_CPU_Registers {
     uint32_t DI;
 } t_CPU_Registers;
 
-typedef uint16_t t_PID;
-#define PID_MAX UINT16_MAX
+typedef enum e_Process_State {
+    NEW_STATE,
+    READY_STATE,
+    EXEC_STATE,
+    BLOCKED_STATE,
+	EXIT_STATE
+} e_Process_State;
 
-typedef uint32_t t_PC;
-typedef uint32_t t_MemorySize;
-typedef uint64_t t_Quantum;
+typedef enum e_Exit_Reason {
+    SUCCESS_EXIT_REASON,
+    INVALID_RESOURCE_EXIT_REASON,
+    INVALID_INTERFACE_EXIT_REASON,
+    OUT_OF_MEMORY_EXIT_REASON,
+    INTERRUPTED_BY_USER_EXIT_REASON
+} e_Exit_Reason;
 
 typedef struct t_PCB {
     t_PID PID;

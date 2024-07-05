@@ -415,11 +415,11 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
 }
 
 void read_memory(t_Payload* payload, int socket) {
-    int dir_fisica = 0;
+    t_Physical_Address dir_fisica = 0;
     t_PID pidBuscado = 0;
     t_MemorySize bytes = 0;
     int pages = 0;
-    t_list* lista_dfs;
+    t_list *list_physical_addressess = list_create();
 
     payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
     payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
@@ -427,7 +427,7 @@ void read_memory(t_Payload* payload, int socket) {
         for (size_t i = 0; i < pages; i++)
         {
             payload_dequeue(payload, &dir_fisica, sizeof(uint32_t) );
-            list_add(lista_dfs, dir_fisica);
+            list_add(list_physical_addressess, &dir_fisica);
         }
 
     char* lectura;
@@ -435,7 +435,7 @@ void read_memory(t_Payload* payload, int socket) {
     //int temp_dir_fis = -1;
     int current_frame;
 
-    dir_fisica = (int) list_get(lista_dfs,0);
+    dir_fisica = *((t_Physical_Address *) list_get(list_physical_addressess, 0));
     void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
     
     //t_MemorySize pages = bytes/TAM_PAGINA;
@@ -460,7 +460,7 @@ void read_memory(t_Payload* payload, int socket) {
         int bytes_inicial = TAM_PAGINA - (dir_fisica - (current_frame * TAM_PAGINA));
         for (t_MemorySize i = 1; i > pages; i++)
         {
-            dir_fisica = (int) list_get(lista_dfs,(i-1));
+            dir_fisica = *((t_Physical_Address *) list_get(list_physical_addressess, i - 1));
             current_frame = dir_fisica / TAM_PAGINA;
             //Posicion de la proxima escritura
             posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);

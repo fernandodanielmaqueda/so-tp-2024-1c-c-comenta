@@ -23,22 +23,22 @@
 
 typedef struct t_Connection {
     int fd_connection;
-    enum e_PortType client_type;
-    enum e_PortType server_type;
+    enum e_Port_Type client_type;
+    enum e_Port_Type server_type;
     char *ip;
     char *port;
 } t_Connection;
 
 typedef struct t_Client {
     int fd_client;
-    enum e_PortType client_type;
+    enum e_Port_Type client_type;
     pthread_t thread_client_handler;
 } t_Client;
 
 typedef struct t_Server {
     int fd_listen;
-    enum e_PortType server_type;
-    enum e_PortType clients_type;
+    enum e_Port_Type server_type;
+    enum e_Port_Type clients_type;
     char *port;
     pthread_t thread_server;
     t_list *clients;

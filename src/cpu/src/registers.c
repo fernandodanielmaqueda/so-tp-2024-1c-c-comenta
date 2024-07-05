@@ -123,16 +123,13 @@ void get_register_value(t_PCB *pcb, e_CPU_Register cpu_register, uint32_t* value
 }
 
 
-int get_register_size(e_CPU_Register registro){
-    int bytes = 0;
+size_t get_register_size(e_CPU_Register registro){
     switch (CPU_REGISTERS[registro].dataType) {
         case UINT8_DATATYPE:
-            bytes = sizeof(uint8_t);
-            break;
+            return sizeof(uint8_t);
         case UINT32_DATATYPE:
-            bytes = sizeof(uint32_t);
-            break;
+            return sizeof(uint32_t);
     }
 
-    return bytes;
+    return 0;
 }

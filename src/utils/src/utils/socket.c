@@ -6,7 +6,7 @@
 void *client_thread_connect_to_server(void *connection_parameter) {
   t_Connection *connection = (t_Connection*) connection_parameter;
 
-  e_PortType port_type;
+  e_Port_Type port_type;
 
   while(1) {
     while(1) {

@@ -16,7 +16,7 @@
 #include "utils/module.h"
 #include "commons/log.h"
 
-typedef enum e_PortType {
+typedef enum e_Port_Type {
     KERNEL_PORT_TYPE,
     CPU_PORT_TYPE,
     CPU_DISPATCH_PORT_TYPE,
@@ -24,30 +24,30 @@ typedef enum e_PortType {
     MEMORY_PORT_TYPE,
     IO_PORT_TYPE,
     TO_BE_IDENTIFIED_PORT_TYPE
-} e_PortType;
+} e_Port_Type;
 
 extern const char *PORT_NAMES[];
 
 /**
- * @brief Serializacion de un e_PortType para ser enviado.
+ * @brief Serializacion de un e_Port_Type para ser enviado.
  * @param payload Payload a encolar.
- * @param source e_PortType fuente a serializar
+ * @param source e_Port_Type fuente a serializar
  */
-void port_type_serialize(t_Payload *payload, e_PortType port_type);
+void port_type_serialize(t_Payload *payload, e_Port_Type port_type);
 
 
 /**
- * @brief Deserializacion de un e_PortType para ser leido.
+ * @brief Deserializacion de un e_Port_Type para ser leido.
  * @param payload Payload a desencolar.
- * @param destination Destino del e_PortType deserializado
+ * @param destination Destino del e_Port_Type deserializado
  */
-void port_type_deserialize(t_Payload *payload, e_PortType *port_type);
+void port_type_deserialize(t_Payload *payload, e_Port_Type *port_type);
 
 
 /**
- * @brief Loguea un e_PortType.
- * @param port_type e_PortType a loguear.
+ * @brief Loguea un e_Port_Type.
+ * @param port_type e_Port_Type a loguear.
  */
-void port_type_log(e_PortType port_type);
+void port_type_log(e_Port_Type port_type);
 
 #endif // UTILS_SERIALIZE_PORT_TYPE_H

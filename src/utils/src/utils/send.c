@@ -5,14 +5,14 @@
 
 // Handshake
 
-void send_port_type(e_PortType port_type, int fd_socket) {
+void send_port_type(e_Port_Type port_type, int fd_socket) {
   t_Package *package = package_create_with_header(PORT_TYPE_HEADER);
   port_type_serialize(package->payload, port_type);
   package_send(package, fd_socket);
   package_destroy(package);
 }
 
-void receive_port_type(e_PortType *port_type, int fd_socket) {
+void receive_port_type(e_Port_Type *port_type, int fd_socket) {
   t_Package *package = package_receive(fd_socket);
   if(package->header == PORT_TYPE_HEADER)
     port_type_deserialize(package->payload, port_type);

@@ -47,7 +47,7 @@ void *cpu_start_server_for_kernel(void *single_client_server_parameter) {
     t_Server *server = &(single_client_server->server);
     t_Client *client = &(single_client_server->client);
 
-    e_PortType port_type;
+    e_Port_Type port_type;
 
     server_start(server);
 
