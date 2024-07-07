@@ -89,6 +89,7 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     e_CPU_Register register_data; //Registro DL
     e_CPU_Register register_address; //registro datos-destino
+
     if (decode_register(argv[1], &register_data)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
@@ -107,7 +108,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
 
     t_list* list_dir_fis = mmu(logical_address, PCB.PID, bytes);
-    attend_write_read(PCB.PID, list_dir_fis, bytes, register_address, IN);
+    attend_read(PCB.PID, list_dir_fis, bytes, register_address);
 
     PCB.PC++;
 

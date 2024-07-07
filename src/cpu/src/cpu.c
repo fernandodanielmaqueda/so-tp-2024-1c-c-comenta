@@ -494,11 +494,41 @@ void ask_memory_page_size(void) {
     package_destroy(package);
 }
 
-void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU_Register register_destination, e_In_Out in_out) {
+void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, u_int32_t contenido) {
+    int size = list_size(list_physical_addresses);
+
+    t_Package* package;
+
+        package = package_create_with_header(WRITE_REQUEST);
+        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
+        payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
+        payload_enqueue(package->payload, &contenido, (size_t) bytes );
+        payload_enqueue(package->payload, &size, sizeof(uint32_t) );
+        for (size_t i = 0; i < size; i++) {
+            int value_aux = (*(int *) list_get(list_physical_addresses, i));
+            payload_enqueue(package->payload, &value_aux, sizeof(uint32_t) );
+        }
+        
+        package_send(package, CONNECTION_MEMORY.fd_connection);
+        package_destroy(package);
+
+        package = package_receive(CONNECTION_MEMORY.fd_connection);
+        if (package == NULL) {
+            log_error(MODULE_LOGGER, "Error al recibir el paquete");
+            exit(EXIT_FAILURE);
+        } else {
+            log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
+            //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
+        }
+
+        package_destroy(package);
+    
+}
+
+void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU_Register register_destination) {
     int size = list_size(list_physical_addresses);
     t_Package* package;
 
-    if (in_out == IN) {
 
         package = package_create_with_header(READ_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
@@ -527,34 +557,10 @@ void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes,
             t_CPU_Register_Accessor register_accessor = get_register_accessor(&PCB, register_destination);
             set_register_value(register_accessor, (uint32_t) atoi(contenido));
 
-            //log_info(MODULE_LOGGER, "PID: %i -Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
+            //log_info(MODULE_LOGGER, "PID: %i - Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
         }
             package_destroy(package);
         
-    } else { //out
-
-        package = package_create_with_header(WRITE_REQUEST);
-        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
-        payload_enqueue(package->payload, &size, sizeof(uint32_t) );
-        for (size_t i = 0; i < size; i++) {
-            int value_aux = (*(int *) list_get(list_physical_addresses, i));
-            payload_enqueue(package->payload, &value_aux, sizeof(uint32_t) );
-        }
-        
-        package_send(package, CONNECTION_MEMORY.fd_connection);
-        package_destroy(package);
-
-        package = package_receive(CONNECTION_MEMORY.fd_connection);
-        if (package == NULL) {
-            log_error(MODULE_LOGGER, "Error al recibir el paquete");
-            exit(EXIT_FAILURE);
-        } else {
-            log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
-            //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
-        }
-        package_destroy(package);
-    }
 }
 
 t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t bytes){
