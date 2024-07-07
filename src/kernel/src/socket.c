@@ -64,12 +64,9 @@ void *kernel_start_server_for_io(void *server_parameter) {
 		log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		new_client->fd_client = fd_new_client;
 		new_client->client_type = server->clients_type;
+		new_client->server = server;
 		pthread_create(&(new_client->thread_client_handler), NULL, kernel_client_handler_for_io, (void *) new_client);
 		pthread_detach(new_client->thread_client_handler);
-
-		pthread_mutex_lock(&(server->mutex_clients));
-			list_add(server->clients, new_client);
-		pthread_mutex_unlock(&(server->mutex_clients));
 	}
 
 	return NULL;
@@ -82,17 +79,19 @@ void *kernel_client_handler_for_io(void *new_client_parameter) {
 
 	receive_port_type(&port_type, new_client->fd_client);
 
-	if(port_type == IO_PORT_TYPE) {
-		log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
-		send_port_type(KERNEL_PORT_TYPE, new_client->fd_client);
-
-		// Lógica de manejo de cliente Entrada/Salida
-	} else {
+	if(port_type != IO_PORT_TYPE) {
 		log_warning(SOCKET_LOGGER, "Error Handshake con [Cliente] No reconocido");
 		send_port_type(TO_BE_IDENTIFIED_PORT_TYPE, new_client->fd_client);
+		close(new_client->fd_client);
+		return NULL;
 	}
 
-	close(new_client->fd_client);
+	log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
+	send_port_type(KERNEL_PORT_TYPE, new_client->fd_client);
 
+	send_header(INTERFACE_NAME_REQUEST_HEADER, new_client->fd_client);
+	receive_text_with_expected_header(INTERFACE_NAME_REQUEST_HEADER, &(new_client->client_name), new_client->fd_client);
+
+	close(new_client->fd_client);
 	return NULL;
 }

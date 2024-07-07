@@ -71,15 +71,17 @@ void package_destroy(t_Package *package);
  */
 void package_send(t_Package *package, int fd_socket);
 
-t_Package *package_receive(int fd_socket);
+int package_receive(t_Package **destination, int fd_socket);
 
 /**
  * @brief Obtiene el codigo de operacion de un paquete
  * @param package Paquete
  * @param fd_socket Paquete donde se creara el payload
  */
-void package_receive_header(t_Package *package, int fd_socket);
+int package_receive_header(t_Package *package, int fd_socket);
 
-void package_receive_payload(t_Package *package, int fd_socket);
+int package_receive_payload(t_Package *package, int fd_socket);
+
+int receive(int fd_socket, void *destination, size_t expected_bytes);
 
 #endif // UTILS_PACKAGE_H

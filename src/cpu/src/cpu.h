@@ -63,7 +63,7 @@ extern char *ALGORITMO_TLB;
 extern t_MemorySize PAGE_SIZE;
 extern long timestamp;
 extern t_Logical_Address direccion_logica; // momentaneo hasta ver de donde la saco
-extern t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
+extern t_list *TLB;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
 
 extern pthread_mutex_t MUTEX_TLB;
 
@@ -83,7 +83,7 @@ void *cpu_dispatch_start_server_for_kernel(void *server_parameter);
 void *cpu_interrupt_start_server_for_kernel(void *server_parameter);
 void instruction_cycle(void);
 void *kernel_cpu_interrupt_handler(void *NULL_parameter);
-t_list* mmu(t_Logical_Address dir_logica, t_PID pid, size_t bytes_contenido);
+t_list* mmu(t_PID pid, t_Logical_Address dir_logica, size_t bytes_contenido);
 int check_tlb(t_PID process_id, t_Page_Number page_number, t_Frame_Number *destination);
 void tlb_access(t_PID pid, t_Page_Number nro_page, t_Frame_Number frame_number_required, t_Physical_Address direc, e_In_Out in_out);
 void request_data_in_memory(t_Frame_Number nro_frame_required, t_PID pid, t_Page_Number nro_page, int direc, int register_origin, int register_destination);

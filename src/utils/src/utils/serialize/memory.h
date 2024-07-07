@@ -25,4 +25,33 @@ typedef uint32_t t_Page_Number;
 typedef t_Page_Number t_Frame_Number;
 typedef uint32_t t_Page_Quantity;
 
+
+void physical_address_serialize_element(t_Payload *payload, void *source);
+
+
+void physical_address_deserialize_element(t_Payload *payload, void *destination);
+
+
+/**
+ * @brief Serializacion de un t_Physical_Address para ser enviado.
+ * @param payload Payload a encolar.
+ * @param source t_Physical_Address fuente a serializar
+ */
+void physical_address_serialize(t_Payload *payload, t_Physical_Address source);
+
+
+/**
+ * @brief Deserializacion de un t_Physical_Address para ser leido.
+ * @param payload Payload a desencolar.
+ * @param destination Destino del t_Physical_Address deserializado
+ */
+void physical_address_deserialize(t_Payload *payload, t_Physical_Address *destination);
+
+
+/**
+ * @brief Loguea un t_Physical_Address.
+ * @param source t_Physical_Address a loguear.
+ */
+void physical_address_log(t_Physical_Address source);
+
 #endif // UTILS_SERIALIZE_MEMORY_H

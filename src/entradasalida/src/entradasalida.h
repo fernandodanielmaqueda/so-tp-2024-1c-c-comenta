@@ -33,15 +33,14 @@ typedef struct t_IO_Type {
     void (*function) (void);
 } t_IO_Type;
 
-extern t_IO_Type IO_TYPES[];
-extern e_IO_Type IO_TYPE;
-
 typedef struct t_IO_Operation {
     char *name;
     int (*function) (t_Payload *);
 } t_IO_Operation;
 
-extern int UNIT_WORK_TIME;
+extern char *INTERFACE_NAME;
+
+extern int WORK_UNIT_TIME;
 
 extern t_Connection CONNECTION_KERNEL;
 extern t_Connection CONNECTION_MEMORY;
@@ -51,18 +50,22 @@ extern int BLOCK_SIZE;
 extern int BLOCK_COUNT;
 extern int COMPRESSION_DELAY;
 
+extern t_IO_Type IO_TYPES[];
+
+extern e_IO_Type IO_TYPE;
+
 extern t_IO_Operation IO_OPERATIONS[];
 
 int module(int, char*[]);
 void read_module_config(t_config *module_config);
 int io_type_find(char *name, e_IO_Type *destination);
-int io_operation_execute(t_Payload *operation);
-void generic_function(void);
 void initialize_sockets(void);
 void finish_sockets(void);
-void stdin_function();
-void stdout_function();
-int receive_from_memory(void* direccionMemoria);
+void generic_interface_function(void);
+void stdin_interface_function(void);
+void stdout_interface_function(void);
+void dialfs_interface_function(void);
+int io_operation_execute(t_Payload *operation);
 int io_gen_sleep_io_operation(t_Payload *instruction);
 int io_stdin_read_io_operation(t_Payload *instruction);
 int io_stdout_write_io_operation(t_Payload *instruction);

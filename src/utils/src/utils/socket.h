@@ -29,12 +29,6 @@ typedef struct t_Connection {
     char *port;
 } t_Connection;
 
-typedef struct t_Client {
-    int fd_client;
-    enum e_Port_Type client_type;
-    pthread_t thread_client_handler;
-} t_Client;
-
 typedef struct t_Server {
     int fd_listen;
     enum e_Port_Type server_type;
@@ -44,6 +38,14 @@ typedef struct t_Server {
     t_list *clients;
     pthread_mutex_t mutex_clients;
 } t_Server;
+
+typedef struct t_Client {
+    int fd_client;
+    enum e_Port_Type client_type;
+    pthread_t thread_client_handler;
+    char *client_name;
+    t_Server *server;
+} t_Client;
 
 void *client_thread_connect_to_server(void *connection_parameter);
 int client_start_try(char* ip, char* port);

@@ -3,13 +3,15 @@
 
 #include "entradasalida.h"
 
+char *INTERFACE_NAME;
+
 char *MODULE_NAME = "entradasalida";
 char *MODULE_LOG_PATHNAME = "entradasalida.log";
 
 t_log *MODULE_LOGGER;
 t_config *MODULE_CONFIG;
 
-int UNIT_WORK_TIME;
+int WORK_UNIT_TIME;
 
 t_Connection CONNECTION_KERNEL;
 t_Connection CONNECTION_MEMORY;
@@ -20,10 +22,10 @@ int BLOCK_COUNT;
 int COMPRESSION_DELAY;
 
 t_IO_Type IO_TYPES[] = {
-    [GENERIC_IO_TYPE] = {.name = "GENERIC", .function = generic_function },
-    [STDIN_IO_TYPE] = {.name = "STDIN", .function = stdin_function },
-    [STDOUT_IO_TYPE] = {.name = "STDOUT", .function = stdout_function },
-    [DIALFS_IO_TYPE] = {.name = "DIALFS", .function = NULL}
+    [GENERIC_IO_TYPE] = {.name = "GENERIC", .function = generic_interface_function },
+    [STDIN_IO_TYPE] = {.name = "STDIN", .function = stdin_interface_function },
+    [STDOUT_IO_TYPE] = {.name = "STDOUT", .function = stdout_interface_function },
+    [DIALFS_IO_TYPE] = {.name = "DIALFS", .function = dialfs_interface_function}
 };
 
 enum e_IO_Type IO_TYPE;
@@ -41,10 +43,12 @@ t_IO_Operation IO_OPERATIONS[] = {
 
 int module(int argc, char *argv[]) {
 
-	if(argc != 2) {
-		log_error(MODULE_LOGGER, "Uso: <NOMBRE_INTERFAZ> <ARCHIVO_DE_CONFIGURACION>");
+	if(argc != 3) {
+		fprintf(stderr, "Uso: %s <NOMBRE_INTERFAZ> <ARCHIVO_DE_CONFIGURACION>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
+
+	INTERFACE_NAME = argv[1];
 
 	initialize_loggers();
 	initialize_configs(argv[2]);
@@ -54,7 +58,7 @@ int module(int argc, char *argv[]) {
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	receive_expected_header(INTERFACE_NAME_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);
-	send_text_with_header(INTERFACE_NAME_REQUEST_HEADER, argv[1], CONNECTION_KERNEL.fd_connection);
+	send_text_with_header(INTERFACE_NAME_REQUEST_HEADER, INTERFACE_NAME, CONNECTION_KERNEL.fd_connection);
 
 	// Invoco a la funcion que corresponda
 	IO_TYPES[IO_TYPE].function();
@@ -65,6 +69,34 @@ int module(int argc, char *argv[]) {
 	finish_loggers();
    
     return EXIT_SUCCESS;
+}
+
+void read_module_config(t_config* MODULE_CONFIG) {
+    char *io_type_name = config_get_string_value(MODULE_CONFIG, "TIPO_INTERFAZ");
+	if(io_type_find(io_type_name, &IO_TYPE)) {
+		log_error(MODULE_LOGGER, "%s: No se reconoce el TIPO_INTERFAZ", io_type_name);
+		exit(EXIT_FAILURE);
+	}
+
+	CONNECTION_KERNEL = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = KERNEL_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
+
+	switch(IO_TYPE) {
+		case GENERIC_IO_TYPE:
+		    WORK_UNIT_TIME = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
+			break;
+		case STDIN_IO_TYPE:
+		case STDOUT_IO_TYPE:
+			CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+			break;
+		case DIALFS_IO_TYPE:
+			WORK_UNIT_TIME = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
+			CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
+			PATH_BASE_DIALFS = config_get_string_value(MODULE_CONFIG, "PATH_BASE_DIALFS");
+			BLOCK_SIZE = config_get_int_value(MODULE_CONFIG, "BLOCK_SIZE");
+			BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");
+			COMPRESSION_DELAY = config_get_int_value(MODULE_CONFIG, "RETRASO_COMPACTACION");
+			break;
+	}
 }
 
 int io_type_find(char *name, e_IO_Type *destination) {
@@ -79,6 +111,84 @@ int io_type_find(char *name, e_IO_Type *destination) {
         }
 
     return 1;
+}
+
+void initialize_sockets(void) {
+	pthread_t thread_io_connect_to_kernel;
+	pthread_t thread_io_connect_to_memory;
+
+	// [Client] Entrada/Salida -> [Server] Kernel
+	pthread_create(&thread_io_connect_to_kernel, NULL, client_thread_connect_to_server, (void *) &CONNECTION_KERNEL);
+	// [Client] Entrada/Salida -> [Server] Memoria
+	pthread_create(&thread_io_connect_to_memory, NULL, client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
+
+	// Se bloquea hasta que se realicen todas las conexiones
+	pthread_join(thread_io_connect_to_kernel, NULL);
+	pthread_join(thread_io_connect_to_memory, NULL);
+}
+
+void finish_sockets(void) {
+	close(CONNECTION_KERNEL.fd_connection);
+	close(CONNECTION_MEMORY.fd_connection);
+}
+
+void generic_interface_function(void) {
+
+	t_Package *package;
+	t_Payload *instruction = payload_create();
+	//recibe peticion
+	while(1) {
+
+		package_receive(&package, CONNECTION_KERNEL.fd_connection);
+		subpayload_deserialize(package->payload, instruction);
+		package_destroy(package);
+
+		int exit_status = io_operation_execute(instruction);
+
+		// arguments_free(instruction);
+
+		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+	}
+}
+
+void stdin_interface_function(void) {
+
+	t_Package *package;
+	t_Payload *instruction = NULL;
+	//escuchar peticion siempre
+	while(1){
+		//recibe peticion
+		package_receive(&package, CONNECTION_KERNEL.fd_connection);
+		subpayload_deserialize(package->payload, instruction);
+		package_destroy(package);
+
+		int exit_status = io_operation_execute(instruction);
+		// arguments_free(instruction);
+
+		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+	}
+}
+
+void stdout_interface_function(void) {
+	t_Package *package;
+	t_Payload *instruction = NULL;
+
+	//escuchar peticion siempre
+	while(1) {
+		//recibe peticion
+		package_receive(&package, CONNECTION_KERNEL.fd_connection);
+		subpayload_deserialize(package->payload, instruction);
+		package_destroy(package);
+
+		int exit_status = io_operation_execute(instruction);
+		// arguments_free(instruction);
+
+		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+	}
+}
+
+void dialfs_interface_function(void) {
+
 }
 
 int io_operation_execute(t_Payload *operation) {
@@ -96,120 +206,20 @@ int io_operation_execute(t_Payload *operation) {
     return IO_OPERATIONS[io_opcode].function(operation);
 }
 
-void read_module_config(t_config* MODULE_CONFIG) {
-    char *io_type_name = config_get_string_value(MODULE_CONFIG, "TIPO_INTERFAZ");
-	if(io_type_find(io_type_name, &IO_TYPE)) {
-		log_error(MODULE_LOGGER, "%s: No se reconoce el TIPO_INTERFAZ", io_type_name);
-		exit(EXIT_FAILURE);
-	}
-
-	CONNECTION_KERNEL = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = KERNEL_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_KERNEL"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_KERNEL")};
-
-	switch(IO_TYPE) {
-		case GENERIC_IO_TYPE:
-		    UNIT_WORK_TIME = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
-			break;
-		case STDIN_IO_TYPE:
-		case STDOUT_IO_TYPE:
-			CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-			break;
-		case DIALFS_IO_TYPE:
-			UNIT_WORK_TIME = config_get_int_value(MODULE_CONFIG, "TIEMPO_UNIDAD_TRABAJO");
-			CONNECTION_MEMORY = (t_Connection) {.client_type = IO_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-			PATH_BASE_DIALFS = config_get_string_value(MODULE_CONFIG, "PATH_BASE_DIALFS");
-			BLOCK_SIZE = config_get_int_value(MODULE_CONFIG, "BLOCK_SIZE");
-			BLOCK_COUNT = config_get_int_value(MODULE_CONFIG, "BLOCK_COUNT");
-			COMPRESSION_DELAY = config_get_int_value(MODULE_CONFIG, "RETRASO_COMPACTACION");
-			break;
-	}
-}
-
-void initialize_sockets(void) {
-	pthread_t thread_io_connect_to_kernel;
-	pthread_t thread_io_connect_to_memory;
-
-	// [Client] Entrada/Salida -> [Server] Kernel
-	pthread_create(&thread_io_connect_to_kernel, NULL, client_thread_connect_to_server, (void*) &CONNECTION_KERNEL);
-	// [Client] Entrada/Salida -> [Server] Memoria
-	pthread_create(&thread_io_connect_to_memory, NULL, client_thread_connect_to_server, (void*) &CONNECTION_MEMORY);
-
-	// Se bloquea hasta que se realicen todas las conexiones
-	pthread_join(thread_io_connect_to_kernel, NULL);
-	pthread_join(thread_io_connect_to_memory, NULL);
-}
-
-void finish_sockets(void) {
-	close(CONNECTION_KERNEL.fd_connection);
-	close(CONNECTION_MEMORY.fd_connection);
-}
-
-void generic_function(void) {
-
-	//escuchar peticion siempre
-	t_Package *package;
-	t_Payload *instruction = NULL;
-	//recibe peticion
-	while(1) {
-
-		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
-
-		int exit_status = io_operation_execute(instruction);
-
-		// arguments_free(instruction);
-
-		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-	}
-}
-
-void stdin_function(){
-
-	t_Package *package;
-	t_Payload *instruction = NULL;
-	//escuchar peticion siempre
-	while(1){
-		//recibe peticion
-		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
-
-		int exit_status = io_operation_execute(instruction);
-		// arguments_free(instruction);
-
-		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-}
-}
-
-
-void stdout_function(){
-	t_Package *package;
-	t_Payload *instruction = NULL;
-
-	//escuchar peticion siempre
-	while(1) {
-		//recibe peticion
-		package = package_receive(CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
-
-		int exit_status = io_operation_execute(instruction);
-		// arguments_free(instruction);
-
-		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-	}
-}
-
-// IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>
 int io_gen_sleep_io_operation(t_Payload *operation) {
 
-    // log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
-
 	switch(IO_TYPE) {
 		case GENERIC_IO_TYPE:
-		// LA PUEDE HACER (Y LA HACE)
-			//sleep(atoi(argv[2]) * UNIT_WORK_TIME);
+		{
+			uint32_t work_units;
+			payload_dequeue(operation, &work_units, sizeof(uint32_t));
+
+			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
+
+			sleep(WORK_UNIT_TIME * work_units);
+
 			break;
+		}
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
 			return 1;
@@ -280,7 +290,7 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			//send_read_request(pid, dir_fis, bytes, CONNECTION_MEMORY.fd_connection, IO_STDOUT_READ_MEMORY);
 
 			//char* mensaje;
-			//package = package_receive(CONNECTION_MEMORY.fd_connection);
+			//package_receive(&package, CONNECTION_MEMORY.fd_connection);
 			//receive_String_1int(&pid, &mensaje, package->payload);
 
 			//instruction = arguments_deserialize(package->payload);

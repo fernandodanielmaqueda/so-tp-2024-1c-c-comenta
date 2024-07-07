@@ -54,7 +54,7 @@ int set_cpu_operation(int argc, char **argv)
 
     e_CPU_Register destination_register;
     if(decode_register(argv[1], &destination_register)) {
-        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
+        log_error(MODULE_LOGGER, "<REGISTRO> %s no encontrado", argv[1]);
         return 1;
     }
 
@@ -64,10 +64,9 @@ int set_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB.PID, argv[0], argv[1], argv[2]);
-    t_CPU_Register_Accessor destination_accessor = get_register_accessor(&PCB, destination_register);
-    set_register_value(destination_accessor, value);
+
+    set_register_value(&PCB, destination_register, value);
 
     PCB.PC++;
 
@@ -87,27 +86,28 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "MOV_IN %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_data; //Registro DL
-    e_CPU_Register register_address; //registro datos-destino
+    e_CPU_Register register_data;
     if (decode_register(argv[1], &register_data)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
+
+    e_CPU_Register register_address;
     if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
 
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
+
     //Busco el valor (DL) del registro y lo asigno a la variable logical_address
     t_Logical_Address logical_address;
-    get_register_value(&PCB, register_data, &logical_address);
+    get_register_value(PCB, register_data, &logical_address);
 
     size_t bytes = get_register_size(register_address);
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
-
-    t_list* list_dir_fis = mmu(logical_address, PCB.PID, bytes);
-    attend_write_read(PCB.PID, list_dir_fis, bytes, register_address, IN);
+    t_list *list_physical_addresses = mmu(PCB.PID, logical_address, bytes);
+    attend_write_read(PCB.PID, list_physical_addresses, bytes, register_address, IN);
 
     PCB.PC++;
 
@@ -251,7 +251,8 @@ int resize_cpu_operation(int argc, char **argv)
 
     //send_2int(PCB.PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
 
-    t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+    t_Package *package;
+    package_receive(&package, CONNECTION_MEMORY.fd_connection);
     if (package == NULL)
     {
         log_error(MODULE_LOGGER, "Error al recibir el paquete");
@@ -316,6 +317,7 @@ int wait_cpu_operation(int argc, char **argv)
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, WAIT_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
+
     return 0;
 }
 
@@ -372,17 +374,24 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
     e_CPU_Register register_address;
-    e_CPU_Register register_size;
     if(decode_register(argv[2], &register_address)) {
-        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
+        log_error(MODULE_LOGGER, "<REGISTRO DIRECCION> %s no encontrado", argv[2]);
         return 1;
     }
+
+    e_CPU_Register register_size;
     if (decode_register(argv[3], &register_size)) {
-        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[3]);
+        log_error(MODULE_LOGGER, "<REGISTRO TAMANIO> %s no encontrado", argv[3]);
         return 1;
     }
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro tamanio: %s", PCB.PID, argv[0], argv[1], argv[2]);
+
+    //t_CPU_Register_Accessor adress_accessor = get_register_accessor(&PCB, register_address);
+    //t_CPU_Register_Accessor size_accessor = get_register_accessor(&PCB, register_size);
+
+    //uint32_t value;
+    // get_register_value(destination_accessor, value);
 
     PCB.PC++;
 
@@ -549,15 +558,14 @@ int exit_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "EXIT");
 
-    //PCB->current_state = EXIT_STATE;
     // Saco de la TLB
-    for (int i = list_size(tlb) - 1; i >= 0; i--)
+    for (int i = list_size(TLB) - 1; i >= 0; i--)
     {
 
-        t_TLB *delete_tlb_entry = list_get(tlb, i);
+        t_TLB *delete_tlb_entry = list_get(TLB, i);
         if (delete_tlb_entry->PID == PCB.PID)
         {
-            list_remove(tlb, i);
+            list_remove(TLB, i);
         }
     }
     log_info(MODULE_LOGGER, "Proceso %i finalizado y en TLB", PCB.PID);

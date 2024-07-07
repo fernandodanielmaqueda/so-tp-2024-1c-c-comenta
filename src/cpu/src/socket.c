@@ -55,7 +55,7 @@ void *cpu_start_server_for_kernel(void *server_parameter) {
 
             if (fd_new_client != -1)
                 break;
-            
+
             log_warning(SOCKET_LOGGER, "Fallo al aceptar [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
         }
 
@@ -82,6 +82,7 @@ void *cpu_start_server_for_kernel(void *server_parameter) {
 
     new_client->fd_client = fd_new_client;
     new_client->client_type = server->clients_type;
+    new_client->server = server;
 
     pthread_mutex_lock(&server->mutex_clients);
         list_add(server->clients, new_client);

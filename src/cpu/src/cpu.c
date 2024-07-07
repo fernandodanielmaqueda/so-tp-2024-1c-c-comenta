@@ -17,7 +17,7 @@ char *ALGORITMO_TLB;
 t_MemorySize PAGE_SIZE;
 long timestamp;
 t_Logical_Address direccion_logica; // momentaneo hasta ver de donde la saco
-t_list *tlb;          // tlb que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
+t_list *TLB;          // TLB que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
 
 t_PCB PCB;
 pthread_mutex_t MUTEX_PCB;
@@ -50,8 +50,12 @@ int module(int argc, char *argv[])
 	initialize_semaphores();
     initialize_sockets();
 
-    log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
+    TLB = list_create();
 
+    //Se pide a memoria el tamaño de pagina y lo setea como dato global
+    ask_memory_page_size();
+
+    log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
     instruction_cycle();
 
     // finish_threads();
@@ -103,11 +107,6 @@ void read_module_config(t_config *MODULE_CONFIG)
 
 void instruction_cycle(void)
 {
-
-    tlb = list_create();
-
-    //Se pide a memoria el tamaño de pagina y lo setea como dato global
-    ask_memory_page_size();
 
     char *IR;
     t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS);
@@ -262,75 +261,75 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
     return NULL;
 }
 
-t_list *mmu(t_Logical_Address logical_address, t_PID pid, size_t bytes) {
-    t_Page_Number nro_page = (t_Page_Number) floor(logical_address / PAGE_SIZE);
-    t_Offset offset = (t_Offset) (logical_address - nro_page * PAGE_SIZE);
-    t_Frame_Number nro_frame_required = 0;
-    t_Physical_Address dir_fisica = 0;
+t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
+    t_Page_Number page_number = (t_Page_Number) floor(logical_address / PAGE_SIZE);
+    t_Offset offset = (t_Offset) (logical_address - page_number * PAGE_SIZE);
 
-    t_list *list_pages = list_create();
+    t_Frame_Number frame_number;
+    t_Physical_Address physical_address;
+
+    t_list *list_physical_addresses = list_create();
     t_Page_Quantity required_pages = seek_quantity_pages_required(logical_address, bytes);
 
-    for (size_t i = 0; i < required_pages; i++) {
-        nro_page += i;
+    for(size_t i = 0; i < required_pages; i++) {
+        page_number += i;
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
         pthread_mutex_lock(&MUTEX_TLB);
-        if(check_tlb(pid, nro_page, &nro_frame_required)) { // NO HAY HIT
+        if(check_tlb(pid, page_number, &frame_number)) { // NO HAY HIT
             pthread_mutex_unlock(&MUTEX_TLB);
 
-            log_debug(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i ", pid, nro_page);
-            request_frame_memory(pid, nro_page);
+            log_debug(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i ", pid, page_number);
 
-            t_Package *package = package_receive(CONNECTION_MEMORY.fd_connection);
+            request_frame_memory(pid, page_number);
+
+            t_Package *package;
+            package_receive(&package, CONNECTION_MEMORY.fd_connection);
             t_PID pidBuscado;
             payload_dequeue(package->payload, &pidBuscado, sizeof(t_PID) );
-            payload_dequeue(package->payload, &nro_frame_required, sizeof(t_Frame_Number) );
+            payload_dequeue(package->payload, &frame_number, sizeof(t_Frame_Number) );
             package_destroy(package);
             
-            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, nro_page, nro_frame_required);
+            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, page_number, frame_number);
 
-            if (CANTIDAD_ENTRADAS_TLB > 0)
-            {
-                if (list_size(tlb) < CANTIDAD_ENTRADAS_TLB)
+            if (CANTIDAD_ENTRADAS_TLB > 0) {
+                if (list_size(TLB) < CANTIDAD_ENTRADAS_TLB)
                 {
-                    add_to_tlb(pid, nro_page, nro_frame_required);
+                    add_to_tlb(pid, page_number, frame_number);
                     log_trace(MODULE_LOGGER, "Agrego entrada a la TLB");
                 }
                 else
                 {
-                    replace_tlb_input(pid, nro_page, nro_frame_required);
+                    replace_tlb_input(pid, page_number, frame_number);
                     log_trace(MODULE_LOGGER, "Reemplazo entrada a la TLB");
                 }
             }
 
-            dir_fisica = nro_frame_required * PAGE_SIZE + offset;
-            if(offset != 0) offset = 0; //El offset solo es importante en la 1ra pagina buscada
-            list_add(list_pages, &dir_fisica);
-
         } else { // HAY HIT
             pthread_mutex_unlock(&MUTEX_TLB);
 
-            log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, nro_page);
-            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, nro_page, nro_frame_required);
+            log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, page_number);
+            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, page_number, frame_number);
 
-            dir_fisica = nro_frame_required * PAGE_SIZE + offset;
-            if(offset != 0)
-                offset = 0; //El offset solo es importante en la 1ra pagina buscada
-
-            list_add(list_pages, &dir_fisica);    
         }
+
+        physical_address = frame_number * PAGE_SIZE + offset;
+
+        if(offset)
+            offset = 0; //El offset solo es importante en la 1ra pagina buscada
+
+        list_add(list_physical_addresses, &physical_address);
     }
     
-    return list_pages;
+    return list_physical_addresses;
 }
 
 int check_tlb(t_PID process_id, t_Page_Number page_number, t_Frame_Number *destination) {
 
     t_TLB *tlb_entry = NULL;
-    for (int i = 0; i < list_size(tlb); i++) {
+    for (int i = 0; i < list_size(TLB); i++) {
 
-        tlb_entry = (t_TLB *) list_get(tlb, i);
+        tlb_entry = (t_TLB *) list_get(TLB, i);
         if (tlb_entry->PID == process_id && tlb_entry->page_number == page_number) {
             *destination = tlb_entry->frame;
 
@@ -359,7 +358,7 @@ void tlb_access(t_PID pid, t_Page_Number nro_page, t_Frame_Number frame_number_r
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
 
-        package = package_receive(CONNECTION_MEMORY.fd_connection);
+        package_receive(&package, CONNECTION_MEMORY.fd_connection);
         if (package == NULL)
         {
             log_error(MODULE_LOGGER, "Error al recibir el paquete");
@@ -379,7 +378,7 @@ void tlb_access(t_PID pid, t_Page_Number nro_page, t_Frame_Number frame_number_r
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
 
-        package = package_receive(CONNECTION_MEMORY.fd_connection);
+        package_receive(&package, CONNECTION_MEMORY.fd_connection);
         if (package == NULL)
         {
             log_error(MODULE_LOGGER, "Error al recibir el paquete");
@@ -398,20 +397,20 @@ void add_to_tlb(t_PID pid , t_Page_Number page, t_Frame_Number frame) {
     tlb_entry->frame = frame;
     tlb_entry->time = timestamp;
     timestamp++;
-    list_add(tlb, tlb_entry);
+    list_add(TLB, tlb_entry);
 }
 
 void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number) {
     t_TLB *tlb_entry;
-    int size = list_size(tlb);
+    int size = list_size(TLB);
 
     if(size != 0){
 
         for (size_t i = (size -1); i != -1; i--)
         {
-            tlb_entry = list_get(tlb, i);
+            tlb_entry = list_get(TLB, i);
             if((tlb_entry->PID == pid) && (tlb_entry->page_number >= (resize_number -1))){
-                list_remove(tlb, i);
+                list_remove(TLB, i);
                 free(tlb_entry);
             }
         }
@@ -420,14 +419,14 @@ void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number) {
 
 void delete_tlb_entry_by_pid_deleted(t_PID pid) {
     t_TLB *tlb_entry;
-    int size = list_size(tlb);
+    int size = list_size(TLB);
 
     if(size != 0) {
 
         for (size_t i = (size -1); i != -1; i--) {
-            tlb_entry = list_get(tlb, i);
+            tlb_entry = list_get(TLB, i);
             if(tlb_entry->PID == pid) {
-                list_remove(tlb, i);
+                list_remove(TLB, i);
                 free(tlb_entry);
             }
         }
@@ -439,19 +438,19 @@ void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
     
     if (strcmp(ALGORITMO_TLB, "LRU") == 0)
     {
-        tlb_aux = list_get(tlb, 0);
+        tlb_aux = list_get(TLB, 0);
         int replace_value = tlb_aux->time + 1;
         int index_replace = 0;
-            for(int i = 0; i < list_size(tlb); i++){
+            for(int i = 0; i < list_size(TLB); i++){
 
-                t_TLB *replaced_tlb = list_get(tlb, i);
+                t_TLB *replaced_tlb = list_get(TLB, i);
                 if(replaced_tlb->time < replace_value){
                     replace_value = replaced_tlb->time;
                     index_replace = i;
                 } //guardo el d emenor tiempo
             }
 
-        tlb_aux = list_get(tlb, index_replace);
+        tlb_aux = list_get(TLB, index_replace);
         tlb_aux->PID = pid;
         tlb_aux->page_number = page;
         tlb_aux->frame = frame;
@@ -460,7 +459,7 @@ void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
     }
     else //CASO FIFO
     {
-        tlb_aux = list_get(tlb, tlb_replace_index_fifo);
+        tlb_aux = list_get(TLB, tlb_replace_index_fifo);
         tlb_aux->PID = pid;
         tlb_aux->page_number = page;
         tlb_aux->frame = frame;
@@ -468,7 +467,7 @@ void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
         timestamp++;
 
         tlb_replace_index_fifo++;
-        if (tlb_replace_index_fifo == list_size(tlb)) tlb_replace_index_fifo = 0;
+        if (tlb_replace_index_fifo == list_size(TLB)) tlb_replace_index_fifo = 0;
     }
     
 }
@@ -489,13 +488,14 @@ void cpu_fetch_next_instruction(char **line) {
 void ask_memory_page_size(void) {
     send_header(PAGE_SIZE_REQUEST, CONNECTION_MEMORY.fd_connection);
 
-    t_Package* package = package_receive(CONNECTION_MEMORY.fd_connection);
+    t_Package* package;
+    package_receive(&package, CONNECTION_MEMORY.fd_connection);
     payload_dequeue(package->payload, &PAGE_SIZE, sizeof(t_MemorySize) );
     package_destroy(package);
 }
 
 void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU_Register register_destination, e_In_Out in_out) {
-    int size = list_size(list_physical_addresses);
+    t_ListSize size = list_size(list_physical_addresses);
     t_Package* package;
 
     if (in_out == IN) {
@@ -503,7 +503,7 @@ void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes,
         package = package_create_with_header(READ_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
         payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
-        payload_enqueue(package->payload, &size, sizeof(uint32_t) );
+        payload_enqueue(package->payload, &size, sizeof(t_ListSize) );
         for (size_t i = 0; i < size; i++) {
             int value_aux = *((int *) list_get(list_physical_addresses, i));
             payload_enqueue(package->payload, &value_aux, sizeof(uint32_t) );
@@ -512,7 +512,7 @@ void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes,
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
 
-        package = package_receive(CONNECTION_MEMORY.fd_connection);
+        package_receive(&package, CONNECTION_MEMORY.fd_connection);
         if (package == NULL)
         {
             log_error(MODULE_LOGGER, "Error al recibir el paquete");
@@ -524,8 +524,7 @@ void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes,
             char *contenido;
             text_deserialize(package->payload, &contenido);
 
-            t_CPU_Register_Accessor register_accessor = get_register_accessor(&PCB, register_destination);
-            set_register_value(register_accessor, (uint32_t) atoi(contenido));
+            set_register_value(&PCB, register_destination, (uint32_t) atoi(contenido));
 
             //log_info(MODULE_LOGGER, "PID: %i -Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
         }
@@ -545,7 +544,7 @@ void attend_write_read(t_PID pid, t_list *list_physical_addresses, size_t bytes,
         package_send(package, CONNECTION_MEMORY.fd_connection);
         package_destroy(package);
 
-        package = package_receive(CONNECTION_MEMORY.fd_connection);
+        package_receive(&package, CONNECTION_MEMORY.fd_connection);
         if (package == NULL) {
             log_error(MODULE_LOGGER, "Error al recibir el paquete");
             exit(EXIT_FAILURE);

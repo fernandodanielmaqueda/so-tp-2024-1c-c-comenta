@@ -59,12 +59,9 @@ void *memory_start_server(void *server_parameter) {
 		log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		new_client->fd_client = fd_new_client;
         new_client->client_type = server->clients_type;
+        new_client->server = server;
 		pthread_create(&(new_client->thread_client_handler), NULL, memory_client_handler, (void *) new_client);
 		pthread_detach(new_client->thread_client_handler);
-
-		pthread_mutex_lock(&(server->mutex_clients));
-			list_add(server->clients, new_client);
-		pthread_mutex_unlock(&(server->mutex_clients));
 	}
 
 	return NULL;
@@ -84,16 +81,23 @@ void *memory_client_handler(void *new_client_parameter) {
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
             send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
+            pthread_mutex_lock(&(new_client->server->mutex_clients));
+                list_add(new_client->server->clients, new_client);
+            pthread_mutex_unlock(&(new_client->server->mutex_clients));
+
             CLIENT_KERNEL = new_client;
 
             sem_post(&sem_coordinator_kernel_client_connected);
-            //listen_kernel(new_client->fd_client);
             return NULL;
         case CPU_PORT_TYPE:
             new_client->client_type = CPU_PORT_TYPE;
             // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
             send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
+
+            pthread_mutex_lock(&(new_client->server->mutex_clients));
+                list_add(new_client->server->clients, new_client);
+            pthread_mutex_unlock(&(new_client->server->mutex_clients));
 
             CLIENT_CPU = new_client;
 
@@ -105,7 +109,12 @@ void *memory_client_handler(void *new_client_parameter) {
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
             send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
+            pthread_mutex_lock(&(new_client->server->mutex_clients));
+                list_add(new_client->server->clients, new_client);
+            pthread_mutex_unlock(&(new_client->server->mutex_clients));
+
             listen_io(new_client->fd_client);
+
             close(new_client->fd_client);
             free(new_client);
             return NULL;

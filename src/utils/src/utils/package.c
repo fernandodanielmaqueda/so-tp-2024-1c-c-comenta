@@ -7,7 +7,7 @@ t_Package *package_create(void) {
 
   t_Package *package = malloc(sizeof(t_Package));
   if(package == NULL) {
-    log_error(SERIALIZE_LOGGER, "No se pudo crear el package con malloc");
+    log_error(SOCKET_LOGGER, "No se pudo crear el package con malloc");
     exit(EXIT_FAILURE);
   }
 
@@ -35,13 +35,11 @@ void package_send(t_Package *package, int fd_socket) {
   if(package == NULL)
     return;
 
-  ssize_t bytes;
-
   size_t bufferSize = sizeof(t_EnumValue) + sizeof(package->payload->size) + (size_t) package->payload->size;
 
   void *buffer = malloc(bufferSize);
   if(buffer == NULL) {
-    log_error(SERIALIZE_LOGGER, "No se pudo crear el buffer con malloc");
+    log_error(SOCKET_LOGGER, "No se pudo crear el buffer con malloc");
     exit(EXIT_FAILURE);
   }
 
@@ -49,20 +47,19 @@ void package_send(t_Package *package, int fd_socket) {
 
   t_EnumValue aux;
 
-    aux = (t_EnumValue) package->header;
+  aux = (t_EnumValue) package->header;
   offset = memcpy_serialize(buffer, offset, &(aux), sizeof(t_EnumValue));
   offset = memcpy_serialize(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
   offset = memcpy_serialize(buffer, offset, package->payload->stream, (size_t) package->payload->size);
 
-  bytes = send(fd_socket, buffer, bufferSize, 0);
-
+  ssize_t bytes = send(fd_socket, buffer, bufferSize, 0);
   if (bytes == -1) {
-      log_error(SERIALIZE_LOGGER, "Funcion send: %s\n", strerror(errno));
+      log_error(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
       close(fd_socket);
       exit(EXIT_FAILURE);
   }
   if (bytes != bufferSize) {
-      log_error(SERIALIZE_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", bufferSize, bytes);
+      log_error(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", bufferSize, bytes);
       close(fd_socket);
       exit(EXIT_FAILURE);
   }
@@ -70,91 +67,77 @@ void package_send(t_Package *package, int fd_socket) {
   free(buffer);
 }
 
-t_Package *package_receive(int fd_socket) {
-  t_Package *package = package_create();
-  package_receive_header(package, fd_socket);
-  package_receive_payload(package, fd_socket);
-  return package;
+int package_receive(t_Package **destination, int fd_socket) {
+  if(destination == NULL)
+    return 1;
+
+  *destination = package_create();
+
+  if(package_receive_header(*destination, fd_socket))
+    return 1;
+
+  if(package_receive_payload(*destination, fd_socket))
+    return 1;
+
+  return 0;
 }
 
-void package_receive_header(t_Package *package, int fd_socket) {
+int package_receive_header(t_Package *package, int fd_socket) {
 
   if(package == NULL)
-    return;
-
-  ssize_t bytes;
+    return 1;
 
   t_EnumValue aux;
 
-  bytes = recv(fd_socket, (void *) &(aux), sizeof(t_EnumValue), 0); // MSG_WAITALL
-  if (bytes == 0) {
-      log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
-      close(fd_socket);
-      exit(EXIT_FAILURE);
-  }
-  if (bytes == -1) {
-      log_error(SERIALIZE_LOGGER, "Funcion recv: %s\n", strerror(errno));
-      close(fd_socket);
-      exit(EXIT_FAILURE);
-  }
-  if (bytes != sizeof(t_EnumValue)) {
-      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_EnumValue), bytes);
-      close(fd_socket);
-      exit(EXIT_FAILURE);
-  }
+  int exit_status = receive(fd_socket, (void *) &(aux), sizeof(t_EnumValue));
+  if(exit_status)
+    return exit_status;
 
   package->header = (e_Header) aux;
+
+  return 0;
 }
 
-void package_receive_payload(t_Package *package, int fd_socket) {
+int package_receive_payload(t_Package *package, int fd_socket) {
 
   if(package == NULL)
-    return;
+    return 1;
 
-  ssize_t bytes;
-
-  bytes = recv(fd_socket, &(package->payload->size), sizeof(t_PayloadSize), 0); // MSG_WAITALL
-
-  if (bytes == 0) {
-      log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
-      close(fd_socket);
-      exit(EXIT_FAILURE);
-  }
-  if (bytes == -1) {
-      log_error(SERIALIZE_LOGGER, "Funcion recv: %s\n", strerror(errno));
-      close(fd_socket);
-      exit(EXIT_FAILURE);
-  }
-  if (bytes != sizeof(t_PayloadSize)) {
-      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", sizeof(t_PayloadSize), bytes);
-      close(fd_socket);
-      exit(EXIT_FAILURE);
-  }
+  if(receive(fd_socket, (void *) &(package->payload->size), sizeof(t_PayloadSize)))
+    return 1;
 
   if(package->payload->size == 0)
-    return;
+    return 0;
 
   package->payload->stream = malloc(package->payload->size);
   if(package->payload->stream == NULL) {
-    log_error(SERIALIZE_LOGGER, "No se pudo crear el stream con malloc");
+    log_error(SOCKET_LOGGER, "No se pudo crear el stream con malloc");
     exit(EXIT_FAILURE);
   }
 
-  bytes = recv(fd_socket, package->payload->stream, (size_t) package->payload->size, 0); // MSG_WAITALL
+  return receive(fd_socket, (void *) package->payload->stream, (size_t) package->payload->size);
+}
 
+int receive(int fd_socket, void *destination, size_t expected_bytes) {
+
+  ssize_t bytes = recv(fd_socket, destination, expected_bytes, 0); // MSG_WAITALL
   if (bytes == 0) {
-      log_error(SERIALIZE_LOGGER, "Desconectado [Emisor]\n");
+      log_error(SOCKET_LOGGER, "Emisor Desconectado\n");
       close(fd_socket);
-      exit(EXIT_FAILURE);
+      errno = ECONNRESET;
+      return 1;
   }
   if (bytes == -1) {
-      log_error(SERIALIZE_LOGGER, "Funcion recv: %s\n", strerror(errno));
+      log_error(SOCKET_LOGGER, "Funcion recv: %s\n", strerror(errno));
       close(fd_socket);
-      exit(EXIT_FAILURE);
+      return 1;
   }
-  if (bytes != (size_t) package->payload->size) {
-      log_error(SERIALIZE_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", (size_t) package->payload->size, bytes);
+  if (bytes != expected_bytes) {
+      log_error(SOCKET_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", expected_bytes, bytes);
       close(fd_socket);
-      exit(EXIT_FAILURE);
+      errno = EREMOTEIO;
+      return 1;
   }
+
+  return 0;
 }

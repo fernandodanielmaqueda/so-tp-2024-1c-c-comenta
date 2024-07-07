@@ -83,7 +83,7 @@ void listen_kernel(int fd_kernel) {
     t_Package* package;
     
     while(1) {
-        package = package_receive(fd_kernel);
+        package_receive(&package, fd_kernel);
         switch(package->header) {
             case PROCESS_CREATE_HEADER:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
@@ -234,8 +234,10 @@ int parser_file(char* path, t_list *list_instruction) {
 }
 
 void listen_cpu(int fd_cpu) {
+    t_Package *package;
+
     while(1) {
-        t_Package* package = package_receive(fd_cpu);
+        package_receive(&package, fd_cpu);
         switch (package->header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
@@ -287,39 +289,38 @@ void listen_cpu(int fd_cpu) {
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
-            }
+        }
     }
 }
 
 void listen_io(int fd_io) {
+    t_Package *package;
+
     while(1) {
-        t_Package* paquete = package_receive(fd_io);
-        switch(paquete->header) {
-            
-            case IO_STDIN_WRITE_MEMORY:
-                log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
-                write_memory(paquete->payload, fd_io);
-                break;
-                
-            
-            case IO_STDOUT_READ_MEMORY:
-                log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
-                read_memory(paquete->payload, fd_io);
-                break;
-                
+        package_receive(&package, fd_io);
+        switch(package->header) {
 
             case DISCONNECTING_HEADER:
                 log_warning(MODULE_LOGGER, "Se desconecto kernel.");
                 log_destroy(MODULE_LOGGER);
                 return;
+            case IO_STDIN_WRITE_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
+                write_memory(package->payload, fd_io);
+                break;
+                
+            
+            case IO_STDOUT_READ_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
+                read_memory(package->payload, fd_io);
+                break;
             
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
         }
-        package_destroy(paquete);
+        package_destroy(package);
     }
-
 }
 
 t_Process* seek_process_by_pid(t_PID pidBuscado) {
