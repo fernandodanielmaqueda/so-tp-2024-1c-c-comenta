@@ -107,7 +107,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     size_t bytes = get_register_size(register_address);
 
     t_list *list_physical_addresses = mmu(PCB.PID, logical_address, bytes);
-    attend_write_read(PCB.PID, list_physical_addresses, bytes, register_address, IN);
+    attend_read(PCB.PID, list_physical_addresses, bytes, register_address);
 
     PCB.PC++;
 
