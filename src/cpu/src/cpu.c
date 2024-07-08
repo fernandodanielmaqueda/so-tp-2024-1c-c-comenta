@@ -520,39 +520,32 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, u_in
 }
 
 void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU_Register register_destination) {
-    int size = list_size(list_physical_addresses);
     t_Package* package;
 
-        package = package_create_with_header(READ_REQUEST);
-        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
-        list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);  
-        payload_enqueue(package->payload, &size, sizeof(t_ListSize) );
-        for (size_t i = 0; i < size; i++) {
-            int value_aux = *((int *) list_get(list_physical_addresses, i));
-            payload_enqueue(package->payload, &value_aux, sizeof(uint32_t) );
-        }
-        
-        package_send(package, CONNECTION_MEMORY.fd_connection);
-        package_destroy(package);
+    package = package_create_with_header(READ_REQUEST);
+    payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
+    payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
+    list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);          
+    package_send(package, CONNECTION_MEMORY.fd_connection);
+    package_destroy(package);
 
-        package_receive(&package, CONNECTION_MEMORY.fd_connection);
-        if (package == NULL)
-        {
-            log_error(MODULE_LOGGER, "Error al recibir el paquete");
-            exit(EXIT_FAILURE);
-        }  else
-        {
-            log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
+    package_receive(&package, CONNECTION_MEMORY.fd_connection);
+    if (package == NULL)
+    {
+        log_error(MODULE_LOGGER, "Error al recibir el paquete");
+        exit(EXIT_FAILURE);
+    }  else
+    {
+        log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
 
-            char *contenido;
-            text_deserialize(package->payload, &contenido);
+        char *contenido;
+        text_deserialize(package->payload, &contenido);
 
-            set_register_value(&PCB, register_destination, (uint32_t) atoi(contenido));
+        set_register_value(&PCB, register_destination, (uint32_t) atoi(contenido));
 
-            //log_info(MODULE_LOGGER, "PID: %i - Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
-        }
-            package_destroy(package);
+        //log_info(MODULE_LOGGER, "PID: %i - Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
+    }
+    package_destroy(package);
         
 }
 
