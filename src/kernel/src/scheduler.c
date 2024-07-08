@@ -250,7 +250,6 @@ void *short_term_scheduler(void *parameter) {
 					TEMPORAL_DISPATCHED = temporal_create();
 
 					pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
-					pthread_detach(THREAD_QUANTUM_INTERRUPT);
 					break;
 				case FIFO_SCHEDULING_ALGORITHM:
 					break;
@@ -262,7 +261,7 @@ void *short_term_scheduler(void *parameter) {
 				case RR_SCHEDULING_ALGORITHM:
 				case VRR_SCHEDULING_ALGORITHM:
 					temporal_stop(TEMPORAL_DISPATCHED);
-					cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
+						cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
 					temporal_destroy(TEMPORAL_DISPATCHED);
 
 					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
@@ -291,7 +290,7 @@ void *short_term_scheduler(void *parameter) {
 			wait_list_process_states();
 
 				switch(eviction_reason) {
-					case ERROR_EVICTION_REASON:
+					//case ERROR_EVICTION_REASON:
 					case EXIT_EVICTION_REASON:
 						pcb->exit_reason = SUCCESS_EXIT_REASON;
 						switch_process_state(pcb, EXIT_STATE);

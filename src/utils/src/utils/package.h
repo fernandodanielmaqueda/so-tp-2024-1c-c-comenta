@@ -33,7 +33,6 @@ typedef enum e_Header {
     READ_REQUEST, //utilizado en MEMORIA-IO
     WRITE_REQUEST, //utilizado en MEMORIA-IO
     RESIZE_REQUEST,
-    OUT_OF_MEMORY,
     FRAME_ACCESS,    //PARA MEMORIA Y REVISAR LA TLB
     FRAME_REQUEST,
     PAGE_SIZE_REQUEST,

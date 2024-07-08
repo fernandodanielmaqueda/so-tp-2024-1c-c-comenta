@@ -100,14 +100,23 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
 
-    //Busco el valor (DL) del registro y lo asigno a la variable logical_address
     t_Logical_Address logical_address;
-    get_register_value(PCB, register_data, &logical_address);
+    get_register_value(PCB, register_address, &logical_address);
 
-    size_t bytes = get_register_size(register_address);
+    size_t bytes = get_register_size(register_data);
 
     t_list *list_physical_addresses = mmu(PCB.PID, logical_address, bytes);
-    attend_read(PCB.PID, list_physical_addresses, bytes, register_address);
+    char *contenido = attend_read(PCB.PID, list_physical_addresses, bytes);
+
+    uint32_t value;
+    if(str_to_uint32(contenido, &value)) {
+        log_error(MODULE_LOGGER, "%s: No es un valor valido", contenido);
+        return 1;
+    }
+
+    set_register_value(&PCB, register_data, value);
+
+    //log_info(MODULE_LOGGER, "PID: %i - Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
 
     PCB.PC++;
 
@@ -246,30 +255,26 @@ int resize_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "RESIZE %s", argv[1]);
 
-    //value = atoi(argv[2]);
+    t_MemorySize size;
+    if(str_to_memory_size(argv[1], &size)) {
+        log_error(MODULE_LOGGER, "%s: No es un valor valido", argv[1]);
+        return 1;
+    }
+
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB.PID, argv[0], argv[1]);
 
-    //send_2int(PCB.PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
+    t_Package *package = package_create_with_header(RESIZE_REQUEST);
+    payload_enqueue(package->payload, &(PCB.PID), sizeof(PCB.PID));
+	payload_enqueue(package->payload, size, sizeof(size));
+	package_send(package, CONNECTION_MEMORY.fd_connection);
+	package_destroy(package);
 
-    t_Package *package;
-    package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    if (package == NULL)
-    {
-        log_error(MODULE_LOGGER, "Error al recibir el paquete");
+    t_Return_Value return_value;
+    receive_return_value_with_expected_header(RESIZE_REQUEST, &return_value, CONNECTION_MEMORY.fd_connection);
+    if(return_value) {
+        PCB.exit_reason = OUT_OF_MEMORY_EXIT_REASON;
         return 1;
     }
-
-    if (package->header == RESIZE_REQUEST)
-    {
-        log_info(MODULE_LOGGER, "Se redimensiono correctamente");
-    }
-    else if (package->header == OUT_OF_MEMORY)
-    {
-        // COMUNICAR CON KERNEL QUE NO HAY MAS MEMORIA
-        return 1;
-    }
-
-    package_destroy(package);
 
     PCB.PC++;
 
@@ -583,6 +588,18 @@ int str_to_uint32(char *string, uint32_t *destination)
     char *end;
 
     *destination = (uint32_t) strtoul(string, &end, 10);
+
+    if(!*string || *end)
+        return 1;
+        
+    return 0;
+}
+
+int str_to_memory_size(char *string, t_MemorySize *destination)
+{
+    char *end;
+
+    *destination = (t_MemorySize) strtoul(string, &end, 10);
 
     if(!*string || *end)
         return 1;

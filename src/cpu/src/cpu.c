@@ -494,15 +494,15 @@ void ask_memory_page_size(void) {
     package_destroy(package);
 }
 
-void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, u_int32_t contenido) {
+void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, uint32_t contenido) {
 
     t_Package* package;
 
     package = package_create_with_header(WRITE_REQUEST);
     payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
     payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
-    payload_enqueue(package->payload, &contenido, (size_t) bytes );
-    list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);      
+    payload_enqueue(package->payload, &contenido, sizeof(contenido) );
+    list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
@@ -519,7 +519,8 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, u_in
     
 }
 
-void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU_Register register_destination) {
+char *attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes) {
+    char *contenido;
     t_Package* package;
 
     package = package_create_with_header(READ_REQUEST);
@@ -537,15 +538,11 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU
     }  else
     {
         log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
-
-        char *contenido;
         text_deserialize(package->payload, &contenido);
-
-        set_register_value(&PCB, register_destination, (uint32_t) atoi(contenido));
-
-        //log_info(MODULE_LOGGER, "PID: %i - Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
     }
     package_destroy(package);
+
+    return contenido;
         
 }
 

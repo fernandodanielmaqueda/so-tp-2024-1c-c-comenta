@@ -34,7 +34,7 @@ int module(int argc, char* argv[]) {
 	initialize_semaphores();
 
     memoria_principal = (void *) malloc(TAM_MEMORIA);
-    memset(memoria_principal, (u_int32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
+    memset(memoria_principal, (uint32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
     lista_procesos = list_create();
     create_marcos();
 
@@ -359,14 +359,13 @@ void seek_instruccion(t_Payload* payload) {
     log_info(MODULE_LOGGER, "Instruccion enviada.");
 }
 
-void create_marcos(){
+void create_marcos(void) {
     t_MemorySize cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
     
     lista_marcos = list_create();
     lista_marcos_libres = list_create();
 
-    for (t_MemorySize i = 0; i < cantidad_marcos; i++)
-    {
+    for (t_MemorySize i = 0; i < cantidad_marcos; i++) {
         t_Frame *marcoNuevo = malloc(sizeof(t_Frame));
         marcoNuevo->id = i;
         marcoNuevo->assigned_page = NULL;
@@ -374,7 +373,6 @@ void create_marcos(){
         list_add(lista_marcos, marcoNuevo);
         list_add(lista_marcos_libres, marcoNuevo);
     }
-    
 }
 
 void free_marcos(){
@@ -446,8 +444,6 @@ void read_memory(t_Payload* payload, int socket) {
     list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
 
     char* lectura;
-    char* lectura_final = "";
-    //int temp_dir_fis = -1;
     int current_frame;
 
     dir_fisica = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
@@ -464,8 +460,8 @@ void read_memory(t_Payload* payload, int socket) {
     
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", (int) pidBuscado, dir_fisica, bytes);
 
-    if(list_size(list_physical_addresses) < 2){//En caso de que sea menor a 2 pagina
-        memcpy(&lectura_final, posicion, bytes);  
+    if(list_size(list_physical_addresses) == 1){//En caso de que sea igual a una página
+        memcpy(lectura_final, posicion, bytes);
          //Actualizar pagina/TDP
         current_frame = dir_fisica / TAM_PAGINA;
         update_page(current_frame);
@@ -483,7 +479,7 @@ void read_memory(t_Payload* payload, int socket) {
 
             if (i == 1)//Primera pagina
             {
-                memcpy(&lectura, posicion, bytes_inicial);  
+                memcpy(&lectura, posicion, bytes_inicial);   
                 string_append(&lectura_final, lectura);
                 update_page(current_frame);
                 bytes_restantes -= bytes_inicial;
@@ -524,9 +520,7 @@ void write_memory(t_Payload* payload, int socket){
     t_MemorySize bytes = 0;
     t_list *list_physical_addresses = list_create();
     int current_frame = 0;
-    
-    char* contenido = NULL;
-    
+
     payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
     payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
     payload_dequeue(payload, contenido, (size_t) bytes );
@@ -640,64 +634,57 @@ int get_next_dir_fis(int current_frame, int pid){
 
 
 void resize_process(t_Payload* payload){
-    t_Package* package;
     t_PID pid;
-    t_MemorySize bytes;
-    
+    t_MemorySize new_size;
 
     payload_dequeue(payload, &pid, sizeof(t_PID) );
-    payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
+    payload_dequeue(payload, &new_size, sizeof(t_MemorySize) );
 
     t_Process* procesoBuscado = seek_process_by_pid(pid);
 
-    t_MemorySize paginas = bytes / TAM_PAGINA;
-    t_MemorySize resto = bytes % TAM_PAGINA;
-    if (resto == 0) paginas += 1;
-    
+    t_MemorySize paginas = new_size / TAM_PAGINA;
+    t_MemorySize resto = new_size % TAM_PAGINA;
+
+    if (resto == 0)
+        paginas += 1;
 
     int size = list_size(procesoBuscado->pages_table);
-    if(size<paginas){//Agregar paginas
+    t_Return_Value return_value;
+
+    if(size < paginas) { //Agregar paginas
 
         //CASO: OUT OF MEMORY
         if (list_size(lista_marcos_libres) < (paginas - size))
-        {
-            package = package_create_with_header(OUT_OF_MEMORY);
-            payload_enqueue(package->payload, &pid, sizeof(t_PID) );
-            package_send(package, CLIENT_CPU->fd_client);
-            package_destroy(package);
-        }
-        else{
+            return_value = 1;
+        else {
             
             log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Ampliar: <%d>", (int) pid, size, paginas);
 
-                //CASO: HAY ESPACIO Y SUMA PAGINAS
-                for (size_t i = size; i < paginas; i++)
-                {
-                    t_Page* pagina = malloc(sizeof(t_Page));
-                    t_Frame* marcoLibre = list_get(lista_marcos_libres,0);
-                    list_remove(lista_marcos_libres,0);
-                    pagina->assigned_frame = marcoLibre->id;
-                    pagina->bit_modificado = false;
-                    pagina->bit_presencia = false;
-                    pagina->bit_uso = false;
-                    pagina->pagid = i;
-                    pagina->last_use = 0;
+            //CASO: HAY ESPACIO Y SUMA PAGINAS
+            for (size_t i = size; i < paginas; i++)
+            {
+                t_Page* pagina = malloc(sizeof(t_Page));
+                t_Frame* marcoLibre = list_get(lista_marcos_libres,0);
+                list_remove(lista_marcos_libres,0);
+                pagina->assigned_frame = marcoLibre->id;
+                pagina->bit_modificado = false;
+                pagina->bit_presencia = false;
+                pagina->bit_uso = false;
+                pagina->pagid = i;
+                pagina->last_use = 0;
 
-                    //Actualizo el marco asignado
-                    marcoLibre->PID= pid;
-                    marcoLibre->assigned_page = pagina;
+                //Actualizo el marco asignado
+                marcoLibre->PID= pid;
+                marcoLibre->assigned_page = pagina;
 
-                    list_add(procesoBuscado->pages_table, pagina);
-                }
+                list_add(procesoBuscado->pages_table, pagina);
+            }
                 
-            package = package_create_with_header(RESIZE_REQUEST);
-            payload_enqueue(package->payload, &pid, sizeof(t_PID) );
-            package_send(package, CLIENT_CPU->fd_client);
-            package_destroy(package);
+            return_value = 0;
         }
-        
     }
-    if(size>paginas){ //RESTA paginas
+
+    if(size > paginas) { // RESTA paginas
             
         log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Reducir: <%d>", (int) pid, size, paginas);
          
@@ -711,14 +698,13 @@ void resize_process(t_Payload* payload){
 
             free(pagina);
         }
-        
-            t_Package* package = package_create_with_header(RESIZE_REQUEST);
-            payload_enqueue(package->payload, &pid, sizeof(t_PID) );
-            package_send(package, CLIENT_CPU->fd_client);
-            package_destroy(package);
-        
+
+        return_value = 0;
     }
+
     //No hace falta el caso page == size ya que no sucederia nada
+
+    send_return_value_with_header(RESIZE_REQUEST, return_value, CLIENT_CPU->fd_client);
 }
 
 int seek_oldest_page_updated(t_list* page_list){
