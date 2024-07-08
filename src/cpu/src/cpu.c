@@ -506,10 +506,8 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, u_in
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
-    package_receive(&package, CONNECTION_MEMORY.fd_connection);
-
+    receive_expected_header(WRITE_REQUEST,CONNECTION_MEMORY.fd_connection);
     log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
-    package_destroy(package);
     
 }
 
@@ -528,14 +526,11 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU
 
     log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
 
-        //char *contenido;
-        //text_deserialize(package->payload, &contenido);
     payload_dequeue(package->payload, leido, bytes);
     set_register_value(&PCB, register_destination, (uint32_t)leido);        
     
     package_destroy(package);
-
-    return leido;
+    
 }
 
 t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t bytes){
