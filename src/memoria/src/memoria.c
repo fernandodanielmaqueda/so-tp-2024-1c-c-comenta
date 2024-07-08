@@ -436,6 +436,7 @@ int seek_marco_with_page_on_TDP(t_list* tablaPaginas, int pagina) {
 }
 
 void read_memory(t_Payload* payload, int socket) {
+
     t_Physical_Address dir_fisica = 0;
     t_PID pidBuscado = 0;
     t_MemorySize bytes = 0;
@@ -445,27 +446,22 @@ void read_memory(t_Payload* payload, int socket) {
     payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
     list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
 
-    char* lectura;
-    char* lectura_final = "";
-    //int temp_dir_fis = -1;
-    int current_frame;
+    //char* lectura;
+    //char* lectura_final = "";
+    int current_frame = 0;
+    //void* lectura_final = NULL;
+
+    t_Package* package = package_create_with_header(READ_REQUEST);
+    payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
 
     dir_fisica = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
-    
-    //t_MemorySize pages = bytes/TAM_PAGINA;
-    //t_MemorySize resto = bytes % TAM_PAGINA;
-    //if (resto != 0) pages += 1;
- 
-    //int current_frame = dir_fisica / TAM_PAGINA;
-    //t_Frame* frame = list_get(lista_marcos, current_frame);
-    //pidBuscado = frame->PID;
 
-    
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", (int) pidBuscado, dir_fisica, bytes);
 
     if(list_size(list_physical_addresses) < 2){//En caso de que sea menor a 2 pagina
-        memcpy(&lectura_final, posicion, bytes);  
+        //memcpy(&lectura_final, posicion, bytes);  
+        payload_enqueue(package->payload, posicion, bytes);
          //Actualizar pagina/TDP
         current_frame = dir_fisica / TAM_PAGINA;
         update_page(current_frame);
@@ -483,42 +479,36 @@ void read_memory(t_Payload* payload, int socket) {
 
             if (i == 1)//Primera pagina
             {
-                memcpy(&lectura, posicion, bytes_inicial);  
-                string_append(&lectura_final, lectura);
+                //memcpy(&lectura, posicion, bytes_inicial);  
+                //string_append(&lectura_final, lectura);
+                payload_enqueue(package->payload, posicion, bytes_inicial);
                 update_page(current_frame);
                 bytes_restantes -= bytes_inicial;
             }
             if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
             {
-                memcpy(&lectura, posicion, bytes_restantes);  
-                string_append(&lectura_final, lectura);
+                //memcpy(&lectura, posicion, bytes_restantes);  
+                //string_append(&lectura_final, lectura);
+                payload_enqueue(package->payload, posicion, bytes_restantes);
                 update_page(current_frame);
             }
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
-                memcpy(&lectura, posicion, TAM_PAGINA);  
-                string_append(&lectura_final, lectura);
+                //memcpy(&lectura, posicion, TAM_PAGINA);  
+                //string_append(&lectura_final, lectura);
+                payload_enqueue(package->payload, posicion, TAM_PAGINA);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
-
-                //temp_dir_fis = get_next_dir_fis(current_frame,pidBuscado);
-                //current_frame = temp_dir_fis / TAM_PAGINA;
-                //Posicion de la proxima escritura
-                //posicion = (void *)(((uint8_t *) memoria_principal) + temp_dir_fis);
             }
             
         }
     }
-
-    t_Package* package = package_create_with_header(READ_REQUEST);
-    text_serialize(package->payload, lectura_final);
-    payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
     package_send(package, socket);
     package_destroy(package);
 
 }
 
-void write_memory(t_Payload* payload, int socket){
+void write_memory_string(t_Payload* payload, int socket){
     t_Physical_Address dir_fisica;
     t_PID pidBuscado;
     t_MemorySize bytes = 0;
@@ -597,6 +587,74 @@ void write_memory(t_Payload* payload, int socket){
 }
 
 
+void write_memory(t_Payload* payload, int socket){
+    t_Physical_Address dir_fisica;
+    t_PID pidBuscado;
+    t_MemorySize bytes = 0;
+    t_list *list_physical_addresses = list_create();
+    int current_frame = 0;
+    
+    void* contenido = NULL;
+    t_MemorySize offset = 0;
+    
+    payload_dequeue(payload, &pidBuscado, sizeof(t_PID) );
+    payload_dequeue(payload, &bytes, sizeof(t_MemorySize) );
+    payload_dequeue(payload, contenido, bytes);
+    list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
+    
+    dir_fisica = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
+    void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
+    
+    
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", (int) pidBuscado, dir_fisica, bytes);
+
+//COMIENZA LA ESCRITURA
+    if(list_size(list_physical_addresses) < 2){//En caso de que sea menor a 2 pagina
+        memcpy(posicion, &contenido, bytes);
+         //Actualizar pagina/TDP
+        current_frame = dir_fisica / TAM_PAGINA;
+        update_page(current_frame);
+    }
+    else{//En caso de que el contenido supere a 1 pagina
+        t_MemorySize bytes_restantes = bytes;
+        int bytes_inicial = TAM_PAGINA - (dir_fisica - (current_frame * TAM_PAGINA));
+        
+        for (t_MemorySize i = 1; i > list_size(list_physical_addresses); i++)
+        {
+            dir_fisica = *((t_Physical_Address *) list_get(list_physical_addresses, i - 1));
+            current_frame = dir_fisica / TAM_PAGINA;
+            //Posicion de la proxima escritura
+            posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
+
+            if (i == 1)//Primera pagina
+            {
+                memcpy(posicion, (void*)((uint8_t *)contenido + offset), bytes_inicial);  
+                update_page(current_frame);
+                bytes_restantes -= bytes_inicial;
+                offset += bytes_inicial;
+            }
+            if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
+            {
+                memcpy(posicion, (void*)((uint8_t *)contenido + offset), bytes_restantes);
+                update_page(current_frame);
+                bytes_restantes -= bytes_inicial;
+            }
+            if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
+            {
+                memcpy(posicion, (void*)((uint8_t *)contenido + offset), TAM_PAGINA);
+                update_page(current_frame);
+                bytes_restantes -= TAM_PAGINA;
+                offset += TAM_PAGINA;
+            }
+            
+        }
+    }
+        
+    t_Package* package = package_create_with_header(WRITE_REQUEST);
+    payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
+    package_send(package, socket);
+    package_destroy(package);
+}
 
 
 
