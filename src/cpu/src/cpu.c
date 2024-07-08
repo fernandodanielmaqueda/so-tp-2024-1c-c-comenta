@@ -507,20 +507,15 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, u_in
     package_destroy(package);
 
     package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    if (package == NULL) {
-        log_error(MODULE_LOGGER, "Error al recibir el paquete");
-        exit(EXIT_FAILURE);
-    } else {
-        log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
-        //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
-    }
 
+    log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
     package_destroy(package);
     
 }
 
 void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU_Register register_destination) {
     t_Package* package;
+    void* leido;
 
     package = package_create_with_header(READ_REQUEST);
     payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
@@ -530,23 +525,17 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU
     package_destroy(package);
 
     package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    if (package == NULL)
-    {
-        log_error(MODULE_LOGGER, "Error al recibir el paquete");
-        exit(EXIT_FAILURE);
-    }  else
-    {
-        log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
 
-        char *contenido;
-        text_deserialize(package->payload, &contenido);
+    log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
 
-        set_register_value(&PCB, register_destination, (uint32_t) atoi(contenido));
-
-        //log_info(MODULE_LOGGER, "PID: %i - Accion: LEER - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
-    }
+        //char *contenido;
+        //text_deserialize(package->payload, &contenido);
+    payload_dequeue(package->payload, leido, bytes);
+    set_register_value(&PCB, register_destination, (uint32_t)leido);        
+    
     package_destroy(package);
-        
+
+    return leido;
 }
 
 t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t bytes){

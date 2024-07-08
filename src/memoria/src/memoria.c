@@ -452,7 +452,6 @@ void read_memory(t_Payload* payload, int socket) {
     //void* lectura_final = NULL;
 
     t_Package* package = package_create_with_header(READ_REQUEST);
-    payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
 
     dir_fisica = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) memoria_principal) + dir_fisica);
@@ -649,11 +648,7 @@ void write_memory(t_Payload* payload, int socket){
             
         }
     }
-        
-    t_Package* package = package_create_with_header(WRITE_REQUEST);
-    payload_enqueue(package->payload, &pidBuscado, sizeof(t_PID) );
-    package_send(package, socket);
-    package_destroy(package);
+    send_header(WRITE_REQUEST, socket);
 }
 
 
