@@ -495,33 +495,27 @@ void ask_memory_page_size(void) {
 }
 
 void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, u_int32_t contenido) {
-    t_ListSize size = list_size(list_physical_addresses);
 
     t_Package* package;
 
-        package = package_create_with_header(WRITE_REQUEST);
-        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
-        payload_enqueue(package->payload, &contenido, (size_t) bytes );
-        payload_enqueue(package->payload, &size, sizeof(uint32_t) );
-        for (size_t i = 0; i < size; i++) {
-            int value_aux = (*(int *) list_get(list_physical_addresses, i));
-            payload_enqueue(package->payload, &value_aux, sizeof(uint32_t) );
-        }
-        
-        package_send(package, CONNECTION_MEMORY.fd_connection);
-        package_destroy(package);
+    package = package_create_with_header(WRITE_REQUEST);
+    payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
+    payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
+    payload_enqueue(package->payload, &contenido, (size_t) bytes );
+    list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);      
+    package_send(package, CONNECTION_MEMORY.fd_connection);
+    package_destroy(package);
 
-        package_receive(&package, CONNECTION_MEMORY.fd_connection);
-        if (package == NULL) {
-            log_error(MODULE_LOGGER, "Error al recibir el paquete");
-            exit(EXIT_FAILURE);
-        } else {
-            log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
-            //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
-        }
+    package_receive(&package, CONNECTION_MEMORY.fd_connection);
+    if (package == NULL) {
+        log_error(MODULE_LOGGER, "Error al recibir el paquete");
+        exit(EXIT_FAILURE);
+    } else {
+        log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
+        //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
+    }
 
-        package_destroy(package);
+    package_destroy(package);
     
 }
 
@@ -532,6 +526,7 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes, e_CPU
         package = package_create_with_header(READ_REQUEST);
         payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
         payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
+        list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);  
         payload_enqueue(package->payload, &size, sizeof(t_ListSize) );
         for (size_t i = 0; i < size; i++) {
             int value_aux = *((int *) list_get(list_physical_addresses, i));
