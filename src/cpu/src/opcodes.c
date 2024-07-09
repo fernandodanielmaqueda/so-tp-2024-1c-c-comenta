@@ -489,13 +489,23 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
         return 1;
     }
 
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Interfaz: %s - Registro direccion: %s - Registro tamanio: %s", 
+                    PCB.PID, argv[0], argv[1], argv[2], argv[3]);
+
+    t_Logical_Address logical_address;
+    t_MemorySize bytes = 0;
+
+    get_register_value(PCB, register_address, &logical_address);
+    get_register_value(PCB, register_size, &bytes);
+    t_list *list_physical_addresses_origin = mmu(PCB.PID, logical_address, bytes);
+
     PCB.PC++;
-    
+
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_STDOUT_WRITE_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
-    //payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
-    //payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
+    payload_enqueue(SYSCALL_INSTRUCTION, &bytes, sizeof(t_MemorySize));
+    list_serialize(SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
 
     return 0;
 }
@@ -550,8 +560,16 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
         log_error(MODULE_LOGGER, "Uso: IO_FS_TRUNCATE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO TAMANIO>");
         return 1;
     }
+    e_CPU_Register register_size;
+    if(decode_register(argv[3], &register_size)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
+        return 1;
+    }
 
     log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
+
+    t_MemorySize bytes = 0;
+    get_register_value(PCB, register_size, &bytes);
 
     PCB.PC++;
     
@@ -559,7 +577,7 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_TRUNCATE_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
-    text_serialize(SYSCALL_INSTRUCTION, argv[3]);
+    payload_enqueue(SYSCALL_INSTRUCTION, &bytes, sizeof(t_MemorySize));
 
     return 0;
 }
@@ -571,8 +589,32 @@ int io_fs_write_cpu_operation(int argc, char **argv)
         log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
         return 1;
     }
+    e_CPU_Register register_address_ptro;
+    e_CPU_Register register_size_destino;
+    e_CPU_Register register_size;
+    if(decode_register(argv[3], &register_size_destino)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[3]);
+        return 1;
+    }
+    if (decode_register(argv[4], &register_size)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[4]);
+        return 1;
+    }
+    if (decode_register(argv[5], &register_address_ptro)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[5]);
+        return 1;
+    }
 
     log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+
+    t_Logical_Address logical_address_destino;
+    t_MemorySize puntero = 0;
+    t_MemorySize bytes = 0;
+
+    get_register_value(PCB, register_size_destino, &logical_address_destino);
+    get_register_value(PCB, register_address_ptro, &puntero);
+    get_register_value(PCB, register_size, &bytes);
+    t_list *list_physical_addresses_origin = mmu(PCB.PID, logical_address_destino, bytes);
 
     PCB.PC++;
     
@@ -580,9 +622,9 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_WRITE_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
-    text_serialize(SYSCALL_INSTRUCTION, argv[3]);
-    text_serialize(SYSCALL_INSTRUCTION, argv[4]);
-    text_serialize(SYSCALL_INSTRUCTION, argv[5]);
+    payload_enqueue(SYSCALL_INSTRUCTION, &puntero, sizeof(t_MemorySize));
+    payload_enqueue(SYSCALL_INSTRUCTION, &bytes, sizeof(t_MemorySize));
+    list_serialize(SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
 
     return 0;
 }
@@ -594,8 +636,31 @@ int io_fs_read_cpu_operation(int argc, char **argv)
         log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
         return 1;
     }
-
+    e_CPU_Register register_address_ptro;
+    e_CPU_Register register_size_destino;
+    e_CPU_Register register_size;
+    if(decode_register(argv[3], &register_size_destino)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[3]);
+        return 1;
+    }
+    if (decode_register(argv[4], &register_size)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[4]);
+        return 1;
+    }
+    if (decode_register(argv[5], &register_address_ptro)) {
+        log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[5]);
+        return 1;
+    }
     log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+
+    t_Logical_Address logical_address_destino;
+    t_MemorySize puntero = 0;
+    t_MemorySize bytes = 0;
+
+    get_register_value(PCB, register_size_destino, &logical_address_destino);
+    get_register_value(PCB, register_address_ptro, &puntero);
+    get_register_value(PCB, register_size, &bytes);
+    t_list *list_physical_addresses_origin = mmu(PCB.PID, logical_address_destino, bytes);
 
     PCB.PC++;
     
@@ -603,9 +668,9 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_READ_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
-    text_serialize(SYSCALL_INSTRUCTION, argv[3]);
-    text_serialize(SYSCALL_INSTRUCTION, argv[4]);
-    text_serialize(SYSCALL_INSTRUCTION, argv[5]);
+    payload_enqueue(SYSCALL_INSTRUCTION, &puntero, sizeof(t_MemorySize));
+    payload_enqueue(SYSCALL_INSTRUCTION, &bytes, sizeof(t_MemorySize));
+    list_serialize(SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
 
     return 0;
 }
