@@ -18,7 +18,8 @@
 #include "utils/module.h"
 
 typedef enum e_Eviction_Reason {
-    ERROR_EVICTION_REASON, // por ejemplo decode
+    UNEXPECTED_ERROR_EVICTION_REASON,
+
     EXIT_EVICTION_REASON, // Exclusivamente para la syscall EXIT
     INTERRUPTION_EVICTION_REASON, //Incluye el quantum
     SYSCALL_EVICTION_REASON // No incluye a EXIT

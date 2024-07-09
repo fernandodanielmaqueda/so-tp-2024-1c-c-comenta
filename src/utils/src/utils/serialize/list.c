@@ -10,9 +10,11 @@ void list_serialize(t_Payload *payload, t_list source, void (*element_serializer
   t_ListSize list_size = (t_ListSize) source.elements_count;
   payload_enqueue(payload, (void *) &(list_size), sizeof(t_ListSize));
 
-  for(t_link_element *element = source.head; list_size > 0; element = element->next, list_size--)
-    //payload_enqueue(payload, element->data, elements_size);
+  t_link_element *element = source.head;
+  for(; list_size > 0; list_size--) {
     element_serializer(payload, element->data);
+    element = element->next;
+  }
 
   list_log(source);
 }
@@ -25,10 +27,9 @@ void list_deserialize(t_Payload *payload, t_list *destination, void (*element_de
   payload_dequeue(payload, (void *) &(list_size), sizeof(t_ListSize));
   destination->elements_count = (int) list_size;
 
-  t_link_element **last_element = &(destination->head);
-
+  t_link_element *new_element, **last_element = &(destination->head);
   for(; list_size > 0; list_size--) {
-    t_link_element *new_element = malloc(sizeof(t_link_element));
+    new_element = malloc(sizeof(t_link_element));
     if(new_element == NULL) {
       log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para el nuevo elemento de la lista");
       exit(EXIT_FAILURE);

@@ -115,12 +115,12 @@ void listen_kernel(int socket);
 /**
  * @brief Crea los marcos e inicializa la lista de los mismos
  */
-void create_marcos();
+void create_frames(void);
 
 /**
  * @brief Libera el espacio reservado para los marcos
  */
-void free_marcos();
+void free_frames(void);
 
 
 /**
@@ -134,13 +134,13 @@ void respond_frame_request(t_Payload* socketRecibido);
  * @param tablaPaginas Tanla de paginas del proceso donde buscar la pagina.
  * @param pagina Pagina buscada.
  */
-int seek_marco_with_page_on_TDP (t_list* tablaPaginas, int pagina);
+t_Frame_Number seek_frame_number_by_page_number (t_list* tablaPaginas, t_Page_Number pagina);
 
 void resize_process(t_Payload* payload);
 void write_memory(t_Payload* socketRecibido, int socket);
 void read_memory(t_Payload* socketRecibido, int socket);
-void update_page(int current_frame);
-int get_next_dir_fis(int current_frame, int pid);
+void update_page(t_Frame_Number current_frame);
+int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid);
 int seek_oldest_page_updated(t_list* page_list);
 
 #endif /* MEMORIA_H */

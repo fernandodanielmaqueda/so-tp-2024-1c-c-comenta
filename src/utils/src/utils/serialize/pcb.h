@@ -50,6 +50,8 @@ typedef enum e_Process_State {
 } e_Process_State;
 
 typedef enum e_Exit_Reason {
+    UNEXPECTED_ERROR_EXIT_REASON,
+
     SUCCESS_EXIT_REASON,
     INVALID_RESOURCE_EXIT_REASON,
     INVALID_INTERFACE_EXIT_REASON,

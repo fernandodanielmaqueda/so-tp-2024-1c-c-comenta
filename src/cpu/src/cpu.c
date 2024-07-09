@@ -36,7 +36,7 @@ int tlb_replace_index_fifo = 0;
 pthread_mutex_t MUTEX_TLB;
 
 const char *t_interrupt_type_string[] = {
-    [ERROR_EVICTION_REASON] = "ERROR_EVICTION_REASON",
+    [UNEXPECTED_ERROR_EVICTION_REASON] = "UNEXPECTED_ERROR_EVICTION_REASON",
     [SYSCALL_EVICTION_REASON] = "SYSCALL_EVICTION_REASON",
     [INTERRUPTION_EVICTION_REASON] = "INTERRUPTION_EVICTION_REASON"
 };
@@ -139,7 +139,7 @@ void instruction_cycle(void)
             cpu_fetch_next_instruction(&IR);
             if(IR == NULL) {
                 log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
-                eviction_reason = ERROR_EVICTION_REASON;
+                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
                 break;
             }
 
@@ -159,7 +159,7 @@ void instruction_cycle(void)
                 }
                 arguments_remove(arguments);
                 free(IR);
-                eviction_reason = ERROR_EVICTION_REASON;
+                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
                 break;
             }
 
@@ -167,7 +167,7 @@ void instruction_cycle(void)
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
                 arguments_remove(arguments);
                 free(IR);
-                eviction_reason = ERROR_EVICTION_REASON;
+                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
                 break;
             }
 
@@ -179,7 +179,7 @@ void instruction_cycle(void)
 
             if (exit_status) {
                 log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
-                eviction_reason = ERROR_EVICTION_REASON;
+                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
                 break;
             }
 
@@ -345,51 +345,6 @@ int check_tlb(t_PID process_id, t_Page_Number page_number, t_Frame_Number *desti
     return 1;
 }
 
-void tlb_access(t_PID pid, t_Page_Number nro_page, t_Frame_Number frame_number_required, t_Physical_Address direc, e_In_Out in_out) {
-
-    t_Package* package;
-
-    if (in_out == IN) {
-
-        package = package_create_with_header(READ_REQUEST);
-        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        payload_enqueue(package->payload, &nro_page, sizeof(t_Page_Number) );
-        payload_enqueue(package->payload, &nro_page, sizeof(t_MemorySize) );
-        package_send(package, CONNECTION_MEMORY.fd_connection);
-        package_destroy(package);
-
-        package_receive(&package, CONNECTION_MEMORY.fd_connection);
-        if (package == NULL)
-        {
-            log_error(MODULE_LOGGER, "Error al recibir el paquete");
-            exit(EXIT_FAILURE);
-        }  else
-        {
-            log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);           
-        }
-        
-    }                
-      else //out
-    {
-
-        package = package_create_with_header(WRITE_REQUEST);
-        payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-        payload_enqueue(package->payload, &nro_page, sizeof(t_Page_Number) );
-        package_send(package, CONNECTION_MEMORY.fd_connection);
-        package_destroy(package);
-
-        package_receive(&package, CONNECTION_MEMORY.fd_connection);
-        if (package == NULL)
-        {
-            log_error(MODULE_LOGGER, "Error al recibir el paquete");
-            exit(EXIT_FAILURE);
-        }  else
-        {
-            log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
-        }
-    }
-}
-
 void add_to_tlb(t_PID pid , t_Page_Number page, t_Frame_Number frame) {
     t_TLB *tlb_entry = malloc(sizeof(t_TLB));
     tlb_entry->PID = pid;
@@ -494,28 +449,27 @@ void ask_memory_page_size(void) {
     package_destroy(package);
 }
 
-void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, uint32_t contenido) {
+void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size_t bytes) {
 
     t_Package* package;
 
     package = package_create_with_header(WRITE_REQUEST);
-    payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-    payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
-    payload_enqueue(package->payload, &contenido, sizeof(contenido) );
+    payload_enqueue(package->payload, &(pid), sizeof(t_PID));
     list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);
+    payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
+    payload_enqueue(package->payload, source, (size_t) bytes);
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
     receive_expected_header(WRITE_REQUEST,CONNECTION_MEMORY.fd_connection);
-    log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
-    
+    log_info(MODULE_LOGGER, "PID: %i - Accion: ESCRIBIR OK", pid);
 }
 
-void *attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes) {
-    void *contenido;
-    t_Package* package;
+void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, size_t bytes) {
+    if(list_physical_addresses == NULL || destination == NULL)
+        return;
 
-    package = package_create_with_header(READ_REQUEST);
+    t_Package* package = package_create_with_header(READ_REQUEST);
     payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
     payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
     list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);          
@@ -523,19 +477,14 @@ void *attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes) {
     package_destroy(package);
 
     package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    if (package == NULL)
-    {
+    if (package == NULL) {
         log_error(MODULE_LOGGER, "Error al recibir el paquete");
         exit(EXIT_FAILURE);
-    }  else
-    {
+    } else {
         log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
-        payload_dequeue(package->payload, &contenido, bytes);
+        payload_dequeue(package->payload, &destination, bytes);
     }
     package_destroy(package);
-
-    return contenido;
-        
 }
 
 t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t bytes){

@@ -85,7 +85,6 @@ void instruction_cycle(void);
 void *kernel_cpu_interrupt_handler(void *NULL_parameter);
 t_list* mmu(t_PID pid, t_Logical_Address dir_logica, size_t bytes_contenido);
 int check_tlb(t_PID process_id, t_Page_Number page_number, t_Frame_Number *destination);
-void tlb_access(t_PID pid, t_Page_Number nro_page, t_Frame_Number frame_number_required, t_Physical_Address direc, e_In_Out in_out);
 void request_data_in_memory(t_Frame_Number nro_frame_required, t_PID pid, t_Page_Number nro_page, int direc, int register_origin, int register_destination);
 void request_data_out_memory(t_Frame_Number nro_frame_required, t_PID pid, t_Page_Number nro_page, int direc, int register_origin, int register_destination);
 void request_frame_memory(t_PID pid, t_Page_Number page);
@@ -96,7 +95,7 @@ void delete_tlb_entry_by_pid_deleted(t_PID pid);
 void cpu_fetch_next_instruction(char **line);
 void ask_memory_page_size(void);
 t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t bytes);
-void *attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes);
-void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, uint32_t contenido);
+void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size_t bytes);
+void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, size_t bytes);
 
 #endif /* CPU_H */

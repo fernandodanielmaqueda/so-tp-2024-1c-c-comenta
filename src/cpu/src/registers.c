@@ -36,79 +36,61 @@ int decode_register(char *name, e_CPU_Register *destination) {
     return 1;
 }
 
-int get_register_accessor(t_PCB *pcb, e_CPU_Register cpu_register, t_CPU_Register_Accessor *destination) {
-    if(pcb == NULL || destination == NULL)
-        return 1;
-
-    (*destination).register_dataType = CPU_REGISTERS[cpu_register].dataType;
-    (*destination).register_pointer = NULL;
+void *get_register_pointer(t_PCB *pcb, e_CPU_Register cpu_register) {
+    if(pcb == NULL)
+        return NULL;
 
     switch (cpu_register) {
         case PC_REGISTER:
-            (*destination).register_pointer = &(pcb->PC);
-            break;
+            return (void *) &(pcb->PC);
             
         case AX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.AX);
-            break;
+            return (void *) &(pcb->cpu_registers.AX);
         case BX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.BX);
-            break;
+            return (void *) &(pcb->cpu_registers.BX);
         case CX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.CX);
-            break;
+            return (void *) &(pcb->cpu_registers.CX);
         case DX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.DX);
-            break;
+            return (void *) &(pcb->cpu_registers.DX);
         case EAX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.EAX);
-            break;
+            return (void *) &(pcb->cpu_registers.EAX);
         case EBX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.EBX);
-            break;
+            return (void *) &(pcb->cpu_registers.EBX);
         case ECX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.ECX);
-            break;
+            return (void *) &(pcb->cpu_registers.ECX);
         case EDX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.EDX);
-            break;
+            return (void *) &(pcb->cpu_registers.EDX);
         case RAX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.RAX);
-            break;
+            return (void *) &(pcb->cpu_registers.RAX);
         case RBX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.RBX);
-            break;
+            return (void *) &(pcb->cpu_registers.RBX);
         case RCX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.RCX);
-            break;
+            return (void *) &(pcb->cpu_registers.RCX);
         case RDX_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.RDX);
-            break;
+            return (void *) &(pcb->cpu_registers.RDX);
         case SI_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.SI);
-            break;
+            return (void *) &(pcb->cpu_registers.SI);
         case DI_REGISTER:
-            (*destination).register_pointer = &(pcb->cpu_registers.DI);
-            break;
+            return (void *) &(pcb->cpu_registers.DI);
     }
 
-    return 0;
+    return NULL;
 }
 
 int set_register_value(t_PCB *pcb, e_CPU_Register cpu_register, uint32_t value) {
     if(pcb == NULL)
         return 1;
-    
-    t_CPU_Register_Accessor register_accessor;
-    if(get_register_accessor(pcb, cpu_register, &register_accessor))
+        
+    void *register_pointer = get_register_pointer(pcb, cpu_register);
+    if(register_pointer == NULL)
         return 1;
 
-    switch(register_accessor.register_dataType) {
+    switch(CPU_REGISTERS[cpu_register].dataType) {
         case UINT8_DATATYPE:
-            *(uint8_t *) register_accessor.register_pointer = (uint8_t) value;
+            *(uint8_t *) register_pointer = (uint8_t) value;
             break;
         case UINT32_DATATYPE:
-            *(uint32_t *) register_accessor.register_pointer = value;
+            *(uint32_t *) register_pointer = value;
             break;
     }
 
@@ -121,25 +103,27 @@ int get_register_value(t_PCB pcb, e_CPU_Register cpu_register, uint32_t *destina
     if(destination == NULL)
         return 1;
 
-    t_CPU_Register_Accessor register_accessor;
-    if(get_register_accessor(&pcb, cpu_register, &register_accessor))
+    void *register_pointer = get_register_pointer(&pcb, cpu_register);
+    if(register_pointer == NULL)
         return 1;
 
-    switch (register_accessor.register_dataType) {
+    switch(CPU_REGISTERS[cpu_register].dataType) {
         case UINT8_DATATYPE:
-            *destination = *(uint8_t *) register_accessor.register_pointer;
+            *destination = (uint32_t) *((uint8_t *) register_pointer);
             break;
         case UINT32_DATATYPE:
-            *destination = *(uint32_t *) register_accessor.register_pointer;
+            *destination = *((uint32_t *) register_pointer);
             break;
     }
+
+    
 
     return 0;
 }
 
-
-size_t get_register_size(e_CPU_Register registro){
-    switch (CPU_REGISTERS[registro].dataType) {
+size_t get_register_size(e_CPU_Register cpu_register) {
+    
+    switch(CPU_REGISTERS[cpu_register].dataType) {
         case UINT8_DATATYPE:
             return sizeof(uint8_t);
         case UINT32_DATATYPE:

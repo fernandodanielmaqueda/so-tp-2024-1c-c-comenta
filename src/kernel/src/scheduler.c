@@ -52,6 +52,8 @@ int QUANTUM_INTERRUPT;
 t_temporal *TEMPORAL_DISPATCHED;
 
 const char *EXIT_REASONS[] = {
+	[UNEXPECTED_ERROR_EXIT_REASON] = "UNEXPECTED ERROR",
+
 	[SUCCESS_EXIT_REASON] = "SUCCESS",
 	[INVALID_RESOURCE_EXIT_REASON] = "INVALID_RESOURCE",
 	[INVALID_INTERFACE_EXIT_REASON] = "INVALID_INTERFACE",
@@ -290,7 +292,12 @@ void *short_term_scheduler(void *parameter) {
 			wait_list_process_states();
 
 				switch(eviction_reason) {
-					//case ERROR_EVICTION_REASON:
+					case UNEXPECTED_ERROR_EVICTION_REASON:
+						pcb->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+						switch_process_state(pcb, EXIT_STATE);
+						PCB_EXECUTE = 0;
+						break;
+
 					case EXIT_EVICTION_REASON:
 						pcb->exit_reason = SUCCESS_EXIT_REASON;
 						switch_process_state(pcb, EXIT_STATE);
