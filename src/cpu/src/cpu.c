@@ -506,21 +506,13 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, size_t bytes, uint
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
-    package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    if (package == NULL) {
-        log_error(MODULE_LOGGER, "Error al recibir el paquete");
-        exit(EXIT_FAILURE);
-    } else {
-        log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
-        //log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR - Pagina: %i - Direccion Fisica: %i %i ", pid, nro_page, frame_number_required, direc);
-    }
-
-    package_destroy(package);
+    receive_expected_header(WRITE_REQUEST,CONNECTION_MEMORY.fd_connection);
+    log_info(MODULE_LOGGER, "PID: %i -Accion: ESCRIBIR OK", pid);
     
 }
 
-char *attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes) {
-    char *contenido;
+void *attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes) {
+    void *contenido;
     t_Package* package;
 
     package = package_create_with_header(READ_REQUEST);
@@ -538,7 +530,7 @@ char *attend_read(t_PID pid, t_list *list_physical_addresses, size_t bytes) {
     }  else
     {
         log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
-        text_deserialize(package->payload, &contenido);
+        payload_dequeue(package->payload, &contenido, bytes);
     }
     package_destroy(package);
 
