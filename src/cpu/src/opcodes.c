@@ -102,12 +102,13 @@ int mov_in_cpu_operation(int argc, char **argv)
 
     //Busco el valor (DL) del registro y lo asigno a la variable logical_address
     t_Logical_Address logical_address;
-    get_register_value(PCB, register_data, &logical_address);
+    get_register_value(PCB, register_address, &logical_address);
 
-    size_t bytes = get_register_size(register_address);
+    size_t bytes = get_register_size(register_data);
 
     t_list *list_physical_addresses = mmu(PCB.PID, logical_address, bytes);
-    attend_read(PCB.PID, list_physical_addresses, bytes, register_address);
+    void* leido = attend_read(PCB.PID, list_physical_addresses, bytes);
+    set_register_value(&PCB, register_data, *((uint32_t*)leido));     
 
     PCB.PC++;
 
@@ -121,24 +122,36 @@ int mov_out_cpu_operation(int argc, char **argv)
 
     if (argc != 3)
     {
-        log_error(MODULE_LOGGER, "Uso: MOV_OUT <REGISTRO DIRECCION> <REGISTRO DATOS>");
+        log_error(MODULE_LOGGER, "Uso: MOV_OUT <REGISTRO DATOS> <REGISTRO DIRECCION>");
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "MOV_OUT %s %s", argv[1], argv[2]);
 
-    e_CPU_Register register_origin;
-    e_CPU_Register register_destination;
-    if(decode_register(argv[1], &register_origin)) {
+    e_CPU_Register register_address;
+    if (decode_register(argv[1], &register_address)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[1]);
         return 1;
     }
-    if (decode_register(argv[2], &register_destination)) {
+
+    e_CPU_Register register_data;
+    if(decode_register(argv[2], &register_data)) {
         log_error(MODULE_LOGGER, "Registro %s no encontrado", argv[2]);
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro datos: %s ", PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
+
+    //Busco el valor (DL) del registro y lo asigno a la variable logical_address
+    t_Logical_Address logical_address;
+    get_register_value(PCB, register_address, &logical_address);
+
+    size_t bytes = get_register_size(register_data);
+    void* data = NULL;
+    get_register_value(PCB, register_data, data);
+
+    t_list *list_physical_addresses = mmu(PCB.PID, logical_address, bytes);
+    attend_write(PCB.PID, list_physical_addresses, bytes, data);
 
     PCB.PC++;
 
@@ -171,6 +184,14 @@ int sum_cpu_operation(int argc, char **argv)
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", PCB.PID, argv[0], argv[1], argv[2]);
 
+
+    uint32_t valor_reg_dest = 0;
+    uint32_t valor_reg_origin = 0;
+    get_register_value(PCB, register_destination, &valor_reg_dest);
+    get_register_value(PCB, register_origin, &valor_reg_origin);
+
+    set_register_value(&PCB, register_destination, (valor_reg_dest + valor_reg_origin));
+
     PCB.PC++;
 
     SYSCALL_CALLED = 0;
@@ -202,6 +223,13 @@ int sub_cpu_operation(int argc, char **argv)
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", PCB.PID, argv[0], argv[1], argv[2]);
 
+    uint32_t valor_reg_dest = 0;
+    uint32_t valor_reg_origin = 0;
+    get_register_value(PCB, register_destination, &valor_reg_dest);
+    get_register_value(PCB, register_origin, &valor_reg_origin);
+
+    set_register_value(&PCB, register_destination, (valor_reg_dest - valor_reg_origin));
+
     PCB.PC++;
 
     SYSCALL_CALLED = 0;
@@ -228,8 +256,16 @@ int jnz_cpu_operation(int argc, char **argv)
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB.PID, argv[0], argv[1], argv[2]);
 
-    PCB.PC++;
-
+    uint32_t valor_reg_name = 0;
+    get_register_value(PCB, valor_reg_name, &valor_reg_name);
+    if (valor_reg_name == 0)
+    {
+        PCB.PC++;
+    }
+    else{
+        PCB.PC = (t_PC)atoi(argv[2]);
+    }
+    
     SYSCALL_CALLED = 0;
 
     return 0;
@@ -251,25 +287,36 @@ int resize_cpu_operation(int argc, char **argv)
 
     //send_2int(PCB.PID, value, CONNECTION_MEMORY.fd_connection, RESIZE_REQUEST);
 
-    t_Package *package;
+    t_MemorySize size = (t_MemorySize)atoi(argv[1]);
+
+    t_Package *package = package_create_with_header(RESIZE_REQUEST);
+    payload_enqueue(package->payload, &PCB.PID, sizeof(t_PID) );
+    payload_enqueue(package->payload, &size, sizeof(t_MemorySize) );
+    package_send(package, CONNECTION_MEMORY.fd_connection);
+    package_destroy(package);
+    
+
     package_receive(&package, CONNECTION_MEMORY.fd_connection);
+    e_Header header_rec = package->header;
+    package_destroy(package);
     if (package == NULL)
     {
         log_error(MODULE_LOGGER, "Error al recibir el paquete");
         return 1;
     }
 
-    if (package->header == RESIZE_REQUEST)
+    if (header_rec == RESIZE_REQUEST)
     {
         log_info(MODULE_LOGGER, "Se redimensiono correctamente");
     }
-    else if (package->header == OUT_OF_MEMORY)
-    {
-        // COMUNICAR CON KERNEL QUE NO HAY MAS MEMORIA
+    else if (header_rec == OUT_OF_MEMORY)
+    {// COMUNICAR CON KERNEL QUE NO HAY MAS MEMORIA
+        t_Package *package_OFM = package_create_with_header(OUT_OF_MEMORY);
+        pcb_serialize(package_OFM->payload, PCB);
+        package_destroy(package_OFM);
+
         return 1;
     }
-
-    package_destroy(package);
 
     PCB.PC++;
 
@@ -293,6 +340,20 @@ int copy_string_cpu_operation(int argc, char **argv)
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB.PID, argv[0], argv[1]);
 
     // COPY_STRING (Tamaño): Toma del string apuntado por el registro SI y copia la cantidad de bytes indicadas en el parámetro tamaño a la posición de memoria apuntada por el registro DI.
+
+    //Busco el valor (DL) del registro y lo asigno a la variable logical_address
+    t_Logical_Address logical_address_origin;
+    t_Logical_Address logical_address_destino;
+    t_MemorySize bytes = (t_MemorySize)atoi(argv[1]);
+
+    get_register_value(PCB, PCB.cpu_registers.SI, &logical_address_origin);
+    get_register_value(PCB, PCB.cpu_registers.DI, &logical_address_destino);
+
+    t_list *list_physical_addresses_origin = mmu(PCB.PID, logical_address_origin, bytes);
+    void* data = attend_read(PCB.PID, list_physical_addresses_origin, bytes); 
+
+    t_list *list_physical_addresses_dest = mmu(PCB.PID, logical_address_destino, bytes);
+    attend_write(PCB.PID, list_physical_addresses_dest, bytes, data);
 
     PCB.PC++;
 
@@ -385,21 +446,23 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro direccion: %s - Registro tamanio: %s", PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Interfaz: %s - Registro direccion: %s - Registro tamanio: %s", 
+                    PCB.PID, argv[0], argv[1], argv[2], argv[3]);
 
-    //t_CPU_Register_Accessor adress_accessor = get_register_accessor(&PCB, register_address);
-    //t_CPU_Register_Accessor size_accessor = get_register_accessor(&PCB, register_size);
+    t_Logical_Address logical_address;
+    t_MemorySize bytes = 0;
 
-    //uint32_t value;
-    // get_register_value(destination_accessor, value);
+    get_register_value(PCB, register_address, &logical_address);
+    get_register_value(PCB, register_size, &bytes);
+    t_list *list_physical_addresses_origin = mmu(PCB.PID, logical_address, bytes);
 
     PCB.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_STDIN_READ_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
-    //payload_enqueue(SYSCALL_INSTRUCTION, &(dir_logica_origin), sizeof(int));
-    //payload_enqueue(SYSCALL_INSTRUCTION, &(register_destination), sizeof(int));
+    payload_enqueue(SYSCALL_INSTRUCTION, &bytes, sizeof(t_MemorySize));
+    list_serialize(SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
 
     return 0;
 }
