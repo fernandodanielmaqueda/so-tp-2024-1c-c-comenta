@@ -771,3 +771,16 @@ int str_to_memory_size(char *string, t_MemorySize *destination)
         
     return 0;
 }
+
+
+int str_to_pc(char *string, t_PC *destination)
+{
+    char *end;
+
+    *destination = (t_PC) strtoul(string, &end, 10);
+
+    if(!*string || *end)
+        return 1;
+        
+    return 0;
+}

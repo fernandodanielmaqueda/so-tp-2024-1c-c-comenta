@@ -56,5 +56,6 @@ int io_fs_read_cpu_operation(int argc, char **argv);
 int exit_cpu_operation(int argc, char **argv);
 int str_to_uint32(char *string, uint32_t *destination);
 int str_to_memory_size(char *string, t_MemorySize *destination);
+int str_to_pc(char *string, t_PC *destination);
 
 #endif // CPU_OPCODES_H

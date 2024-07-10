@@ -289,7 +289,7 @@ int kernel_command_pause_scheduling(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION");
 
-    // TODO: Implementación
+    wait_switching_states();
 
     return 0;
 }
@@ -303,7 +303,7 @@ int kernel_command_resume_scheduling(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION");
 
-    // TODO: Implementación
+    signal_switching_states(); // Esto es una función (por si no lo sabías) que simula ser un semaforo que desbloquea todo
 
     return 0;
 }
