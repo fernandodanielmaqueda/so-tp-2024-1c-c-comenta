@@ -60,8 +60,11 @@ int module(int argc, char *argv[]) {
 	receive_expected_header(INTERFACE_NAME_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);
 	send_text_with_header(INTERFACE_NAME_REQUEST_HEADER, INTERFACE_NAME, CONNECTION_KERNEL.fd_connection);
 
-	// Invoco a la funcion que corresponda
-	IO_TYPES[IO_TYPE].function();
+	switch(IO_TYPE){
+		case DIALFS_IO_TYPE:
+		initialize_blocks();
+		initialize_bitmap(BLOCK_COUNT);
+	}
 
 	//finish_threads();
 	finish_sockets();
@@ -206,6 +209,92 @@ int io_operation_execute(t_Payload *operation) {
     return IO_OPERATIONS[io_opcode].function(operation);
 }
 
+void initialize_blocks() {
+    size_t blocks_size = BLOCK_SIZE * BLOCK_COUNT;
+
+    int fd = open("bloques.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        log_error(MODULE_LOGGER, "Error al abrir el archivo bloques.dat: %s", strerror(errno));
+        return;
+    }
+
+    if (ftruncate(fd, blocks_size) == -1) {
+        log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bloques.dat: %s", strerror(errno));
+        close(fd);
+        return;
+    }
+
+    char *blocks_data = mmap(NULL, blocks_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (blocks_data == MAP_FAILED) {
+        log_error(MODULE_LOGGER, "Error al mapear el archivo bloques.dat a memoria: %s", strerror(errno));
+        close(fd);
+        return;
+    }
+
+    for (int i = 0; i < BLOCK_COUNT; ++i) {
+        int *block_data = (int *)(blocks_data + i * BLOCK_SIZE);
+        *block_data = i;
+    }
+
+    if (msync(blocks_data, blocks_size, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+    }
+
+    if (munmap(blocks_data, blocks_size) == -1) {
+        log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
+    }
+
+    close(fd);
+    log_info(MODULE_LOGGER, "Bloques creados y mapeados correctamente.");
+}
+
+
+void initialize_bitmap(size_t block_count) {
+	float BITMAP_SIZE = block_count / 8;
+    int fd = open("bitmap.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
+        return;
+    }
+
+    if (ftruncate(fd, BITMAP_SIZE) == -1) {
+        log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bitmap.dat: %s", strerror(errno));
+        close(fd);
+        return;
+    }
+
+    unsigned char *bitmap_data = mmap(NULL, BITMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (bitmap_data == MAP_FAILED) {
+        log_error(MODULE_LOGGER, "Error al mapear el archivo bitmap.dat a memoria: %s", strerror(errno));
+        close(fd);
+        return;
+    }
+
+    t_bitarray *bitmap = bitarray_create((char *)bitmap_data, BITMAP_SIZE);
+    if (bitmap == NULL) {
+        log_error(MODULE_LOGGER, "Error al crear la estructura del bitmap");
+        munmap(bitmap_data, BITMAP_SIZE);
+        close(fd);
+        return;
+    }
+
+    for (size_t i = 0; i < BITMAP_SIZE; ++i) {
+        bitmap->bitarray[i] = 0xFF;
+    }
+
+    if (msync(bitmap_data, BITMAP_SIZE, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
+    }
+
+    if (munmap(bitmap_data, BITMAP_SIZE) == -1) {
+        log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
+    }
+
+    free(bitmap);
+    close(fd);
+    log_info(MODULE_LOGGER, "Bitmap creado y mapeado correctamente.");
+}
+
 int io_gen_sleep_io_operation(t_Payload *operation) {
 
 	switch(IO_TYPE) {
@@ -228,22 +317,23 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
     return 0;
 }
 
-int io_stdin_read_io_operation(t_Payload *operation) {
+int io_stdin_read_io_operation(t_Package *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
-	t_Package *package;
-	uint32_t registro_direccion;
-	int registro_tamanio;
-
 	switch(IO_TYPE){
 		case STDIN_IO_TYPE:
-			//registro_direccion = atoi(argv[2]);
-			//registro_tamanio = atoi(argv[3]);
-			//char* text = malloc(registro_tamanio * sizeof(char));
-			//log_info(MODULE_LOGGER, "Ingrese un texto: ");
-			//fgets(text, registro_tamanio * sizeof(char), stdin);
-			//int pid = 0;
+		{
+			t_PID pid;
+			t_list physical_addresses;
+			t_MemorySize bytes;
+
+			payload_dequeue(package->payload, &pid, sizeof(t_PID));
+
+
+		}
+	
+
 
 
 			//send_write_request( pid,  registro_direccion,  text, CONNECTION_MEMORY.fd_connection, IO_STDIN_WRITE_MEMORY);

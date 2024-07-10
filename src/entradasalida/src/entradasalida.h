@@ -13,13 +13,19 @@
 #include <math.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"
 #include "commons/collections/list.h"
+#include "commons/bitarray.h"
 #include "utils/module.h"
 #include "utils/send.h"
 #include "utils/socket.h"
+#include "utils/package.h"
+
 
 typedef enum e_IO_Type {
     GENERIC_IO_TYPE,
