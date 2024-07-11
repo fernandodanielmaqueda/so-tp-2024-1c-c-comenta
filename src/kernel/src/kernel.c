@@ -100,7 +100,7 @@ void initialize_semaphores(void) {
 	sem_init(&SEM_MULTIPROGRAMMING_LEVEL, 0, MULTIPROGRAMMING_LEVEL);
 	sem_init(&SEM_MULTIPROGRAMMING_POSTER, 0, 0);
 
-	sem_init(&SEM_STOP_SCHEDULING_COUNT, 0, 0);
+	sem_init(&SEM_SCHEDULING_WAIT_COUNT, 0, 0);
 	sem_init(&SEM_SWITCHING_STATES_COUNT, 0, 0);
 }
 
@@ -113,7 +113,7 @@ void finish_semaphores(void) {
 	sem_destroy(&SEM_MULTIPROGRAMMING_LEVEL);
 	sem_destroy(&SEM_MULTIPROGRAMMING_POSTER);
 
-	sem_destroy(&SEM_STOP_SCHEDULING_COUNT);
+	sem_destroy(&SEM_SCHEDULING_WAIT_COUNT);
 	sem_destroy(&SEM_SWITCHING_STATES_COUNT);
 
 }
@@ -123,7 +123,7 @@ void wait_list_process_states(void) {
     int sem_value;
     pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
     while(1) {
-        sem_getvalue(&SEM_STOP_SCHEDULING_COUNT, &sem_value);
+        sem_getvalue(&SEM_SCHEDULING_WAIT_COUNT, &sem_value);
         if(!sem_value)
             break;
         pthread_cond_wait(&COND_LIST_PROCESS_STATES, &MUTEX_LIST_PROCESS_STATES);

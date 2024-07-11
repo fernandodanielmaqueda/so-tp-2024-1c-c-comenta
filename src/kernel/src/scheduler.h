@@ -90,8 +90,8 @@ extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 extern int SCHEDULING_PAUSED;
 extern pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
 
-extern sem_t SEM_STOP_SCHEDULING_COUNT;
 extern pthread_mutex_t MUTEX_LIST_PROCESS_STATES;
+extern sem_t SEM_SCHEDULING_WAIT_COUNT;
 extern pthread_cond_t COND_LIST_PROCESS_STATES;
 extern sem_t SEM_SWITCHING_STATES_COUNT;
 extern pthread_cond_t COND_SWITCHING_STATES;

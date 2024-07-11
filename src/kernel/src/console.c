@@ -415,7 +415,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
 }
 
 void wait_switching_states(void) {
-    sem_post(&SEM_STOP_SCHEDULING_COUNT);
+    sem_post(&SEM_SCHEDULING_WAIT_COUNT);
 
     int sem_value;
     pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
@@ -429,7 +429,7 @@ void wait_switching_states(void) {
 }
 
 void signal_switching_states(void) {
-    sem_wait(&SEM_STOP_SCHEDULING_COUNT);
+    sem_wait(&SEM_SCHEDULING_WAIT_COUNT);
 
     // se podría agregar un if para hacer el broadcast sólo si el semáforo efectivamente quedó en 0
     pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
