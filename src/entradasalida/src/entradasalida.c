@@ -326,14 +326,14 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 		case STDIN_IO_TYPE:
 		{
 			e_Header IO_STDIN_WRITE_MEMORY;	
-			t_Package package;
+			t_Package *package;
 			//package->header = IO_STDIN_WRITE_MEMORY;
 
 
 			t_list *physical_addresses;
 			t_MemorySize bytes;
 
-			payload_dequeue(operation, &pid, sizeof(t_PID));
+			//payload_dequeue(operation, &PID, sizeof(t_PID));
 			//list_deserialize
 
 			//package_send(package, CONNECTION_MEMORY.fd_connection);
