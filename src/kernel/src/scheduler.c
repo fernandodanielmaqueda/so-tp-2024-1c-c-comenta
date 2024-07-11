@@ -115,28 +115,6 @@ void initialize_scheduling(void) {
 	initialize_short_term_scheduler();
 }
 
-void pause_scheduling(void) {
-	/*
-	sem_wait(&sem_detener_planificacion);
-	sem_wait(&sem_detener_new_ready);
-	sem_wait(&sem_detener_block_ready);
-	sem_wait(&sem_detener_block);
-	sem_wait(&sem_detener_execute);
-	sem_post(&sem_detener_planificacion);
-	*/
-}
-
-void resume_scheduling(void) {
-	/*
-	sem_wait(&sem_detener_planificacion);
-	sem_post(&sem_detener_new_ready);
-	sem_post(&sem_detener_block_ready);
-	sem_post(&sem_detener_block);
-	sem_post(&sem_detener_execute);
-	sem_post(&sem_detener_planificacion);
-	*/
-}
-
 void finish_scheduling(void) {
 	free(PCB_ARRAY);
 	list_destroy_and_destroy_elements(LIST_RELEASED_PIDS, free);
