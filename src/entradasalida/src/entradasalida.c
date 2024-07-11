@@ -5,6 +5,7 @@
 
 char *INTERFACE_NAME;
 
+t_PID PID;
 char *MODULE_NAME = "entradasalida";
 char *MODULE_LOG_PATHNAME = "entradasalida.log";
 
@@ -317,19 +318,25 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
     return 0;
 }
 
-int io_stdin_read_io_operation(t_Package *operation) {
+int io_stdin_read_io_operation(t_Payload *operation) {
 
     // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
 	switch(IO_TYPE){
 		case STDIN_IO_TYPE:
 		{
-			t_PID pid;
-			t_list physical_addresses;
+			e_Header IO_STDIN_WRITE_MEMORY;	
+			t_Package package;
+			//package->header = IO_STDIN_WRITE_MEMORY;
+
+
+			t_list *physical_addresses;
 			t_MemorySize bytes;
 
-			payload_dequeue(package->payload, &pid, sizeof(t_PID));
+			payload_dequeue(operation, &pid, sizeof(t_PID));
+			//list_deserialize
 
+			//package_send(package, CONNECTION_MEMORY.fd_connection);
 
 		}
 	
