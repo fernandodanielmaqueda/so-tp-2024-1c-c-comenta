@@ -157,12 +157,10 @@ void create_process(t_Payload *process_data) {
     list_add(LIST_PROCESSES, new_process);
     
     log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <0>", (int) new_process->PID);
 
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client);
     free(target_path);
-    
 }
 
 void kill_process(t_Payload *payload){
@@ -176,7 +174,7 @@ void kill_process(t_Payload *payload){
     int size = list_size(process->pages_table);
     for (; size > 0 ; size--)
     {
-        paginaBuscada = list_get(process->pages_table, i - 1);
+        paginaBuscada = list_get(process->pages_table, size - 1);
         t_Frame *marco = list_get(LIST_FRAMES, paginaBuscada->assigned_frame);
         list_add(LIST_FREE_FRAMES, marco);
         free(paginaBuscada);
