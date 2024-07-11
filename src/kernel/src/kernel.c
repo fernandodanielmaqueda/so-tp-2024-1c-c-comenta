@@ -56,6 +56,8 @@ void initialize_mutexes(void) {
 
 	pthread_mutex_init(&MUTEX_MULTIPROGRAMMING_DIFFERENCE, NULL);
 
+	pthread_mutex_init(&MUTEX_SCHEDULING_PAUSED, NULL);
+
 	pthread_mutex_init(&MUTEX_LIST_PROCESS_STATES, NULL);
 	pthread_cond_init(&COND_LIST_PROCESS_STATES, NULL);
 	pthread_cond_init(&COND_SWITCHING_STATES, NULL);
@@ -81,6 +83,8 @@ void finish_mutexes(void) {
 	pthread_mutex_destroy(&MUTEX_KILL_EXECUTING_PROCESS);
 
 	pthread_mutex_destroy(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
+	
+	pthread_mutex_destroy(&MUTEX_SCHEDULING_PAUSED);
 
 	pthread_mutex_destroy(&MUTEX_LIST_PROCESS_STATES);
 	pthread_cond_destroy(&COND_LIST_PROCESS_STATES);
@@ -92,8 +96,11 @@ void initialize_semaphores(void) {
 	sem_init(&SEM_LONG_TERM_SCHEDULER_NEW, 0, 0);
 	sem_init(&SEM_LONG_TERM_SCHEDULER_EXIT, 0, 0);
 	sem_init(&SEM_SHORT_TERM_SCHEDULER, 0, 0);
+
 	sem_init(&SEM_MULTIPROGRAMMING_LEVEL, 0, MULTIPROGRAMMING_LEVEL);
 	sem_init(&SEM_MULTIPROGRAMMING_POSTER, 0, 0);
+
+	sem_init(&SEM_STOP_SCHEDULING_COUNT, 0, 0);
 	sem_init(&SEM_SWITCHING_STATES_COUNT, 0, 0);
 }
 
@@ -102,23 +109,33 @@ void finish_semaphores(void) {
 	sem_destroy(&SEM_LONG_TERM_SCHEDULER_NEW);
 	sem_destroy(&SEM_LONG_TERM_SCHEDULER_EXIT);
 	sem_destroy(&SEM_SHORT_TERM_SCHEDULER);
+
 	sem_destroy(&SEM_MULTIPROGRAMMING_LEVEL);
 	sem_destroy(&SEM_MULTIPROGRAMMING_POSTER);
+
+	sem_destroy(&SEM_STOP_SCHEDULING_COUNT);
 	sem_destroy(&SEM_SWITCHING_STATES_COUNT);
 
 }
 
 void wait_list_process_states(void) {
+
+    int sem_value;
     pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-        while(LIST_PROCESS_STATES)
-            pthread_cond_wait(&COND_LIST_PROCESS_STATES, &MUTEX_LIST_PROCESS_STATES);
-		sem_post(&SEM_SWITCHING_STATES_COUNT);
+    while(1) {
+        sem_getvalue(&SEM_STOP_SCHEDULING_COUNT, &sem_value);
+        if(!sem_value)
+            break;
+        pthread_cond_wait(&COND_LIST_PROCESS_STATES, &MUTEX_LIST_PROCESS_STATES);
+    }
+	sem_post(&SEM_SWITCHING_STATES_COUNT);
     pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
 }
 
 void signal_list_process_states(void) {
 	sem_wait(&SEM_SWITCHING_STATES_COUNT);
-	pthread_cond_signal(&COND_SWITCHING_STATES);
+	// se podría agregar un if para hacer el signal sólo si el semáforo efectivamente quedó en 0
+	pthread_cond_signal(&COND_SWITCHING_STATES); // podría ser un broadcast en lugar de un wait si hay más de un comando de consola esperando
 }
 
 void read_module_config(t_config *module_config) {

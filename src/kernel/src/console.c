@@ -287,10 +287,19 @@ int kernel_command_pause_scheduling(int argc, char* argv[]) {
         return 1;
     }
 
+    pthread_mutex_lock(&MUTEX_SCHEDULING_PAUSED);
+        if(SCHEDULING_PAUSED) {
+            pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+            log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION sin efecto.");
+            return 0;
+        }
+
+        SCHEDULING_PAUSED = 1;
+    pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+
     log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION");
 
     wait_switching_states();
-
     return 0;
 }
 
@@ -301,10 +310,19 @@ int kernel_command_resume_scheduling(int argc, char* argv[]) {
         return 1;
     }
 
+    pthread_mutex_lock(&MUTEX_SCHEDULING_PAUSED);
+        if(!SCHEDULING_PAUSED) {
+            pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+            log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION sin efecto.");
+            return 0;
+        }
+
+        SCHEDULING_PAUSED = 0;
+    pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+
     log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION");
 
-    signal_switching_states(); // Esto es una función (por si no lo sabías) que simula ser un semaforo que desbloquea todo
-
+    signal_switching_states();
     return 0;
 }
 
@@ -397,9 +415,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
 }
 
 void wait_switching_states(void) {
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-        LIST_PROCESS_STATES = 1;
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+    sem_post(&SEM_STOP_SCHEDULING_COUNT);
 
     int sem_value;
     pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
@@ -413,8 +429,8 @@ void wait_switching_states(void) {
 }
 
 void signal_switching_states(void) {
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-        LIST_PROCESS_STATES = 0;
-        pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
+    sem_wait(&SEM_STOP_SCHEDULING_COUNT);
+
+    // se podría agregar un if para hacer el broadcast sólo si el semáforo efectivamente quedó en 0
+    pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
 }

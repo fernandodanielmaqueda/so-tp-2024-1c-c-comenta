@@ -71,15 +71,10 @@ pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
 sem_t SEM_MULTIPROGRAMMING_POSTER;
 pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 
-/*
-sem_t sem_detener_execute;
-sem_t sem_detener_new_ready;
-sem_t sem_detener_block_ready;
-sem_t sem_detener_block;
-sem_t sem_detener_planificacion;
-*/
+int SCHEDULING_PAUSED;
+pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
 
-int LIST_PROCESS_STATES = 0;
+sem_t SEM_STOP_SCHEDULING_COUNT;
 pthread_mutex_t MUTEX_LIST_PROCESS_STATES;
 pthread_cond_t COND_LIST_PROCESS_STATES;
 sem_t SEM_SWITCHING_STATES_COUNT;

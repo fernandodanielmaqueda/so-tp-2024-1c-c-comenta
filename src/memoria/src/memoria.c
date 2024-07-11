@@ -304,7 +304,6 @@ void listen_io(int fd_io) {
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
                 write_memory(package->payload, fd_io);
                 break;
-                
             
             case IO_STDOUT_READ_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");

@@ -87,15 +87,10 @@ extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
 extern sem_t SEM_MULTIPROGRAMMING_POSTER;
 extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 
-/*
-extern sem_t sem_detener_execute;
-extern sem_t sem_detener_new_ready;
-extern sem_t sem_detener_block_ready;
-extern sem_t sem_detener_block;
-extern sem_t sem_detener_planificacion;
-*/
+extern int SCHEDULING_PAUSED;
+extern pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
 
-extern int LIST_PROCESS_STATES;
+extern sem_t SEM_STOP_SCHEDULING_COUNT;
 extern pthread_mutex_t MUTEX_LIST_PROCESS_STATES;
 extern pthread_cond_t COND_LIST_PROCESS_STATES;
 extern sem_t SEM_SWITCHING_STATES_COUNT;
