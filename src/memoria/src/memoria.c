@@ -161,6 +161,7 @@ void create_process(t_Payload *process_data) {
 
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client);
+    free(target_path);
     
 }
 
