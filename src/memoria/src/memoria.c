@@ -174,10 +174,9 @@ void kill_process(t_Payload *payload){
     t_Page *paginaBuscada;
     
     int size = list_size(process->pages_table);
-    // ACÁ HABÍA UN SEGMENTATION FAULT: SI EL TAMAÑO DE LA LISTA ES 0, NO DEBERÍA ENTRAR AL FOR
-    for (int i = (size - 1); i > -1 ; i--)
+    for (; size > 0 ; size--)
     {
-        paginaBuscada = list_get(process->pages_table, i);
+        paginaBuscada = list_get(process->pages_table, i - 1);
         t_Frame *marco = list_get(LIST_FRAMES, paginaBuscada->assigned_frame);
         list_add(LIST_FREE_FRAMES, marco);
         free(paginaBuscada);
@@ -373,12 +372,11 @@ void create_frames(void) {
 }
 
 void free_frames(){
-    int cantidad_marcos = list_size(LIST_FRAMES);
     t_Frame *marco_liberar;
 
-    for (size_t i = (cantidad_marcos -1); i > -1; i--)
+    for (int i = list_size(LIST_FRAMES); i > 0; i--)
     {
-        marco_liberar = list_get(LIST_FRAMES, i);
+        marco_liberar = (t_Frame *) list_get(LIST_FRAMES, i - 1);
         free(marco_liberar);
     }
 
