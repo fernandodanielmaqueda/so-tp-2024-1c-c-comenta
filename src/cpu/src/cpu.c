@@ -37,8 +37,11 @@ pthread_mutex_t MUTEX_TLB;
 
 const char *t_interrupt_type_string[] = {
     [UNEXPECTED_ERROR_EVICTION_REASON] = "UNEXPECTED_ERROR_EVICTION_REASON",
+    [EXIT_EVICTION_REASON] = "EXIT_EVICTION_REASON",
+    [KILL_KERNEL_INTERRUPT_EVICTION_REASON] = "KILL_KERNEL_INTERRUPT_EVICTION_REASON",
     [SYSCALL_EVICTION_REASON] = "SYSCALL_EVICTION_REASON",
-    [INTERRUPTION_EVICTION_REASON] = "INTERRUPTION_EVICTION_REASON"
+    [QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON] = "QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON"
+    
 };
 
 int module(int argc, char *argv[])
@@ -110,7 +113,7 @@ void instruction_cycle(void)
 
     char *IR;
     t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS);
-    e_Eviction_Reason eviction_reason = INTERRUPTION_EVICTION_REASON;
+    e_Eviction_Reason eviction_reason;
     e_CPU_OpCode cpu_opcode;
     int exit_status;
 
@@ -191,7 +194,7 @@ void instruction_cycle(void)
             pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
                 if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
                     pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+                    eviction_reason = KILL_KERNEL_INTERRUPT_EVICTION_REASON;
                     break;
                 }
             pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
@@ -204,7 +207,7 @@ void instruction_cycle(void)
             pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
                 if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
                     pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+                    eviction_reason = QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON;
                     break;
                 }
             pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);

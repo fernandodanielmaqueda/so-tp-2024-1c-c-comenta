@@ -114,15 +114,13 @@ int get_register_value(t_PCB pcb, e_CPU_Register cpu_register, uint32_t *destina
         case UINT32_DATATYPE:
             *destination = *((uint32_t *) register_pointer);
             break;
-    }
-
-    
+    }  
 
     return 0;
 }
 
 size_t get_register_size(e_CPU_Register cpu_register) {
-    
+
     switch(CPU_REGISTERS[cpu_register].dataType) {
         case UINT8_DATATYPE:
             return sizeof(uint8_t);

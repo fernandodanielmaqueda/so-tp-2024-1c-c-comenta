@@ -21,8 +21,9 @@ typedef enum e_Eviction_Reason {
     UNEXPECTED_ERROR_EVICTION_REASON,
 
     EXIT_EVICTION_REASON, // Exclusivamente para la syscall EXIT
-    INTERRUPTION_EVICTION_REASON, //Incluye el quantum
-    SYSCALL_EVICTION_REASON // No incluye a EXIT
+    KILL_KERNEL_INTERRUPT_EVICTION_REASON,
+    SYSCALL_EVICTION_REASON, // No incluye a la syscall EXIT
+    QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON
 } e_Eviction_Reason;
 
 

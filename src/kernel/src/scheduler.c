@@ -247,10 +247,12 @@ void *short_term_scheduler(void *parameter) {
 
 			switch(SCHEDULING_ALGORITHM) {
 				case RR_SCHEDULING_ALGORITHM:
-				case VRR_SCHEDULING_ALGORITHM:
 					QUANTUM_INTERRUPT = 0;
+					pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
+					break;
+				case VRR_SCHEDULING_ALGORITHM:
 					TEMPORAL_DISPATCHED = temporal_create();
-
+					QUANTUM_INTERRUPT = 0;
 					pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->quantum));
 					break;
 				case FIFO_SCHEDULING_ALGORITHM:
@@ -261,29 +263,30 @@ void *short_term_scheduler(void *parameter) {
 
 			switch(SCHEDULING_ALGORITHM) {
 				case RR_SCHEDULING_ALGORITHM:
+
+					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+						if(!QUANTUM_INTERRUPT)
+							pthread_cancel(THREAD_QUANTUM_INTERRUPT);
+					pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
+					pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
+
+					break;
 				case VRR_SCHEDULING_ALGORITHM:
+
+					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+						if(!QUANTUM_INTERRUPT)
+							pthread_cancel(THREAD_QUANTUM_INTERRUPT);
+					pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
+					pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
+
 					temporal_stop(TEMPORAL_DISPATCHED);
 						cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
 					temporal_destroy(TEMPORAL_DISPATCHED);
 
-					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
-					if(!QUANTUM_INTERRUPT)
-						pthread_cancel(THREAD_QUANTUM_INTERRUPT);
-					pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
-					pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
-					break;
-				case FIFO_SCHEDULING_ALGORITHM:
-					break;
-			}
-
-			switch(SCHEDULING_ALGORITHM) {
-				case RR_SCHEDULING_ALGORITHM:
-					pcb->quantum = QUANTUM;
-					break;
-				case VRR_SCHEDULING_ALGORITHM:
 					pcb->quantum -= cpu_burst;
 					if(pcb->quantum <= 0)
 						pcb->quantum = QUANTUM;
+
 					break;
 				case FIFO_SCHEDULING_ALGORITHM:
 					break;
@@ -304,10 +307,8 @@ void *short_term_scheduler(void *parameter) {
 						PCB_EXECUTE = 0;
 						break;
 
-					case INTERRUPTION_EVICTION_REASON:
-						// FALTARÍA DISTINGUIR SI LA INTERRUPCIÓN FUE POR FIN DE QUANTUM O POR KILL
-						log_debug(MINIMAL_LOGGER, "PID: <%d> - Desalojado por fin de Quantum", (int) pcb->PID);
-						switch_process_state(pcb, READY_STATE);
+					case KILL_KERNEL_INTERRUPT_EVICTION_REASON:
+						switch_process_state(pcb, EXIT_STATE);
 						PCB_EXECUTE = 0;
 						break;
 						
@@ -328,6 +329,12 @@ void *short_term_scheduler(void *parameter) {
 						}
 
 						// En caso de que sea una syscall no bloqueante
+						break;
+
+					case QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON:
+						log_debug(MINIMAL_LOGGER, "PID: <%d> - Desalojado por fin de Quantum", (int) pcb->PID);
+						switch_process_state(pcb, READY_STATE);
+						PCB_EXECUTE = 0;
 						break;
 				}
 
