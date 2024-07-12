@@ -24,7 +24,7 @@
 #include "utils/module.h"
 #include "utils/serialize/pcb.h"
 #include "utils/socket.h"
-#include "console.h"
+#include "kernel.h"
 
 extern t_log *SOCKET_LOGGER;
 

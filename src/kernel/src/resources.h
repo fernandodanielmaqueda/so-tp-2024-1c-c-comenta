@@ -33,8 +33,7 @@ typedef struct t_Resource {
     char *name;
     long available;
     long total;
-    t_list *list_blocked;
-    pthread_mutex_t mutex_list_blocked;
+    t_Shared_List shared_list_blocked;
 } t_Resource;
 
 //extern t_Resource *TOTAL_RESOURCES;

@@ -57,8 +57,8 @@ int module(int argc, char *argv[]) {
 
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
-	receive_expected_header(INTERFACE_NAME_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);
-	send_text_with_header(INTERFACE_NAME_REQUEST_HEADER, INTERFACE_NAME, CONNECTION_KERNEL.fd_connection);
+	receive_expected_header(INTERFACE_DATA_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);	
+	send_interface_data(INTERFACE_NAME, IO_TYPE, CONNECTION_KERNEL.fd_connection);
 
 	// Invoco a la funcion que corresponda
 	IO_TYPES[IO_TYPE].function();

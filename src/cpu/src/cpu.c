@@ -68,8 +68,8 @@ int module(int argc, char *argv[])
 }
 
 void initialize_mutexes(void) {
-    pthread_mutex_init(&(SERVER_CPU_DISPATCH.mutex_clients), NULL);
-    pthread_mutex_init(&(SERVER_CPU_INTERRUPT.mutex_clients), NULL);
+    pthread_mutex_init(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex), NULL);
+    pthread_mutex_init(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex), NULL);
 
     pthread_mutex_init(&MUTEX_PCB, NULL);
     pthread_mutex_init(&MUTEX_EXECUTING, NULL);
@@ -78,8 +78,8 @@ void initialize_mutexes(void) {
 }
 
 void finish_mutexes(void) {
-    pthread_mutex_destroy(&(SERVER_CPU_DISPATCH.mutex_clients));
-    pthread_mutex_destroy(&(SERVER_CPU_INTERRUPT.mutex_clients));
+    pthread_mutex_destroy(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex));
+    pthread_mutex_destroy(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex));
     
     pthread_mutex_destroy(&MUTEX_PCB);
     pthread_mutex_destroy(&MUTEX_EXECUTING);
@@ -98,8 +98,8 @@ void finish_semaphores(void) {
 void read_module_config(t_config *MODULE_CONFIG)
 {
     CONNECTION_MEMORY = (t_Connection){.client_type = CPU_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    SERVER_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH"), .clients = list_create()};
-    SERVER_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT"), .clients = list_create()};
+    SERVER_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH"), .shared_list_clients.list = list_create()};
+    SERVER_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT"), .shared_list_clients.list = list_create()};
     TLB_ENTRY_COUNT = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
     if(find_tlb_algorithm(config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB"), &TLB_ALGORITHM)) {
 		log_error(MODULE_LOGGER, "ALGORITMO_PLANIFICACION invalido");
@@ -140,7 +140,7 @@ void instruction_cycle(void)
         SYSCALL_INSTRUCTION = payload_create();
 
         pthread_mutex_lock(&MUTEX_PCB);
-            receive_process_dispatch(&PCB, ((t_Client *) list_get(SERVER_CPU_DISPATCH.clients, 0))->fd_client);
+            receive_process_dispatch(&PCB, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
         pthread_mutex_unlock(&MUTEX_PCB);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
@@ -232,7 +232,7 @@ void instruction_cycle(void)
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
         pthread_mutex_lock(&MUTEX_PCB);
-            send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.clients, 0))->fd_client);
+            send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
         pthread_mutex_unlock(&MUTEX_PCB);
 
         payload_destroy(SYSCALL_INSTRUCTION);
@@ -251,7 +251,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 
     while(1) {
 
-        receive_kernel_interrupt(&kernel_interrupt, &pid, ((t_Client *) list_get(SERVER_CPU_INTERRUPT.clients, 0))->fd_client);
+        receive_kernel_interrupt(&kernel_interrupt, &pid, ((t_Client *) list_get(SERVER_CPU_INTERRUPT.shared_list_clients.list, 0))->fd_client);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
             if(!EXECUTING) {

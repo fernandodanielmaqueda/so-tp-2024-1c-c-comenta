@@ -29,6 +29,7 @@
 #include "socket.h"
 #include "scheduler.h"
 #include "resources.h"
+#include "interfaces.h"
 #include "syscalls.h"
 
 extern char *MODULE_NAME;

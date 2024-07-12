@@ -8,6 +8,11 @@
 #include "commons/log.h"
 #include "commons/config.h"
 
+typedef struct t_Shared_List {
+    t_list *list;
+    pthread_mutex_t mutex;
+} t_Shared_List;
+
 extern char *MODULE_NAME;
 
 extern t_log *MINIMAL_LOGGER;

@@ -35,15 +35,13 @@ typedef struct t_Server {
     enum e_Port_Type clients_type;
     char *port;
     pthread_t thread_server;
-    t_list *clients;
-    pthread_mutex_t mutex_clients;
+    t_Shared_List shared_list_clients;
 } t_Server;
 
 typedef struct t_Client {
     int fd_client;
     enum e_Port_Type client_type;
     pthread_t thread_client_handler;
-    char *client_name;
     t_Server *server;
 } t_Client;
 

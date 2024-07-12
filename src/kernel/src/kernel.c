@@ -36,19 +36,19 @@ int module(int argc, char *argv[]) {
 }
 
 void initialize_mutexes(void) {
-	pthread_mutex_init(&COORDINATOR_IO.mutex_clients, NULL);
+	pthread_mutex_init(&COORDINATOR_IO.shared_list_clients.mutex, NULL);
 
 	pthread_mutex_init(&MUTEX_PID_COUNTER, NULL);
 	pthread_mutex_init(&MUTEX_PCB_ARRAY, NULL);
 	pthread_mutex_init(&MUTEX_LIST_RELEASED_PIDS, NULL);
 	pthread_cond_init(&COND_LIST_RELEASED_PIDS, NULL);
 
-	pthread_mutex_init(&MUTEX_LIST_NEW, NULL);
-	pthread_mutex_init(&MUTEX_LIST_READY, NULL);
-	pthread_mutex_init(&MUTEX_LIST_READY_PRIORITARY, NULL);
-	pthread_mutex_init(&MUTEX_LIST_EXEC, NULL);
-	pthread_mutex_init(&MUTEX_LIST_BLOCKED, NULL);
-	pthread_mutex_init(&MUTEX_LIST_EXIT, NULL);
+	pthread_mutex_init(&(SHARED_LIST_NEW.mutex), NULL);
+	pthread_mutex_init(&(SHARED_LIST_READY.mutex), NULL);
+	pthread_mutex_init(&(SHARED_LIST_READY_PRIORITARY.mutex), NULL);
+	pthread_mutex_init(&(SHARED_LIST_EXEC.mutex), NULL);
+	pthread_mutex_init(&(SHARED_LIST_BLOCKED.mutex), NULL);
+	pthread_mutex_init(&(SHARED_LIST_EXIT.mutex), NULL);
 
 	pthread_mutex_init(&MUTEX_QUANTUM_INTERRUPT, NULL);
 
@@ -64,19 +64,19 @@ void initialize_mutexes(void) {
 }
 
 void finish_mutexes(void) {
-	pthread_mutex_destroy(&COORDINATOR_IO.mutex_clients);
+	pthread_mutex_destroy(&COORDINATOR_IO.shared_list_clients.mutex);
 
 	pthread_mutex_destroy(&MUTEX_PID_COUNTER);
 	pthread_mutex_destroy(&MUTEX_PCB_ARRAY);
 	pthread_mutex_destroy(&MUTEX_LIST_RELEASED_PIDS);
 	pthread_cond_destroy(&COND_LIST_RELEASED_PIDS);
 
-	pthread_mutex_destroy(&MUTEX_LIST_NEW);
-	pthread_mutex_destroy(&MUTEX_LIST_READY);
-	pthread_mutex_destroy(&MUTEX_LIST_READY_PRIORITARY);
-	pthread_mutex_destroy(&MUTEX_LIST_EXEC);
-	pthread_mutex_destroy(&MUTEX_LIST_BLOCKED);
-	pthread_mutex_destroy(&MUTEX_LIST_EXIT);
+	pthread_mutex_destroy(&(SHARED_LIST_NEW.mutex));
+	pthread_mutex_destroy(&(SHARED_LIST_READY.mutex));
+	pthread_mutex_destroy(&(SHARED_LIST_READY_PRIORITARY.mutex));
+	pthread_mutex_destroy(&(SHARED_LIST_EXEC.mutex));
+	pthread_mutex_destroy(&(SHARED_LIST_BLOCKED.mutex));
+	pthread_mutex_destroy(&(SHARED_LIST_EXIT.mutex));
 
 	pthread_mutex_destroy(&MUTEX_QUANTUM_INTERRUPT);
 
@@ -139,7 +139,7 @@ void signal_list_process_states(void) {
 }
 
 void read_module_config(t_config *module_config) {
-	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_PORT_TYPE, .clients_type = IO_PORT_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA"), .clients = list_create()};
+	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_PORT_TYPE, .clients_type = IO_PORT_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA"), .shared_list_clients.list = list_create()};
 	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
 	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = CPU_DISPATCH_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH")};
 	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = CPU_INTERRUPT_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_INTERRUPT")};

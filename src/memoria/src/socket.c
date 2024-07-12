@@ -29,8 +29,8 @@ void initialize_sockets(void) {
 
 void finish_sockets(void) {
 	close(COORDINATOR_MEMORY.fd_listen);
-    for(int i = 0; i < list_size(COORDINATOR_MEMORY.clients); i++)
-        close(((t_Client *) list_get(COORDINATOR_MEMORY.clients, i))->fd_client);
+    for(int i = 0; i < list_size(COORDINATOR_MEMORY.shared_list_clients.list); i++)
+        close(((t_Client *) list_get(COORDINATOR_MEMORY.shared_list_clients.list, i))->fd_client);
 }
 
 void *memory_start_server(void *server_parameter) {
@@ -81,9 +81,9 @@ void *memory_client_handler(void *new_client_parameter) {
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
             send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
-            pthread_mutex_lock(&(new_client->server->mutex_clients));
-                list_add(new_client->server->clients, new_client);
-            pthread_mutex_unlock(&(new_client->server->mutex_clients));
+            pthread_mutex_lock(&(new_client->server->shared_list_clients.mutex));
+                list_add(new_client->server->shared_list_clients.list, new_client);
+            pthread_mutex_unlock(&(new_client->server->shared_list_clients.mutex));
 
             CLIENT_KERNEL = new_client;
 
@@ -95,9 +95,9 @@ void *memory_client_handler(void *new_client_parameter) {
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
             send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
-            pthread_mutex_lock(&(new_client->server->mutex_clients));
-                list_add(new_client->server->clients, new_client);
-            pthread_mutex_unlock(&(new_client->server->mutex_clients));
+            pthread_mutex_lock(&(new_client->server->shared_list_clients.mutex));
+                list_add(new_client->server->shared_list_clients.list, new_client);
+            pthread_mutex_unlock(&(new_client->server->shared_list_clients.mutex));
 
             CLIENT_CPU = new_client;
 
@@ -109,9 +109,9 @@ void *memory_client_handler(void *new_client_parameter) {
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
             send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
-            pthread_mutex_lock(&(new_client->server->mutex_clients));
-                list_add(new_client->server->clients, new_client);
-            pthread_mutex_unlock(&(new_client->server->mutex_clients));
+            pthread_mutex_lock(&(new_client->server->shared_list_clients.mutex));
+                list_add(new_client->server->shared_list_clients.list, new_client);
+            pthread_mutex_unlock(&(new_client->server->shared_list_clients.mutex));
 
             listen_io(new_client->fd_client);
 

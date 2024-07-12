@@ -54,11 +54,11 @@ int module(int argc, char* argv[]) {
 }
 
 void initialize_mutexes(void) {
-    pthread_mutex_init(&(COORDINATOR_MEMORY.mutex_clients), NULL);
+    pthread_mutex_init(&(COORDINATOR_MEMORY.shared_list_clients.mutex), NULL);
 }
 
 void finish_mutexes(void) {
-    pthread_mutex_destroy(&(COORDINATOR_MEMORY.mutex_clients));
+    pthread_mutex_destroy(&(COORDINATOR_MEMORY.shared_list_clients.mutex));
 }
 
 void initialize_semaphores(void) {
@@ -70,7 +70,7 @@ void finish_semaphores(void) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA"), .clients = list_create()};
+    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA"), .shared_list_clients.list = list_create()};
     TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");

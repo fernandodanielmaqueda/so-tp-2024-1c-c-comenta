@@ -44,18 +44,12 @@ extern pthread_cond_t COND_LIST_RELEASED_PIDS;
 
 extern const char *STATE_NAMES[];
 
-extern t_list *LIST_NEW;
-extern pthread_mutex_t MUTEX_LIST_NEW;
-extern t_list *LIST_READY;
-extern pthread_mutex_t MUTEX_LIST_READY;
-extern t_list *LIST_READY_PRIORITARY;
-extern pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
-extern t_list *LIST_EXEC;
-extern pthread_mutex_t MUTEX_LIST_EXEC;
-extern t_list *LIST_BLOCKED;
-extern pthread_mutex_t MUTEX_LIST_BLOCKED;
-extern t_list *LIST_EXIT;
-extern pthread_mutex_t MUTEX_LIST_EXIT;
+extern t_Shared_List SHARED_LIST_NEW;
+extern t_Shared_List SHARED_LIST_READY;
+extern t_Shared_List SHARED_LIST_READY_PRIORITARY;
+extern t_Shared_List SHARED_LIST_EXEC;
+extern t_Shared_List SHARED_LIST_BLOCKED;
+extern t_Shared_List SHARED_LIST_EXIT;
 
 extern pthread_t THREAD_LONG_TERM_SCHEDULER_NEW;
 extern sem_t SEM_LONG_TERM_SCHEDULER_NEW;

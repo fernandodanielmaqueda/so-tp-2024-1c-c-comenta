@@ -162,6 +162,30 @@ void receive_kernel_interrupt(e_Kernel_Interrupt *kernel_interrupt, t_PID *pid, 
   package_destroy(package);
 }
 
+// Kernel - Entrada/Salida
+
+void send_interface_data(char *interface_name, e_IO_Type io_type, int fd_socket) {
+	t_Package *package = package_create_with_header(INTERFACE_DATA_REQUEST_HEADER);
+	text_serialize(package->payload, interface_name);
+	io_type_serialize(package->payload, io_type);
+	package_send(package, fd_socket);
+	package_destroy(package);
+}
+
+void receive_interface_data(char **interface_name, e_IO_Type *io_type, int fd_socket) {
+  t_Package *package;
+  package_receive(&package, fd_socket);
+  if(package->header == INTERFACE_DATA_REQUEST_HEADER) {
+    text_deserialize(package->payload, interface_name);
+    io_type_deserialize(package->payload, io_type);
+  }
+  else {
+    log_error(MODULE_LOGGER, "Header invalido");
+    exit(EXIT_FAILURE);
+  }
+  package_destroy(package);
+}
+
 // CPU - Memoria
 
 void send_instruction_request(t_PID pid, t_PC pc, int fd_socket) {

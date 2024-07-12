@@ -51,7 +51,9 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
 
     resource->available--;
     if(resource->available < 0) {
-        list_add(resource->list_blocked, SYSCALL_PCB);
+        pthread_mutex_lock(&(resource->shared_list_blocked.mutex));
+            list_add(resource->shared_list_blocked.list, SYSCALL_PCB);
+        pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
         BLOCKING_SYSCALL = 1;
     } else {
         BLOCKING_SYSCALL = 0;
@@ -78,10 +80,10 @@ int signal_kernel_syscall(t_Payload *syscall_arguments) {
 
     resource->available++;
     if(resource->available <= 0) {
-        pthread_mutex_lock(&(resource->mutex_list_blocked));
-            if(list_size(resource->list_blocked) > 0)
-                switch_process_state((t_PCB *) list_remove(resource->list_blocked, 0), READY_STATE);
-        pthread_mutex_unlock(&(resource->mutex_list_blocked));
+        pthread_mutex_lock(&(resource->shared_list_blocked.mutex));
+            if(list_size(resource->shared_list_blocked.list) > 0)
+                switch_process_state((t_PCB *) list_remove(resource->shared_list_blocked.list, 0), READY_STATE);
+        pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
     }
     
     BLOCKING_SYSCALL = 0;

@@ -89,8 +89,10 @@ void *kernel_client_handler_for_io(void *new_client_parameter) {
 	log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
 	send_port_type(KERNEL_PORT_TYPE, new_client->fd_client);
 
-	send_header(INTERFACE_NAME_REQUEST_HEADER, new_client->fd_client);
-	receive_text_with_expected_header(INTERFACE_NAME_REQUEST_HEADER, &(new_client->client_name), new_client->fd_client);
+	t_Interface *new_interface = malloc(sizeof(t_Interface));
+
+	send_header(INTERFACE_DATA_REQUEST_HEADER, new_client->fd_client);
+	receive_interface_data(&(new_interface->name), &(new_interface->io_type), new_client->fd_client);
 
 	close(new_client->fd_client);
 	return NULL;

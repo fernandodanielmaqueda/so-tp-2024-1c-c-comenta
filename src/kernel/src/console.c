@@ -207,7 +207,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
     }
 
     wait_list_process_states();
-        list_add(LIST_NEW, pcb);
+        list_add(SHARED_LIST_NEW.list, pcb);
     signal_list_process_states();
 
     log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
@@ -379,16 +379,16 @@ int kernel_command_process_states(int argc, char* argv[]) {
     char *pid_string_exit = string_new();
 
     wait_switching_states();
-        pcb_list_to_pid_string(LIST_NEW, &pid_string_new);
+        pcb_list_to_pid_string(SHARED_LIST_NEW.list, &pid_string_new);
 
-        pcb_list_to_pid_string(LIST_READY, &pid_string_ready);
-        pcb_list_to_pid_string(LIST_READY_PRIORITARY, &pid_string_ready);
+        pcb_list_to_pid_string(SHARED_LIST_READY.list, &pid_string_ready);
+        pcb_list_to_pid_string(SHARED_LIST_READY_PRIORITARY.list, &pid_string_ready);
 
-        pcb_list_to_pid_string(LIST_EXEC, &pid_string_exec);
+        pcb_list_to_pid_string(SHARED_LIST_EXEC.list, &pid_string_exec);
 
-        pcb_list_to_pid_string(LIST_BLOCKED, &pid_string_blocked);
+        pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
 
-        pcb_list_to_pid_string(LIST_EXIT, &pid_string_exit);
+        pcb_list_to_pid_string(SHARED_LIST_EXIT.list, &pid_string_exit);
     signal_switching_states();
 
     log_info(CONSOLE_LOGGER,
