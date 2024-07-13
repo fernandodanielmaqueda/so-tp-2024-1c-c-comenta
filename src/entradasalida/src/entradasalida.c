@@ -302,10 +302,12 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 		case GENERIC_IO_TYPE:
 		{
 			uint32_t work_units;
+			payload_dequeue(operation, &PID, sizeof(t_PID));
 			payload_dequeue(operation, &work_units, sizeof(uint32_t));
 
 			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
 
+			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>, PID");
 			sleep(WORK_UNIT_TIME * work_units);
 
 			break;
@@ -325,35 +327,31 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 	switch(IO_TYPE){
 		case STDIN_IO_TYPE:
 		{
+			while(1){
 			e_Header IO_STDIN_WRITE_MEMORY;	
-			t_Package *package;
-			//package->header = IO_STDIN_WRITE_MEMORY;
-
-
-			t_list *physical_addresses;
+			t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
+			
+			t_list *physical_addresses = list_crate();
 			t_MemorySize bytes;
 
-			//payload_dequeue(operation, &PID, sizeof(t_PID));
-			//list_deserialize
+			//Empiezo a "desencolar" el payload recibido
+			payload_dequeue(operation, &PID, sizeof(t_PID));
+			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
+			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
 
-			//package_send(package, CONNECTION_MEMORY.fd_connection);
+			//Aviso que operacion voy a hacer
+			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", PID);
 
-		}
-	
+			//Encolo el payload en el paquete creado antes
+			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
+			list_serialize(package->payload, physical_addresses, physical_address_deserialize_element);
+			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
 
-
-
-			//send_write_request( pid,  registro_direccion,  text, CONNECTION_MEMORY.fd_connection, IO_STDIN_WRITE_MEMORY);
-			/*
-			package = package_create_with_header(STRING_HEADER);
-			payload_enqueue(package->payload, &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
-			text_serialize(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
+			//Envio el paquete y lo destruyo
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
-			*/
-
-			//free(text);
-
+			}
+		}
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
@@ -365,36 +363,32 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 
 int io_stdout_write_io_operation(t_Payload *operation) {
     
-    // log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
-
-	t_Package *package;
-	//t_Arguments* instruction;
-	//int registro_tamanio;
-
 	switch(IO_TYPE){
 		case STDOUT_IO_TYPE:
-/*
-			package = package_create_with_header(STRING_HEADER);
-			text_serialize(package->payload, argv[2]);
-			text_serialize(package->payload, argv[3]);
 
+		while(1){
+			e_Header IO_STDOUT_READ_MEMORY;
+			t_Package *package = package_create_with_header(IO_STDOUT_READ_MEMORY);
+			
+			t_list *physical_addresses = list_crate();
+			t_MemorySize bytes;
+			//empiezo a "desencolar" el payload recibido
+			payload_dequeue(operation, &PID, sizeof(t_PID));
+			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
+			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
+
+			//Aviso la operacion que voy a hacer
+			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", PID);
+
+			//Encolo devuelta el payload dentro del paquete creado
+			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
+			list_serialize(package->payload, physical_addresses, physical_address_deserialize_element);
+			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
+
+			//Envio el paquete y lo destruyo
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
-*/
-			//int pid = 0;			
-			//int bytes = atoi(argv[2]);
-			//int dir_fis = atoi(argv[3]);
-			//send_read_request(pid, dir_fis, bytes, CONNECTION_MEMORY.fd_connection, IO_STDOUT_READ_MEMORY);
-
-			//char* mensaje;
-			//package_receive(&package, CONNECTION_MEMORY.fd_connection);
-			//receive_String_1int(&pid, &mensaje, package->payload);
-
-			//instruction = arguments_deserialize(package->payload);
-			//log_info(MODULE_LOGGER, "En la memoria se halla el siguiente contenido: %s", mensaje);
-			//package_destroy(package);
-
-			//fputs(mensaje, stdout);
+		}
 
 			break;
 		default:
