@@ -23,7 +23,7 @@
 #include "commons/collections/dictionary.h"
 #include <commons/temporal.h>
 #include "utils/module.h"
-#include "utils/serialize/pcb.h"
+#include "utils/serialize/exec_context.h"
 #include "utils/socket.h"
 #include "console.h"
 #include "socket.h"
@@ -33,6 +33,7 @@ typedef struct t_Interface {
     char *name;
 	e_IO_Type io_type;
 	t_list *list_blocked;
+    sem_t sem;
 } t_Interface;
 
 extern t_list *INTERFACES;

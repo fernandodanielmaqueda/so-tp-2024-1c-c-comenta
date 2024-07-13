@@ -99,18 +99,18 @@ void send_process_destroy(t_PID pid, int fd_socket) {
 
 // Kernel - CPU
 
-void send_process_dispatch(t_PCB pcb, int fd_socket) {
+void send_process_dispatch(t_Exec_Context exec_context, int fd_socket) {
   t_Package *package = package_create_with_header(PROCESS_DISPATCH_HEADER);
-  pcb_serialize(package->payload, pcb);
+  exec_context_serialize(package->payload, exec_context);
   package_send(package, fd_socket);
   package_destroy(package);
 }
 
-void receive_process_dispatch(t_PCB *pcb, int fd_socket) {
+void receive_process_dispatch(t_Exec_Context *exec_context, int fd_socket) {
   t_Package *package;
   package_receive(&package, fd_socket);
   if(package->header == PROCESS_DISPATCH_HEADER) {
-    pcb_deserialize(package->payload, pcb);
+    exec_context_deserialize(package->payload, exec_context);
   } else {
     log_error(SERIALIZE_LOGGER, "Header invalido");
     exit(EXIT_FAILURE);
@@ -118,20 +118,20 @@ void receive_process_dispatch(t_PCB *pcb, int fd_socket) {
   package_destroy(package);
 }
 
-void send_process_eviction(t_PCB pcb, e_Eviction_Reason eviction_reason, t_Payload syscall_instruction, int fd_socket) {
+void send_process_eviction(t_Exec_Context exec_context, e_Eviction_Reason eviction_reason, t_Payload syscall_instruction, int fd_socket) {
   t_Package *package = package_create_with_header(PROCESS_EVICTION_HEADER);
-  pcb_serialize(package->payload, pcb);
+  exec_context_serialize(package->payload, exec_context);
   eviction_reason_serialize(package->payload, eviction_reason);
   subpayload_serialize(package->payload, syscall_instruction);
   package_send(package, fd_socket);
   package_destroy(package);
 }
 
-void receive_process_eviction(t_PCB *pcb, e_Eviction_Reason *eviction_reason, t_Payload *syscall_instruction, int fd_socket) {
+void receive_process_eviction(t_Exec_Context *exec_context, e_Eviction_Reason *eviction_reason, t_Payload *syscall_instruction, int fd_socket) {
   t_Package *package;
   package_receive(&package, fd_socket);
   if(package->header == PROCESS_EVICTION_HEADER) {
-    pcb_deserialize(package->payload, pcb);
+    exec_context_deserialize(package->payload, exec_context);
     eviction_reason_deserialize(package->payload, eviction_reason);
     subpayload_deserialize(package->payload, syscall_instruction);
   } else {

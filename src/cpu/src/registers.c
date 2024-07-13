@@ -36,52 +36,52 @@ int decode_register(char *name, e_CPU_Register *destination) {
     return 1;
 }
 
-void *get_register_pointer(t_PCB *pcb, e_CPU_Register cpu_register) {
-    if(pcb == NULL)
+void *get_register_pointer(t_Exec_Context *exec_context, e_CPU_Register cpu_register) {
+    if(exec_context == NULL)
         return NULL;
 
     switch (cpu_register) {
         case PC_REGISTER:
-            return (void *) &(pcb->PC);
+            return (void *) &(exec_context->PC);
             
         case AX_REGISTER:
-            return (void *) &(pcb->cpu_registers.AX);
+            return (void *) &(exec_context->cpu_registers.AX);
         case BX_REGISTER:
-            return (void *) &(pcb->cpu_registers.BX);
+            return (void *) &(exec_context->cpu_registers.BX);
         case CX_REGISTER:
-            return (void *) &(pcb->cpu_registers.CX);
+            return (void *) &(exec_context->cpu_registers.CX);
         case DX_REGISTER:
-            return (void *) &(pcb->cpu_registers.DX);
+            return (void *) &(exec_context->cpu_registers.DX);
         case EAX_REGISTER:
-            return (void *) &(pcb->cpu_registers.EAX);
+            return (void *) &(exec_context->cpu_registers.EAX);
         case EBX_REGISTER:
-            return (void *) &(pcb->cpu_registers.EBX);
+            return (void *) &(exec_context->cpu_registers.EBX);
         case ECX_REGISTER:
-            return (void *) &(pcb->cpu_registers.ECX);
+            return (void *) &(exec_context->cpu_registers.ECX);
         case EDX_REGISTER:
-            return (void *) &(pcb->cpu_registers.EDX);
+            return (void *) &(exec_context->cpu_registers.EDX);
         case RAX_REGISTER:
-            return (void *) &(pcb->cpu_registers.RAX);
+            return (void *) &(exec_context->cpu_registers.RAX);
         case RBX_REGISTER:
-            return (void *) &(pcb->cpu_registers.RBX);
+            return (void *) &(exec_context->cpu_registers.RBX);
         case RCX_REGISTER:
-            return (void *) &(pcb->cpu_registers.RCX);
+            return (void *) &(exec_context->cpu_registers.RCX);
         case RDX_REGISTER:
-            return (void *) &(pcb->cpu_registers.RDX);
+            return (void *) &(exec_context->cpu_registers.RDX);
         case SI_REGISTER:
-            return (void *) &(pcb->cpu_registers.SI);
+            return (void *) &(exec_context->cpu_registers.SI);
         case DI_REGISTER:
-            return (void *) &(pcb->cpu_registers.DI);
+            return (void *) &(exec_context->cpu_registers.DI);
     }
 
     return NULL;
 }
 
-int set_register_value(t_PCB *pcb, e_CPU_Register cpu_register, uint32_t value) {
-    if(pcb == NULL)
+int set_register_value(t_Exec_Context *exec_context, e_CPU_Register cpu_register, uint32_t value) {
+    if(exec_context == NULL)
         return 1;
         
-    void *register_pointer = get_register_pointer(pcb, cpu_register);
+    void *register_pointer = get_register_pointer(exec_context, cpu_register);
     if(register_pointer == NULL)
         return 1;
 
@@ -98,12 +98,12 @@ int set_register_value(t_PCB *pcb, e_CPU_Register cpu_register, uint32_t value) 
 }
 
 
-int get_register_value(t_PCB pcb, e_CPU_Register cpu_register, uint32_t *destination)
+int get_register_value(t_Exec_Context exec_context, e_CPU_Register cpu_register, uint32_t *destination)
 {
     if(destination == NULL)
         return 1;
 
-    void *register_pointer = get_register_pointer(&pcb, cpu_register);
+    void *register_pointer = get_register_pointer(&exec_context, cpu_register);
     if(register_pointer == NULL)
         return 1;
 

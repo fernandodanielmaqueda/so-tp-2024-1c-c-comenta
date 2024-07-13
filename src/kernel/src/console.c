@@ -197,7 +197,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
 
     t_PCB *pcb = pcb_create();
 
-    send_process_create(argv[1], pcb->PID, CONNECTION_MEMORY.fd_connection);
+    send_process_create(argv[1], pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection);
 
     t_Return_Value return_value;
     receive_return_value_with_expected_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
@@ -210,7 +210,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
         list_add(SHARED_LIST_NEW.list, pcb);
     signal_list_process_states();
 
-    log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
+    log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->exec_context.PID);
 
     sem_post(&SEM_LONG_TERM_SCHEDULER_NEW);
 
@@ -249,12 +249,12 @@ int kernel_command_kill_process(int argc, char* argv[]) {
 
         switch(pcb->current_state) {
             case NEW_STATE:
-                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
             case READY_STATE:
-                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
@@ -263,11 +263,11 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                     KILL_EXECUTING_PROCESS = 1;
                 pthread_mutex_unlock(&MUTEX_KILL_EXECUTING_PROCESS);
                 //pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
-                send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->PID, CONNECTION_CPU_INTERRUPT.fd_connection);
+                send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->exec_context.PID, CONNECTION_CPU_INTERRUPT.fd_connection);
                 break;
 
             case BLOCKED_STATE:
-                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 

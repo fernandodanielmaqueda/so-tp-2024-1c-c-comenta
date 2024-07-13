@@ -11,7 +11,7 @@
 #include "utils/serialize/kernel_interrupt.h"
 #include "utils/serialize/list.h"
 #include "utils/serialize/memory.h"
-#include "utils/serialize/pcb.h"
+#include "utils/serialize/exec_context.h"
 #include "utils/serialize/port_type.h"
 #include "utils/serialize/return_value.h"
 #include "utils/serialize/subheader.h"
@@ -60,16 +60,16 @@ void send_process_destroy(t_PID pid, int fd_socket);
 // Kernel - CPU
 
 
-void send_process_dispatch(t_PCB pcb, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
+void send_process_dispatch(t_Exec_Context exec_context, int fd_socket); //INT HEADER TERCER PARAMETREO ENVIO PCB A CUALQUIEWR SOCKET
 
 
-void receive_process_dispatch(t_PCB *pcb, int fd_socket);
+void receive_process_dispatch(t_Exec_Context *exec_context, int fd_socket);
 
 
-void send_process_eviction(t_PCB pcb, e_Eviction_Reason eviction_reason, t_Payload syscall_instruction, int fd_socket);
+void send_process_eviction(t_Exec_Context exec_context, e_Eviction_Reason eviction_reason, t_Payload syscall_instruction, int fd_socket);
 
 
-void receive_process_eviction(t_PCB *pcb, e_Eviction_Reason *eviction_reason, t_Payload *syscall_instruction, int fd_socket);
+void receive_process_eviction(t_Exec_Context *exec_context, e_Eviction_Reason *eviction_reason, t_Payload *syscall_instruction, int fd_socket);
 
 
 void send_kernel_interrupt(e_Kernel_Interrupt type, t_PID pid, int fd_socket);

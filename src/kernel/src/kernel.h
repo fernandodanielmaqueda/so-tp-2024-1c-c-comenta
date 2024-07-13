@@ -27,6 +27,22 @@
 #include "utils/socket.h"
 #include "console.h"
 #include "socket.h"
+
+typedef enum e_Process_State {
+    NEW_STATE,
+    READY_STATE,
+    EXEC_STATE,
+    BLOCKED_STATE,
+	EXIT_STATE
+} e_Process_State;
+
+typedef struct t_PCB {
+    t_Exec_Context exec_context;
+    e_Process_State current_state;
+    t_Payload *instruction;
+    t_Shared_List *shared_list;
+} t_PCB;
+
 #include "scheduler.h"
 #include "resources.h"
 #include "interfaces.h"

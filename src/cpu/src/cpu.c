@@ -24,8 +24,8 @@ t_MemorySize PAGE_SIZE;
 long TIMESTAMP;
 t_list *TLB;          // TLB que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
 
-t_PCB PCB;
-pthread_mutex_t MUTEX_PCB;
+t_Exec_Context EXEC_CONTEXT;
+pthread_mutex_t MUTEX_EXEC_CONTEXT;
 
 int EXECUTING = 0;
 pthread_mutex_t MUTEX_EXECUTING;
@@ -71,7 +71,7 @@ void initialize_mutexes(void) {
     pthread_mutex_init(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex), NULL);
     pthread_mutex_init(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex), NULL);
 
-    pthread_mutex_init(&MUTEX_PCB, NULL);
+    pthread_mutex_init(&MUTEX_EXEC_CONTEXT, NULL);
     pthread_mutex_init(&MUTEX_EXECUTING, NULL);
     pthread_mutex_init(&MUTEX_KERNEL_INTERRUPT, NULL);    
     pthread_mutex_init(&MUTEX_TLB, NULL);
@@ -81,7 +81,7 @@ void finish_mutexes(void) {
     pthread_mutex_destroy(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex));
     pthread_mutex_destroy(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex));
     
-    pthread_mutex_destroy(&MUTEX_PCB);
+    pthread_mutex_destroy(&MUTEX_EXEC_CONTEXT);
     pthread_mutex_destroy(&MUTEX_EXECUTING);
     pthread_mutex_destroy(&MUTEX_KERNEL_INTERRUPT);    
     pthread_mutex_destroy(&MUTEX_TLB);
@@ -139,20 +139,20 @@ void instruction_cycle(void)
 
         SYSCALL_INSTRUCTION = payload_create();
 
-        pthread_mutex_lock(&MUTEX_PCB);
-            receive_process_dispatch(&PCB, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
-        pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
+            receive_process_dispatch(&EXEC_CONTEXT, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+        pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
             EXECUTING = 1;
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
-        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB.PID);
+        log_trace(MODULE_LOGGER, "Contexto de ejecucion recibido del proceso : %i - Ciclo de instruccion ejecutando", EXEC_CONTEXT.PID);
 
         while(1) {
 
             // Fetch
-            log_debug(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB.PID, PCB.PC);
+            log_debug(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", EXEC_CONTEXT.PID, EXEC_CONTEXT.PC);
             cpu_fetch_next_instruction(&IR);
             if(IR == NULL) {
                 log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
@@ -231,9 +231,9 @@ void instruction_cycle(void)
             EXECUTING = 0;
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
-        pthread_mutex_lock(&MUTEX_PCB);
-            send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
-        pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
+            send_process_eviction(EXEC_CONTEXT, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+        pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         payload_destroy(SYSCALL_INSTRUCTION);
     }
@@ -260,12 +260,12 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
             }
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
-        pthread_mutex_lock(&MUTEX_PCB);
-            if(pid == PCB.PID) {
-                pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
+            if(pid == EXEC_CONTEXT.PID) {
+                pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
                 continue;
             }
-        pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
             // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
@@ -455,10 +455,9 @@ void request_frame_memory(t_PID pid, t_Page_Number page) {
 }
 
 void cpu_fetch_next_instruction(char **line) {
-    send_instruction_request(PCB.PID, PCB.PC, CONNECTION_MEMORY.fd_connection);
+    send_instruction_request(EXEC_CONTEXT.PID, EXEC_CONTEXT.PC, CONNECTION_MEMORY.fd_connection);
     receive_text_with_expected_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
 }
-
 
 void ask_memory_page_size(void) {
     send_header(PAGE_SIZE_REQUEST, CONNECTION_MEMORY.fd_connection);

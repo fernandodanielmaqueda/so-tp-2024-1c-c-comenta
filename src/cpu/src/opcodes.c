@@ -47,7 +47,7 @@ int set_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SET <REGISTRO> <VALOR>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -56,22 +56,22 @@ int set_cpu_operation(int argc, char **argv)
     e_CPU_Register destination_register;
     if(decode_register(argv[1], &destination_register)) {
         log_error(MODULE_LOGGER, "<REGISTRO> %s no encontrado", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     uint32_t value;
     if(str_to_uint32(argv[2], &value)) {
         log_error(MODULE_LOGGER, "%s: No es un valor valido", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
-    set_register_value(&PCB, destination_register, value);
+    set_register_value(&EXEC_CONTEXT, destination_register, value);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 0;
 
@@ -84,7 +84,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_IN <REGISTRO DATOS> <REGISTRO DIRECCION>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -93,33 +93,33 @@ int mov_in_cpu_operation(int argc, char **argv)
     e_CPU_Register register_data;
     if (decode_register(argv[1], &register_data)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     e_CPU_Register register_address;
     if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
     t_Logical_Address logical_address;
-    get_register_value(PCB, register_address, &logical_address);
+    get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
     size_t bytes = get_register_size(register_data);
 
-    t_list *list_physical_addresses = mmu(PCB.PID, logical_address, bytes);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, bytes);
 
-    void *destination = get_register_pointer(&PCB, register_data);
+    void *destination = get_register_pointer(&EXEC_CONTEXT, register_data);
     void *source;
-    attend_read(PCB.PID, list_physical_addresses, &source, bytes);
+    attend_read(EXEC_CONTEXT.PID, list_physical_addresses, &source, bytes);
     memcpy(destination, source, bytes);
     free(source);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 0;
 
@@ -132,7 +132,7 @@ int mov_out_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_OUT <REGISTRO DIRECCION> <REGISTRO DATOS>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -141,29 +141,29 @@ int mov_out_cpu_operation(int argc, char **argv)
     e_CPU_Register register_address;
     if(decode_register(argv[1], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     e_CPU_Register register_data;
     if(decode_register(argv[2], &register_data)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro direccion: %s - Registro datos: %s ", PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro direccion: %s - Registro datos: %s ", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
-    void *source = get_register_pointer(&PCB, register_data);
+    void *source = get_register_pointer(&EXEC_CONTEXT, register_data);
     size_t bytes = get_register_size(register_data);
 
     t_Logical_Address logical_address;
-    get_register_value(PCB, register_address, &logical_address);
+    get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
-    t_list *list_physical_addresses = mmu(PCB.PID, logical_address, bytes);
-    attend_write(PCB.PID, list_physical_addresses, source, bytes);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, bytes);
+    attend_write(EXEC_CONTEXT.PID, list_physical_addresses, source, bytes);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 0;
 
@@ -176,7 +176,7 @@ int sum_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUM <REGISTRO DESTINO> <REGISTRO ORIGEN>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -185,27 +185,27 @@ int sum_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if (decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     e_CPU_Register register_origin;
     if(decode_register(argv[2], &register_origin)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
     uint32_t value_register_destination;
     uint32_t value_register_origin;
-    get_register_value(PCB, register_destination, &value_register_destination);
-    get_register_value(PCB, register_origin, &value_register_origin);
+    get_register_value(EXEC_CONTEXT, register_destination, &value_register_destination);
+    get_register_value(EXEC_CONTEXT, register_origin, &value_register_origin);
 
-    set_register_value(&PCB, register_destination, (value_register_destination + value_register_origin));
+    set_register_value(&EXEC_CONTEXT, register_destination, (value_register_destination + value_register_origin));
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 0;
 
@@ -218,7 +218,7 @@ int sub_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUB <REGISTRO DESTINO> <REGISTRO ORIGEN>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -227,27 +227,27 @@ int sub_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if (decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     e_CPU_Register register_origin;
     if(decode_register(argv[2], &register_origin)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", (int) PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", (int) EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
     uint32_t value_register_destination;
     uint32_t value_register_origin;
-    get_register_value(PCB, register_destination, &value_register_destination);
-    get_register_value(PCB, register_origin, &value_register_origin);
+    get_register_value(EXEC_CONTEXT, register_destination, &value_register_destination);
+    get_register_value(EXEC_CONTEXT, register_origin, &value_register_origin);
 
-    set_register_value(&PCB, register_destination, (value_register_destination - value_register_origin));
+    set_register_value(&EXEC_CONTEXT, register_destination, (value_register_destination - value_register_origin));
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 0;
 
@@ -260,7 +260,7 @@ int jnz_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: JNZ <REGISTRO> <INSTRUCCION>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -269,26 +269,26 @@ int jnz_cpu_operation(int argc, char **argv)
     e_CPU_Register cpu_register;
     if(decode_register(argv[1], &cpu_register)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     t_PC instruction;
     if(str_to_pc(argv[2], &instruction)) {
         log_error(MODULE_LOGGER, "%s: No es un valor valido", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", PCB.PID, argv[0], argv[1], argv[2]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
     uint32_t value_cpu_register;
-    get_register_value(PCB, cpu_register, &value_cpu_register);
+    get_register_value(EXEC_CONTEXT, cpu_register, &value_cpu_register);
 
     if(value_cpu_register)
-        PCB.PC = instruction;
+        EXEC_CONTEXT.PC = instruction;
     else
-        PCB.PC++;
+        EXEC_CONTEXT.PC++;
     
     SYSCALL_CALLED = 0;
 
@@ -301,23 +301,23 @@ int resize_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: RESIZE <TAMANIO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     t_MemorySize size;
     if(str_to_memory_size(argv[1], &size)) {
         log_error(MODULE_LOGGER, "%s: No es un tamaño valido", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "RESIZE %s", argv[1]);
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", PCB.PID, argv[0], argv[1]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", EXEC_CONTEXT.PID, argv[0], argv[1]);
 
     t_Package *package = package_create_with_header(RESIZE_REQUEST);
-    payload_enqueue(package->payload, &(PCB.PID), sizeof(PCB.PID));
+    payload_enqueue(package->payload, &(EXEC_CONTEXT.PID), sizeof(EXEC_CONTEXT.PID));
 	payload_enqueue(package->payload, &size, sizeof(size));
 	package_send(package, CONNECTION_MEMORY.fd_connection);
 	package_destroy(package);
@@ -325,11 +325,11 @@ int resize_cpu_operation(int argc, char **argv)
     t_Return_Value return_value;
     receive_return_value_with_expected_header(RESIZE_REQUEST, &return_value, CONNECTION_MEMORY.fd_connection);
     if(return_value) {
-        PCB.exit_reason = OUT_OF_MEMORY_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = OUT_OF_MEMORY_EXIT_REASON;
         return 1;
     }
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 0;
 
@@ -342,37 +342,37 @@ int copy_string_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: COPY_STRING <TAMANIO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     t_MemorySize size;
     if(str_to_memory_size(argv[1], &size)) {
         log_error(MODULE_LOGGER, "%s: No es un tamaño valido", argv[1]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "COPY_STRING %s", argv[1]);
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", PCB.PID, argv[0], argv[1]);
+    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", EXEC_CONTEXT.PID, argv[0], argv[1]);
 
     t_Logical_Address logical_address_si;
-    get_register_value(PCB, SI_REGISTER, &logical_address_si);
+    get_register_value(EXEC_CONTEXT, SI_REGISTER, &logical_address_si);
 
-    t_list *list_physical_addresses_si = mmu(PCB.PID, logical_address_si, size);
+    t_list *list_physical_addresses_si = mmu(EXEC_CONTEXT.PID, logical_address_si, size);
     
     void *source;
-    attend_read(PCB.PID, list_physical_addresses_si, &source, size); 
+    attend_read(EXEC_CONTEXT.PID, list_physical_addresses_si, &source, size); 
 
     t_Logical_Address logical_address_di;
-    get_register_value(PCB, DI_REGISTER, &logical_address_di);
+    get_register_value(EXEC_CONTEXT, DI_REGISTER, &logical_address_di);
 
-    t_list *list_physical_addresses_di = mmu(PCB.PID, logical_address_di, size);
+    t_list *list_physical_addresses_di = mmu(EXEC_CONTEXT.PID, logical_address_di, size);
 
-    attend_write(PCB.PID, list_physical_addresses_di, source, size);
+    attend_write(EXEC_CONTEXT.PID, list_physical_addresses_di, source, size);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 0;
 
@@ -385,13 +385,13 @@ int wait_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "WAIT %s", argv[1]);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, WAIT_CPU_OPCODE);
@@ -406,13 +406,13 @@ int signal_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: SIGNAL <RECURSO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "SIGNAL %s", argv[1]);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, SIGNAL_CPU_OPCODE);
@@ -427,13 +427,13 @@ int io_gen_sleep_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %s", argv[1], argv[2]);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_GEN_SLEEP_CPU_OPCODE);
@@ -449,7 +449,7 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDIN_READ <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -458,29 +458,29 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     e_CPU_Register register_address;
     if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     e_CPU_Register register_size;
     if (decode_register(argv[3], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Interfaz: %s - Registro direccion: %s - Registro tamanio: %s", 
-        PCB.PID, argv[0], argv[1], argv[2], argv[3]);    
+        EXEC_CONTEXT.PID, argv[0], argv[1], argv[2], argv[3]);    
 
     t_MemorySize size;
-    get_register_value(PCB, register_size, &size);
+    get_register_value(EXEC_CONTEXT, register_size, &size);
 
     t_Logical_Address logical_address;
-    get_register_value(PCB, register_address, &logical_address);
+    get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
-    t_list *list_physical_addresses = mmu(PCB.PID, logical_address, size);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, size);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_STDIN_READ_CPU_OPCODE);
@@ -497,7 +497,7 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -506,29 +506,29 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     e_CPU_Register register_address;
     if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     e_CPU_Register register_size;
     if (decode_register(argv[3], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Interfaz: %s - Registro direccion: %s - Registro tamanio: %s", 
-        PCB.PID, argv[0], argv[1], argv[2], argv[3]);
+        EXEC_CONTEXT.PID, argv[0], argv[1], argv[2], argv[3]);
 
     t_MemorySize size;
-    get_register_value(PCB, register_size, &size);
+    get_register_value(EXEC_CONTEXT, register_size, &size);
 
     t_Logical_Address logical_address;
-    get_register_value(PCB, register_address, &logical_address);
+    get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
-    t_list *list_physical_addresses = mmu(PCB.PID, logical_address, size);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, size);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_STDOUT_WRITE_CPU_OPCODE);
@@ -545,13 +545,13 @@ int io_fs_create_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_CREATE <INTERFAZ> <NOMBRE ARCHIVO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
     
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_CREATE_CPU_OPCODE);
@@ -567,13 +567,13 @@ int io_fs_delete_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_DELETE <INTERFAZ> <NOMBRE ARCHIVO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
     
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_DELETE_CPU_OPCODE);
@@ -589,22 +589,22 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
     if (argc != 4)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_TRUNCATE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO TAMANIO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     e_CPU_Register register_size;
     if(decode_register(argv[3], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
     log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
 
     t_MemorySize bytes = 0;
-    get_register_value(PCB, register_size, &bytes);
+    get_register_value(EXEC_CONTEXT, register_size, &bytes);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
     
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_TRUNCATE_CPU_OPCODE);
@@ -620,7 +620,7 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     e_CPU_Register register_address_ptro;
@@ -628,17 +628,17 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     e_CPU_Register register_size;
     if(decode_register(argv[3], &register_size_destino)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     if (decode_register(argv[4], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[4]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     if (decode_register(argv[5], &register_address_ptro)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[5]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -648,12 +648,12 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     t_MemorySize puntero = 0;
     t_MemorySize bytes = 0;
 
-    get_register_value(PCB, register_size_destino, &logical_address_destino);
-    get_register_value(PCB, register_address_ptro, &puntero);
-    get_register_value(PCB, register_size, &bytes);
-    t_list *list_physical_addresses_origin = mmu(PCB.PID, logical_address_destino, bytes);
+    get_register_value(EXEC_CONTEXT, register_size_destino, &logical_address_destino);
+    get_register_value(EXEC_CONTEXT, register_address_ptro, &puntero);
+    get_register_value(EXEC_CONTEXT, register_size, &bytes);
+    t_list *list_physical_addresses_origin = mmu(EXEC_CONTEXT.PID, logical_address_destino, bytes);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
     
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_WRITE_CPU_OPCODE);
@@ -671,7 +671,7 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     e_CPU_Register register_address_ptro;
@@ -679,17 +679,17 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     e_CPU_Register register_size;
     if(decode_register(argv[3], &register_size_destino)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     if (decode_register(argv[4], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[4]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     if (decode_register(argv[5], &register_address_ptro)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[5]);
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
     log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
@@ -698,12 +698,12 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     t_MemorySize puntero = 0;
     t_MemorySize bytes = 0;
 
-    get_register_value(PCB, register_size_destino, &logical_address_destino);
-    get_register_value(PCB, register_address_ptro, &puntero);
-    get_register_value(PCB, register_size, &bytes);
-    t_list *list_physical_addresses_origin = mmu(PCB.PID, logical_address_destino, bytes);
+    get_register_value(EXEC_CONTEXT, register_size_destino, &logical_address_destino);
+    get_register_value(EXEC_CONTEXT, register_address_ptro, &puntero);
+    get_register_value(EXEC_CONTEXT, register_size, &bytes);
+    t_list *list_physical_addresses_origin = mmu(EXEC_CONTEXT.PID, logical_address_destino, bytes);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
     
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_READ_CPU_OPCODE);
@@ -722,7 +722,7 @@ int exit_cpu_operation(int argc, char **argv)
     if (argc != 1)
     {
         log_error(MODULE_LOGGER, "Uso: EXIT");
-        PCB.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -733,14 +733,14 @@ int exit_cpu_operation(int argc, char **argv)
     {
 
         t_TLB *delete_tlb_entry = list_get(TLB, i);
-        if (delete_tlb_entry->PID == PCB.PID)
+        if (delete_tlb_entry->PID == EXEC_CONTEXT.PID)
         {
             list_remove(TLB, i);
         }
     }
-    log_info(MODULE_LOGGER, "Proceso %i finalizado y en TLB", PCB.PID);
+    log_info(MODULE_LOGGER, "Proceso %i finalizado y en TLB", EXEC_CONTEXT.PID);
 
-    PCB.PC++;
+    EXEC_CONTEXT.PC++;
     
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, EXIT_CPU_OPCODE);

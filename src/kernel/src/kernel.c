@@ -47,7 +47,6 @@ void initialize_mutexes(void) {
 	pthread_mutex_init(&(SHARED_LIST_READY.mutex), NULL);
 	pthread_mutex_init(&(SHARED_LIST_READY_PRIORITARY.mutex), NULL);
 	pthread_mutex_init(&(SHARED_LIST_EXEC.mutex), NULL);
-	pthread_mutex_init(&(SHARED_LIST_BLOCKED.mutex), NULL);
 	pthread_mutex_init(&(SHARED_LIST_EXIT.mutex), NULL);
 
 	pthread_mutex_init(&MUTEX_QUANTUM_INTERRUPT, NULL);
@@ -75,7 +74,6 @@ void finish_mutexes(void) {
 	pthread_mutex_destroy(&(SHARED_LIST_READY.mutex));
 	pthread_mutex_destroy(&(SHARED_LIST_READY_PRIORITARY.mutex));
 	pthread_mutex_destroy(&(SHARED_LIST_EXEC.mutex));
-	pthread_mutex_destroy(&(SHARED_LIST_BLOCKED.mutex));
 	pthread_mutex_destroy(&(SHARED_LIST_EXIT.mutex));
 
 	pthread_mutex_destroy(&MUTEX_QUANTUM_INTERRUPT);
