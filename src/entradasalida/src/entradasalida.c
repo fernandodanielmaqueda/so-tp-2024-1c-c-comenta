@@ -310,6 +310,8 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>, PID");
 			sleep(WORK_UNIT_TIME * work_units);
 
+			//AVISAR A KERNEL COMO SALIO
+
 			break;
 		}
 		default:
@@ -326,9 +328,10 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 
 	switch(IO_TYPE){
 		case STDIN_IO_TYPE:
-		{
+		
 			while(1){
 			e_Header IO_STDIN_WRITE_MEMORY;	
+			e_Header WRITE_REQUEST;
 			t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 			
 			t_list *physical_addresses = list_crate();
@@ -350,8 +353,15 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 			//Envio el paquete y lo destruyo
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
+
+			//Recibo si salio bien la operacion
+			receive_return_value_with_expected_header(WRITE_REQUEST, 0, CONNECTION_MEMORY.fd_connection);
+
+			//Aviso a kernel que salió bien
+			send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection);
+			
 			}
-		}
+		
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
@@ -388,6 +398,12 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			//Envio el paquete y lo destruyo
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
+			
+			//Recibo nuevo paquete e imprimo por pantalla
+
+
+			//Aviso a kernel como salió
+
 		}
 
 			break;
