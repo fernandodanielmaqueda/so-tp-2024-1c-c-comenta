@@ -30,12 +30,16 @@
 #include "scheduler.h"
 
 typedef struct t_Interface {
+    t_Client *client;
     char *name;
 	e_IO_Type io_type;
-	t_list *list_blocked;
-    sem_t sem;
+	t_Shared_List shared_list_blocked;
+    sem_t sem_concurrency;
 } t_Interface;
 
-extern t_list *INTERFACES;
+extern t_list *LIST_INTERFACES;
+extern t_Drain_Ongoing_Resource_Sync INTERFACES_SYNC;
+
+void *kernel_client_handler_for_io(void *new_client_parameter);
 
 #endif // KERNEL_INTERFACES_H

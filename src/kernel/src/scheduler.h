@@ -84,11 +84,7 @@ extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 extern int SCHEDULING_PAUSED;
 extern pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
 
-extern pthread_mutex_t MUTEX_LIST_PROCESS_STATES;
-extern sem_t SEM_SCHEDULING_WAIT_COUNT;
-extern pthread_cond_t COND_LIST_PROCESS_STATES;
-extern sem_t SEM_SWITCHING_STATES_COUNT;
-extern pthread_cond_t COND_SWITCHING_STATES;
+extern t_Drain_Ongoing_Resource_Sync SCHEDULING_SYNC;
 
 int find_scheduling_algorithm(char *name, e_Scheduling_Algorithm *destination);
 void initialize_scheduling(void);
@@ -112,5 +108,12 @@ t_PCB *pcb_create(void);
 t_PID pid_assign(t_PCB *pcb);
 void pid_release(t_PID pid);
 void* start_quantum(void *pcb_parameter);
+
+void init_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void destroy_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
 
 #endif // KERNEL_SCHEDULER_H

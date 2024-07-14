@@ -206,9 +206,9 @@ int kernel_command_start_process(int argc, char* argv[]) {
         return 1;
     }
 
-    wait_list_process_states();
+    wait_draining_requests(&SCHEDULING_SYNC);
         list_add(SHARED_LIST_NEW.list, pcb);
-    signal_list_process_states();
+    signal_draining_requests(&SCHEDULING_SYNC);
 
     log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->exec_context.PID);
 
@@ -238,12 +238,12 @@ int kernel_command_kill_process(int argc, char* argv[]) {
         return 1;
     }
 
-    wait_switching_states();
+    wait_ongoing(&SCHEDULING_SYNC);
 
         t_PCB *pcb = PCB_ARRAY[pid];
         if(pcb == NULL) {
             log_error(MODULE_LOGGER, "No existe un proceso con PID <%d>", (int) pid);
-            signal_switching_states();
+            signal_ongoing(&SCHEDULING_SYNC);
             return 1;
         }
 
@@ -275,7 +275,7 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                 break;
         }
 
-    signal_switching_states();
+    signal_ongoing(&SCHEDULING_SYNC);
 
     return 0;
 }
@@ -299,7 +299,7 @@ int kernel_command_pause_scheduling(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION");
 
-    wait_switching_states();
+    wait_ongoing(&SCHEDULING_SYNC);
     return 0;
 }
 
@@ -322,7 +322,7 @@ int kernel_command_resume_scheduling(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION");
 
-    signal_switching_states();
+    signal_ongoing(&SCHEDULING_SYNC);
     return 0;
 }
 
@@ -378,7 +378,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
     char *pid_string_blocked = string_new();
     char *pid_string_exit = string_new();
 
-    wait_switching_states();
+    wait_ongoing(&SCHEDULING_SYNC);
         pcb_list_to_pid_string(SHARED_LIST_NEW.list, &pid_string_new);
 
         pcb_list_to_pid_string(SHARED_LIST_READY.list, &pid_string_ready);
@@ -389,7 +389,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
         pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
 
         pcb_list_to_pid_string(SHARED_LIST_EXIT.list, &pid_string_exit);
-    signal_switching_states();
+    signal_ongoing(&SCHEDULING_SYNC);
 
     log_info(CONSOLE_LOGGER,
         "Lista de proceso por estado:\n"
@@ -412,25 +412,4 @@ int kernel_command_process_states(int argc, char* argv[]) {
     free(pid_string_exit);
 
     return 0;
-}
-
-void wait_switching_states(void) {
-    sem_post(&SEM_SCHEDULING_WAIT_COUNT);
-
-    int sem_value;
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-    while(1) {
-        sem_getvalue(&SEM_SWITCHING_STATES_COUNT, &sem_value);
-        if(!sem_value)
-            break;
-        pthread_cond_wait(&COND_SWITCHING_STATES, &MUTEX_LIST_PROCESS_STATES);
-    }
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
-}
-
-void signal_switching_states(void) {
-    sem_wait(&SEM_SCHEDULING_WAIT_COUNT);
-
-    // se podría agregar un if para hacer el broadcast sólo si el semáforo efectivamente quedó en 0
-    pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
 }

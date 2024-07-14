@@ -68,11 +68,7 @@ pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 int SCHEDULING_PAUSED;
 pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
 
-pthread_mutex_t MUTEX_LIST_PROCESS_STATES;
-sem_t SEM_SCHEDULING_WAIT_COUNT;
-pthread_cond_t COND_LIST_PROCESS_STATES;
-sem_t SEM_SWITCHING_STATES_COUNT;
-pthread_cond_t COND_SWITCHING_STATES;
+t_Drain_Ongoing_Resource_Sync SCHEDULING_SYNC;
 
 int find_scheduling_algorithm(char *name, e_Scheduling_Algorithm *destination) {
 
@@ -99,6 +95,8 @@ void initialize_scheduling(void) {
 	SHARED_LIST_EXEC.list = list_create();
 	SHARED_LIST_BLOCKED.list = list_create();
 	SHARED_LIST_EXIT.list = list_create();
+	
+	LIST_INTERFACES = list_create();
 
 	initialize_long_term_scheduler();
 	initialize_short_term_scheduler();
@@ -135,20 +133,21 @@ void *long_term_scheduler_new(void *parameter) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_NEW);
 		sem_wait(&SEM_MULTIPROGRAMMING_LEVEL);
 
-    	wait_list_process_states();
+    	wait_draining_requests(&SCHEDULING_SYNC);
 			pthread_mutex_lock(&(SHARED_LIST_NEW.mutex));
 
 				if((SHARED_LIST_NEW.list)->head == NULL) {
 					pthread_mutex_unlock(&(SHARED_LIST_NEW.mutex));
-					signal_list_process_states();
+					signal_draining_requests(&SCHEDULING_SYNC);
 					continue;
 				}
 
 				pcb = (t_PCB *) (SHARED_LIST_NEW.list)->head->data;
+			
 			pthread_mutex_unlock(&(SHARED_LIST_NEW.mutex));
 
 			switch_process_state(pcb, READY_STATE);
-		signal_list_process_states();
+		signal_draining_requests(&SCHEDULING_SYNC);
 	}
 
 	return NULL;
@@ -161,11 +160,11 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 	while(1) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_EXIT);
 
-		wait_list_process_states();
+		wait_draining_requests(&SCHEDULING_SYNC);
 			pthread_mutex_lock(&(SHARED_LIST_EXIT.mutex));
 				pcb = (t_PCB *) list_remove((SHARED_LIST_EXIT.list), 0);
 			pthread_mutex_unlock(&(SHARED_LIST_EXIT.mutex));
-		signal_list_process_states();
+		signal_draining_requests(&SCHEDULING_SYNC);
 
 		send_process_destroy(pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection);
 
@@ -198,14 +197,14 @@ void *short_term_scheduler(void *parameter) {
 	while(1) {
 		sem_wait(&SEM_SHORT_TERM_SCHEDULER);
 
-		wait_list_process_states();
+		wait_draining_requests(&SCHEDULING_SYNC);
 			pcb = SCHEDULING_ALGORITHMS[SCHEDULING_ALGORITHM].function_fetcher();
 			if(pcb == NULL) {
-				signal_list_process_states();
+				signal_draining_requests(&SCHEDULING_SYNC);
 				continue;
 			}
 			switch_process_state(pcb, EXEC_STATE);
-		signal_list_process_states();
+		signal_draining_requests(&SCHEDULING_SYNC);
 
 		int PCB_EXECUTE = 1;
 		while(PCB_EXECUTE) {
@@ -259,7 +258,7 @@ void *short_term_scheduler(void *parameter) {
 					break;
 			}
 
-			wait_list_process_states();
+			wait_draining_requests(&SCHEDULING_SYNC);
 
 				switch(eviction_reason) {
 					case UNEXPECTED_ERROR_EVICTION_REASON:
@@ -305,7 +304,7 @@ void *short_term_scheduler(void *parameter) {
 						break;
 				}
 
-			signal_list_process_states();
+			signal_draining_requests(&SCHEDULING_SYNC);
 			// instruction_free(instruction);
 		}
 	}
@@ -567,8 +566,9 @@ t_PCB *pcb_create(void) {
     pcb->exec_context.cpu_registers.DI = 0;
 
 	pcb->current_state = NEW_STATE;
+	pcb->shared_list_state = NULL;
+
 	pcb->instruction = NULL;
-	pcb->shared_list = NULL;
 
 	return pcb;
 }
@@ -662,4 +662,61 @@ void *start_quantum(void *pcb_parameter) {
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->exec_context.quantum);
 
 	return NULL;
+}
+
+void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+    sem_post(&(resource_sync->sem_drain_requests_count));
+
+    int sem_value;
+    pthread_mutex_lock(&(resource_sync->mutex_resource));
+        while(1) {
+            sem_getvalue(&(resource_sync->sem_ongoing_count), &sem_value);
+            if(!sem_value)
+                break;
+            pthread_cond_wait(&(resource_sync->cond_ongoing), &(resource_sync->mutex_resource));
+        }
+    pthread_mutex_unlock(&(resource_sync->mutex_resource));
+}
+
+void init_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	pthread_mutex_init(&(resource_sync->mutex_resource), NULL);
+	sem_init(&(resource_sync->sem_drain_requests_count), 0, 0);
+	pthread_cond_init(&(resource_sync->cond_drain_requests), NULL);
+	sem_init(&(resource_sync->sem_ongoing_count), 0, 0);
+	pthread_cond_init(&(resource_sync->cond_ongoing), NULL);
+}
+
+void destroy_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	pthread_mutex_destroy(&(resource_sync->mutex_resource));
+	sem_destroy(&(resource_sync->sem_drain_requests_count));
+	pthread_cond_destroy(&(resource_sync->cond_drain_requests));
+	sem_destroy(&(resource_sync->sem_ongoing_count));
+	pthread_cond_destroy(&(resource_sync->cond_ongoing));
+}
+
+void signal_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+    sem_wait(&(resource_sync->sem_drain_requests_count));
+
+    // Acá se podría agregar un if para hacer el broadcast sólo si el semáforo efectivamente quedó en 0
+    pthread_cond_broadcast(&(resource_sync->cond_drain_requests));
+}
+
+void wait_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+
+    int sem_value;
+    pthread_mutex_lock(&(resource_sync->mutex_resource));
+		while(1) {
+			sem_getvalue(&(resource_sync->sem_drain_requests_count), &sem_value);
+			if(!sem_value)
+				break;
+			pthread_cond_wait(&(resource_sync->cond_drain_requests), &(resource_sync->mutex_resource));
+		}
+		sem_post(&(resource_sync->sem_ongoing_count));
+    pthread_mutex_unlock(&(resource_sync->mutex_resource));
+}
+
+void signal_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	sem_wait(&(resource_sync->sem_ongoing_count));
+	// Acá se podría agregar un if para hacer el signal sólo si el semáforo efectivamente quedó en 0
+	pthread_cond_signal(&(resource_sync->cond_ongoing)); // podría ser un broadcast en lugar de un wait si hay más de un comando de consola esperando
 }

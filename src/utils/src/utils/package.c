@@ -3,6 +3,36 @@
 
 #include "package.h"
 
+const char *HEADER_NAMES[] = {
+    // Uso general
+    [DISCONNECTING_HEADER] = "DISCONNECTING_HEADER",
+    // Handshake
+    [PORT_TYPE_HEADER] = "PORT_TYPE_HEADER",
+    // Kernel <---> CPU
+    [PROCESS_DISPATCH_HEADER] = "PROCESS_DISPATCH_HEADER",
+    [PROCESS_EVICTION_HEADER] = "PROCESS_EVICTION_HEADER",
+    [KERNEL_INTERRUPT_HEADER] = "KERNEL_INTERRUPT_HEADER",
+    // Kernel <---> Memoria
+    [PROCESS_CREATE_HEADER] = "PROCESS_CREATE_HEADER",
+    [PROCESS_DESTROY_HEADER] = "PROCESS_DESTROY_HEADER",
+    //Kernel <---> Entrada/Salida
+    [INTERFACE_DATA_REQUEST_HEADER] = "INTERFACE_DATA_REQUEST_HEADER",
+    [IO_OPERATION_DISPATCH_HEADER] = "IO_OPERATION_DISPATCH_HEADER",
+    [IO_OPERATION_FINISHED_HEADER] = "IO_OPERATION_FINISHED_HEADER",
+
+    // CPU <---> Memoria
+    [INSTRUCTION_REQUEST] = "INSTRUCTION_REQUEST",
+    [READ_REQUEST] = "READ_REQUEST", //utilizado en MEMORIA-IO
+    [WRITE_REQUEST] = "WRITE_REQUEST", //utilizado en MEMORIA-IO
+    [RESIZE_REQUEST] = "RESIZE_REQUEST",
+    [FRAME_ACCESS] = "FRAME_ACCESS",    //PARA MEMORIA Y REVISAR LA TLB
+    [FRAME_REQUEST] = "FRAME_REQUEST",
+    [PAGE_SIZE_REQUEST] = "PAGE_SIZE_REQUEST",
+    //IO <---> Memoria
+    [IO_STDIN_WRITE_MEMORY] = "IO_STDIN_WRITE_MEMORY",
+    [IO_STDOUT_READ_MEMORY] = "IO_STDOUT_READ_MEMORY"
+};
+
 t_Package *package_create(void) {
 
   t_Package *package = malloc(sizeof(t_Package));
@@ -29,18 +59,18 @@ void package_destroy(t_Package *package) {
   free(package);
 }
 
-void package_send(t_Package *package, int fd_socket) {
+int package_send(t_Package *package, int fd_socket) {
   
   // Si el paquete es NULL, no se envia nada
   if(package == NULL)
-    return;
+    return 1;
 
   size_t bufferSize = sizeof(t_EnumValue) + sizeof(package->payload->size) + (size_t) package->payload->size;
 
   void *buffer = malloc(bufferSize);
   if(buffer == NULL) {
-    log_error(SOCKET_LOGGER, "No se pudo crear el buffer con malloc");
-    exit(EXIT_FAILURE);
+    log_error(SOCKET_LOGGER, "malloc: No se pudieron reservar %zu bytes de memoria\n", (size_t) bufferSize);
+    return 1;
   }
 
   size_t offset = 0;
@@ -55,16 +85,15 @@ void package_send(t_Package *package, int fd_socket) {
   ssize_t bytes = send(fd_socket, buffer, bufferSize, 0);
   if (bytes == -1) {
       log_error(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
-      close(fd_socket);
-      exit(EXIT_FAILURE);
+      return 1;
   }
   if (bytes != bufferSize) {
       log_error(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", bufferSize, bytes);
-      close(fd_socket);
-      exit(EXIT_FAILURE);
+      return 1;
   }
 
   free(buffer);
+  return 0;
 }
 
 int package_receive(t_Package **destination, int fd_socket) {
@@ -89,9 +118,8 @@ int package_receive_header(t_Package *package, int fd_socket) {
 
   t_EnumValue aux;
 
-  int exit_status = receive(fd_socket, (void *) &(aux), sizeof(t_EnumValue));
-  if(exit_status)
-    return exit_status;
+  if(receive(fd_socket, (void *) &(aux), sizeof(t_EnumValue)))
+    return 1;
 
   package->header = (e_Header) aux;
 
@@ -109,10 +137,10 @@ int package_receive_payload(t_Package *package, int fd_socket) {
   if(package->payload->size == 0)
     return 0;
 
-  package->payload->stream = malloc(package->payload->size);
+  package->payload->stream = malloc((size_t) package->payload->size);
   if(package->payload->stream == NULL) {
-    log_error(SOCKET_LOGGER, "No se pudo crear el stream con malloc");
-    exit(EXIT_FAILURE);
+    log_error(SOCKET_LOGGER, "malloc: No se pudo reservar %zu bytes de memoria\n", (size_t) package->payload->size);
+    return 1;
   }
 
   return receive(fd_socket, (void *) package->payload->stream, (size_t) package->payload->size);
@@ -123,19 +151,14 @@ int receive(int fd_socket, void *destination, size_t expected_bytes) {
   ssize_t bytes = recv(fd_socket, destination, expected_bytes, 0); // MSG_WAITALL
   if (bytes == 0) {
       log_error(SOCKET_LOGGER, "Emisor Desconectado\n");
-      close(fd_socket);
-      errno = ECONNRESET;
       return 1;
   }
   if (bytes == -1) {
       log_error(SOCKET_LOGGER, "Funcion recv: %s\n", strerror(errno));
-      close(fd_socket);
       return 1;
   }
   if (bytes != expected_bytes) {
-      log_error(SOCKET_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zd) con los que se esperaban recibir (%zd)\n", expected_bytes, bytes);
-      close(fd_socket);
-      errno = EREMOTEIO;
+      log_error(SOCKET_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zu) con los que se esperaban recibir (%zd)\n", expected_bytes, bytes);
       return 1;
   }
 
