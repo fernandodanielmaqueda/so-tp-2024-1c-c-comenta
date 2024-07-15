@@ -22,6 +22,8 @@ int BLOCK_SIZE;
 int BLOCK_COUNT;
 int COMPRESSION_DELAY;
 
+t_list *LIST_FILES;
+
 t_IO_Type IO_TYPES[] = {
     [GENERIC_IO_TYPE] = {.name = "GENERIC", .function = generic_interface_function },
     [STDIN_IO_TYPE] = {.name = "STDIN", .function = stdin_interface_function },
@@ -53,6 +55,8 @@ int module(int argc, char *argv[]) {
 
 	initialize_loggers();
 	initialize_configs(argv[2]);
+
+	LIST_FILES = list_create();
 
 	initialize_sockets();
 
@@ -417,7 +421,17 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 
 int io_fs_create_io_operation(t_Payload *operation) {
 
+	/* PASOS
+	deserializar
+	buscar espacio inicial
+	asignar
+	crear nueva struct
+	agregar al listado
+	actualizar bitmap
+	*/
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
+
+	
 
     return 0;
 }

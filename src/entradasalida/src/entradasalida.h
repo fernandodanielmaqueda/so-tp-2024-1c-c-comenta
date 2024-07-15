@@ -44,6 +44,12 @@ typedef struct t_IO_Operation {
     int (*function) (t_Payload *);
 } t_IO_Operation;
 
+typedef struct t_FS_File {
+    char *name;
+    t_PID process_pid;
+    uint32_t initial_bloq;
+} t_IO_Type;
+
 extern char *INTERFACE_NAME;
 
 extern int WORK_UNIT_TIME;
