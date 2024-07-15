@@ -351,7 +351,7 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 
 			//Encolo el payload en el paquete creado antes
 			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
-			list_serialize(package->payload, physical_addresses, physical_address_deserialize_element);
+			list_serialize(package->payload, *physical_addresses, physical_address_deserialize_element);
 			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
 
 			//Envio el paquete y lo destruyo
@@ -396,7 +396,7 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 
 			//Encolo devuelta el payload dentro del paquete creado
 			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
-			list_serialize(package->payload, physical_addresses, physical_address_deserialize_element);
+			list_serialize(package->payload, *physical_addresses, physical_address_deserialize_element);
 			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
 
 			//Envio el paquete y lo destruyo
@@ -423,6 +423,7 @@ int io_fs_create_io_operation(t_Payload *operation) {
 
 	char* file_name;
     text_deserialize(operation, &(file_name));
+	uint32_t location;
 
 
 	/* PASOS
@@ -434,6 +435,13 @@ int io_fs_create_io_operation(t_Payload *operation) {
 	actualizar bitmap
 	*/
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
+
+	t_FS_File* new_entry;
+	new_entry->name = string_duplicate(file_name);
+	new_entry->process_pid = PID;
+	new_entry->initial_bloq = location;
+	new_entry->len = 0;
+
 
 	//CONSULTAR ASIGNADO BITMAP -- BLOQUE DE DATOS QUE SIST DE LECTURA TIENE
 	

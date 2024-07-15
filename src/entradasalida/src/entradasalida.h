@@ -49,7 +49,7 @@ typedef struct t_FS_File {
     t_PID process_pid;
     uint32_t initial_bloq;
     uint32_t len;
-} t_IO_Type;
+} t_FS_File;
 
 extern char *INTERFACE_NAME;
 
