@@ -421,6 +421,10 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 
 int io_fs_create_io_operation(t_Payload *operation) {
 
+	char* file_name;
+    text_deserialize(operation, &(file_name));
+
+
 	/* PASOS
 	deserializar
 	buscar espacio inicial
@@ -431,6 +435,7 @@ int io_fs_create_io_operation(t_Payload *operation) {
 	*/
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
+	//CONSULTAR ASIGNADO BITMAP -- BLOQUE DE DATOS QUE SIST DE LECTURA TIENE
 	
 
     return 0;
