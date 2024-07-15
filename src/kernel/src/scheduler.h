@@ -58,6 +58,8 @@ extern sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
 extern sem_t SEM_SHORT_TERM_SCHEDULER;
 
+extern int PCB_EXEC;
+
 extern t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[];
 
 extern e_Scheduling_Algorithm SCHEDULING_ALGORITHM;
@@ -115,6 +117,8 @@ void init_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
 void destroy_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
 void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
 void signal_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_ongoing_locking(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_ongoing_unlocking(t_Drain_Ongoing_Resource_Sync *resource_sync);
 void wait_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
 void signal_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
 

@@ -38,5 +38,6 @@ void read_module_config(t_config*);
 
 void *list_remove_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation);
 int list_add_unless_matches_with_any(t_list *list, void *data, bool (*condition)(void *, void*));
+void *list_find_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation);
 
 #endif // UTILS_MODULE_H

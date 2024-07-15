@@ -30,6 +30,8 @@ sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 pthread_t THREAD_SHORT_TERM_SCHEDULER;
 sem_t SEM_SHORT_TERM_SCHEDULER;
 
+int PCB_EXEC;
+
 t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	[FIFO_SCHEDULING_ALGORITHM] = { .name = "FIFO" , .function_fetcher = FIFO_scheduling_algorithm},
 	[RR_SCHEDULING_ALGORITHM] = { .name = "RR" , .function_fetcher = RR_scheduling_algorithm },
@@ -274,6 +276,7 @@ void *short_term_scheduler(void *parameter) {
 						break;
 
 					case KILL_KERNEL_INTERRUPT_EVICTION_REASON:
+						pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
 						switch_process_state(pcb, EXIT_STATE);
 						PCB_EXECUTE = 0;
 						break;
@@ -283,18 +286,19 @@ void *short_term_scheduler(void *parameter) {
 						exit_status = syscall_execute(syscall_instruction);
 
 						if(exit_status) {
+							// La syscall se encarga de settear el e_Exit_Reason
 							switch_process_state(pcb, EXIT_STATE);
 							PCB_EXECUTE = 0;
 							break;
 						}
 
-						if(BLOCKING_SYSCALL) {
+						// Si la syscall es bloqueante
+						if(!PCB_EXEC) {
 							switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
-							PCB_EXECUTE = 0;
 							break;
 						}
 
-						// En caso de que sea una syscall no bloqueante
+						// Si la syscall es no bloqueante
 						break;
 
 					case QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON:
@@ -651,20 +655,6 @@ void *start_quantum(void *pcb_parameter) {
 	return NULL;
 }
 
-void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync) {
-    sem_post(&(resource_sync->sem_drain_requests_count));
-
-    int sem_value;
-    pthread_mutex_lock(&(resource_sync->mutex_resource));
-        while(1) {
-            sem_getvalue(&(resource_sync->sem_ongoing_count), &sem_value);
-            if(!sem_value)
-                break;
-            pthread_cond_wait(&(resource_sync->cond_ongoing), &(resource_sync->mutex_resource));
-        }
-    pthread_mutex_unlock(&(resource_sync->mutex_resource));
-}
-
 void init_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync) {
 	pthread_mutex_init(&(resource_sync->mutex_resource), NULL);
 	sem_init(&(resource_sync->sem_drain_requests_count), 0, 0);
@@ -681,11 +671,34 @@ void destroy_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync) {
 	pthread_cond_destroy(&(resource_sync->cond_ongoing));
 }
 
+void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+    wait_ongoing_locking(resource_sync);
+    pthread_mutex_unlock(&(resource_sync->mutex_resource));
+}
+
 void signal_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync) {
     sem_wait(&(resource_sync->sem_drain_requests_count));
 
     // Acá se podría agregar un if para hacer el broadcast sólo si el semáforo efectivamente quedó en 0
     pthread_cond_broadcast(&(resource_sync->cond_drain_requests));
+}
+
+void wait_ongoing_locking(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+    sem_post(&(resource_sync->sem_drain_requests_count));
+
+    int sem_value;
+    pthread_mutex_lock(&(resource_sync->mutex_resource));
+        while(1) {
+            sem_getvalue(&(resource_sync->sem_ongoing_count), &sem_value);
+            if(!sem_value)
+                break;
+            pthread_cond_wait(&(resource_sync->cond_ongoing), &(resource_sync->mutex_resource));
+        }
+}
+
+void signal_ongoing_unlocking(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	pthread_mutex_unlock(&(resource_sync->mutex_resource));
+	signal_ongoing(resource_sync);
 }
 
 void wait_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync) {

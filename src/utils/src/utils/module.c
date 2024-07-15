@@ -81,3 +81,14 @@ int list_add_unless_matches_with_any(t_list *list, void *data, bool (*condition)
 
     return 0;
 }
+
+void *list_find_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation) {
+	t_link_element **indirect = &(list->head);
+	while (*indirect != NULL) {
+		if(condition(((*indirect)->data), comparation)) {
+			return (*indirect)->data;
+		}
+		indirect = &((*indirect)->next);
+	}
+	return NULL;
+}
