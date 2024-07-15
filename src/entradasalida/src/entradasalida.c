@@ -57,8 +57,14 @@ int module(int argc, char *argv[]) {
 
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
+	t_Return_Value return_value;
 	receive_expected_header(INTERFACE_DATA_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);	
 	send_interface_data(INTERFACE_NAME, IO_TYPE, CONNECTION_KERNEL.fd_connection);
+	receive_return_value_with_expected_header(INTERFACE_DATA_REQUEST_HEADER, &return_value, CONNECTION_KERNEL.fd_connection);
+	if(return_value) {
+		log_error(MODULE_LOGGER, "No se pudo registrar la interfaz %s en el Kernel", INTERFACE_NAME);
+		exit(EXIT_FAILURE);
+	}
 
 	// Invoco a la funcion que corresponda
 	IO_TYPES[IO_TYPE].function();
@@ -105,7 +111,7 @@ int io_type_find(char *name, e_IO_Type *destination) {
     
     size_t io_types_number = sizeof(IO_TYPES) / sizeof(IO_TYPES[0]);
     for (register e_IO_Type io_type = 0; io_type < io_types_number; io_type++)
-        if (!strcmp(IO_TYPES[io_type].name, name)) {
+        if (strcmp(IO_TYPES[io_type].name, name) == 0) {
             *destination = io_type;
             return 0;
         }

@@ -114,7 +114,7 @@ int find_tlb_algorithm(char *name, e_TLB_Algorithm *destination) {
     
     size_t tlb_algorithms_number = sizeof(TLB_ALGORITHMS) / sizeof(TLB_ALGORITHMS[0]);
     for (register e_TLB_Algorithm tlb_algorithm = 0; tlb_algorithm < tlb_algorithms_number; tlb_algorithm++)
-        if (!strcmp(TLB_ALGORITHMS[tlb_algorithm], name)) {
+        if (strcmp(TLB_ALGORITHMS[tlb_algorithm], name) == 0) {
             *destination = tlb_algorithm;
             return 0;
         }

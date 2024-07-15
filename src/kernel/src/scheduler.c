@@ -77,7 +77,7 @@ int find_scheduling_algorithm(char *name, e_Scheduling_Algorithm *destination) {
     
     size_t scheduling_algorithms_number = sizeof(SCHEDULING_ALGORITHMS) / sizeof(SCHEDULING_ALGORITHMS[0]);
     for (register e_Scheduling_Algorithm scheduling_algorithm = 0; scheduling_algorithm < scheduling_algorithms_number; scheduling_algorithm++)
-        if (!strcmp(SCHEDULING_ALGORITHMS[scheduling_algorithm].name, name)) {
+        if (strcmp(SCHEDULING_ALGORITHMS[scheduling_algorithm].name, name) == 0) {
             *destination = scheduling_algorithm;
             return 0;
         }
@@ -379,7 +379,7 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 	switch(previous_state) {
 		case NEW_STATE:
 			pthread_mutex_lock(&(SHARED_LIST_NEW.mutex));
-				remove_pcb_from_list_by_pid((SHARED_LIST_NEW.list), pcb->exec_context.PID);
+				list_remove_by_condition_with_comparation((SHARED_LIST_NEW.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
 			pthread_mutex_unlock(&(SHARED_LIST_NEW.mutex));
 			break;
 		case READY_STATE:
@@ -389,18 +389,18 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 
 					if(pcb->exec_context.quantum < QUANTUM) {
 						pthread_mutex_lock(&(SHARED_LIST_READY_PRIORITARY.mutex));
-							remove_pcb_from_list_by_pid((SHARED_LIST_READY_PRIORITARY.list), pcb->exec_context.PID);
+							list_remove_by_condition_with_comparation((SHARED_LIST_READY_PRIORITARY.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
 						pthread_mutex_unlock(&(SHARED_LIST_READY_PRIORITARY.mutex));
 					} else {
 						pthread_mutex_lock(&(SHARED_LIST_READY.mutex));
-							remove_pcb_from_list_by_pid((SHARED_LIST_READY.list), pcb->exec_context.PID);
+							list_remove_by_condition_with_comparation((SHARED_LIST_READY.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
 						pthread_mutex_unlock(&(SHARED_LIST_READY.mutex));
 					}
 					break;
 				case RR_SCHEDULING_ALGORITHM:
 				case FIFO_SCHEDULING_ALGORITHM:
 					pthread_mutex_lock(&(SHARED_LIST_READY.mutex));
-						remove_pcb_from_list_by_pid((SHARED_LIST_READY.list), pcb->exec_context.PID);
+						list_remove_by_condition_with_comparation((SHARED_LIST_READY.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
 					pthread_mutex_unlock(&(SHARED_LIST_READY.mutex));
 					break;
 			}
@@ -409,14 +409,14 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 		case EXEC_STATE:
 		{
 			pthread_mutex_lock(&(SHARED_LIST_EXEC.mutex));
-				remove_pcb_from_list_by_pid((SHARED_LIST_EXEC.list), pcb->exec_context.PID);
+				list_remove_by_condition_with_comparation((SHARED_LIST_EXEC.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
 			pthread_mutex_unlock(&(SHARED_LIST_EXEC.mutex));
 			break;
 		}
 		case BLOCKED_STATE:
 		{
 			pthread_mutex_lock(&(SHARED_LIST_BLOCKED.mutex));
-				remove_pcb_from_list_by_pid((SHARED_LIST_BLOCKED.list), pcb->exec_context.PID);
+				list_remove_by_condition_with_comparation((SHARED_LIST_BLOCKED.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
 			pthread_mutex_unlock(&(SHARED_LIST_BLOCKED.mutex));		
 			break;
 		}
@@ -494,22 +494,8 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 	}
 }
 
-t_PCB *remove_pcb_from_list_by_pid(t_list *pcb_list, t_PID pid) {
-	t_link_element **indirect = &(pcb_list->head);
-    while (*indirect != NULL) {
-        if (((t_PCB *) (*indirect)->data)->exec_context.PID == pid) {
-            t_link_element *removed_element = *indirect;
-
-            *indirect = (*indirect)->next;
-            pcb_list->elements_count--;
-
-			t_PCB *pcb = (t_PCB *) removed_element->data;
-            free(removed_element);
-			return pcb;
-        }
-        indirect = &((*indirect)->next);
-	}
-	return NULL;
+bool pcb_matches_pid(t_PCB *pcb, t_PID pid) {
+	return pcb->exec_context.PID == pid;
 }
 
 void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list) {
@@ -576,31 +562,32 @@ t_PCB *pcb_create(void) {
 t_PID pid_assign(t_PCB *pcb) {
 
 	pthread_mutex_lock(&MUTEX_LIST_RELEASED_PIDS);
-	if(LIST_RELEASED_PIDS->head == NULL && PID_COUNTER <= PID_MAX) {
-		pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
+		if(LIST_RELEASED_PIDS->head == NULL && PID_COUNTER <= PID_MAX) {
+			// Si no hay PID liberados y no se alcanzó el máximo de PID, se asigna un nuevo PID
+			pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
 
-		pthread_mutex_lock(&MUTEX_PCB_ARRAY);
-			t_PCB **new_pcb_array = realloc(PCB_ARRAY, sizeof(t_PCB *) * (PID_COUNTER + 1));
-			if(new_pcb_array == NULL) {
-				log_error(MODULE_LOGGER, "No se pudo reservar memoria para el array de PCBs");
-				exit(EXIT_FAILURE);
-			}
-			PCB_ARRAY = new_pcb_array;
+			pthread_mutex_lock(&MUTEX_PCB_ARRAY);
+				t_PCB **new_pcb_array = realloc(PCB_ARRAY, sizeof(t_PCB *) * (PID_COUNTER + 1));
+				if(new_pcb_array == NULL) {
+					log_error(MODULE_LOGGER, "No se pudo reservar memoria para el array de PCBs");
+					exit(EXIT_FAILURE);
+				}
+				PCB_ARRAY = new_pcb_array;
 
-			PCB_ARRAY[PID_COUNTER] = pcb;
-		pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
+				PCB_ARRAY[PID_COUNTER] = pcb;
+			pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
 
-		return PID_COUNTER++;
-	}
+			return PID_COUNTER++;
+		}
 
-	while(LIST_RELEASED_PIDS->head == NULL)
-		pthread_cond_wait(&COND_LIST_RELEASED_PIDS, &MUTEX_LIST_RELEASED_PIDS);
+		// Se espera hasta que haya algún PID liberado para reutilizarlo
+		while(LIST_RELEASED_PIDS->head == NULL)
+			pthread_cond_wait(&COND_LIST_RELEASED_PIDS, &MUTEX_LIST_RELEASED_PIDS);
 
-	t_link_element *element = LIST_RELEASED_PIDS->head;
+		t_link_element *element = LIST_RELEASED_PIDS->head;
 
-	LIST_RELEASED_PIDS->head = element->next;
-	LIST_RELEASED_PIDS->elements_count--;
-
+		LIST_RELEASED_PIDS->head = element->next;
+		LIST_RELEASED_PIDS->elements_count--;
 	pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
 
 	t_PID pid = (*(t_PID *) element->data);

@@ -134,7 +134,7 @@ int execute_line(char *line) {
 
 t_Command *find_command (char *name) {
     for(register int i = 0; CONSOLE_COMMANDS[i].name != NULL; i++)
-        if(!strcmp(CONSOLE_COMMANDS[i].name, name))
+        if(strcmp(CONSOLE_COMMANDS[i].name, name) == 0)
             return (&CONSOLE_COMMANDS[i]);
 
     return NULL;

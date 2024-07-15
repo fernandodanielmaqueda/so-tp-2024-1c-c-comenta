@@ -33,7 +33,7 @@ int decode_instruction(char *name, e_CPU_OpCode *destination)
     
     size_t opcodes_number = sizeof(CPU_OPERATIONS) / sizeof(CPU_OPERATIONS[0]);
     for (register e_CPU_OpCode cpu_opcode = 0; cpu_opcode < opcodes_number; cpu_opcode++)
-        if (!strcmp(CPU_OPERATIONS[cpu_opcode].name, name)) {
+        if (strcmp(CPU_OPERATIONS[cpu_opcode].name, name) == 0) {
             *destination = cpu_opcode;
             return 0;
         }

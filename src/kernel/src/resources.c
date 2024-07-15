@@ -56,7 +56,7 @@ void resource_log(t_Resource *resource) {
 
 t_Resource *resource_find(char *name) {
     for(register int i = 0; RESOURCES[i].name != NULL; i++)
-        if(!strcmp(RESOURCES[i].name, name))
+        if(strcmp(RESOURCES[i].name, name) == 0)
             return (&RESOURCES[i]);
 
     return NULL;

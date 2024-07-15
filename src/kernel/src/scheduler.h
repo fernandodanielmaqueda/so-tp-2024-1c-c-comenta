@@ -101,7 +101,9 @@ t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);
 void switch_process_state(t_PCB* pcb, e_Process_State NEW_STATE);
-t_PCB *remove_pcb_from_list_by_pid(t_list *pcb_list, t_PID pid);
+
+bool pcb_matches_pid(t_PCB *pcb, t_PID pid);
+
 void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list);
 void pcb_list_to_pid_string(t_list *pcb_list, char **destination);
 t_PCB *pcb_create(void);
