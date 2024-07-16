@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <utils/serialize/pcb.h>
+#include <utils/serialize/exec_context.h>
 
 typedef enum e_CPU_Register {
     PC_REGISTER,
@@ -37,7 +37,7 @@ typedef struct t_CPU_Register_Info {
 extern const t_CPU_Register_Info CPU_REGISTERS[];
 
 int decode_register(char *name, e_CPU_Register *destination);
-void *get_register_pointer(t_PCB *pcb, e_CPU_Register cpu_register);
-int set_register_value(t_PCB *pcb, e_CPU_Register cpu_register, uint32_t value);
-int get_register_value(t_PCB pcb, e_CPU_Register cpu_register, uint32_t *destination);
+void *get_register_pointer(t_Exec_Context *exec_context, e_CPU_Register cpu_register);
+int set_register_value(t_Exec_Context *exec_context, e_CPU_Register cpu_register, uint32_t value);
+int get_register_value(t_Exec_Context exec_context, e_CPU_Register cpu_register, uint32_t *destination);
 size_t get_register_size(e_CPU_Register cpu_register);

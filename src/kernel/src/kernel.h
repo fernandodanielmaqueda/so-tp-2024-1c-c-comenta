@@ -27,8 +27,35 @@
 #include "utils/socket.h"
 #include "console.h"
 #include "socket.h"
+
+typedef struct t_Drain_Ongoing_Resource_Sync {
+	pthread_mutex_t mutex_resource;
+	sem_t sem_drain_requests_count;
+	pthread_cond_t cond_drain_requests;
+	sem_t sem_ongoing_count;
+	pthread_cond_t cond_ongoing;
+} t_Drain_Ongoing_Resource_Sync;
+
+typedef enum e_Process_State {
+    NEW_STATE,
+    READY_STATE,
+    EXEC_STATE,
+    BLOCKED_STATE,
+	EXIT_STATE
+} e_Process_State;
+
+typedef struct t_PCB {
+    t_Exec_Context exec_context;
+
+    e_Process_State current_state;
+    t_Shared_List *shared_list_state;
+
+    t_Payload *instruction;
+} t_PCB;
+
 #include "scheduler.h"
 #include "resources.h"
+#include "interfaces.h"
 #include "syscalls.h"
 
 extern char *MODULE_NAME;
@@ -44,8 +71,6 @@ void initialize_mutexes(void);
 void finish_mutexes(void);
 void initialize_semaphores(void);
 void finish_semaphores(void);
-void wait_list_process_states(void);
-void signal_list_process_states(void);
 void read_module_config(t_config *module_config);
 void initialize_cpu_command_line_interface(void);
 void *receptor_mensajes_cpu(void*);

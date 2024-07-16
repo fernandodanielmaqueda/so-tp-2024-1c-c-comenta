@@ -32,10 +32,10 @@ void initialize_sockets(void) {
 
 void finish_sockets(void) {
     close(SERVER_CPU_DISPATCH.fd_listen);
-    close(((t_Client *) list_get(SERVER_CPU_DISPATCH.clients, 0))->fd_client);
+    close(((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
 
     close(SERVER_CPU_INTERRUPT.fd_listen);
-    close(((t_Client *) list_get(SERVER_CPU_INTERRUPT.clients, 0))->fd_client);
+    close(((t_Client *) list_get(SERVER_CPU_INTERRUPT.shared_list_clients.list, 0))->fd_client);
 
     close(CONNECTION_MEMORY.fd_connection);
 }
@@ -84,9 +84,9 @@ void *cpu_start_server_for_kernel(void *server_parameter) {
     new_client->client_type = server->clients_type;
     new_client->server = server;
 
-    pthread_mutex_lock(&server->mutex_clients);
-        list_add(server->clients, new_client);
-    pthread_mutex_unlock(&server->mutex_clients);
+    pthread_mutex_lock(&(server->shared_list_clients.mutex));
+        list_add(server->shared_list_clients.list, new_client);
+    pthread_mutex_unlock(&(server->shared_list_clients.mutex));
 
     return NULL;
 }

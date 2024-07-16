@@ -11,16 +11,21 @@ char *MODULE_LOG_PATHNAME = "cpu.log";
 char *MODULE_CONFIG_PATHNAME = "cpu.config";
 t_config *MODULE_CONFIG;
 
-int CANTIDAD_ENTRADAS_TLB;
-char *ALGORITMO_TLB;
+int TLB_ENTRY_COUNT;
+
+const char *TLB_ALGORITHMS[] = {
+    [FIFO_TLB_ALGORITHM] = "FIFO",
+    [LRU_TLB_ALGORITHM] = "LRU"
+};
+
+e_TLB_Algorithm TLB_ALGORITHM;
 
 t_MemorySize PAGE_SIZE;
-long timestamp;
-t_Logical_Address direccion_logica; // momentaneo hasta ver de donde la saco
+long TIMESTAMP;
 t_list *TLB;          // TLB que voy a ir creando para darle valores que obtengo de la estructura de t_tlb
 
-t_PCB PCB;
-pthread_mutex_t MUTEX_PCB;
+t_Exec_Context EXEC_CONTEXT;
+pthread_mutex_t MUTEX_EXEC_CONTEXT;
 
 int EXECUTING = 0;
 pthread_mutex_t MUTEX_EXECUTING;
@@ -31,15 +36,9 @@ pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
 int SYSCALL_CALLED;
 t_Payload *SYSCALL_INSTRUCTION;
 
-int tlb_replace_index_fifo = 0;
+int TLB_REPLACE_INDEX_FIFO = 0;
 
 pthread_mutex_t MUTEX_TLB;
-
-const char *t_interrupt_type_string[] = {
-    [UNEXPECTED_ERROR_EVICTION_REASON] = "UNEXPECTED_ERROR_EVICTION_REASON",
-    [SYSCALL_EVICTION_REASON] = "SYSCALL_EVICTION_REASON",
-    [INTERRUPTION_EVICTION_REASON] = "INTERRUPTION_EVICTION_REASON"
-};
 
 int module(int argc, char *argv[])
 {
@@ -69,20 +68,20 @@ int module(int argc, char *argv[])
 }
 
 void initialize_mutexes(void) {
-    pthread_mutex_init(&(SERVER_CPU_DISPATCH.mutex_clients), NULL);
-    pthread_mutex_init(&(SERVER_CPU_INTERRUPT.mutex_clients), NULL);
+    pthread_mutex_init(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex), NULL);
+    pthread_mutex_init(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex), NULL);
 
-    pthread_mutex_init(&MUTEX_PCB, NULL);
+    pthread_mutex_init(&MUTEX_EXEC_CONTEXT, NULL);
     pthread_mutex_init(&MUTEX_EXECUTING, NULL);
     pthread_mutex_init(&MUTEX_KERNEL_INTERRUPT, NULL);    
     pthread_mutex_init(&MUTEX_TLB, NULL);
 }
 
 void finish_mutexes(void) {
-    pthread_mutex_destroy(&(SERVER_CPU_DISPATCH.mutex_clients));
-    pthread_mutex_destroy(&(SERVER_CPU_INTERRUPT.mutex_clients));
+    pthread_mutex_destroy(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex));
+    pthread_mutex_destroy(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex));
     
-    pthread_mutex_destroy(&MUTEX_PCB);
+    pthread_mutex_destroy(&MUTEX_EXEC_CONTEXT);
     pthread_mutex_destroy(&MUTEX_EXECUTING);
     pthread_mutex_destroy(&MUTEX_KERNEL_INTERRUPT);    
     pthread_mutex_destroy(&MUTEX_TLB);
@@ -99,10 +98,28 @@ void finish_semaphores(void) {
 void read_module_config(t_config *MODULE_CONFIG)
 {
     CONNECTION_MEMORY = (t_Connection){.client_type = CPU_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    SERVER_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH"), .clients = list_create()};
-    SERVER_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT"), .clients = list_create()};
-    CANTIDAD_ENTRADAS_TLB = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
-    ALGORITMO_TLB = config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB");
+    SERVER_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH"), .shared_list_clients.list = list_create()};
+    SERVER_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT"), .shared_list_clients.list = list_create()};
+    TLB_ENTRY_COUNT = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
+    if(find_tlb_algorithm(config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB"), &TLB_ALGORITHM)) {
+		log_error(MODULE_LOGGER, "ALGORITMO_PLANIFICACION invalido");
+		exit(EXIT_FAILURE);
+	}
+}
+
+int find_tlb_algorithm(char *name, e_TLB_Algorithm *destination) {
+
+    if(name == NULL || destination == NULL)
+        return 1;
+    
+    size_t tlb_algorithms_number = sizeof(TLB_ALGORITHMS) / sizeof(TLB_ALGORITHMS[0]);
+    for (register e_TLB_Algorithm tlb_algorithm = 0; tlb_algorithm < tlb_algorithms_number; tlb_algorithm++)
+        if (strcmp(TLB_ALGORITHMS[tlb_algorithm], name) == 0) {
+            *destination = tlb_algorithm;
+            return 0;
+        }
+
+    return 1;
 }
 
 void instruction_cycle(void)
@@ -110,7 +127,7 @@ void instruction_cycle(void)
 
     char *IR;
     t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS);
-    e_Eviction_Reason eviction_reason = INTERRUPTION_EVICTION_REASON;
+    e_Eviction_Reason eviction_reason;
     e_CPU_OpCode cpu_opcode;
     int exit_status;
 
@@ -122,20 +139,20 @@ void instruction_cycle(void)
 
         SYSCALL_INSTRUCTION = payload_create();
 
-        pthread_mutex_lock(&MUTEX_PCB);
-            receive_process_dispatch(&PCB, ((t_Client *) list_get(SERVER_CPU_DISPATCH.clients, 0))->fd_client);
-        pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
+            receive_process_dispatch(&EXEC_CONTEXT, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+        pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
             EXECUTING = 1;
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
-        log_trace(MODULE_LOGGER, "PCB recibido del proceso : %i - Ciclo de instruccion ejecutando", PCB.PID);
+        log_trace(MODULE_LOGGER, "Contexto de ejecucion recibido del proceso : %i - Ciclo de instruccion ejecutando", EXEC_CONTEXT.PID);
 
         while(1) {
 
             // Fetch
-            log_debug(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", PCB.PID, PCB.PC);
+            log_debug(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", EXEC_CONTEXT.PID, EXEC_CONTEXT.PC);
             cpu_fetch_next_instruction(&IR);
             if(IR == NULL) {
                 log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
@@ -191,7 +208,7 @@ void instruction_cycle(void)
             pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
                 if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
                     pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+                    eviction_reason = KILL_KERNEL_INTERRUPT_EVICTION_REASON;
                     break;
                 }
             pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
@@ -204,7 +221,7 @@ void instruction_cycle(void)
             pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
                 if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
                     pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = INTERRUPTION_EVICTION_REASON;
+                    eviction_reason = QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON;
                     break;
                 }
             pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
@@ -214,9 +231,9 @@ void instruction_cycle(void)
             EXECUTING = 0;
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
-        pthread_mutex_lock(&MUTEX_PCB);
-            send_process_eviction(PCB, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.clients, 0))->fd_client);
-        pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
+            send_process_eviction(EXEC_CONTEXT, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+        pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         payload_destroy(SYSCALL_INSTRUCTION);
     }
@@ -234,7 +251,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 
     while(1) {
 
-        receive_kernel_interrupt(&kernel_interrupt, &pid, ((t_Client *) list_get(SERVER_CPU_INTERRUPT.clients, 0))->fd_client);
+        receive_kernel_interrupt(&kernel_interrupt, &pid, ((t_Client *) list_get(SERVER_CPU_INTERRUPT.shared_list_clients.list, 0))->fd_client);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
             if(!EXECUTING) {
@@ -243,12 +260,12 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
             }
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
-        pthread_mutex_lock(&MUTEX_PCB);
-            if(pid == PCB.PID) {
-                pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
+            if(pid == EXEC_CONTEXT.PID) {
+                pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
                 continue;
             }
-        pthread_mutex_unlock(&MUTEX_PCB);
+        pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
             // Una forma de establecer prioridad entre interrupciones que se pisan, sólo va a quedar una
@@ -292,8 +309,8 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
             
             log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, page_number, frame_number);
 
-            if (CANTIDAD_ENTRADAS_TLB > 0) {
-                if (list_size(TLB) < CANTIDAD_ENTRADAS_TLB)
+            if (TLB_ENTRY_COUNT > 0) {
+                if (list_size(TLB) < TLB_ENTRY_COUNT)
                 {
                     add_to_tlb(pid, page_number, frame_number);
                     log_trace(MODULE_LOGGER, "Agrego entrada a la TLB");
@@ -333,9 +350,9 @@ int check_tlb(t_PID process_id, t_Page_Number page_number, t_Frame_Number *desti
         if (tlb_entry->PID == process_id && tlb_entry->page_number == page_number) {
             *destination = tlb_entry->frame;
 
-            if (strcmp(ALGORITMO_TLB, "LRU") == 0) {
-                tlb_entry->time = timestamp;
-                timestamp++;
+            if(TLB_ALGORITHM == LRU_TLB_ALGORITHM) {
+                tlb_entry->time = TIMESTAMP;
+                TIMESTAMP++;
             }
 
             return 0;
@@ -350,8 +367,8 @@ void add_to_tlb(t_PID pid , t_Page_Number page, t_Frame_Number frame) {
     tlb_entry->PID = pid;
     tlb_entry->page_number = page;
     tlb_entry->frame = frame;
-    tlb_entry->time = timestamp;
-    timestamp++;
+    tlb_entry->time = TIMESTAMP;
+    TIMESTAMP++;
     list_add(TLB, tlb_entry);
 }
 
@@ -377,7 +394,6 @@ void delete_tlb_entry_by_pid_deleted(t_PID pid) {
     int size = list_size(TLB);
 
     if(size != 0) {
-
         for (size_t i = (size -1); i != -1; i--) {
             tlb_entry = list_get(TLB, i);
             if(tlb_entry->PID == pid) {
@@ -390,41 +406,45 @@ void delete_tlb_entry_by_pid_deleted(t_PID pid) {
 
 void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
     t_TLB *tlb_aux;
-    
-    if (strcmp(ALGORITMO_TLB, "LRU") == 0)
-    {
-        tlb_aux = list_get(TLB, 0);
-        int replace_value = tlb_aux->time + 1;
-        int index_replace = 0;
-            for(int i = 0; i < list_size(TLB); i++){
 
-                t_TLB *replaced_tlb = list_get(TLB, i);
-                if(replaced_tlb->time < replace_value){
-                    replace_value = replaced_tlb->time;
-                    index_replace = i;
-                } //guardo el d emenor tiempo
-            }
+    switch(TLB_ALGORITHM) {
+        case LRU_TLB_ALGORITHM:
+        {
+            tlb_aux = list_get(TLB, 0);
+            int replace_value = tlb_aux->time + 1;
+            int index_replace = 0;
+                for(int i = 0; i < list_size(TLB); i++){
 
-        tlb_aux = list_get(TLB, index_replace);
-        tlb_aux->PID = pid;
-        tlb_aux->page_number = page;
-        tlb_aux->frame = frame;
-        tlb_aux->time = timestamp;
-        timestamp++;
-    }
-    else //CASO FIFO
-    {
-        tlb_aux = list_get(TLB, tlb_replace_index_fifo);
-        tlb_aux->PID = pid;
-        tlb_aux->page_number = page;
-        tlb_aux->frame = frame;
-        tlb_aux->time = timestamp;
-        timestamp++;
+                    t_TLB *replaced_tlb = list_get(TLB, i);
+                    if(replaced_tlb->time < replace_value){
+                        replace_value = replaced_tlb->time;
+                        index_replace = i;
+                    } //guardo el d emenor tiempo
+                }
 
-        tlb_replace_index_fifo++;
-        if (tlb_replace_index_fifo == list_size(TLB)) tlb_replace_index_fifo = 0;
-    }
-    
+            tlb_aux = list_get(TLB, index_replace);
+            tlb_aux->PID = pid;
+            tlb_aux->page_number = page;
+            tlb_aux->frame = frame;
+            tlb_aux->time = TIMESTAMP;
+            TIMESTAMP++;
+            break;
+        }
+        case FIFO_TLB_ALGORITHM:
+        {
+            tlb_aux = list_get(TLB, TLB_REPLACE_INDEX_FIFO);
+            tlb_aux->PID = pid;
+            tlb_aux->page_number = page;
+            tlb_aux->frame = frame;
+            tlb_aux->time = TIMESTAMP;
+            TIMESTAMP++;
+
+            TLB_REPLACE_INDEX_FIFO++;
+            if (TLB_REPLACE_INDEX_FIFO == list_size(TLB))
+                TLB_REPLACE_INDEX_FIFO = 0;
+            break;
+        }
+    }   
 }
 
 void request_frame_memory(t_PID pid, t_Page_Number page) {
@@ -435,10 +455,9 @@ void request_frame_memory(t_PID pid, t_Page_Number page) {
 }
 
 void cpu_fetch_next_instruction(char **line) {
-    send_instruction_request(PCB.PID, PCB.PC, CONNECTION_MEMORY.fd_connection);
+    send_instruction_request(EXEC_CONTEXT.PID, EXEC_CONTEXT.PC, CONNECTION_MEMORY.fd_connection);
     receive_text_with_expected_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
 }
-
 
 void ask_memory_page_size(void) {
     send_header(PAGE_SIZE_REQUEST, CONNECTION_MEMORY.fd_connection);

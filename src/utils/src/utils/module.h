@@ -8,6 +8,11 @@
 #include "commons/log.h"
 #include "commons/config.h"
 
+typedef struct t_Shared_List {
+    t_list *list;
+    pthread_mutex_t mutex;
+} t_Shared_List;
+
 extern char *MODULE_NAME;
 
 extern t_log *MINIMAL_LOGGER;
@@ -29,6 +34,10 @@ void initialize_loggers(void);
 void finish_loggers(void);
 void initialize_configs(char *pathname);
 void finish_configs(void);
-extern void read_module_config(t_config*);
+void read_module_config(t_config*);
+
+void *list_remove_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation);
+int list_add_unless_matches_with_any(t_list *list, void *data, bool (*condition)(void *, void*));
+void *list_find_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation);
 
 #endif // UTILS_MODULE_H

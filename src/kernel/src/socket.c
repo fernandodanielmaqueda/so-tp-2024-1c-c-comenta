@@ -71,27 +71,3 @@ void *kernel_start_server_for_io(void *server_parameter) {
 
 	return NULL;
 }
-
-void *kernel_client_handler_for_io(void *new_client_parameter) {
-	t_Client *new_client = (t_Client *) new_client_parameter;
-
-	e_Port_Type port_type;
-
-	receive_port_type(&port_type, new_client->fd_client);
-
-	if(port_type != IO_PORT_TYPE) {
-		log_warning(SOCKET_LOGGER, "Error Handshake con [Cliente] No reconocido");
-		send_port_type(TO_BE_IDENTIFIED_PORT_TYPE, new_client->fd_client);
-		close(new_client->fd_client);
-		return NULL;
-	}
-
-	log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
-	send_port_type(KERNEL_PORT_TYPE, new_client->fd_client);
-
-	send_header(INTERFACE_NAME_REQUEST_HEADER, new_client->fd_client);
-	receive_text_with_expected_header(INTERFACE_NAME_REQUEST_HEADER, &(new_client->client_name), new_client->fd_client);
-
-	close(new_client->fd_client);
-	return NULL;
-}

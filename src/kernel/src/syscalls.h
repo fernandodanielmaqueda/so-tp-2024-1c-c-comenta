@@ -32,8 +32,6 @@ extern t_Syscall SYSCALLS[];
 
 extern t_PCB *SYSCALL_PCB;
 
-extern int BLOCKING_SYSCALL;
-
 int syscall_execute(t_Payload *syscall_instruction);
 int wait_kernel_syscall(t_Payload *syscall_arguments);
 int signal_kernel_syscall(t_Payload *syscall_arguments);

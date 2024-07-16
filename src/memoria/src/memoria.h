@@ -142,5 +142,7 @@ void read_memory(t_Payload* socketRecibido, int socket);
 void update_page(t_Frame_Number current_frame);
 int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid);
 int seek_oldest_page_updated(t_list* page_list);
+void free_memory();
+void free_all_process();
 
 #endif /* MEMORIA_H */

@@ -3,6 +3,17 @@
 
 #include "utils/serialize/eviction_reason.h"
 
+/*
+const char *t_interrupt_type_string[] = {
+    [UNEXPECTED_ERROR_EVICTION_REASON] = "UNEXPECTED_ERROR_EVICTION_REASON",
+    
+    [EXIT_EVICTION_REASON] = "EXIT_EVICTION_REASON",
+    [KILL_KERNEL_INTERRUPT_EVICTION_REASON] = "KILL_KERNEL_INTERRUPT_EVICTION_REASON",
+    [SYSCALL_EVICTION_REASON] = "SYSCALL_EVICTION_REASON",
+    [QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON] = "QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON"  
+};
+*/
+
 void eviction_reason_serialize(t_Payload *payload, e_Eviction_Reason source) {
   if(payload == NULL)
     return;

@@ -44,18 +44,12 @@ extern pthread_cond_t COND_LIST_RELEASED_PIDS;
 
 extern const char *STATE_NAMES[];
 
-extern t_list *LIST_NEW;
-extern pthread_mutex_t MUTEX_LIST_NEW;
-extern t_list *LIST_READY;
-extern pthread_mutex_t MUTEX_LIST_READY;
-extern t_list *LIST_READY_PRIORITARY;
-extern pthread_mutex_t MUTEX_LIST_READY_PRIORITARY;
-extern t_list *LIST_EXEC;
-extern pthread_mutex_t MUTEX_LIST_EXEC;
-extern t_list *LIST_BLOCKED;
-extern pthread_mutex_t MUTEX_LIST_BLOCKED;
-extern t_list *LIST_EXIT;
-extern pthread_mutex_t MUTEX_LIST_EXIT;
+extern t_Shared_List SHARED_LIST_NEW;
+extern t_Shared_List SHARED_LIST_READY;
+extern t_Shared_List SHARED_LIST_READY_PRIORITARY;
+extern t_Shared_List SHARED_LIST_EXEC;
+extern t_Shared_List SHARED_LIST_BLOCKED;
+extern t_Shared_List SHARED_LIST_EXIT;
 
 extern pthread_t THREAD_LONG_TERM_SCHEDULER_NEW;
 extern sem_t SEM_LONG_TERM_SCHEDULER_NEW;
@@ -63,6 +57,8 @@ extern pthread_t THREAD_LONG_TERM_SCHEDULER_EXIT;
 extern sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
 extern sem_t SEM_SHORT_TERM_SCHEDULER;
+
+extern int PCB_EXEC;
 
 extern t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[];
 
@@ -87,19 +83,10 @@ extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
 extern sem_t SEM_MULTIPROGRAMMING_POSTER;
 extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
 
-/*
-extern sem_t sem_detener_execute;
-extern sem_t sem_detener_new_ready;
-extern sem_t sem_detener_block_ready;
-extern sem_t sem_detener_block;
-extern sem_t sem_detener_planificacion;
-*/
+extern int SCHEDULING_PAUSED;
+extern pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
 
-extern int LIST_PROCESS_STATES;
-extern pthread_mutex_t MUTEX_LIST_PROCESS_STATES;
-extern pthread_cond_t COND_LIST_PROCESS_STATES;
-extern sem_t SEM_SWITCHING_STATES_COUNT;
-extern pthread_cond_t COND_SWITCHING_STATES;
+extern t_Drain_Ongoing_Resource_Sync SCHEDULING_SYNC;
 
 int find_scheduling_algorithm(char *name, e_Scheduling_Algorithm *destination);
 void initialize_scheduling(void);
@@ -116,12 +103,23 @@ t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);
 void switch_process_state(t_PCB* pcb, e_Process_State NEW_STATE);
-t_PCB *remove_pcb_from_list_by_pid(t_list *pcb_list, t_PID pid);
+
+bool pcb_matches_pid(t_PCB *pcb, t_PID pid);
+
 void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list);
 void pcb_list_to_pid_string(t_list *pcb_list, char **destination);
 t_PCB *pcb_create(void);
 t_PID pid_assign(t_PCB *pcb);
 void pid_release(t_PID pid);
 void* start_quantum(void *pcb_parameter);
+
+void init_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void destroy_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_ongoing_locking(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_ongoing_unlocking(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
 
 #endif // KERNEL_SCHEDULER_H

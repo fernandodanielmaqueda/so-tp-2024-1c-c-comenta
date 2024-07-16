@@ -134,7 +134,7 @@ int execute_line(char *line) {
 
 t_Command *find_command (char *name) {
     for(register int i = 0; CONSOLE_COMMANDS[i].name != NULL; i++)
-        if(!strcmp(CONSOLE_COMMANDS[i].name, name))
+        if(strcmp(CONSOLE_COMMANDS[i].name, name) == 0)
             return (&CONSOLE_COMMANDS[i]);
 
     return NULL;
@@ -197,7 +197,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
 
     t_PCB *pcb = pcb_create();
 
-    send_process_create(argv[1], pcb->PID, CONNECTION_MEMORY.fd_connection);
+    send_process_create(argv[1], pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection);
 
     t_Return_Value return_value;
     receive_return_value_with_expected_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
@@ -206,11 +206,11 @@ int kernel_command_start_process(int argc, char* argv[]) {
         return 1;
     }
 
-    wait_list_process_states();
-        list_add(LIST_NEW, pcb);
-    signal_list_process_states();
+    wait_draining_requests(&SCHEDULING_SYNC);
+        list_add(SHARED_LIST_NEW.list, pcb);
+    signal_draining_requests(&SCHEDULING_SYNC);
 
-    log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->PID);
+    log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->exec_context.PID);
 
     sem_post(&SEM_LONG_TERM_SCHEDULER_NEW);
 
@@ -238,23 +238,23 @@ int kernel_command_kill_process(int argc, char* argv[]) {
         return 1;
     }
 
-    wait_switching_states();
+    wait_ongoing(&SCHEDULING_SYNC);
 
         t_PCB *pcb = PCB_ARRAY[pid];
         if(pcb == NULL) {
             log_error(MODULE_LOGGER, "No existe un proceso con PID <%d>", (int) pid);
-            signal_switching_states();
+            signal_ongoing(&SCHEDULING_SYNC);
             return 1;
         }
 
         switch(pcb->current_state) {
             case NEW_STATE:
-                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
             case READY_STATE:
-                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
@@ -263,11 +263,11 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                     KILL_EXECUTING_PROCESS = 1;
                 pthread_mutex_unlock(&MUTEX_KILL_EXECUTING_PROCESS);
                 //pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
-                send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->PID, CONNECTION_CPU_INTERRUPT.fd_connection);
+                send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->exec_context.PID, CONNECTION_CPU_INTERRUPT.fd_connection);
                 break;
 
             case BLOCKED_STATE:
-                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
@@ -275,7 +275,7 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                 break;
         }
 
-    signal_switching_states();
+    signal_ongoing(&SCHEDULING_SYNC);
 
     return 0;
 }
@@ -287,10 +287,19 @@ int kernel_command_pause_scheduling(int argc, char* argv[]) {
         return 1;
     }
 
+    pthread_mutex_lock(&MUTEX_SCHEDULING_PAUSED);
+        if(SCHEDULING_PAUSED) {
+            pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+            log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION sin efecto.");
+            return 0;
+        }
+
+        SCHEDULING_PAUSED = 1;
+    pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+
     log_trace(CONSOLE_LOGGER, "DETENER_PLANIFICACION");
 
-    wait_switching_states();
-
+    wait_ongoing(&SCHEDULING_SYNC);
     return 0;
 }
 
@@ -301,10 +310,19 @@ int kernel_command_resume_scheduling(int argc, char* argv[]) {
         return 1;
     }
 
+    pthread_mutex_lock(&MUTEX_SCHEDULING_PAUSED);
+        if(!SCHEDULING_PAUSED) {
+            pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+            log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION sin efecto.");
+            return 0;
+        }
+
+        SCHEDULING_PAUSED = 0;
+    pthread_mutex_unlock(&MUTEX_SCHEDULING_PAUSED);
+
     log_trace(CONSOLE_LOGGER, "INICIAR_PLANIFICACION");
 
-    signal_switching_states(); // Esto es una función (por si no lo sabías) que simula ser un semaforo que desbloquea todo
-
+    signal_ongoing(&SCHEDULING_SYNC);
     return 0;
 }
 
@@ -360,18 +378,18 @@ int kernel_command_process_states(int argc, char* argv[]) {
     char *pid_string_blocked = string_new();
     char *pid_string_exit = string_new();
 
-    wait_switching_states();
-        pcb_list_to_pid_string(LIST_NEW, &pid_string_new);
+    wait_ongoing(&SCHEDULING_SYNC);
+        pcb_list_to_pid_string(SHARED_LIST_NEW.list, &pid_string_new);
 
-        pcb_list_to_pid_string(LIST_READY, &pid_string_ready);
-        pcb_list_to_pid_string(LIST_READY_PRIORITARY, &pid_string_ready);
+        pcb_list_to_pid_string(SHARED_LIST_READY.list, &pid_string_ready);
+        pcb_list_to_pid_string(SHARED_LIST_READY_PRIORITARY.list, &pid_string_ready);
 
-        pcb_list_to_pid_string(LIST_EXEC, &pid_string_exec);
+        pcb_list_to_pid_string(SHARED_LIST_EXEC.list, &pid_string_exec);
 
-        pcb_list_to_pid_string(LIST_BLOCKED, &pid_string_blocked);
+        pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
 
-        pcb_list_to_pid_string(LIST_EXIT, &pid_string_exit);
-    signal_switching_states();
+        pcb_list_to_pid_string(SHARED_LIST_EXIT.list, &pid_string_exit);
+    signal_ongoing(&SCHEDULING_SYNC);
 
     log_info(CONSOLE_LOGGER,
         "Lista de proceso por estado:\n"
@@ -394,27 +412,4 @@ int kernel_command_process_states(int argc, char* argv[]) {
     free(pid_string_exit);
 
     return 0;
-}
-
-void wait_switching_states(void) {
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-        LIST_PROCESS_STATES = 1;
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
-
-    int sem_value;
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-    while(1) {
-        sem_getvalue(&SEM_SWITCHING_STATES_COUNT, &sem_value);
-        if(!sem_value)
-            break;
-        pthread_cond_wait(&COND_SWITCHING_STATES, &MUTEX_LIST_PROCESS_STATES);
-    }
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
-}
-
-void signal_switching_states(void) {
-    pthread_mutex_lock(&MUTEX_LIST_PROCESS_STATES);
-        LIST_PROCESS_STATES = 0;
-        pthread_cond_broadcast(&COND_LIST_PROCESS_STATES);
-    pthread_mutex_unlock(&MUTEX_LIST_PROCESS_STATES);
 }

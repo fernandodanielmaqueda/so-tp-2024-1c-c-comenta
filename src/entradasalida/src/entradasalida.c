@@ -62,8 +62,14 @@ int module(int argc, char *argv[]) {
 
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
-	receive_expected_header(INTERFACE_NAME_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);
-	send_text_with_header(INTERFACE_NAME_REQUEST_HEADER, INTERFACE_NAME, CONNECTION_KERNEL.fd_connection);
+	t_Return_Value return_value;
+	receive_expected_header(INTERFACE_DATA_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);	
+	send_interface_data(INTERFACE_NAME, IO_TYPE, CONNECTION_KERNEL.fd_connection);
+	receive_return_value_with_expected_header(INTERFACE_DATA_REQUEST_HEADER, &return_value, CONNECTION_KERNEL.fd_connection);
+	if(return_value) {
+		log_error(MODULE_LOGGER, "No se pudo registrar la interfaz %s en el Kernel", INTERFACE_NAME);
+		exit(EXIT_FAILURE);
+	}
 
 	switch(IO_TYPE){
 		case DIALFS_IO_TYPE:
@@ -113,7 +119,7 @@ int io_type_find(char *name, e_IO_Type *destination) {
     
     size_t io_types_number = sizeof(IO_TYPES) / sizeof(IO_TYPES[0]);
     for (register e_IO_Type io_type = 0; io_type < io_types_number; io_type++)
-        if (!strcmp(IO_TYPES[io_type].name, name)) {
+        if (strcmp(IO_TYPES[io_type].name, name) == 0) {
             *destination = io_type;
             return 0;
         }
@@ -142,56 +148,52 @@ void finish_sockets(void) {
 
 void generic_interface_function(void) {
 
-	t_Package *package;
-	t_Payload *instruction = payload_create();
-	//recibe peticion
+	t_Payload *io_operation;
+	//Espero peticiones
 	while(1) {
+		
+		//Recibo peticion
+		receive_io_operation_dispatch(&PID, io_operation, CONNECTION_KERNEL.fd_connection);
 
-		package_receive(&package, CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
-
-		int exit_status = io_operation_execute(instruction);
-
-		// arguments_free(instruction);
-
+		//Ejecuto operacion y retorno valor
+		t_Return_Value return_value = io_operation_execute(io_operation);
+		
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+		send_io_operation_finished(&PID, return_value, CONNECTION_KERNEL.fd_connection);
 	}
 }
 
 void stdin_interface_function(void) {
 
-	t_Package *package;
-	t_Payload *instruction = NULL;
+	t_Payload *io_operation;
 	//escuchar peticion siempre
 	while(1){
-		//recibe peticion
-		package_receive(&package, CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
+		
+		//Recibo peticion
+		receive_io_operation_dispatch(&PID, io_operation, CONNECTION_KERNEL.fd_connection);
 
-		int exit_status = io_operation_execute(instruction);
-		// arguments_free(instruction);
-
+		//Ejecuto operacion y retorno valor
+		t_Return_Value return_value = io_operation_execute(io_operation);
+		
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+		send_io_operation_finished(&PID, return_value, CONNECTION_KERNEL.fd_connection);
 	}
 }
 
 void stdout_interface_function(void) {
-	t_Package *package;
-	t_Payload *instruction = NULL;
 
+	t_Payload *io_operation;
 	//escuchar peticion siempre
 	while(1) {
-		//recibe peticion
-		package_receive(&package, CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
+		
+		//Recibo peticion
+		receive_io_operation_dispatch(&PID, io_operation, CONNECTION_KERNEL.fd_connection);
 
-		int exit_status = io_operation_execute(instruction);
-		// arguments_free(instruction);
-
+		//Ejecuto operacion y retorno valor
+		t_Return_Value return_value = io_operation_execute(io_operation);
+		
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+		send_io_operation_finished(&PID, return_value, CONNECTION_KERNEL.fd_connection);
 	}
 }
 
@@ -314,7 +316,6 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>, PID");
 			sleep(WORK_UNIT_TIME * work_units);
 
-			//AVISAR A KERNEL COMO SALIO
 
 			break;
 		}
@@ -333,9 +334,10 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 	switch(IO_TYPE){
 		case STDIN_IO_TYPE:
 		
-			while(1){
+			//Inicializo Headers para memoria
 			e_Header IO_STDIN_WRITE_MEMORY;	
 			e_Header WRITE_REQUEST;
+			//Creo paquete y argumentos necesarios para enviarle a memoria
 			t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 			
 			t_list *physical_addresses = list_create();
@@ -360,12 +362,7 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 
 			//Recibo si salio bien la operacion
 			receive_return_value_with_expected_header(WRITE_REQUEST, 0, CONNECTION_MEMORY.fd_connection);
-
-			//Aviso a kernel que salió bien
-			send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection);
-			
-			}
-		
+	
 			break;
 		default:
 			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
@@ -380,7 +377,8 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 	switch(IO_TYPE){
 		case STDOUT_IO_TYPE:
 
-		while(1){
+
+			//Creo header para memoria y el paquete con los argumentos
 			e_Header IO_STDOUT_READ_MEMORY;
 			t_Package *package = package_create_with_header(IO_STDOUT_READ_MEMORY);
 			
@@ -404,12 +402,10 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
 			
-			//Recibo nuevo paquete e imprimo por pantalla
-
-
-			//Aviso a kernel como salió
-
-		}
+			//Recibo nuevo paquete para imprimir por pantalla
+			t_Package *memory_package;
+			package_receive(memory_package,CONNECTION_MEMORY.fd_connection);
+			//Desencolar e imprimir por pantalla
 
 			break;
 		default:

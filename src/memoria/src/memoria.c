@@ -43,6 +43,7 @@ int module(int argc, char* argv[]) {
     listen_kernel(CLIENT_KERNEL->fd_client);
 
 	//finish_threads();
+    free_memory();
 	finish_sockets();
 	//finish_configs();
 	finish_loggers();
@@ -53,11 +54,11 @@ int module(int argc, char* argv[]) {
 }
 
 void initialize_mutexes(void) {
-    pthread_mutex_init(&(COORDINATOR_MEMORY.mutex_clients), NULL);
+    pthread_mutex_init(&(COORDINATOR_MEMORY.shared_list_clients.mutex), NULL);
 }
 
 void finish_mutexes(void) {
-    pthread_mutex_destroy(&(COORDINATOR_MEMORY.mutex_clients));
+    pthread_mutex_destroy(&(COORDINATOR_MEMORY.shared_list_clients.mutex));
 }
 
 void initialize_semaphores(void) {
@@ -69,7 +70,7 @@ void finish_semaphores(void) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA"), .clients = list_create()};
+    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA"), .shared_list_clients.list = list_create()};
     TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
@@ -156,11 +157,10 @@ void create_process(t_Payload *process_data) {
     list_add(LIST_PROCESSES, new_process);
     
     log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <0>", (int) new_process->PID);
 
     //ENVIAR RTA OK A KERNEL
     send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client);
-    
+    free(target_path);
 }
 
 void kill_process(t_Payload *payload){
@@ -172,7 +172,6 @@ void kill_process(t_Payload *payload){
     t_Page *paginaBuscada;
     
     int size = list_size(process->pages_table);
-    // ACÁ HABÍA UN SEGMENTATION FAULT: SI EL TAMAÑO DE LA LISTA ES 0, NO DEBERÍA ENTRAR AL FOR
     for (; size > 0 ; size--)
     {
         paginaBuscada = list_get(process->pages_table, size - 1);
@@ -304,7 +303,6 @@ void listen_io(int fd_io) {
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
                 write_memory(package->payload, fd_io);
                 break;
-                
             
             case IO_STDOUT_READ_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
@@ -372,12 +370,11 @@ void create_frames(void) {
 }
 
 void free_frames(){
-    int cantidad_marcos = list_size(LIST_FRAMES);
     t_Frame *marco_liberar;
 
-    for (size_t i = cantidad_marcos; i == 0; i--)
+    for (int i = list_size(LIST_FRAMES); i > 0; i--)
     {
-        marco_liberar = list_get(LIST_FRAMES, i);
+        marco_liberar = (t_Frame *) list_get(LIST_FRAMES, i - 1);
         free(marco_liberar);
     }
 
@@ -385,12 +382,6 @@ void free_frames(){
 
 void respond_frame_request(t_Payload* payload){
 //Recibir parametros
- /* t_list *propiedadesPlanas = NULL; // t_list *propiedadesPlanas = get_package_like_list(socketRecibido);
-  int cursor = 0;
-  int pageBuscada = *(int*)list_get(propiedadesPlanas, cursor);
-  int pidProceso = *(int*)list_get(propiedadesPlanas, cursor);
-  list_destroy_and_destroy_elements(propiedadesPlanas, &free);
-*/
     t_Page_Number page_number;
     t_PID pidProceso;
 
@@ -442,14 +433,13 @@ void read_memory(t_Payload* payload, int socket) {
 
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", (int) pid, physical_address, bytes);
 
-    t_Frame_Number current_frame;
+    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
 
     t_Package* package = package_create_with_header(READ_REQUEST);
 
     if(list_size(list_physical_addresses) == 1) { //En caso de que sea igual a una página
         payload_enqueue(package->payload, posicion, bytes);
          //Actualizar pagina/TDP
-        current_frame = physical_address / TAM_PAGINA;
         update_page(current_frame);
     }
     else { //En caso de que el contenido supere a 1 pagina
@@ -500,7 +490,7 @@ void write_memory(t_Payload* payload, int socket){
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
     
-    t_Frame_Number current_frame;
+    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
 
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", (int) pid, physical_address, bytes);
 
@@ -508,7 +498,6 @@ void write_memory(t_Payload* payload, int socket){
     if(list_size(list_physical_addresses) == 1) {//En caso de que sea igual a 1 página
         payload_dequeue(payload, posicion, (size_t) bytes);
          //Actualizar pagina/TDP
-        current_frame = physical_address / TAM_PAGINA;
         update_page(current_frame);
     }
     else{//En caso de que el contenido supere a 1 pagina
@@ -568,22 +557,6 @@ int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid){
     int offset = 0;
     int next_dir_fis = next_frame * TAM_PAGINA + offset;
 
-    /*
-    int count = list_size(proceso->pages_table);
-    for (size_t i = 0; i < count; i++)
-    {
-        current_page = list_get (proceso->pages_table,i);
-        if (current_page->pagid == pagid)
-        {
-            
-        }
-        
-    }
-     
-    int nro_page = floor(dir_logica / tamanio_pagina);
-    int offset = dir_logica - nro_page * tamanio_pagina; 
-    physical_address = nro_frame_required * tamanio_pagina + offset;
-*/
     return next_dir_fis;
 }
 
@@ -678,4 +651,34 @@ int seek_oldest_page_updated(t_list* page_list){
     }
     return oldest_pos;
 
+}
+
+void free_memory(){
+    free_all_process();
+    free_frames();
+    free(MAIN_MEMORY);
+}
+
+void free_all_process(){
+    
+    int size = list_size(LIST_PROCESSES);
+    int size_TDP = 0;
+    t_Process* processKilled;
+    t_Page* pageKill;
+
+    for (int i = (size -1); size > -1 ; size--)
+    {
+        processKilled = list_get(LIST_PROCESSES,i);
+        size_TDP = list_size(processKilled->pages_table);
+        for (int p = (size_TDP -1); size_TDP > -1 ; p--)
+        {
+            pageKill = list_get(processKilled->pages_table, p);
+            free(pageKill);
+        }
+        
+        free(processKilled);
+    }
+    
+    log_debug(MODULE_LOGGER, "Se ha liberado todos los procesos y paginas.");
+    
 }

@@ -40,3 +40,55 @@ void initialize_configs(char *pathname) {
 void finish_configs(void) {
 	config_destroy(MODULE_CONFIG);
 }
+
+void *list_remove_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation) {
+	t_link_element **indirect = &(list->head);
+	while (*indirect != NULL) {
+		if(condition(((*indirect)->data), comparation)) {
+			t_link_element *removed_element = *indirect;
+
+			*indirect = (*indirect)->next;
+			list->elements_count--;
+
+			void *data = removed_element->data;
+			free(removed_element);
+			return data;
+		}
+		indirect = &((*indirect)->next);
+	}
+	return NULL;
+}
+
+int list_add_unless_matches_with_any(t_list *list, void *data, bool (*condition)(void *, void*)) {
+    t_link_element **indirect = &(list->head);
+    while (*indirect != NULL) {
+        if(condition((*indirect)->data, data))
+            return 1;
+        indirect = &((*indirect)->next);
+    }
+
+    t_link_element *new_element = (t_link_element *) malloc(sizeof(t_link_element));
+    if(new_element == NULL) {
+        log_error(MODULE_LOGGER, "malloc: No se pudo reservar memoria para [Elemento] de [Interfaz] Entrada/Salida");
+        return 1;
+    }
+
+    new_element->data = data;
+    new_element->next = NULL;
+
+    *indirect = new_element;
+    list->elements_count++;
+
+    return 0;
+}
+
+void *list_find_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation) {
+	t_link_element **indirect = &(list->head);
+	while (*indirect != NULL) {
+		if(condition(((*indirect)->data), comparation)) {
+			return (*indirect)->data;
+		}
+		indirect = &((*indirect)->next);
+	}
+	return NULL;
+}

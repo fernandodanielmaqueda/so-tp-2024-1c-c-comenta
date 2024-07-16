@@ -39,8 +39,8 @@ void resources_read_module_config(t_config *module_config) {
 		RESOURCES[i].name = resource_names[i];
 		RESOURCES[i].available = instances;
 		RESOURCES[i].total = instances;
-		RESOURCES[i].list_blocked = list_create();
-		pthread_mutex_init(&(RESOURCES[i].mutex_list_blocked), NULL);
+		RESOURCES[i].shared_list_blocked.list = list_create();
+		pthread_mutex_init(&(RESOURCES[i].shared_list_blocked.mutex), NULL);
 	}
 
 	RESOURCES[RESOURCE_QUANTITY].name = NULL;
@@ -56,7 +56,7 @@ void resource_log(t_Resource *resource) {
 
 t_Resource *resource_find(char *name) {
     for(register int i = 0; RESOURCES[i].name != NULL; i++)
-        if(!strcmp(RESOURCES[i].name, name))
+        if(strcmp(RESOURCES[i].name, name) == 0)
             return (&RESOURCES[i]);
 
     return NULL;

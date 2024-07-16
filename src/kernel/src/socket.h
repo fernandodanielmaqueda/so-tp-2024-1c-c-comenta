@@ -22,9 +22,9 @@
 #include "commons/collections/list.h"
 #include "commons/collections/dictionary.h"
 #include "utils/module.h"
-#include "utils/serialize/pcb.h"
+#include "utils/serialize/exec_context.h"
 #include "utils/socket.h"
-#include "console.h"
+#include "kernel.h"
 
 extern t_log *SOCKET_LOGGER;
 
@@ -36,6 +36,5 @@ extern t_Connection CONNECTION_CPU_INTERRUPT;
 void initialize_sockets(void);
 void finish_sockets(void);
 void *kernel_start_server_for_io(void *server_parameter);
-void *kernel_client_handler_for_io(void *new_client_parameter);
 
 #endif /* KERNEL_SOCKET_H */

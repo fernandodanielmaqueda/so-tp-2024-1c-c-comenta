@@ -17,7 +17,6 @@ t_Payload *payload_create(void) {
   return payload;
 }
 
-// Libera la memoria asociada al payload
 void payload_destroy(t_Payload *payload) {
   if(payload == NULL)
     return;
@@ -25,7 +24,6 @@ void payload_destroy(t_Payload *payload) {
   free(payload);
 }
 
-// Agrega un stream al payload en la posición actual y avanza el offset
 void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize) {
   // Check for invalid input
   if (payload == NULL || source == NULL || sourceSize == 0) {
@@ -34,7 +32,7 @@ void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize) {
 
   void *newStream = realloc(payload->stream, ((size_t) payload->size) + sourceSize);
   if(newStream == NULL) {
-    log_error(SERIALIZE_LOGGER, "No se pudo agregar el stream al payload con realloc");
+    log_error(SERIALIZE_LOGGER, "realloc: No se pudo agregar el stream al payload");
     exit(EXIT_FAILURE);
   }
 

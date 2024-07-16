@@ -27,13 +27,6 @@
 #include "utils/package.h"
 
 
-typedef enum e_IO_Type {
-    GENERIC_IO_TYPE,
-    STDIN_IO_TYPE,
-    STDOUT_IO_TYPE,
-    DIALFS_IO_TYPE
-} e_IO_Type;
-
 typedef struct t_IO_Type {
     char *name;
     void (*function) (void);

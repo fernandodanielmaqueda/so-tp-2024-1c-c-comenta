@@ -50,7 +50,5 @@ int kernel_command_pause_scheduling(int argc, char* argv[]);
 int kernel_command_resume_scheduling(int argc, char* argv[]);
 int kernel_command_multiprogramming(int argc, char* argv[]);
 int kernel_command_process_states(int argc, char* argv[]);
-void wait_switching_states(void);
-void signal_switching_states(void);
 
 #endif // KERNEL_CONSOLE_H
