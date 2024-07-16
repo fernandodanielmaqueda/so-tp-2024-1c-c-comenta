@@ -47,7 +47,7 @@ int set_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SET <REGISTRO> <VALOR>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -56,14 +56,14 @@ int set_cpu_operation(int argc, char **argv)
     e_CPU_Register destination_register;
     if(decode_register(argv[1], &destination_register)) {
         log_error(MODULE_LOGGER, "<REGISTRO> %s no encontrado", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     uint32_t value;
     if(str_to_uint32(argv[2], &value)) {
         log_error(MODULE_LOGGER, "%s: No es un valor valido", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -84,7 +84,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_IN <REGISTRO DATOS> <REGISTRO DIRECCION>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -93,14 +93,14 @@ int mov_in_cpu_operation(int argc, char **argv)
     e_CPU_Register register_data;
     if (decode_register(argv[1], &register_data)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     e_CPU_Register register_address;
     if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -132,7 +132,7 @@ int mov_out_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: MOV_OUT <REGISTRO DIRECCION> <REGISTRO DATOS>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -141,14 +141,14 @@ int mov_out_cpu_operation(int argc, char **argv)
     e_CPU_Register register_address;
     if(decode_register(argv[1], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     e_CPU_Register register_data;
     if(decode_register(argv[2], &register_data)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -176,7 +176,7 @@ int sum_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUM <REGISTRO DESTINO> <REGISTRO ORIGEN>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -185,14 +185,14 @@ int sum_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if (decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     e_CPU_Register register_origin;
     if(decode_register(argv[2], &register_origin)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -218,7 +218,7 @@ int sub_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: SUB <REGISTRO DESTINO> <REGISTRO ORIGEN>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -227,14 +227,14 @@ int sub_cpu_operation(int argc, char **argv)
     e_CPU_Register register_destination;
     if (decode_register(argv[1], &register_destination)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     e_CPU_Register register_origin;
     if(decode_register(argv[2], &register_origin)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -260,7 +260,7 @@ int jnz_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: JNZ <REGISTRO> <INSTRUCCION>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -269,14 +269,14 @@ int jnz_cpu_operation(int argc, char **argv)
     e_CPU_Register cpu_register;
     if(decode_register(argv[1], &cpu_register)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     t_PC instruction;
     if(str_to_pc(argv[2], &instruction)) {
         log_error(MODULE_LOGGER, "%s: No es un valor valido", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -301,14 +301,14 @@ int resize_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: RESIZE <TAMANIO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     t_MemorySize size;
     if(str_to_memory_size(argv[1], &size)) {
         log_error(MODULE_LOGGER, "%s: No es un tamaño valido", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -325,7 +325,7 @@ int resize_cpu_operation(int argc, char **argv)
     t_Return_Value return_value;
     receive_return_value_with_expected_header(RESIZE_REQUEST, &return_value, CONNECTION_MEMORY.fd_connection);
     if(return_value) {
-        EXEC_CONTEXT.exit_reason = OUT_OF_MEMORY_EXIT_REASON;
+        EVICTION_REASON = OUT_OF_MEMORY_EVICTION_REASON;
         return 1;
     }
 
@@ -342,14 +342,14 @@ int copy_string_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: COPY_STRING <TAMANIO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     t_MemorySize size;
     if(str_to_memory_size(argv[1], &size)) {
         log_error(MODULE_LOGGER, "%s: No es un tamaño valido", argv[1]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -385,7 +385,7 @@ int wait_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: WAIT <RECURSO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -406,7 +406,7 @@ int signal_cpu_operation(int argc, char **argv)
     if (argc != 2)
     {
         log_error(MODULE_LOGGER, "Uso: SIGNAL <RECURSO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -427,7 +427,7 @@ int io_gen_sleep_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_GEN_SLEEP <INTERFAZ> <UNIDADES DE TRABAJO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -449,7 +449,7 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDIN_READ <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -458,14 +458,14 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     e_CPU_Register register_address;
     if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     e_CPU_Register register_size;
     if (decode_register(argv[3], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -497,7 +497,7 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -506,14 +506,14 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     e_CPU_Register register_address;
     if(decode_register(argv[2], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
     e_CPU_Register register_size;
     if (decode_register(argv[3], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -545,7 +545,7 @@ int io_fs_create_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_CREATE <INTERFAZ> <NOMBRE ARCHIVO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -567,7 +567,7 @@ int io_fs_delete_cpu_operation(int argc, char **argv)
     if (argc != 3)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_DELETE <INTERFAZ> <NOMBRE ARCHIVO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -589,13 +589,13 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
     if (argc != 4)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_TRUNCATE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO TAMANIO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     e_CPU_Register register_size;
     if(decode_register(argv[3], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[2]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -620,7 +620,7 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_WRITE <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     e_CPU_Register register_address_ptro;
@@ -628,17 +628,17 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     e_CPU_Register register_size;
     if(decode_register(argv[3], &register_size_destino)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     if (decode_register(argv[4], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[4]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     if (decode_register(argv[5], &register_address_ptro)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[5]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
@@ -671,7 +671,7 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     if (argc != 6)
     {
         log_error(MODULE_LOGGER, "Uso: IO_FS_READ <INTERFAZ> <NOMBRE ARCHIVO> <REGISTRO DIRECCION> <REGISTRO TAMANIO> <REGISTRO PUNTERO ARCHIVO>");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     e_CPU_Register register_address_ptro;
@@ -679,17 +679,17 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     e_CPU_Register register_size;
     if(decode_register(argv[3], &register_size_destino)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     if (decode_register(argv[4], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[4]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     if (decode_register(argv[5], &register_address_ptro)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[5]);
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
     log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
@@ -722,7 +722,7 @@ int exit_cpu_operation(int argc, char **argv)
     if (argc != 1)
     {
         log_error(MODULE_LOGGER, "Uso: EXIT");
-        EXEC_CONTEXT.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 

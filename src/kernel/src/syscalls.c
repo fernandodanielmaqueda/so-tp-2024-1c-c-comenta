@@ -25,7 +25,7 @@ int syscall_execute(t_Payload *syscall_instruction) {
 
     if(SYSCALLS[syscall_opcode].function == NULL) {
         log_error(MODULE_LOGGER, "Funcion de syscall no encontrada");
-        SYSCALL_PCB->exec_context.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+        SYSCALL_PCB->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
@@ -43,7 +43,7 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
     if(resource == NULL) {
         log_trace(MODULE_LOGGER, "WAIT %s: recurso no encontrado", resource_name);
         free(resource_name);
-        SYSCALL_PCB->exec_context.exit_reason = INVALID_RESOURCE_EXIT_REASON;
+        SYSCALL_PCB->exit_reason = INVALID_RESOURCE_EXIT_REASON;
         return 1;
     }
 
@@ -51,12 +51,12 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
     if(resource->available < 0) {
         wait_draining_requests(&SCHEDULING_SYNC);
 
+            switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
+
             pthread_mutex_lock(&(resource->shared_list_blocked.mutex));
                 list_add(resource->shared_list_blocked.list, SYSCALL_PCB);
                 log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, resource_name);
             pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
-            
-            switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
 
         signal_draining_requests(&SCHEDULING_SYNC);
         EXEC_PCB = 0;
@@ -80,7 +80,7 @@ int signal_kernel_syscall(t_Payload *syscall_arguments) {
     if(resource == NULL) {
         log_trace(MODULE_LOGGER, "SIGNAL %s: recurso no encontrado", resource_name);
         free(resource_name);
-        SYSCALL_PCB->exec_context.exit_reason = INVALID_RESOURCE_EXIT_REASON;
+        SYSCALL_PCB->exit_reason = INVALID_RESOURCE_EXIT_REASON;
         return 1;
     }
 
@@ -124,7 +124,7 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
     if(interface == NULL) {
         log_warning(MODULE_LOGGER, "%s: la interfaz solicitada no existe y/o no esta conectada", interface_name);
         free(interface_name);
-        SYSCALL_PCB->exec_context.exit_reason = INVALID_INTERFACE_EXIT_REASON;
+        SYSCALL_PCB->exit_reason = INVALID_INTERFACE_EXIT_REASON;
         return 1;
     }
 
@@ -132,11 +132,13 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
 
     if(interface->io_type != GENERIC_IO_TYPE) {
         log_warning(MODULE_LOGGER, "%s: la interfaz no admite la operacion solicitada", interface->name);
-        SYSCALL_PCB->exec_context.exit_reason = INVALID_INTERFACE_EXIT_REASON;
+        SYSCALL_PCB->exit_reason = INVALID_INTERFACE_EXIT_REASON;
         return 1;
     }
 
     wait_draining_requests(&SCHEDULING_SYNC);
+
+        switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
 
         wait_draining_requests(&INTERFACES_SYNC);
             pthread_mutex_lock(&(interface->shared_list_blocked.mutex));
@@ -144,8 +146,6 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
                 log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, interface->name);
             pthread_mutex_unlock(&(interface->shared_list_blocked.mutex));
         signal_draining_requests(&INTERFACES_SYNC);
-
-        switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
 
     signal_draining_requests(&SCHEDULING_SYNC);
 

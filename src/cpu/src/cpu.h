@@ -50,6 +50,8 @@ extern pthread_mutex_t MUTEX_EXEC_CONTEXT;
 extern int EXECUTING;
 extern pthread_mutex_t MUTEX_EXECUTING;
 
+extern e_Eviction_Reason EVICTION_REASON;
+
 extern e_Kernel_Interrupt KERNEL_INTERRUPT;
 extern pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
 

@@ -6,8 +6,6 @@
 void exec_context_serialize(t_Payload *payload, t_Exec_Context source) {
   if(payload == NULL)
     return;
-  
-  t_EnumValue aux;
 
   payload_enqueue(payload, &(source.PID), sizeof(source.PID));
   payload_enqueue(payload, &(source.PC), sizeof(source.PC));
@@ -26,8 +24,6 @@ void exec_context_serialize(t_Payload *payload, t_Exec_Context source) {
   payload_enqueue(payload, &(source.cpu_registers.RDX), sizeof(source.cpu_registers.RDX));
   payload_enqueue(payload, &(source.cpu_registers.SI), sizeof(source.cpu_registers.SI));
   payload_enqueue(payload, &(source.cpu_registers.DI), sizeof(source.cpu_registers.DI));
-      aux = (t_EnumValue) source.exit_reason;
-  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
 
   exec_context_log(source);
 }
@@ -35,8 +31,6 @@ void exec_context_serialize(t_Payload *payload, t_Exec_Context source) {
 void exec_context_deserialize(t_Payload *payload, t_Exec_Context *destination) {
   if(payload == NULL || destination == NULL)
     return;
-
-  t_EnumValue aux;
 
   payload_dequeue(payload, &(destination->PID), sizeof(destination->PID));
   payload_dequeue(payload, &(destination->PC), sizeof(destination->PC));
@@ -55,8 +49,6 @@ void exec_context_deserialize(t_Payload *payload, t_Exec_Context *destination) {
   payload_dequeue(payload, &(destination->cpu_registers.RDX), sizeof(destination->cpu_registers.RDX));
   payload_dequeue(payload, &(destination->cpu_registers.SI), sizeof(destination->cpu_registers.SI));
   payload_dequeue(payload, &(destination->cpu_registers.DI), sizeof(destination->cpu_registers.DI));
-  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
-    destination->exit_reason = (e_Exit_Reason) aux;
 
   exec_context_log(*destination);
 }
@@ -80,8 +72,7 @@ void exec_context_log(t_Exec_Context source) {
     "* RCX: %" PRIu32 "\n"
     "* RDX: %" PRIu32 "\n"
     "* SI: %" PRIu32 "\n"
-    "* DI: %" PRIu32 "\n"
-    "* exit_reason: %d\n"
+    "* DI: %" PRIu32
     , source.PID
     , source.PC
     , source.quantum
@@ -99,6 +90,5 @@ void exec_context_log(t_Exec_Context source) {
     , source.cpu_registers.RDX
     , source.cpu_registers.SI
     , source.cpu_registers.DI
-    , source.exit_reason
     );
 }

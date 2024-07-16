@@ -48,7 +48,6 @@ extern t_Shared_List SHARED_LIST_NEW;
 extern t_Shared_List SHARED_LIST_READY;
 extern t_Shared_List SHARED_LIST_READY_PRIORITARY;
 extern t_Shared_List SHARED_LIST_EXEC;
-extern t_Shared_List SHARED_LIST_BLOCKED;
 extern t_Shared_List SHARED_LIST_EXIT;
 
 extern pthread_t THREAD_LONG_TERM_SCHEDULER_NEW;

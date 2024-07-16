@@ -70,7 +70,7 @@ void *kernel_client_handler_for_io(void *new_client_parameter) {
                     if(pcb != NULL) {
                         payload_destroy(pcb->instruction);
                         if(return_value) {
-                            pcb->exec_context.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+                            pcb->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
                             switch_process_state(pcb, EXIT_STATE);
                         } else {
                             switch_process_state(pcb, READY_STATE);
@@ -115,7 +115,7 @@ void interface_exit(t_Interface *interface) {
         while((interface->shared_list_blocked.list)->elements_count > 0) {
             pcb = (t_PCB *) list_remove(interface->shared_list_blocked.list, 0);
             payload_destroy(pcb->instruction);
-            pcb->exec_context.exit_reason = INVALID_INTERFACE_EXIT_REASON;
+            pcb->exit_reason = INVALID_INTERFACE_EXIT_REASON;
             switch_process_state(pcb, EXIT_STATE);
         }
     pthread_mutex_unlock(&(interface->shared_list_blocked.mutex));

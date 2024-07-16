@@ -51,6 +51,8 @@ typedef struct t_PCB {
     t_Shared_List *shared_list_state;
 
     t_Payload *instruction;
+
+    e_Exit_Reason exit_reason;
 } t_PCB;
 
 #include "scheduler.h"

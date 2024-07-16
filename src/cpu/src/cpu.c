@@ -30,6 +30,8 @@ pthread_mutex_t MUTEX_EXEC_CONTEXT;
 int EXECUTING = 0;
 pthread_mutex_t MUTEX_EXECUTING;
 
+e_Eviction_Reason EVICTION_REASON;
+
 e_Kernel_Interrupt KERNEL_INTERRUPT;
 pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
 
@@ -127,7 +129,6 @@ void instruction_cycle(void)
 
     char *IR;
     t_Arguments *arguments = arguments_create(MAX_CPU_INSTRUCTION_ARGUMENTS);
-    e_Eviction_Reason eviction_reason;
     e_CPU_OpCode cpu_opcode;
     int exit_status;
 
@@ -156,7 +157,7 @@ void instruction_cycle(void)
             cpu_fetch_next_instruction(&IR);
             if(IR == NULL) {
                 log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
-                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
+                EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
                 break;
             }
 
@@ -176,7 +177,7 @@ void instruction_cycle(void)
                 }
                 arguments_remove(arguments);
                 free(IR);
-                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
+                EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
                 break;
             }
 
@@ -184,7 +185,7 @@ void instruction_cycle(void)
                 log_error(MODULE_LOGGER, "%s: Error al decodificar la instruccion", arguments->argv[0]);
                 arguments_remove(arguments);
                 free(IR);
-                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
+                EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
                 break;
             }
 
@@ -194,34 +195,34 @@ void instruction_cycle(void)
             arguments_remove(arguments);
             free(IR);
 
-            if (exit_status) {
+            if(exit_status) {
                 log_trace(MODULE_LOGGER, "Error en la ejecucion de la instruccion");
-                eviction_reason = UNEXPECTED_ERROR_EVICTION_REASON;
+                // EVICTION_REASON ya debe ser asignado por la instrucción cuando falla
                 break;
             }
 
             if(cpu_opcode == EXIT_CPU_OPCODE) {
-                eviction_reason = EXIT_EVICTION_REASON;
+                EVICTION_REASON = EXIT_EVICTION_REASON;
                 break;
             }
 
             pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
                 if (KERNEL_INTERRUPT == KILL_KERNEL_INTERRUPT) {
                     pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = KILL_KERNEL_INTERRUPT_EVICTION_REASON;
+                    EVICTION_REASON = KILL_KERNEL_INTERRUPT_EVICTION_REASON;
                     break;
                 }
             pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
 
             if (SYSCALL_CALLED) {
-                eviction_reason = SYSCALL_EVICTION_REASON;
+                EVICTION_REASON = SYSCALL_EVICTION_REASON;
                 break;
             }
 
             pthread_mutex_lock(&MUTEX_KERNEL_INTERRUPT);
                 if (KERNEL_INTERRUPT == QUANTUM_KERNEL_INTERRUPT) {
                     pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
-                    eviction_reason = QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON;
+                    EVICTION_REASON = QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON;
                     break;
                 }
             pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
@@ -232,7 +233,7 @@ void instruction_cycle(void)
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
         pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
-            send_process_eviction(EXEC_CONTEXT, eviction_reason, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+            send_process_eviction(EXEC_CONTEXT, EVICTION_REASON, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
         pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         payload_destroy(SYSCALL_INSTRUCTION);

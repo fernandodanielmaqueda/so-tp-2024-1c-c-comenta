@@ -56,8 +56,6 @@ typedef struct t_Exec_Context {
     t_PC PC;
     t_Quantum quantum;
     t_CPU_Registers cpu_registers;
-
-    e_Exit_Reason exit_reason;
 } t_Exec_Context;
 
 

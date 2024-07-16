@@ -249,12 +249,12 @@ int kernel_command_kill_process(int argc, char* argv[]) {
 
         switch(pcb->current_state) {
             case NEW_STATE:
-                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
             case READY_STATE:
-                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
@@ -266,7 +266,7 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                 break;
 
             case BLOCKED_STATE:
-                pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 
@@ -385,7 +385,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
 
         pcb_list_to_pid_string(SHARED_LIST_EXEC.list, &pid_string_exec);
 
-        pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
+        //pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
 
         pcb_list_to_pid_string(SHARED_LIST_EXIT.list, &pid_string_exit);
     signal_ongoing(&SCHEDULING_SYNC);
