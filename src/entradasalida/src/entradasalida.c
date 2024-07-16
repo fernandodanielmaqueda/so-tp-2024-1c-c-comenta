@@ -41,6 +41,8 @@ t_IO_Operation IO_OPERATIONS[] = {
     [IO_FS_READ_CPU_OPCODE] = {.name = "IO_FS_READ" , .function = io_fs_read_io_operation},
 };
 
+t_PID PID;
+
 int module(int argc, char *argv[]) {
 
 	if(argc != 3) {
@@ -66,8 +68,19 @@ int module(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Invoco a la funcion que corresponda
-	IO_TYPES[IO_TYPE].function();
+	t_Payload *io_operation = payload_create();
+	//escuchar peticion siempre
+	while(1) {
+		if(receive_io_operation_dispatch(&PID, io_operation, CONNECTION_KERNEL.fd_connection)) {
+			exit(1);
+		}
+
+		t_Return_Value return_value = (t_Return_Value) io_operation_execute(io_operation);
+
+		if(send_io_operation_finished(PID, return_value, CONNECTION_KERNEL.fd_connection)) {
+			exit(1);
+		}
+	}
 
 	//finish_threads();
 	finish_sockets();
@@ -138,64 +151,13 @@ void finish_sockets(void) {
 	close(CONNECTION_MEMORY.fd_connection);
 }
 
-void generic_interface_function(void) {
+void generic_interface_function(void) {}
 
-	t_Package *package;
-	t_Payload *instruction = payload_create();
-	//recibe peticion
-	while(1) {
+void stdin_interface_function(void) {}
 
-		package_receive(&package, CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
+void stdout_interface_function(void) {}
 
-		int exit_status = io_operation_execute(instruction);
-
-		// arguments_free(instruction);
-
-		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-	}
-}
-
-void stdin_interface_function(void) {
-
-	t_Package *package;
-	t_Payload *instruction = NULL;
-	//escuchar peticion siempre
-	while(1){
-		//recibe peticion
-		package_receive(&package, CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
-
-		int exit_status = io_operation_execute(instruction);
-		// arguments_free(instruction);
-
-		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-	}
-}
-
-void stdout_interface_function(void) {
-	t_Package *package;
-	t_Payload *instruction = NULL;
-
-	//escuchar peticion siempre
-	while(1) {
-		//recibe peticion
-		package_receive(&package, CONNECTION_KERNEL.fd_connection);
-		subpayload_deserialize(package->payload, instruction);
-		package_destroy(package);
-
-		int exit_status = io_operation_execute(instruction);
-		// arguments_free(instruction);
-
-		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-	}
-}
-
-void dialfs_interface_function(void) {
-
-}
+void dialfs_interface_function(void) {}
 
 int io_operation_execute(t_Payload *operation) {
 

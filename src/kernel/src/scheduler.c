@@ -30,7 +30,7 @@ sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 pthread_t THREAD_SHORT_TERM_SCHEDULER;
 sem_t SEM_SHORT_TERM_SCHEDULER;
 
-int PCB_EXEC;
+int EXEC_PCB;
 
 t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[] = {
 	[FIFO_SCHEDULING_ALGORITHM] = { .name = "FIFO" , .function_fetcher = FIFO_scheduling_algorithm},
@@ -57,8 +57,8 @@ const char *EXIT_REASONS[] = {
 	[INTERRUPTED_BY_USER_EXIT_REASON] = "INTERRUPTED_BY_USER"
 };
 
-int KILL_EXECUTING_PROCESS = 0;
-pthread_mutex_t MUTEX_KILL_EXECUTING_PROCESS;
+int KILL_EXEC_PROCESS = 0;
+pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
 
 unsigned int MULTIPROGRAMMING_LEVEL;
 sem_t SEM_MULTIPROGRAMMING_LEVEL;
@@ -206,79 +206,82 @@ void *short_term_scheduler(void *parameter) {
 				continue;
 			}
 			switch_process_state(pcb, EXEC_STATE);
-		signal_draining_requests(&SCHEDULING_SYNC);
 
-		int PCB_EXECUTE = 1;
-		while(PCB_EXECUTE) {
+			EXEC_PCB = 1;
+			while(EXEC_PCB) {
 
-			send_process_dispatch(pcb->exec_context, CONNECTION_CPU_DISPATCH.fd_connection);
+				send_process_dispatch(pcb->exec_context, CONNECTION_CPU_DISPATCH.fd_connection);
+				signal_draining_requests(&SCHEDULING_SYNC);
 
-			switch(SCHEDULING_ALGORITHM) {
-				case RR_SCHEDULING_ALGORITHM:
-					QUANTUM_INTERRUPT = 0;
-					pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->exec_context.quantum));
-					break;
-				case VRR_SCHEDULING_ALGORITHM:
-					TEMPORAL_DISPATCHED = temporal_create();
-					QUANTUM_INTERRUPT = 0;
-					pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->exec_context.quantum));
-					break;
-				case FIFO_SCHEDULING_ALGORITHM:
-					break;
-			}
+				switch(SCHEDULING_ALGORITHM) {
+					case RR_SCHEDULING_ALGORITHM:
+						QUANTUM_INTERRUPT = 0;
+						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->exec_context.quantum));
+						break;
+					case VRR_SCHEDULING_ALGORITHM:
+						TEMPORAL_DISPATCHED = temporal_create();
+						QUANTUM_INTERRUPT = 0;
+						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->exec_context.quantum));
+						break;
+					case FIFO_SCHEDULING_ALGORITHM:
+						break;
+				}
 
-			receive_process_eviction(&(pcb->exec_context), &eviction_reason, syscall_instruction, CONNECTION_CPU_DISPATCH.fd_connection);
+				receive_process_eviction(&(pcb->exec_context), &eviction_reason, syscall_instruction, CONNECTION_CPU_DISPATCH.fd_connection);
 
-			switch(SCHEDULING_ALGORITHM) {
-				case RR_SCHEDULING_ALGORITHM:
+				switch(SCHEDULING_ALGORITHM) {
+					case RR_SCHEDULING_ALGORITHM:
 
-					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
-						if(!QUANTUM_INTERRUPT)
-							pthread_cancel(THREAD_QUANTUM_INTERRUPT);
-					pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
-					pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
+						pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+							if(!QUANTUM_INTERRUPT)
+								pthread_cancel(THREAD_QUANTUM_INTERRUPT);
+						pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
+						pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
 
-					break;
-				case VRR_SCHEDULING_ALGORITHM:
+						break;
+					case VRR_SCHEDULING_ALGORITHM:
 
-					pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
-						if(!QUANTUM_INTERRUPT)
-							pthread_cancel(THREAD_QUANTUM_INTERRUPT);
-					pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
-					pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
+						pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
+							if(!QUANTUM_INTERRUPT)
+								pthread_cancel(THREAD_QUANTUM_INTERRUPT);
+						pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
+						pthread_join(THREAD_QUANTUM_INTERRUPT, NULL);
 
-					temporal_stop(TEMPORAL_DISPATCHED);
-						cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
-					temporal_destroy(TEMPORAL_DISPATCHED);
+						temporal_stop(TEMPORAL_DISPATCHED);
+							cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
+						temporal_destroy(TEMPORAL_DISPATCHED);
 
-					pcb->exec_context.quantum -= cpu_burst;
-					if(pcb->exec_context.quantum <= 0)
-						pcb->exec_context.quantum = QUANTUM;
+						pcb->exec_context.quantum -= cpu_burst;
+						if(pcb->exec_context.quantum <= 0)
+							pcb->exec_context.quantum = QUANTUM;
 
-					break;
-				case FIFO_SCHEDULING_ALGORITHM:
-					break;
-			}
+						break;
+					case FIFO_SCHEDULING_ALGORITHM:
+						break;
+				}
 
-			wait_draining_requests(&SCHEDULING_SYNC);
+				wait_draining_requests(&SCHEDULING_SYNC);
 
 				switch(eviction_reason) {
 					case UNEXPECTED_ERROR_EVICTION_REASON:
 						pcb->exec_context.exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
 						switch_process_state(pcb, EXIT_STATE);
-						PCB_EXECUTE = 0;
+						EXEC_PCB = 0;
 						break;
 
 					case EXIT_EVICTION_REASON:
 						pcb->exec_context.exit_reason = SUCCESS_EXIT_REASON;
 						switch_process_state(pcb, EXIT_STATE);
-						PCB_EXECUTE = 0;
+						EXEC_PCB = 0;
 						break;
 
 					case KILL_KERNEL_INTERRUPT_EVICTION_REASON:
+						pthread_mutex_lock(&MUTEX_KILL_EXEC_PROCESS);
+							KILL_EXEC_PROCESS = 0;
+						pthread_mutex_unlock(&MUTEX_KILL_EXEC_PROCESS);
 						pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
 						switch_process_state(pcb, EXIT_STATE);
-						PCB_EXECUTE = 0;
+						EXEC_PCB = 0;
 						break;
 						
 					case SYSCALL_EVICTION_REASON:
@@ -288,29 +291,31 @@ void *short_term_scheduler(void *parameter) {
 						if(exit_status) {
 							// La syscall se encarga de settear el e_Exit_Reason
 							switch_process_state(pcb, EXIT_STATE);
-							PCB_EXECUTE = 0;
+							EXEC_PCB = 0;
 							break;
 						}
 
-						// Si la syscall es bloqueante
-						if(!PCB_EXEC) {
-							switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
-							break;
-						}
-
-						// Si la syscall es no bloqueante
 						break;
 
 					case QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON:
 						log_debug(MINIMAL_LOGGER, "PID: <%d> - Desalojado por fin de Quantum", (int) pcb->exec_context.PID);
 						switch_process_state(pcb, READY_STATE);
-						PCB_EXECUTE = 0;
+						EXEC_PCB = 0;
 						break;
 				}
 
-			signal_draining_requests(&SCHEDULING_SYNC);
-			// instruction_free(instruction);
-		}
+				pthread_mutex_lock(&MUTEX_KILL_EXEC_PROCESS);             
+				if(KILL_EXEC_PROCESS) {
+					KILL_EXEC_PROCESS = 0;
+					pthread_mutex_unlock(&MUTEX_KILL_EXEC_PROCESS);
+					pcb->exec_context.exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+					switch_process_state(pcb, EXIT_STATE);
+					EXEC_PCB = 0;
+				} else {
+					pthread_mutex_unlock(&MUTEX_KILL_EXEC_PROCESS);
+				}
+			}
+		signal_draining_requests(&SCHEDULING_SYNC);
 	}
 
 	return NULL;

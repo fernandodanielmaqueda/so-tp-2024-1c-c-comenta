@@ -259,10 +259,9 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                 break;
 
             case EXEC_STATE:
-                pthread_mutex_lock(&MUTEX_KILL_EXECUTING_PROCESS);
-                    KILL_EXECUTING_PROCESS = 1;
-                pthread_mutex_unlock(&MUTEX_KILL_EXECUTING_PROCESS);
-                //pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                pthread_mutex_lock(&MUTEX_KILL_EXEC_PROCESS);
+                    KILL_EXEC_PROCESS = 1;
+                pthread_mutex_unlock(&MUTEX_KILL_EXEC_PROCESS);
                 send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->exec_context.PID, CONNECTION_CPU_INTERRUPT.fd_connection);
                 break;
 

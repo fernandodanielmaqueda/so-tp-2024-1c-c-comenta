@@ -56,7 +56,7 @@ void initialize_mutexes(void) {
 
 	pthread_mutex_init(&MUTEX_QUANTUM_INTERRUPT, NULL);
 
-	pthread_mutex_init(&MUTEX_KILL_EXECUTING_PROCESS, NULL);
+	pthread_mutex_init(&MUTEX_KILL_EXEC_PROCESS, NULL);
 
 	pthread_mutex_init(&MUTEX_MULTIPROGRAMMING_DIFFERENCE, NULL);
 
@@ -80,7 +80,7 @@ void finish_mutexes(void) {
 
 	pthread_mutex_destroy(&MUTEX_QUANTUM_INTERRUPT);
 
-	pthread_mutex_destroy(&MUTEX_KILL_EXECUTING_PROCESS);
+	pthread_mutex_destroy(&MUTEX_KILL_EXEC_PROCESS);
 
 	pthread_mutex_destroy(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
 	

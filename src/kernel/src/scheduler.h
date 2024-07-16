@@ -58,7 +58,7 @@ extern sem_t SEM_LONG_TERM_SCHEDULER_EXIT;
 extern pthread_t THREAD_SHORT_TERM_SCHEDULER;
 extern sem_t SEM_SHORT_TERM_SCHEDULER;
 
-extern int PCB_EXEC;
+extern int EXEC_PCB;
 
 extern t_Scheduling_Algorithm SCHEDULING_ALGORITHMS[];
 
@@ -73,8 +73,8 @@ extern t_temporal *TEMPORAL_DISPATCHED;
 
 extern const char *EXIT_REASONS[];
 
-extern int KILL_EXECUTING_PROCESS;
-extern pthread_mutex_t MUTEX_KILL_EXECUTING_PROCESS;
+extern int KILL_EXEC_PROCESS;
+extern pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
 
 extern unsigned int MULTIPROGRAMMING_LEVEL;
 extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
