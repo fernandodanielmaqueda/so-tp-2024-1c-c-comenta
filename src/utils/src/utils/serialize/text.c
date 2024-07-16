@@ -11,10 +11,10 @@ void text_serialize(t_Payload *payload, char *source) {
 
   if(source == NULL) {
     textSize = 0;
-    payload_append(payload, (void *) &(textSize), sizeof(t_StringLength));
+    payload_append(payload, (void *) &(textSize), sizeof(textSize));
   } else {
     textSize = (t_StringLength) strlen(source) + 1;
-    payload_append(payload, (void *) &(textSize), sizeof(t_StringLength));
+    payload_append(payload, (void *) &(textSize), sizeof(textSize));
     payload_append(payload, (void *) source, textSize);
   }
 
@@ -26,7 +26,7 @@ void text_deserialize(t_Payload *payload, char **destination) {
     return;
 
   t_StringLength textSize;
-  payload_shift(payload, (void *) &(textSize), sizeof(t_StringLength));
+  payload_shift(payload, (void *) &(textSize), sizeof(textSize));
 
   if(!textSize) {
     *destination = NULL;

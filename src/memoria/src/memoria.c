@@ -115,7 +115,7 @@ void create_process(t_Payload *process_data) {
     t_list *pages_table = list_create();
 
     text_deserialize(process_data, &(argument_path));
-    payload_shift(process_data, &(new_process->PID), sizeof(t_PID));
+    payload_shift(process_data, &(new_process->PID), sizeof(new_process->PID));
 
     if(argument_path[0] == '/') {
         // Ruta absoluta
@@ -166,7 +166,7 @@ void create_process(t_Payload *process_data) {
 void kill_process(t_Payload *payload){
 
     t_PID pid;
-    payload_shift(payload, &pid, sizeof(t_PID));
+    payload_shift(payload, &pid, sizeof(pid));
 
     t_Process *process = seek_process_by_pid(pid);
     t_Page *paginaBuscada;
@@ -385,8 +385,8 @@ void respond_frame_request(t_Payload* payload){
     t_Page_Number page_number;
     t_PID pidProceso;
 
-    payload_shift(payload, &page_number, sizeof(t_Page_Number) );
-    payload_shift(payload, &pidProceso, sizeof(t_PID) );
+    payload_shift(payload, &page_number, sizeof(page_number) );
+    payload_shift(payload, &pidProceso, sizeof(pidProceso) );
 
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
@@ -398,8 +398,8 @@ void respond_frame_request(t_Payload* payload){
     usleep(RETARDO_RESPUESTA * 1000);
     
     t_Package* package = package_create_with_header(FRAME_REQUEST);
-    payload_append(package->payload, &pidProceso, sizeof(t_PID));
-    payload_append(package->payload, &marcoEncontrado, sizeof(t_Frame_Number));
+    payload_append(package->payload, &pidProceso, sizeof(pidProceso));
+    payload_append(package->payload, &marcoEncontrado, sizeof(marcoEncontrado));
     package_send(package, CLIENT_CPU->fd_client);
     
 }
@@ -424,9 +424,9 @@ void read_memory(t_Payload* payload, int socket) {
     t_list *list_physical_addresses = list_create();
     t_MemorySize bytes;
 
-    payload_shift(payload, &pid, sizeof(t_PID));
+    payload_shift(payload, &pid, sizeof(pid));
     list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
-    payload_shift(payload, &bytes, sizeof(t_MemorySize));
+    payload_shift(payload, &bytes, sizeof(bytes));
 
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
@@ -483,9 +483,9 @@ void write_memory(t_Payload* payload, int socket){
     t_list *list_physical_addresses = list_create();
     t_MemorySize bytes;
     
-    payload_shift(payload, &pid, sizeof(t_PID));
+    payload_shift(payload, &pid, sizeof(pid));
     list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
-    payload_shift(payload, &bytes, sizeof(t_MemorySize));
+    payload_shift(payload, &bytes, sizeof(bytes));
 
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
@@ -565,8 +565,8 @@ void resize_process(t_Payload* payload){
     t_PID pid;
     t_MemorySize new_size;
 
-    payload_shift(payload, &pid, sizeof(t_PID) );
-    payload_shift(payload, &new_size, sizeof(t_MemorySize) );
+    payload_shift(payload, &pid, sizeof(pid));
+    payload_shift(payload, &new_size, sizeof(new_size));
 
     t_Process* procesoBuscado = seek_process_by_pid(pid);
 
@@ -591,8 +591,8 @@ void resize_process(t_Payload* payload){
             //CASO: HAY ESPACIO Y SUMA PAGINAS
             for (size_t i = size; i < paginas; i++)
             {
-                t_Page* pagina = malloc(sizeof(t_Page));
-                t_Frame* marcoLibre = list_get(LIST_FREE_FRAMES,0);
+                t_Page *pagina = malloc(sizeof(t_Page));
+                t_Frame *marcoLibre = list_get(LIST_FREE_FRAMES,0);
                 list_remove(LIST_FREE_FRAMES,0);
                 pagina->assigned_frame = marcoLibre->id;
                 pagina->bit_modificado = false;

@@ -25,7 +25,6 @@ void payload_destroy(t_Payload *payload) {
 }
 
 void payload_append(t_Payload *payload, void *source, size_t sourceSize) {
-  // Check for invalid input
   if (payload == NULL || source == NULL || sourceSize == 0) {
     return;
   }

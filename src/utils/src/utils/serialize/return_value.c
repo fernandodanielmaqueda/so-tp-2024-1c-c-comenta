@@ -3,27 +3,27 @@
 
 #include "utils/serialize/return_value.h"
 
-void return_value_serialize(t_Payload *payload, t_Return_Value return_value) {
+void return_value_serialize(t_Payload *payload, t_Return_Value source) {
   if(payload == NULL)
     return;
 
-  payload_append(payload, &return_value, sizeof(t_Return_Value));
+  payload_append(payload, &source, sizeof(source));
 
-  return_value_log(return_value);
+  return_value_log(source);
 }
 
-void return_value_deserialize(t_Payload *payload, t_Return_Value *return_value) {
-  if(payload == NULL || return_value == NULL)
+void return_value_deserialize(t_Payload *payload, t_Return_Value *destination) {
+  if(payload == NULL || destination == NULL)
     return;
 
-  payload_shift(payload, return_value, sizeof(t_Return_Value));
+  payload_shift(payload, destination, sizeof(*destination));
 
-  return_value_log(*return_value);
+  return_value_log(*destination);
 }
 
-void return_value_log(t_Return_Value return_value) {
+void return_value_log(t_Return_Value source) {
   log_info(SERIALIZE_LOGGER,
     "t_Return_Value: %d"
-    , return_value
+    , source
   );
 }

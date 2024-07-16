@@ -180,7 +180,7 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 		case GENERIC_IO_TYPE:
 		{
 			uint32_t work_units;
-			payload_shift(operation, &work_units, sizeof(uint32_t));
+			payload_shift(operation, &work_units, sizeof(work_units));
 
 			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
 

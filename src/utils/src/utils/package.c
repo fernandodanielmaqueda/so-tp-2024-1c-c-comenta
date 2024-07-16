@@ -131,7 +131,7 @@ int package_receive_payload(t_Package *package, int fd_socket) {
   if(package == NULL)
     return 1;
 
-  if(receive(fd_socket, (void *) &(package->payload->size), sizeof(t_PayloadSize)))
+  if(receive(fd_socket, (void *) &(package->payload->size), sizeof(package->payload->size)))
     return 1;
 
   if(package->payload->size == 0)

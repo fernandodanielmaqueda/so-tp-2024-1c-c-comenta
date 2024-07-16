@@ -659,8 +659,8 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_WRITE_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
-    payload_append(SYSCALL_INSTRUCTION, &puntero, sizeof(t_MemorySize));
-    payload_append(SYSCALL_INSTRUCTION, &bytes, sizeof(t_MemorySize));
+    payload_append(SYSCALL_INSTRUCTION, &puntero, sizeof(puntero));
+    payload_append(SYSCALL_INSTRUCTION, &bytes, sizeof(bytes));
     list_serialize(SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
 
     return 0;
@@ -709,8 +709,8 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_FS_READ_CPU_OPCODE);
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(SYSCALL_INSTRUCTION, argv[2]);
-    payload_append(SYSCALL_INSTRUCTION, &puntero, sizeof(t_MemorySize));
-    payload_append(SYSCALL_INSTRUCTION, &bytes, sizeof(t_MemorySize));
+    payload_append(SYSCALL_INSTRUCTION, &puntero, sizeof(puntero));
+    payload_append(SYSCALL_INSTRUCTION, &bytes, sizeof(bytes));
     list_serialize(SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
 
     return 0;

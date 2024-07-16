@@ -21,7 +21,7 @@ void physical_address_serialize(t_Payload *payload, t_Physical_Address source) {
   if(payload == NULL)
     return;
 
-  payload_append(payload, &source, sizeof(t_Physical_Address));
+  payload_append(payload, &source, sizeof(source));
 
   physical_address_log(source);
 }
@@ -30,7 +30,7 @@ void physical_address_deserialize(t_Payload *payload, t_Physical_Address *destin
   if(payload == NULL || destination == NULL)
     return;
 
-  payload_shift(payload, destination, sizeof(t_Physical_Address));
+  payload_shift(payload, destination, sizeof(*destination));
 
   physical_address_log(*destination);
 }
