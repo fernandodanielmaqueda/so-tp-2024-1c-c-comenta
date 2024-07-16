@@ -338,7 +338,7 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 			e_Header WRITE_REQUEST;
 			t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 			
-			t_list *physical_addresses = list_crate();
+			t_list *physical_addresses = list_create();
 			t_MemorySize bytes;
 
 			//Empiezo a "desencolar" el payload recibido
@@ -384,8 +384,9 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			e_Header IO_STDOUT_READ_MEMORY;
 			t_Package *package = package_create_with_header(IO_STDOUT_READ_MEMORY);
 			
-			t_list *physical_addresses = list_crate();
+			t_list *physical_addresses = list_create();
 			t_MemorySize bytes;
+
 			//empiezo a "desencolar" el payload recibido
 			payload_dequeue(operation, &PID, sizeof(t_PID));
 			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
