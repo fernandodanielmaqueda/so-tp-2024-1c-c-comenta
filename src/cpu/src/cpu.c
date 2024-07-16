@@ -36,7 +36,7 @@ e_Kernel_Interrupt KERNEL_INTERRUPT;
 pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
 
 int SYSCALL_CALLED;
-t_Payload *SYSCALL_INSTRUCTION;
+t_Payload SYSCALL_INSTRUCTION;
 
 int TLB_REPLACE_INDEX_FIFO = 0;
 
@@ -138,7 +138,7 @@ void instruction_cycle(void)
             KERNEL_INTERRUPT = NONE_KERNEL_INTERRUPT;
         pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
 
-        SYSCALL_INSTRUCTION = payload_create();
+        payload_init(&SYSCALL_INSTRUCTION);
 
         pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
             receive_process_dispatch(&EXEC_CONTEXT, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
@@ -233,10 +233,10 @@ void instruction_cycle(void)
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
         pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
-            send_process_eviction(EXEC_CONTEXT, EVICTION_REASON, *SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+            send_process_eviction(EXEC_CONTEXT, EVICTION_REASON, SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
         pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
-        payload_destroy(SYSCALL_INSTRUCTION);
+        payload_destroy(&SYSCALL_INSTRUCTION);
     }
 
     arguments_destroy(arguments);
@@ -304,8 +304,8 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
             t_Package *package;
             package_receive(&package, CONNECTION_MEMORY.fd_connection);
             t_PID pidBuscado;
-            payload_shift(package->payload, &pidBuscado, sizeof(pidBuscado) );
-            payload_shift(package->payload, &frame_number, sizeof(frame_number) );
+            payload_shift(&(package->payload), &pidBuscado, sizeof(pidBuscado) );
+            payload_shift(&(package->payload), &frame_number, sizeof(frame_number) );
             package_destroy(package);
             
             log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, page_number, frame_number);
@@ -450,8 +450,8 @@ void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
 
 void request_frame_memory(t_PID pid, t_Page_Number page) {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
-    payload_append(package->payload, &page, sizeof(page));
-    payload_append(package->payload, &pid, sizeof(pid));
+    payload_append(&(package->payload), &page, sizeof(page));
+    payload_append(&(package->payload), &pid, sizeof(pid));
     package_send(package, CONNECTION_MEMORY.fd_connection);
 }
 
@@ -465,7 +465,7 @@ void ask_memory_page_size(void) {
 
     t_Package* package;
     package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    payload_shift(package->payload, &PAGE_SIZE, sizeof(PAGE_SIZE));
+    payload_shift(&(package->payload), &PAGE_SIZE, sizeof(PAGE_SIZE));
     package_destroy(package);
 }
 
@@ -474,10 +474,10 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size
     t_Package* package;
 
     package = package_create_with_header(WRITE_REQUEST);
-    payload_append(package->payload, &pid, sizeof(pid));
-    list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);
-    payload_append(package->payload, &bytes, sizeof(t_MemorySize));
-    payload_append(package->payload, source, (size_t) bytes);
+    payload_append(&(package->payload), &pid, sizeof(pid));
+    list_serialize(&(package->payload), *list_physical_addresses, physical_address_serialize_element);
+    payload_append(&(package->payload), &bytes, sizeof(t_MemorySize));
+    payload_append(&(package->payload), source, (size_t) bytes);
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
@@ -490,9 +490,9 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
         return;
 
     t_Package* package = package_create_with_header(READ_REQUEST);
-    payload_append(package->payload, &(pid), sizeof(pid));
-    payload_append(package->payload, &bytes, sizeof(t_MemorySize));
-    list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);          
+    payload_append(&(package->payload), &(pid), sizeof(pid));
+    payload_append(&(package->payload), &bytes, sizeof(t_MemorySize));
+    list_serialize(&(package->payload), *list_physical_addresses, physical_address_serialize_element);          
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
@@ -502,7 +502,7 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
         exit(EXIT_FAILURE);
     } else {
         log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
-        payload_shift(package->payload, &destination, bytes);
+        payload_shift(&(package->payload), &destination, bytes);
     }
     package_destroy(package);
 }

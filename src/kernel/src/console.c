@@ -386,6 +386,7 @@ int kernel_command_process_states(int argc, char* argv[]) {
 
         pcb_list_to_pid_string(SHARED_LIST_EXEC.list, &pid_string_exec);
 
+        // TODO: Recorrer todas las listas de bloqueados
         //pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
 
         pcb_list_to_pid_string(SHARED_LIST_EXIT.list, &pid_string_exit);

@@ -46,7 +46,7 @@ typedef enum e_Header {
 
 typedef struct t_Package {
     enum e_Header header;
-    t_Payload *payload;
+    t_Payload payload;
 } t_Package;
 
 extern const char *HEADER_NAMES[];

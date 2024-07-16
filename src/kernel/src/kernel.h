@@ -50,7 +50,7 @@ typedef struct t_PCB {
     e_Process_State current_state;
     t_Shared_List *shared_list_state;
 
-    t_Payload *instruction;
+    t_Payload io_operation;
 
     e_Exit_Reason exit_reason;
 } t_PCB;

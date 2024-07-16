@@ -56,13 +56,13 @@ void read_module_config(t_config *module_config);
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
-void create_process(t_Payload* socketRecibido);
+void create_process(t_Payload *socketRecibido);
 
 /**
  * @brief Elimina el proceso, marca el marco como disponible y libera la pagina
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
-void kill_process (t_Payload* socketRecibido);
+void kill_process (t_Payload *socketRecibido);
 
 void listen_io(int fd_io);
 
@@ -71,7 +71,7 @@ void listen_io(int fd_io);
  * @param pid Program counter requerido.
  * @param pc Program counter requerido.
  */
-void seek_instruccion(t_Payload* socketRecibido);
+void seek_instruccion(t_Payload *socketRecibido);
 
 
 
@@ -127,7 +127,7 @@ void free_frames(void);
  * @brief Recibe el pedido de busqueda de marco y responde el mismo
  * @param socketRecibido Socket escuchado
  */
-void respond_frame_request(t_Payload* socketRecibido);
+void respond_frame_request(t_Payload *socketRecibido);
 
 /**
  * @brief Busca el marco asociado a una pagina en especial de una tabla de paginas.
@@ -136,9 +136,9 @@ void respond_frame_request(t_Payload* socketRecibido);
  */
 t_Frame_Number seek_frame_number_by_page_number (t_list* tablaPaginas, t_Page_Number pagina);
 
-void resize_process(t_Payload* payload);
-void write_memory(t_Payload* socketRecibido, int socket);
-void read_memory(t_Payload* socketRecibido, int socket);
+void resize_process(t_Payload *payload);
+void write_memory(t_Payload *socketRecibido, int socket);
+void read_memory(t_Payload *socketRecibido, int socket);
 void update_page(t_Frame_Number current_frame);
 int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid);
 int seek_oldest_page_updated(t_list* page_list);

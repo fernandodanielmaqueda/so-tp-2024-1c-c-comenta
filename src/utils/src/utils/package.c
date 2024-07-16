@@ -41,7 +41,7 @@ t_Package *package_create(void) {
     exit(EXIT_FAILURE);
   }
 
-  package->payload = payload_create();
+  payload_init(&(package->payload));
 
   return package;
 }
@@ -55,7 +55,7 @@ t_Package *package_create_with_header(e_Header header) {
 void package_destroy(t_Package *package) {
   if (package == NULL)
     return;
-  payload_destroy(package->payload);
+  payload_destroy(&(package->payload));
   free(package);
 }
 
@@ -65,7 +65,7 @@ int package_send(t_Package *package, int fd_socket) {
   if(package == NULL)
     return 1;
 
-  size_t bufferSize = sizeof(t_EnumValue) + sizeof(package->payload->size) + (size_t) package->payload->size;
+  size_t bufferSize = sizeof(t_EnumValue) + sizeof(package->payload.size) + (size_t) package->payload.size;
 
   void *buffer = malloc(bufferSize);
   if(buffer == NULL) {
@@ -79,8 +79,8 @@ int package_send(t_Package *package, int fd_socket) {
 
   aux = (t_EnumValue) package->header;
   offset = memcpy_serialize(buffer, offset, &(aux), sizeof(aux));
-  offset = memcpy_serialize(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
-  offset = memcpy_serialize(buffer, offset, package->payload->stream, (size_t) package->payload->size);
+  offset = memcpy_serialize(buffer, offset, &(package->payload.size), sizeof(package->payload.size));
+  offset = memcpy_serialize(buffer, offset, package->payload.stream, (size_t) package->payload.size);
 
   ssize_t bytes = send(fd_socket, buffer, bufferSize, 0);
   if (bytes == -1) {
@@ -131,19 +131,19 @@ int package_receive_payload(t_Package *package, int fd_socket) {
   if(package == NULL)
     return 1;
 
-  if(receive(fd_socket, (void *) &(package->payload->size), sizeof(package->payload->size)))
+  if(receive(fd_socket, (void *) &(package->payload.size), sizeof(package->payload.size)))
     return 1;
 
-  if(package->payload->size == 0)
+  if(package->payload.size == 0)
     return 0;
 
-  package->payload->stream = malloc((size_t) package->payload->size);
-  if(package->payload->stream == NULL) {
-    log_error(SOCKET_LOGGER, "malloc: No se pudo reservar %zu bytes de memoria\n", (size_t) package->payload->size);
+  package->payload.stream = malloc((size_t) package->payload.size);
+  if(package->payload.stream == NULL) {
+    log_error(SOCKET_LOGGER, "malloc: No se pudo reservar %zu bytes de memoria\n", (size_t) package->payload.size);
     return 1;
   }
 
-  return receive(fd_socket, (void *) package->payload->stream, (size_t) package->payload->size);
+  return receive(fd_socket, (void *) package->payload.stream, (size_t) package->payload.size);
 }
 
 int receive(int fd_socket, void *destination, size_t expected_bytes) {

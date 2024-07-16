@@ -68,14 +68,14 @@ int module(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	t_Payload *io_operation = payload_create();
+	t_Payload io_operation;
 	//escuchar peticion siempre
 	while(1) {
-		if(receive_io_operation_dispatch(&PID, io_operation, CONNECTION_KERNEL.fd_connection)) {
+		if(receive_io_operation_dispatch(&PID, &io_operation, CONNECTION_KERNEL.fd_connection)) {
 			exit(1);
 		}
 
-		t_Return_Value return_value = (t_Return_Value) io_operation_execute(io_operation);
+		t_Return_Value return_value = (t_Return_Value) io_operation_execute(&io_operation);
 
 		if(send_io_operation_finished(PID, return_value, CONNECTION_KERNEL.fd_connection)) {
 			exit(1);
@@ -159,28 +159,29 @@ void stdout_interface_function(void) {}
 
 void dialfs_interface_function(void) {}
 
-int io_operation_execute(t_Payload *operation) {
+int io_operation_execute(t_Payload *io_operation) {
 
-	t_EnumValue aux;
-
-    payload_shift(operation, &aux, sizeof(aux));
-		e_CPU_OpCode io_opcode = (e_CPU_OpCode) aux;
+	e_CPU_OpCode io_opcode;
+	cpu_opcode_deserialize(io_operation, &io_opcode);
 
     if(IO_OPERATIONS[io_opcode].function == NULL) {
+		payload_destroy(&io_operation);
         log_error(MODULE_LOGGER, "Funcion de operacion de IO no encontrada");
         return 1;
     }
 
-    return IO_OPERATIONS[io_opcode].function(operation);
+    int exit_status = IO_OPERATIONS[io_opcode].function(io_operation);
+	payload_destroy(&io_operation);
+	return exit_status;
 }
 
-int io_gen_sleep_io_operation(t_Payload *operation) {
+int io_gen_sleep_io_operation(t_Payload *operation_arguments) {
 
 	switch(IO_TYPE) {
 		case GENERIC_IO_TYPE:
 		{
 			uint32_t work_units;
-			payload_shift(operation, &work_units, sizeof(work_units));
+			payload_shift(operation_arguments, &work_units, sizeof(work_units));
 
 			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
 
@@ -196,7 +197,7 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
     return 0;
 }
 
-int io_stdin_read_io_operation(t_Payload *operation) {
+int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
 
@@ -217,8 +218,8 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 			//send_write_request( pid,  registro_direccion,  text, CONNECTION_MEMORY.fd_connection, IO_STDIN_WRITE_MEMORY);
 			/*
 			package = package_create_with_header(STRING_HEADER);
-			payload_append(package->payload, &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
-			text_serialize(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
+			payload_append(&(package->payload), &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
+			text_serialize(&(package->payload), text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
 			*/
@@ -234,7 +235,7 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 	return 0;	
 }
 
-int io_stdout_write_io_operation(t_Payload *operation) {
+int io_stdout_write_io_operation(t_Payload *operation_arguments) {
     
     // log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
 
@@ -246,8 +247,8 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 		case STDOUT_IO_TYPE:
 /*
 			package = package_create_with_header(STRING_HEADER);
-			text_serialize(package->payload, argv[2]);
-			text_serialize(package->payload, argv[3]);
+			text_serialize(&(package->payload), argv[2]);
+			text_serialize(&(package->payload), argv[3]);
 
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);
@@ -276,35 +277,35 @@ int io_stdout_write_io_operation(t_Payload *operation) {
     return 0;
 }
 
-int io_fs_create_io_operation(t_Payload *operation) {
+int io_fs_create_io_operation(t_Payload *operation_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
     return 0;
 }
 
-int io_fs_delete_io_operation(t_Payload *operation) {
+int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
 
     return 0;
 }
 
-int io_fs_truncate_io_operation(t_Payload *operation) {
+int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
     
     return 0;
 }
 
-int io_fs_write_io_operation(t_Payload *operation) {
+int io_fs_write_io_operation(t_Payload *operation_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
     return 0;
 }
 
-int io_fs_read_io_operation(t_Payload *operation) {
+int io_fs_read_io_operation(t_Payload *operation_arguments) {
 
     // log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 

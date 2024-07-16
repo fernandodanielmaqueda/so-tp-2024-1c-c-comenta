@@ -190,7 +190,7 @@ void *short_term_scheduler(void *parameter) {
  
 	t_PCB *pcb;
 	e_Eviction_Reason eviction_reason;
-	t_Payload *syscall_instruction = payload_create();
+	t_Payload syscall_instruction;
 	int exit_status;
 	int64_t cpu_burst;
 
@@ -225,7 +225,7 @@ void *short_term_scheduler(void *parameter) {
 						break;
 				}
 
-				receive_process_eviction(&(pcb->exec_context), &eviction_reason, syscall_instruction, CONNECTION_CPU_DISPATCH.fd_connection);
+				receive_process_eviction(&(pcb->exec_context), &eviction_reason, &syscall_instruction, CONNECTION_CPU_DISPATCH.fd_connection);
 
 				switch(SCHEDULING_ALGORITHM) {
 					case RR_SCHEDULING_ALGORITHM:
@@ -302,7 +302,7 @@ void *short_term_scheduler(void *parameter) {
 						pthread_mutex_unlock(&MUTEX_KILL_EXEC_PROCESS);
 
 						SYSCALL_PCB = pcb;
-						exit_status = syscall_execute(syscall_instruction);
+						exit_status = syscall_execute(&syscall_instruction);
 
 						if(exit_status) {
 							// La syscall se encarga de settear el e_Exit_Reason (en SYSCALL_PCB)
@@ -570,7 +570,7 @@ t_PCB *pcb_create(void) {
 	pcb->current_state = NEW_STATE;
 	pcb->shared_list_state = NULL;
 
-	pcb->instruction = NULL;
+	payload_init(&(pcb->io_operation));
 
 	return pcb;
 }

@@ -18,18 +18,19 @@ t_PCB *SYSCALL_PCB;
 
 int syscall_execute(t_Payload *syscall_instruction) {
 
-	t_EnumValue aux;
-
-    payload_shift(syscall_instruction, &aux, sizeof(aux));
-	    e_CPU_OpCode syscall_opcode = (e_CPU_OpCode) aux;
+    e_CPU_OpCode syscall_opcode;
+    cpu_opcode_deserialize(syscall_instruction, &syscall_opcode);
 
     if(SYSCALLS[syscall_opcode].function == NULL) {
+        payload_destroy(syscall_instruction);
         log_error(MODULE_LOGGER, "Funcion de syscall no encontrada");
         SYSCALL_PCB->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
         return 1;
     }
 
-    return SYSCALLS[syscall_opcode].function(syscall_instruction);
+    int exit_status = SYSCALLS[syscall_opcode].function(syscall_instruction);
+    payload_destroy(syscall_instruction);
+    return exit_status;
 }
 
 int wait_kernel_syscall(t_Payload *syscall_arguments) {
@@ -136,23 +137,19 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
         return 1;
     }
 
-    wait_draining_requests(&SCHEDULING_SYNC);
+    cpu_opcode_serialize(&(SYSCALL_PCB->io_operation), interface->io_type);
+    payload_append(&(SYSCALL_PCB->io_operation), syscall_arguments->stream, (size_t) syscall_arguments->size);
 
-        switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
+    switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
 
-        wait_draining_requests(&INTERFACES_SYNC);
-            pthread_mutex_lock(&(interface->shared_list_blocked.mutex));
-                list_add(interface->shared_list_blocked.list, SYSCALL_PCB);
-                log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, interface->name);
-            pthread_mutex_unlock(&(interface->shared_list_blocked.mutex));
-        signal_draining_requests(&INTERFACES_SYNC);
-
-    signal_draining_requests(&SCHEDULING_SYNC);
+    wait_draining_requests(&INTERFACES_SYNC);
+        pthread_mutex_lock(&(interface->shared_list_blocked.mutex));
+            list_add(interface->shared_list_blocked.list, SYSCALL_PCB);
+            log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, interface->name);
+        pthread_mutex_unlock(&(interface->shared_list_blocked.mutex));
+    signal_draining_requests(&INTERFACES_SYNC);
 
     // TODO
-
-    SYSCALL_PCB->instruction = payload_create();
-    payload_append(SYSCALL_PCB->instruction, &interface->io_type, sizeof(interface->io_type));
 
     return 0;
 }

@@ -13,13 +13,13 @@ typedef uint32_t t_PayloadSize;
 typedef int8_t t_EnumValue;
 
 typedef struct t_Payload {
-    t_PayloadSize size; // Tamaño del payload
-    void *stream; // Payload
+    t_PayloadSize size;
+    void *stream;
 } t_Payload;
 
 extern t_log *SERIALIZE_LOGGER;
 
-t_Payload *payload_create(void);
+void payload_init(t_Payload *payload);
 void payload_destroy(t_Payload *payload);
 
 

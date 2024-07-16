@@ -4,30 +4,27 @@
 #include "payload.h"
 
 // Crea un payload vacío de tamaño size y offset 0
-t_Payload *payload_create(void) {
-
-  t_Payload *payload = malloc(sizeof(t_Payload));
-  if(payload == NULL) {
-    log_error(SERIALIZE_LOGGER, "No se pudo crear el payload con malloc");
-    exit(EXIT_FAILURE);
-  }
+void payload_init(t_Payload *payload) {
+  if(payload == NULL)
+    return;
   
   payload->size = 0;
   payload->stream = NULL;
-  return payload;
 }
 
 void payload_destroy(t_Payload *payload) {
   if(payload == NULL)
     return;
+  
   free(payload->stream);
-  free(payload);
+
+  payload->size = 0;
+  payload->stream = NULL;
 }
 
 void payload_append(t_Payload *payload, void *source, size_t sourceSize) {
-  if (payload == NULL || source == NULL || sourceSize == 0) {
+  if (payload == NULL || source == NULL || sourceSize == 0)
     return;
-  }
 
   void *newStream = realloc(payload->stream, ((size_t) payload->size) + sourceSize);
   if(newStream == NULL) {

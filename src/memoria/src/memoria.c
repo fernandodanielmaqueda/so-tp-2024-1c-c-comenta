@@ -86,12 +86,12 @@ void listen_kernel(int fd_kernel) {
         switch(package->header) {
             case PROCESS_CREATE_HEADER:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
-                create_process(package->payload);
+                create_process(&(package->payload));
                 break;
                 
             case PROCESS_DESTROY_HEADER:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso finalizado recibido.");
-                kill_process(package->payload);
+                kill_process(&(package->payload));
                 break;
 
             case DISCONNECTING_HEADER:
@@ -163,7 +163,7 @@ void create_process(t_Payload *process_data) {
     free(target_path);
 }
 
-void kill_process(t_Payload *payload){
+void kill_process(t_Payload *payload) {
 
     t_PID pid;
     payload_shift(payload, &pid, sizeof(pid));
@@ -236,13 +236,13 @@ void listen_cpu(int fd_cpu) {
         switch (package->header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
-                seek_instruccion(package->payload);
+                seek_instruccion(&(package->payload));
                 package_destroy(package);
                 break;
                 
             case FRAME_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de frame recibido.");
-                respond_frame_request(package->payload);
+                respond_frame_request(&(package->payload));
                 package_destroy(package);
                 break;
 
@@ -257,7 +257,7 @@ void listen_cpu(int fd_cpu) {
                 package_destroy(package);
 
                 package = package_create_with_header(PAGE_SIZE_REQUEST);
-                payload_append(package->payload, &TAM_PAGINA, sizeof(TAM_PAGINA));
+                payload_append(&(package->payload), &TAM_PAGINA, sizeof(TAM_PAGINA));
                 package_send(package, CLIENT_CPU->fd_client);
                 package_destroy(package);
 
@@ -265,19 +265,19 @@ void listen_cpu(int fd_cpu) {
 
             case RESIZE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de tamaño de pagina recibido.");
-                resize_process(package->payload);
+                resize_process(&(package->payload));
                 package_destroy(package);
                 break;
                 
             case READ_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                read_memory(package->payload, CLIENT_CPU->fd_client);
+                read_memory(&(package->payload), CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
                 
             case WRITE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                write_memory(package->payload, CLIENT_CPU->fd_client);
+                write_memory(&(package->payload), CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
             
@@ -301,12 +301,12 @@ void listen_io(int fd_io) {
                 return;
             case IO_STDIN_WRITE_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
-                write_memory(package->payload, fd_io);
+                write_memory(&(package->payload), fd_io);
                 break;
             
             case IO_STDOUT_READ_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
-                read_memory(package->payload, fd_io);
+                read_memory(&(package->payload), fd_io);
                 break;
             
             default:
@@ -334,7 +334,7 @@ t_Process* seek_process_by_pid(t_PID pid) {
     return procesoBuscado;
 }
 
-void seek_instruccion(t_Payload* payload) {
+void seek_instruccion(t_Payload *payload) {
     t_PID PID;
     t_PC PC;
 
@@ -380,7 +380,7 @@ void free_frames(){
 
 }
 
-void respond_frame_request(t_Payload* payload){
+void respond_frame_request(t_Payload *payload){
 //Recibir parametros
     t_Page_Number page_number;
     t_PID pidProceso;
@@ -398,8 +398,8 @@ void respond_frame_request(t_Payload* payload){
     usleep(RETARDO_RESPUESTA * 1000);
     
     t_Package* package = package_create_with_header(FRAME_REQUEST);
-    payload_append(package->payload, &pidProceso, sizeof(pidProceso));
-    payload_append(package->payload, &marcoEncontrado, sizeof(marcoEncontrado));
+    payload_append(&(package->payload), &pidProceso, sizeof(pidProceso));
+    payload_append(&(package->payload), &marcoEncontrado, sizeof(marcoEncontrado));
     package_send(package, CLIENT_CPU->fd_client);
     
 }
@@ -419,7 +419,7 @@ t_Frame_Number seek_frame_number_by_page_number(t_list* tablaPaginas, t_Page_Num
     return frame_number;
 }
 
-void read_memory(t_Payload* payload, int socket) {
+void read_memory(t_Payload *payload, int socket) {
     t_PID pid;
     t_list *list_physical_addresses = list_create();
     t_MemorySize bytes;
@@ -438,7 +438,7 @@ void read_memory(t_Payload* payload, int socket) {
     t_Package* package = package_create_with_header(READ_REQUEST);
 
     if(list_size(list_physical_addresses) == 1) { //En caso de que sea igual a una página
-        payload_append(package->payload, posicion, bytes);
+        payload_append(&(package->payload), posicion, bytes);
          //Actualizar pagina/TDP
         update_page(current_frame);
     }
@@ -455,18 +455,18 @@ void read_memory(t_Payload* payload, int socket) {
 
             if (i == 1)//Primera pagina
             {
-                payload_append(package->payload, posicion, bytes_inicial);
+                payload_append(&(package->payload), posicion, bytes_inicial);
                 update_page(current_frame);
                 bytes_restantes -= bytes_inicial;
             }
             if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
             {
-                payload_append(package->payload, posicion, bytes_restantes);
+                payload_append(&(package->payload), posicion, bytes_restantes);
                 update_page(current_frame);
             }
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
-                payload_append(package->payload, posicion, TAM_PAGINA);
+                payload_append(&(package->payload), posicion, TAM_PAGINA);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
             }
@@ -478,7 +478,7 @@ void read_memory(t_Payload* payload, int socket) {
     package_destroy(package);
 }
 
-void write_memory(t_Payload* payload, int socket){
+void write_memory(t_Payload *payload, int socket){
     t_PID pid;
     t_list *list_physical_addresses = list_create();
     t_MemorySize bytes;
@@ -561,7 +561,7 @@ int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid){
 }
 
 
-void resize_process(t_Payload* payload){
+void resize_process(t_Payload *payload){
     t_PID pid;
     t_MemorySize new_size;
 

@@ -56,7 +56,7 @@ extern e_Kernel_Interrupt KERNEL_INTERRUPT;
 extern pthread_mutex_t MUTEX_KERNEL_INTERRUPT;
 
 extern int SYSCALL_CALLED;
-extern t_Payload *SYSCALL_INSTRUCTION;
+extern t_Payload SYSCALL_INSTRUCTION;
 
 extern int TLB_ENTRY_COUNT;
 

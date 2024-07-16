@@ -68,7 +68,7 @@ void *kernel_client_handler_for_io(void *new_client_parameter) {
 
                     pcb = (t_PCB *) list_remove_by_condition_with_comparation(interface.shared_list_blocked.list, (bool (*)(void *, void *)) pcb_matches_pid, &(pid));
                     if(pcb != NULL) {
-                        payload_destroy(pcb->instruction);
+                        payload_destroy(&(pcb->io_operation));
                         if(return_value) {
                             pcb->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
                             switch_process_state(pcb, EXIT_STATE);
@@ -114,7 +114,7 @@ void interface_exit(t_Interface *interface) {
     pthread_mutex_lock(&(interface->shared_list_blocked.mutex));
         while((interface->shared_list_blocked.list)->elements_count > 0) {
             pcb = (t_PCB *) list_remove(interface->shared_list_blocked.list, 0);
-            payload_destroy(pcb->instruction);
+            payload_destroy(&(pcb->io_operation));
             pcb->exit_reason = INVALID_INTERFACE_EXIT_REASON;
             switch_process_state(pcb, EXIT_STATE);
         }
@@ -154,6 +154,6 @@ void io_operation_dispatcher(t_PCB *pcb, t_Interface interface) {
 
         pthread_mutex_unlock(&(interface.shared_list_blocked.mutex));
 
-        send_io_operation_dispatch(pcb->exec_context.PID, *(pcb->instruction), interface.client->fd_client);
+        send_io_operation_dispatch(pcb->exec_context.PID, pcb->io_operation, interface.client->fd_client);
     signal_draining_requests(&SCHEDULING_SYNC);
 }
