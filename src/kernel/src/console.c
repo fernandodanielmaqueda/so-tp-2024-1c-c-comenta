@@ -267,6 +267,7 @@ int kernel_command_kill_process(int argc, char* argv[]) {
 
             case BLOCKED_STATE:
                 pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+                // TODO: Sacar de la lista de bloqueados que corresponda
                 switch_process_state(pcb, EXIT_STATE);
                 break;
 

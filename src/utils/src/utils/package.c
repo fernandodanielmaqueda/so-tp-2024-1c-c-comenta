@@ -78,7 +78,7 @@ int package_send(t_Package *package, int fd_socket) {
   t_EnumValue aux;
 
   aux = (t_EnumValue) package->header;
-  offset = memcpy_serialize(buffer, offset, &(aux), sizeof(t_EnumValue));
+  offset = memcpy_serialize(buffer, offset, &(aux), sizeof(aux));
   offset = memcpy_serialize(buffer, offset, &(package->payload->size), sizeof(package->payload->size));
   offset = memcpy_serialize(buffer, offset, package->payload->stream, (size_t) package->payload->size);
 
@@ -118,7 +118,7 @@ int package_receive_header(t_Package *package, int fd_socket) {
 
   t_EnumValue aux;
 
-  if(receive(fd_socket, (void *) &(aux), sizeof(t_EnumValue)))
+  if(receive(fd_socket, (void *) &(aux), sizeof(aux)))
     return 1;
 
   package->header = (e_Header) aux;

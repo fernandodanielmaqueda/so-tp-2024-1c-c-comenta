@@ -11,11 +11,11 @@ void text_serialize(t_Payload *payload, char *source) {
 
   if(source == NULL) {
     textSize = 0;
-    payload_enqueue(payload, (void *) &(textSize), sizeof(t_StringLength));
+    payload_append(payload, (void *) &(textSize), sizeof(t_StringLength));
   } else {
     textSize = (t_StringLength) strlen(source) + 1;
-    payload_enqueue(payload, (void *) &(textSize), sizeof(t_StringLength));
-    payload_enqueue(payload, (void *) source, textSize);
+    payload_append(payload, (void *) &(textSize), sizeof(t_StringLength));
+    payload_append(payload, (void *) source, textSize);
   }
 
   text_log(source);
@@ -26,7 +26,7 @@ void text_deserialize(t_Payload *payload, char **destination) {
     return;
 
   t_StringLength textSize;
-  payload_dequeue(payload, (void *) &(textSize), sizeof(t_StringLength));
+  payload_shift(payload, (void *) &(textSize), sizeof(t_StringLength));
 
   if(!textSize) {
     *destination = NULL;
@@ -37,7 +37,7 @@ void text_deserialize(t_Payload *payload, char **destination) {
       exit(EXIT_FAILURE);
     }
     
-    payload_dequeue(payload, (void *) *destination, (size_t) textSize);
+    payload_shift(payload, (void *) *destination, (size_t) textSize);
   }
 
   text_log(*destination);

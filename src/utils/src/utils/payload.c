@@ -24,7 +24,7 @@ void payload_destroy(t_Payload *payload) {
   free(payload);
 }
 
-void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize) {
+void payload_append(t_Payload *payload, void *source, size_t sourceSize) {
   // Check for invalid input
   if (payload == NULL || source == NULL || sourceSize == 0) {
     return;
@@ -38,25 +38,41 @@ void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize) {
 
   payload->stream = newStream;
 
-  memcpy((void*)(((uint8_t *) payload->stream) + payload->size), source, sourceSize);
+  memcpy((void *) (((uint8_t *) payload->stream) + payload->size), source, sourceSize);
   payload->size += (t_PayloadSize) sourceSize;
 }
 
-void payload_dequeue(t_Payload *payload, void *destination, size_t destinationSize) {
-  // Check for invalid input or not enough data in the payload
+void payload_prepend(t_Payload *payload, void *source, size_t sourceSize) {
+  if (payload == NULL || source == NULL || sourceSize == 0) {
+    return;
+  }
+
+  void *newStream = realloc(payload->stream, ((size_t) payload->size) + sourceSize);
+  if(newStream == NULL) {
+    log_error(SERIALIZE_LOGGER, "realloc: No se pudo agregar el stream al payload");
+    exit(EXIT_FAILURE);
+  }
+
+  payload->stream = newStream;
+
+  memmove((void *) (((uint8_t *) payload->stream) + sourceSize), payload->stream, payload->size);
+  memcpy(payload->stream, source, sourceSize);
+  payload->size += (t_PayloadSize) sourceSize;
+}
+
+void payload_shift(t_Payload *payload, void *destination, size_t destinationSize) {
   if (payload == NULL || payload->stream == NULL || destinationSize == 0 || ((size_t) payload->size) < destinationSize) {
     return;
   }
 
-  // Copy the requested data from the payload's stream
   if(destination != NULL)
     memcpy(destination, payload->stream, destinationSize);
 
-  // Calculate the new size of the payload after removing the data
   size_t newSize = ((size_t) (payload->size)) - destinationSize;
 
   if(newSize > 0) {
-    memmove(payload->stream, (void*)(((uint8_t*) payload->stream) + destinationSize), newSize);
+
+    memmove(payload->stream, (void *) (((uint8_t *) payload->stream) + destinationSize), newSize);
 
     void *newStream = realloc(payload->stream, newSize);
     if(newStream == NULL) {
@@ -66,7 +82,36 @@ void payload_dequeue(t_Payload *payload, void *destination, size_t destinationSi
 
     payload->stream = newStream;
     payload->size = (t_PayloadSize) newSize;
-  } else {
+  }
+  else {
+    free(payload->stream);
+    payload->stream = NULL;
+    payload->size = 0;
+  }
+}
+
+void payload_truncate(t_Payload *payload, void *destination, size_t destinationSize) {
+  if (payload == NULL || payload->stream == NULL || destinationSize == 0 || ((size_t) payload->size) < destinationSize) {
+    return;
+  }
+
+  size_t newSize = ((size_t) (payload->size)) - destinationSize;
+
+  if(destination != NULL)
+    memcpy(destination, (void *) (((uint8_t *) payload->stream) + newSize), destinationSize);
+
+  if(newSize > 0) {
+
+    void *newStream = realloc(payload->stream, newSize);
+    if(newStream == NULL) {
+      log_error(SERIALIZE_LOGGER, "No se pudo quitar el stream al payload con realloc");
+      exit(EXIT_FAILURE);
+    }
+
+    payload->stream = newStream;
+    payload->size = (t_PayloadSize) newSize;
+  }
+  else {
     free(payload->stream);
     payload->stream = NULL;
     payload->size = 0;
@@ -74,13 +119,13 @@ void payload_dequeue(t_Payload *payload, void *destination, size_t destinationSi
 }
 
 size_t memcpy_serialize(void *destination, size_t offset_destination, void *source, size_t bytes) {
-  memcpy((void*)(((uint8_t*) destination) + offset_destination), source, bytes);
+  memcpy((void *) (((uint8_t *) destination) + offset_destination), source, bytes);
   offset_destination += bytes;
   return offset_destination;
 }
 
 size_t memcpy_deserialize(void *destination, void *source, size_t offset_source, size_t bytes) {
-  memcpy(destination, (void*)(((uint8_t*) source) + offset_source), bytes);
+  memcpy(destination, (void *) (((uint8_t *) source) + offset_source), bytes);
   offset_source += bytes;
   return offset_source;
 }

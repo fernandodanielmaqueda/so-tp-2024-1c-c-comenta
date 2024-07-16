@@ -7,7 +7,7 @@ void return_value_serialize(t_Payload *payload, t_Return_Value return_value) {
   if(payload == NULL)
     return;
 
-  payload_enqueue(payload, &return_value, sizeof(t_Return_Value));
+  payload_append(payload, &return_value, sizeof(t_Return_Value));
 
   return_value_log(return_value);
 }
@@ -16,7 +16,7 @@ void return_value_deserialize(t_Payload *payload, t_Return_Value *return_value) 
   if(payload == NULL || return_value == NULL)
     return;
 
-  payload_dequeue(payload, return_value, sizeof(t_Return_Value));
+  payload_shift(payload, return_value, sizeof(t_Return_Value));
 
   return_value_log(*return_value);
 }

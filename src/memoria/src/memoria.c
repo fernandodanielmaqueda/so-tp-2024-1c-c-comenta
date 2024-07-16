@@ -115,7 +115,7 @@ void create_process(t_Payload *process_data) {
     t_list *pages_table = list_create();
 
     text_deserialize(process_data, &(argument_path));
-    payload_dequeue(process_data, &(new_process->PID), sizeof(t_PID));
+    payload_shift(process_data, &(new_process->PID), sizeof(t_PID));
 
     if(argument_path[0] == '/') {
         // Ruta absoluta
@@ -166,7 +166,7 @@ void create_process(t_Payload *process_data) {
 void kill_process(t_Payload *payload){
 
     t_PID pid;
-    payload_dequeue(payload, &pid, sizeof(t_PID));
+    payload_shift(payload, &pid, sizeof(t_PID));
 
     t_Process *process = seek_process_by_pid(pid);
     t_Page *paginaBuscada;
@@ -257,7 +257,7 @@ void listen_cpu(int fd_cpu) {
                 package_destroy(package);
 
                 package = package_create_with_header(PAGE_SIZE_REQUEST);
-                payload_enqueue(package->payload, &TAM_PAGINA, sizeof(TAM_PAGINA));
+                payload_append(package->payload, &TAM_PAGINA, sizeof(TAM_PAGINA));
                 package_send(package, CLIENT_CPU->fd_client);
                 package_destroy(package);
 
@@ -338,8 +338,8 @@ void seek_instruccion(t_Payload* payload) {
     t_PID PID;
     t_PC PC;
 
-    payload_dequeue(payload, &PID, sizeof(PID));
-    payload_dequeue(payload, &PC, sizeof(PC));
+    payload_shift(payload, &PID, sizeof(PID));
+    payload_shift(payload, &PC, sizeof(PC));
     
     t_Process *procesoBuscado = seek_process_by_pid(PID);
 
@@ -385,8 +385,8 @@ void respond_frame_request(t_Payload* payload){
     t_Page_Number page_number;
     t_PID pidProceso;
 
-    payload_dequeue(payload, &page_number, sizeof(t_Page_Number) );
-    payload_dequeue(payload, &pidProceso, sizeof(t_PID) );
+    payload_shift(payload, &page_number, sizeof(t_Page_Number) );
+    payload_shift(payload, &pidProceso, sizeof(t_PID) );
 
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
@@ -398,8 +398,8 @@ void respond_frame_request(t_Payload* payload){
     usleep(RETARDO_RESPUESTA * 1000);
     
     t_Package* package = package_create_with_header(FRAME_REQUEST);
-    payload_enqueue(package->payload, &pidProceso, sizeof(t_PID));
-    payload_enqueue(package->payload, &marcoEncontrado, sizeof(t_Frame_Number));
+    payload_append(package->payload, &pidProceso, sizeof(t_PID));
+    payload_append(package->payload, &marcoEncontrado, sizeof(t_Frame_Number));
     package_send(package, CLIENT_CPU->fd_client);
     
 }
@@ -424,9 +424,9 @@ void read_memory(t_Payload* payload, int socket) {
     t_list *list_physical_addresses = list_create();
     t_MemorySize bytes;
 
-    payload_dequeue(payload, &pid, sizeof(t_PID));
+    payload_shift(payload, &pid, sizeof(t_PID));
     list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
-    payload_dequeue(payload, &bytes, sizeof(t_MemorySize));
+    payload_shift(payload, &bytes, sizeof(t_MemorySize));
 
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
@@ -438,7 +438,7 @@ void read_memory(t_Payload* payload, int socket) {
     t_Package* package = package_create_with_header(READ_REQUEST);
 
     if(list_size(list_physical_addresses) == 1) { //En caso de que sea igual a una página
-        payload_enqueue(package->payload, posicion, bytes);
+        payload_append(package->payload, posicion, bytes);
          //Actualizar pagina/TDP
         update_page(current_frame);
     }
@@ -455,18 +455,18 @@ void read_memory(t_Payload* payload, int socket) {
 
             if (i == 1)//Primera pagina
             {
-                payload_enqueue(package->payload, posicion, bytes_inicial);
+                payload_append(package->payload, posicion, bytes_inicial);
                 update_page(current_frame);
                 bytes_restantes -= bytes_inicial;
             }
             if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
             {
-                payload_enqueue(package->payload, posicion, bytes_restantes);
+                payload_append(package->payload, posicion, bytes_restantes);
                 update_page(current_frame);
             }
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
-                payload_enqueue(package->payload, posicion, TAM_PAGINA);
+                payload_append(package->payload, posicion, TAM_PAGINA);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
             }
@@ -483,9 +483,9 @@ void write_memory(t_Payload* payload, int socket){
     t_list *list_physical_addresses = list_create();
     t_MemorySize bytes;
     
-    payload_dequeue(payload, &pid, sizeof(t_PID));
+    payload_shift(payload, &pid, sizeof(t_PID));
     list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
-    payload_dequeue(payload, &bytes, sizeof(t_MemorySize));
+    payload_shift(payload, &bytes, sizeof(t_MemorySize));
 
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
@@ -496,7 +496,7 @@ void write_memory(t_Payload* payload, int socket){
 
 //COMIENZA LA ESCRITURA
     if(list_size(list_physical_addresses) == 1) {//En caso de que sea igual a 1 página
-        payload_dequeue(payload, posicion, (size_t) bytes);
+        payload_shift(payload, posicion, (size_t) bytes);
          //Actualizar pagina/TDP
         update_page(current_frame);
     }
@@ -513,19 +513,19 @@ void write_memory(t_Payload* payload, int socket){
 
             if (i == 1)//Primera pagina
             {
-                payload_dequeue(payload, posicion, (size_t) bytes_inicial);
+                payload_shift(payload, posicion, (size_t) bytes_inicial);
                 update_page(current_frame);
                 bytes_restantes -= bytes_inicial;
             }
             if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
             {
-                payload_dequeue(payload, posicion, (size_t) bytes_restantes);
+                payload_shift(payload, posicion, (size_t) bytes_restantes);
                 update_page(current_frame);
                 bytes_restantes -= bytes_inicial;
             }
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
-                payload_dequeue(payload, posicion, (size_t) TAM_PAGINA);
+                payload_shift(payload, posicion, (size_t) TAM_PAGINA);
                 update_page(current_frame);
                 bytes_restantes -= TAM_PAGINA;
             }
@@ -565,8 +565,8 @@ void resize_process(t_Payload* payload){
     t_PID pid;
     t_MemorySize new_size;
 
-    payload_dequeue(payload, &pid, sizeof(t_PID) );
-    payload_dequeue(payload, &new_size, sizeof(t_MemorySize) );
+    payload_shift(payload, &pid, sizeof(t_PID) );
+    payload_shift(payload, &new_size, sizeof(t_MemorySize) );
 
     t_Process* procesoBuscado = seek_process_by_pid(pid);
 

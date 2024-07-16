@@ -20,7 +20,7 @@ void port_type_serialize(t_Payload *payload, e_Port_Type source) {
   t_EnumValue aux;
   
     aux = (t_EnumValue) source;
-  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
+  payload_append(payload, &aux, sizeof(aux));
 
   port_type_log(source);
 }
@@ -31,7 +31,7 @@ void port_type_deserialize(t_Payload *payload, e_Port_Type *destination) {
 
   t_EnumValue aux;
   
-  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+  payload_shift(payload, &aux, sizeof(aux));
     *destination = (e_Port_Type) aux;
 
   port_type_log(*destination);

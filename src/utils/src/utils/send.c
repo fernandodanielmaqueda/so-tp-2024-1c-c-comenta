@@ -101,7 +101,7 @@ int receive_return_value_with_expected_header(e_Header expected_header, t_Return
 int send_process_create(char *instructions_path, t_PID pid, int fd_socket) {
     t_Package *package = package_create_with_header(PROCESS_CREATE_HEADER);
     text_serialize(package->payload, instructions_path);
-    payload_enqueue(package->payload, &pid, sizeof(pid));
+    payload_append(package->payload, &pid, sizeof(pid));
     if(package_send(package, fd_socket))
       return 1;
     package_destroy(package);
@@ -110,7 +110,7 @@ int send_process_create(char *instructions_path, t_PID pid, int fd_socket) {
 
 int send_process_destroy(t_PID pid, int fd_socket) {
   t_Package *package = package_create_with_header(PROCESS_DESTROY_HEADER);
-  payload_enqueue(package->payload, &pid, sizeof(pid));
+  payload_append(package->payload, &pid, sizeof(pid));
   if(package_send(package, fd_socket))
     return 1;
   package_destroy(package);
@@ -172,7 +172,7 @@ int receive_process_eviction(t_Exec_Context *exec_context, e_Eviction_Reason *ev
 int send_kernel_interrupt(e_Kernel_Interrupt type, t_PID pid, int fd_socket) {
 	t_Package *package = package_create_with_header(KERNEL_INTERRUPT_HEADER);
 	kernel_interrupt_serialize(package->payload, type);
-	payload_enqueue(package->payload, &pid, sizeof(pid));
+	payload_append(package->payload, &pid, sizeof(pid));
   if(package_send(package, fd_socket))
     return 1;
 	package_destroy(package);
@@ -185,7 +185,7 @@ int receive_kernel_interrupt(e_Kernel_Interrupt *kernel_interrupt, t_PID *pid, i
     return 1;
   if(package->header == KERNEL_INTERRUPT_HEADER) {
     kernel_interrupt_deserialize(package->payload, kernel_interrupt);
-    payload_dequeue(package->payload, pid, sizeof(*pid));
+    payload_shift(package->payload, pid, sizeof(*pid));
   } else {
     log_error(SERIALIZE_LOGGER, "Header invalido");
     return 1;
@@ -224,7 +224,7 @@ int receive_interface_data(char **interface_name, e_IO_Type *io_type, int fd_soc
 
 int send_io_operation_dispatch(t_PID pid, t_Payload io_operation, int fd_socket) {
   t_Package *package = package_create_with_header(IO_OPERATION_DISPATCH_HEADER);
-  payload_enqueue(package->payload, &pid, sizeof(pid));
+  payload_append(package->payload, &pid, sizeof(pid));
   subpayload_serialize(package->payload, io_operation);
   if(package_send(package, fd_socket))
     return 1;
@@ -237,7 +237,7 @@ int receive_io_operation_dispatch(t_PID *pid, t_Payload *io_operation, int fd_so
   if(package_receive(&package, fd_socket))
     return 1;
   if(package->header == IO_OPERATION_DISPATCH_HEADER) {
-    payload_dequeue(package->payload, pid, sizeof(*pid));
+    payload_shift(package->payload, pid, sizeof(*pid));
     subpayload_deserialize(package->payload, io_operation);
   }
   else {
@@ -250,7 +250,7 @@ int receive_io_operation_dispatch(t_PID *pid, t_Payload *io_operation, int fd_so
 
 int send_io_operation_finished(t_PID pid, t_Return_Value return_value, int fd_socket) {
   t_Package *package = package_create_with_header(IO_OPERATION_FINISHED_HEADER);
-  payload_enqueue(package->payload, &pid, sizeof(pid));
+  payload_append(package->payload, &pid, sizeof(pid));
   return_value_serialize(package->payload, return_value);
   if(package_send(package, fd_socket))
     return 1;
@@ -263,7 +263,7 @@ int receive_io_operation_finished(t_PID *pid, t_Return_Value *return_value, int 
   if(package_receive(&package, fd_socket))
     return 1;
   if(package->header == IO_OPERATION_FINISHED_HEADER) {
-    payload_dequeue(package->payload, pid, sizeof(*pid));
+    payload_shift(package->payload, pid, sizeof(*pid));
     return_value_deserialize(package->payload, return_value);
   }
   else {
@@ -278,8 +278,8 @@ int receive_io_operation_finished(t_PID *pid, t_Return_Value *return_value, int 
 
 int send_instruction_request(t_PID pid, t_PC pc, int fd_socket) {
   t_Package *package = package_create_with_header(INSTRUCTION_REQUEST);
-  payload_enqueue(package->payload, &pid, sizeof(pid));
-  payload_enqueue(package->payload, &pc, sizeof(pc));
+  payload_append(package->payload, &pid, sizeof(pid));
+  payload_append(package->payload, &pc, sizeof(pc));
   if(package_send(package, fd_socket))
     return 1;
   package_destroy(package);

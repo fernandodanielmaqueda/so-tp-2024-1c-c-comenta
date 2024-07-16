@@ -10,7 +10,7 @@ void cpu_opcode_serialize(t_Payload *payload, e_CPU_OpCode source) {
   t_EnumValue aux;
   
     aux = (t_EnumValue) source;
-  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
+  payload_append(payload, &aux, sizeof(aux));
 
   cpu_opcode_log(source);
 }
@@ -21,7 +21,7 @@ void cpu_opcode_deserialize(t_Payload *payload, e_CPU_OpCode *destination) {
 
   t_EnumValue aux;
   
-  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+  payload_shift(payload, &aux, sizeof(aux));
     *destination = (e_CPU_OpCode) aux;
 
   cpu_opcode_log(*destination);

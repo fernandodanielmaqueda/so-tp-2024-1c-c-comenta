@@ -304,8 +304,8 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
             t_Package *package;
             package_receive(&package, CONNECTION_MEMORY.fd_connection);
             t_PID pidBuscado;
-            payload_dequeue(package->payload, &pidBuscado, sizeof(t_PID) );
-            payload_dequeue(package->payload, &frame_number, sizeof(t_Frame_Number) );
+            payload_shift(package->payload, &pidBuscado, sizeof(t_PID) );
+            payload_shift(package->payload, &frame_number, sizeof(t_Frame_Number) );
             package_destroy(package);
             
             log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, page_number, frame_number);
@@ -450,8 +450,8 @@ void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
 
 void request_frame_memory(t_PID pid, t_Page_Number page) {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
-    payload_enqueue(package->payload, &page, sizeof(t_Page_Number));
-    payload_enqueue(package->payload, &pid, sizeof(t_PID));
+    payload_append(package->payload, &page, sizeof(t_Page_Number));
+    payload_append(package->payload, &pid, sizeof(t_PID));
     package_send(package, CONNECTION_MEMORY.fd_connection);
 }
 
@@ -465,7 +465,7 @@ void ask_memory_page_size(void) {
 
     t_Package* package;
     package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    payload_dequeue(package->payload, &PAGE_SIZE, sizeof(t_MemorySize) );
+    payload_shift(package->payload, &PAGE_SIZE, sizeof(t_MemorySize) );
     package_destroy(package);
 }
 
@@ -474,10 +474,10 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size
     t_Package* package;
 
     package = package_create_with_header(WRITE_REQUEST);
-    payload_enqueue(package->payload, &(pid), sizeof(t_PID));
+    payload_append(package->payload, &(pid), sizeof(t_PID));
     list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);
-    payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
-    payload_enqueue(package->payload, source, (size_t) bytes);
+    payload_append(package->payload, &bytes, sizeof(t_MemorySize));
+    payload_append(package->payload, source, (size_t) bytes);
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
@@ -490,8 +490,8 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
         return;
 
     t_Package* package = package_create_with_header(READ_REQUEST);
-    payload_enqueue(package->payload, &(pid), sizeof(t_PID) );
-    payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize) );
+    payload_append(package->payload, &(pid), sizeof(t_PID) );
+    payload_append(package->payload, &bytes, sizeof(t_MemorySize) );
     list_serialize(package->payload, *list_physical_addresses, physical_address_serialize_element);          
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
@@ -502,7 +502,7 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
         exit(EXIT_FAILURE);
     } else {
         log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
-        payload_dequeue(package->payload, &destination, bytes);
+        payload_shift(package->payload, &destination, bytes);
     }
     package_destroy(package);
 }

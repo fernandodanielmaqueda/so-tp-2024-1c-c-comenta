@@ -163,7 +163,7 @@ int io_operation_execute(t_Payload *operation) {
 
 	t_EnumValue aux;
 
-    payload_dequeue(operation, &aux, sizeof(t_EnumValue));
+    payload_shift(operation, &aux, sizeof(aux));
 		e_CPU_OpCode io_opcode = (e_CPU_OpCode) aux;
 
     if(IO_OPERATIONS[io_opcode].function == NULL) {
@@ -180,7 +180,7 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 		case GENERIC_IO_TYPE:
 		{
 			uint32_t work_units;
-			payload_dequeue(operation, &work_units, sizeof(uint32_t));
+			payload_shift(operation, &work_units, sizeof(uint32_t));
 
 			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
 
@@ -217,7 +217,7 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 			//send_write_request( pid,  registro_direccion,  text, CONNECTION_MEMORY.fd_connection, IO_STDIN_WRITE_MEMORY);
 			/*
 			package = package_create_with_header(STRING_HEADER);
-			payload_enqueue(package->payload, &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
+			payload_append(package->payload, &(registro_direccion), sizeof(registro_direccion)); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			text_serialize(package->payload, text); // YA SE MANDA EL TAMANIO JUNTO CON EL STRING
 			package_send(package, CONNECTION_MEMORY.fd_connection);
 			package_destroy(package);

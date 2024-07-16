@@ -10,7 +10,7 @@ void subheader_serialize(t_Payload *payload, e_Header source) {
   t_EnumValue aux;
   
     aux = (t_EnumValue) source;
-  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
+  payload_append(payload, &aux, sizeof(aux));
 
   subheader_log(source);
 }
@@ -21,7 +21,7 @@ void subheader_deserialize(t_Payload *payload, e_Header *destination) {
 
   t_EnumValue aux;
 
-  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+  payload_shift(payload, &aux, sizeof(aux));
     *destination = (e_Header) aux;
 
   subheader_log(*destination);

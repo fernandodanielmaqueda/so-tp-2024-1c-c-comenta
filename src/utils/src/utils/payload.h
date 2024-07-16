@@ -24,22 +24,39 @@ void payload_destroy(t_Payload *payload);
 
 
 /**
- * Enqueues data into the payload.
- * @param payload A pointer to the payload structure.
- * @param source A pointer to the source buffer.
- * @param sourceSize The size of the source buffer.
+ * Agrega datos al final del payload.
+ * @param payload Puntero al payload.
+ * @param source Puntero a los datos fuente.
+ * @param sourceSize Tamaño en bytes de los datos fuente.
  */
-void payload_enqueue(t_Payload *payload, void *source, size_t sourceSize);
+void payload_append(t_Payload *payload, void *source, size_t sourceSize);
 
 
 /**
- * Dequeues data from the payload.
- * @param payload A pointer to the payload structure.
- * @param destination A pointer to the destination buffer.
- * @param destinationSize The size of the destination buffer.
- * @return An integer status code (0 for success, non-zero for failure).
+ * Agrega datos al inicio del payload.
+ * @param payload Puntero al payload.
+ * @param source Puntero a los datos fuente.
+ * @param sourceSize El tamaño en bytes de los datos fuente.
  */
-void payload_dequeue(t_Payload *payload, void *destination, size_t destinationSize);
+void payload_prepend(t_Payload *payload, void *source, size_t sourceSize);
+
+
+/**
+ * Remueve datos del payload.
+ * @param payload Puntero al payload.
+ * @param destination Puntero al buffer de destino.
+ * @param destinationSize Tamaño en bytes del buffer de destino.
+ */
+void payload_shift(t_Payload *payload, void *destination, size_t destinationSize);
+
+
+/**
+ * Remueve datos del payload.
+ * @param payload Puntero al payload.
+ * @param destination Puntero al buffer de destino.
+ * @param destinationSize Tamaño en bytes del buffer de destino.
+ */
+void payload_truncate(t_Payload *payload, void *destination, size_t destinationSize);
 
 
 /**

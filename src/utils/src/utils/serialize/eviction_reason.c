@@ -21,7 +21,7 @@ void eviction_reason_serialize(t_Payload *payload, e_Eviction_Reason source) {
   t_EnumValue aux;
   
     aux = (t_EnumValue) source;
-  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
+  payload_append(payload, &aux, sizeof(aux));
 
   eviction_reason_log(source);
 }
@@ -32,7 +32,7 @@ void eviction_reason_deserialize(t_Payload *payload, e_Eviction_Reason *destinat
 
   t_EnumValue aux;
 
-  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+  payload_shift(payload, &aux, sizeof(aux));
     *destination = (e_Eviction_Reason) aux;
 
   eviction_reason_log(*destination);

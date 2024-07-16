@@ -7,36 +7,36 @@ void subpayload_serialize(t_Payload *payload, t_Payload source) {
   if(payload == NULL)
     return;
 
-  payload_enqueue(payload, (void *) &(source.size), sizeof(t_PayloadSize));
-  payload_enqueue(payload, (void *) source.stream, (size_t) source.size);
+  payload_append(payload, (void *) &(source.size), sizeof(source.size));
+  payload_append(payload, (void *) source.stream, (size_t) source.size);
 
   subpayload_log(source);
 }
 
-void subpayload_deserialize(t_Payload *payload, t_Payload *subpayload) {
-  if(payload == NULL || subpayload == NULL)
+void subpayload_deserialize(t_Payload *payload, t_Payload *destination) {
+  if(payload == NULL || destination == NULL)
     return;
 
-  payload_dequeue(payload, (void *) &(subpayload->size), sizeof(t_PayloadSize));
+  payload_shift(payload, (void *) &(destination->size), sizeof(destination->size));
 
-  subpayload->stream = malloc((size_t) subpayload->size);
-  if(subpayload->stream == NULL) {
+  destination->stream = malloc((size_t) destination->size);
+  if(destination->stream == NULL) {
     log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para el stream de destino");
     exit(EXIT_FAILURE);
   }
 
-  payload_dequeue(payload, (void *) subpayload->stream, (size_t) subpayload->size);
+  payload_shift(payload, (void *) destination->stream, (size_t) destination->size);
 
-  subpayload_log(*subpayload);
+  subpayload_log(*destination);
 }
 
-void subpayload_log(t_Payload subpayload) {
+void subpayload_log(t_Payload source) {
 
   log_info(SERIALIZE_LOGGER,
     "t_Payload:\n"
     "* size: %" PRIu32 "\n"
     "* stream: %p"
-    , subpayload.size
-    , subpayload.stream
+    , source.size
+    , source.stream
   );
 }

@@ -20,7 +20,7 @@ int syscall_execute(t_Payload *syscall_instruction) {
 
 	t_EnumValue aux;
 
-    payload_dequeue(syscall_instruction, &aux, sizeof(t_EnumValue));
+    payload_shift(syscall_instruction, &aux, sizeof(aux));
 	    e_CPU_OpCode syscall_opcode = (e_CPU_OpCode) aux;
 
     if(SYSCALLS[syscall_opcode].function == NULL) {
@@ -148,6 +148,11 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
         signal_draining_requests(&INTERFACES_SYNC);
 
     signal_draining_requests(&SCHEDULING_SYNC);
+
+    // TODO
+
+    SYSCALL_PCB->instruction = payload_create();
+    payload_append(SYSCALL_PCB->instruction, &interface->io_type, sizeof(interface->io_type));
 
     return 0;
 }

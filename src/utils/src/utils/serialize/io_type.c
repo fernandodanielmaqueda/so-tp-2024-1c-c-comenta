@@ -10,7 +10,7 @@ void io_type_serialize(t_Payload *payload, e_IO_Type source) {
   t_EnumValue aux;
   
     aux = (t_EnumValue) source;
-  payload_enqueue(payload, &aux, sizeof(t_EnumValue));
+  payload_append(payload, &aux, sizeof(aux));
 
   io_type_log(source);
 }
@@ -21,7 +21,7 @@ void io_type_deserialize(t_Payload *payload, e_IO_Type *destination) {
 
   t_EnumValue aux;
   
-  payload_dequeue(payload, &aux, sizeof(t_EnumValue));
+  payload_shift(payload, &aux, sizeof(aux));
     *destination = (e_IO_Type) aux;
 
   io_type_log(*destination);
