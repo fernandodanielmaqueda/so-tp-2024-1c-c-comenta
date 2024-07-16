@@ -18,11 +18,12 @@ t_Connection CONNECTION_KERNEL;
 t_Connection CONNECTION_MEMORY;
 
 char *PATH_BASE_DIALFS;
-int BLOCK_SIZE;
-int BLOCK_COUNT;
+size_t BLOCK_SIZE;
+size_t BLOCK_COUNT;
 int COMPRESSION_DELAY;
 
 t_list *LIST_FILES;
+t_bitarray *BITMAP;
 
 t_IO_Type IO_TYPES[] = {
     [GENERIC_IO_TYPE] = {.name = "GENERIC", .function = generic_interface_function },
@@ -277,16 +278,17 @@ void initialize_bitmap(size_t block_count) {
         return;
     }
 
-    t_bitarray *bitmap = bitarray_create((char *)bitmap_data, BITMAP_SIZE);
-    if (bitmap == NULL) {
+    BITMAP = bitarray_create((char *)bitmap_data, BITMAP_SIZE);
+    if (BITMAP == NULL) {
         log_error(MODULE_LOGGER, "Error al crear la estructura del bitmap");
         munmap(bitmap_data, BITMAP_SIZE);
         close(fd);
+
         return;
     }
 
     for (size_t i = 0; i < BITMAP_SIZE; ++i) {
-        bitmap->bitarray[i] = 0xFF;
+		strcpy(BITMAP[i].bitarray , "N");
     }
 
     if (msync(bitmap_data, BITMAP_SIZE, MS_SYNC) == -1) {
@@ -297,7 +299,7 @@ void initialize_bitmap(size_t block_count) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
     }
 
-    free(bitmap);
+    //free(bitmap);
     close(fd);
     log_info(MODULE_LOGGER, "Bitmap creado y mapeado correctamente.");
 }
@@ -416,32 +418,47 @@ int io_stdout_write_io_operation(t_Payload *operation) {
     return 0;
 }
 
+uint32_t seek_first_free_block(){
+	int magic = 0;
+
+	for (size_t i = 0; i < BLOCK_COUNT; i++)
+	{
+		if(strcmp(BITMAP[i].bitarray, "N")){
+			magic = i;
+			i = BLOCK_COUNT;
+		}
+	}
+
+	return magic;
+}
+
 int io_fs_create_io_operation(t_Payload *operation) {
 
 	char* file_name;
     text_deserialize(operation, &(file_name));
-	uint32_t location;
+	uint32_t location = seek_first_free_block();
 
 
 	/* PASOS
 	deserializar
 	buscar espacio inicial
 	asignar
-	crear nueva struct
 	agregar al listado
 	actualizar bitmap
 	*/
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
 	t_FS_File* new_entry;
-	new_entry->name = string_duplicate(file_name);
+	strcpy(new_entry->name , file_name);
 	new_entry->process_pid = PID;
 	new_entry->initial_bloq = location;
 	new_entry->len = 0;
 
+	//Checkiar si el FS es solo para este hilo o para todo el modulo
+	//Agregar un mutex
+	strcpy(BITMAP[location].bitarray , "Y");
 
 	//CONSULTAR ASIGNADO BITMAP -- BLOQUE DE DATOS QUE SIST DE LECTURA TIENE
-	
 
     return 0;
 }

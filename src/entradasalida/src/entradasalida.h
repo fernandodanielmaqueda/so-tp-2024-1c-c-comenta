@@ -52,8 +52,8 @@ extern t_Connection CONNECTION_KERNEL;
 extern t_Connection CONNECTION_MEMORY;
 
 extern char *PATH_BASE_DIALFS;
-extern int BLOCK_SIZE;
-extern int BLOCK_COUNT;
+extern size_t BLOCK_SIZE;
+extern size_t BLOCK_COUNT;
 extern int COMPRESSION_DELAY;
 
 extern t_IO_Type IO_TYPES[];
@@ -80,5 +80,7 @@ int io_fs_delete_io_operation(t_Payload *instruction);
 int io_fs_truncate_io_operation(t_Payload *instruction);
 int io_fs_write_io_operation(t_Payload *instruction);
 int io_fs_read_io_operation(t_Payload *instruction);
+uint32_t seek_first_free_block();
+void initialize_bitmap(size_t block_count);
 
 #endif /* ENTRADASALIDA_H */
