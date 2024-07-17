@@ -441,7 +441,6 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 			break;
 		}
 		default:
-
 			break;
 	}
 

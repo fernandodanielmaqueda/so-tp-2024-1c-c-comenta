@@ -29,7 +29,7 @@ void *kernel_client_handler_for_io(void *new_client_parameter) {
     wait_draining_requests(&SCHEDULING_SYNC);
         wait_ongoing_locking(&INTERFACES_SYNC);
 
-            if(list_add_unless_matches_with_any(LIST_INTERFACES, &interface, (bool (*)(void *, void *)) interface_names_match)){
+            if(list_add_unless_matches_with_any(LIST_INTERFACES, &interface, (bool (*)(void *, void *)) interface_names_match)) {
                 log_warning(MODULE_LOGGER, "Error al agregar [Interfaz] Entrada/Salida: Nombre de interfaz ya existente");
                 send_return_value_with_header(INTERFACE_DATA_REQUEST_HEADER, 1, new_client->fd_client);
                 interface_destroy(&interface);
@@ -72,11 +72,11 @@ void *kernel_client_handler_for_io(void *new_client_parameter) {
                         if(return_value) {
                             pcb->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
                             switch_process_state(pcb, EXIT_STATE);
-                        } else {
+                        }
+                        else {
                             switch_process_state(pcb, READY_STATE);
                         }
                     }
-
 
                     if((interface.shared_list_blocked.list)->head == NULL) {
                         sem_post(&(interface.sem_concurrency));
@@ -139,21 +139,5 @@ bool interface_names_match(t_Interface *interface_1, t_Interface *interface_2) {
 }
 
 void io_operation_dispatcher(t_PCB *pcb, t_Interface interface) {
-    sem_trywait(&(interface.sem_concurrency));
 
-    wait_draining_requests(&SCHEDULING_SYNC);
-        pthread_mutex_lock(&(interface.shared_list_blocked.mutex));
-
-            if((interface.shared_list_blocked.list)->head == NULL) {
-                pthread_mutex_unlock(&(interface.shared_list_blocked.mutex));
-                signal_draining_requests(&SCHEDULING_SYNC);
-                return;
-            }
-
-            //t_PCB *pcb = (t_PCB *) (interface.shared_list_blocked.list)->head->data;
-
-        pthread_mutex_unlock(&(interface.shared_list_blocked.mutex));
-
-        send_io_operation_dispatch(pcb->exec_context.PID, pcb->io_operation, interface.client->fd_client);
-    signal_draining_requests(&SCHEDULING_SYNC);
 }

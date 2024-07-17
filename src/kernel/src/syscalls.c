@@ -121,35 +121,55 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
 
     EXEC_PCB = 0;
 
-    t_Interface *interface = (t_Interface *) list_find_by_condition_with_comparation(LIST_INTERFACES, (bool (*)(void *, void *)) interface_name_matches, interface_name);
-    if(interface == NULL) {
-        log_warning(MODULE_LOGGER, "%s: la interfaz solicitada no existe y/o no esta conectada", interface_name);
-        free(interface_name);
-        SYSCALL_PCB->exit_reason = INVALID_INTERFACE_EXIT_REASON;
-        return 1;
-    }
-
-    free(interface_name);
-
-    if(interface->io_type != GENERIC_IO_TYPE) {
-        log_warning(MODULE_LOGGER, "%s: la interfaz no admite la operacion solicitada", interface->name);
-        SYSCALL_PCB->exit_reason = INVALID_INTERFACE_EXIT_REASON;
-        return 1;
-    }
-
-    cpu_opcode_serialize(&(SYSCALL_PCB->io_operation), interface->io_type);
-    payload_append(&(SYSCALL_PCB->io_operation), syscall_arguments->stream, (size_t) syscall_arguments->size);
-
-    switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
-
     wait_draining_requests(&INTERFACES_SYNC);
+
+        t_Interface *interface = (t_Interface *) list_find_by_condition_with_comparation(LIST_INTERFACES, (bool (*)(void *, void *)) interface_name_matches, interface_name);
+        if(interface == NULL) {
+            log_warning(MODULE_LOGGER, "%s: la interfaz solicitada no existe y/o no esta conectada", interface_name);
+            free(interface_name);
+            SYSCALL_PCB->exit_reason = INVALID_INTERFACE_EXIT_REASON;
+            return 1;
+        }
+
+        free(interface_name);
+
+        if(interface->io_type != GENERIC_IO_TYPE) {
+            log_warning(MODULE_LOGGER, "%s: la interfaz no admite la operacion solicitada", interface->name);
+            SYSCALL_PCB->exit_reason = INVALID_INTERFACE_EXIT_REASON;
+            return 1;
+        }
+
+        cpu_opcode_serialize(&(SYSCALL_PCB->io_operation), interface->io_type);
+        payload_append(&(SYSCALL_PCB->io_operation), syscall_arguments->stream, (size_t) syscall_arguments->size);
+
+        switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
+
         pthread_mutex_lock(&(interface->shared_list_blocked.mutex));
+
             list_add(interface->shared_list_blocked.list, SYSCALL_PCB);
             log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, interface->name);
-        pthread_mutex_unlock(&(interface->shared_list_blocked.mutex));
-    signal_draining_requests(&INTERFACES_SYNC);
 
-    // TODO
+            if(sem_trywait(&(interface.sem_concurrency))) {
+                if(errno != EAGAIN) {
+                    log_warning(CONSOLE_LOGGER, "sem_trywait: %s", strerror(errno));
+                    SYSCALL_PCB->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
+                    return 1;
+                }
+            }
+            else {
+
+                if((interface.shared_list_blocked.list)->head != NULL) {
+                    t_PCB *pcb = (t_PCB *) list_get(interface->shared_list_blocked.list, 0);
+                    if(send_io_operation_dispatch(pcb->exec_context.PID, pcb->io_operation, interface.client->fd_client)) {
+                        // 
+                    }
+                }
+
+            }
+
+        pthread_mutex_unlock(&(interface->shared_list_blocked.mutex));
+        
+    signal_draining_requests(&INTERFACES_SYNC);
 
     return 0;
 }
