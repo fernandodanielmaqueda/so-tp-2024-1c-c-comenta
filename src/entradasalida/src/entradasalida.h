@@ -82,5 +82,6 @@ int io_fs_write_io_operation(t_Payload *instruction);
 int io_fs_read_io_operation(t_Payload *instruction);
 uint32_t seek_first_free_block();
 void initialize_bitmap(size_t block_count);
+void initialize_blocks();
 
 #endif /* ENTRADASALIDA_H */

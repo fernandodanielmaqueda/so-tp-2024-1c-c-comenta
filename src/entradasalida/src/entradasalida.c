@@ -160,7 +160,7 @@ void generic_interface_function(void) {
 		t_Return_Value return_value = io_operation_execute(io_operation);
 		
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-		send_io_operation_finished(&PID, return_value, CONNECTION_KERNEL.fd_connection);
+		send_io_operation_finished(PID, return_value, CONNECTION_KERNEL.fd_connection);
 	}
 }
 
@@ -177,7 +177,7 @@ void stdin_interface_function(void) {
 		t_Return_Value return_value = io_operation_execute(io_operation);
 		
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-		send_io_operation_finished(&PID, return_value, CONNECTION_KERNEL.fd_connection);
+		send_io_operation_finished(PID, return_value, CONNECTION_KERNEL.fd_connection);
 	}
 }
 
@@ -194,7 +194,7 @@ void stdout_interface_function(void) {
 		t_Return_Value return_value = io_operation_execute(io_operation);
 		
 		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
-		send_io_operation_finished(&PID, return_value, CONNECTION_KERNEL.fd_connection);
+		send_io_operation_finished(PID, return_value, CONNECTION_KERNEL.fd_connection);
 	}
 }
 
@@ -315,7 +315,7 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 
 			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
 
-			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>, PID");
+			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>", PID);
 			sleep(WORK_UNIT_TIME * work_units);
 
 
@@ -337,8 +337,8 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 		case STDIN_IO_TYPE:
 		
 			//Inicializo Headers para memoria
-			e_Header IO_STDIN_WRITE_MEMORY;	
-			e_Header WRITE_REQUEST;
+			//e_Header IO_STDIN_WRITE_MEMORY;	
+			//e_Header WRITE_REQUEST;
 			//Creo paquete y argumentos necesarios para enviarle a memoria
 			t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 			
@@ -381,8 +381,8 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 
 
 			//Creo header para memoria y el paquete con los argumentos
-			e_Header IO_STDOUT_READ_MEMORY;
-			t_Package *package = package_create_with_header(IO_STDOUT_READ_MEMORY);
+			//e_Header IO_STDOUT_READ_MEMORY;
+			t_Package* package = package_create_with_header(IO_STDOUT_READ_MEMORY);
 			
 			t_list *physical_addresses = list_create();
 			t_MemorySize bytes;
