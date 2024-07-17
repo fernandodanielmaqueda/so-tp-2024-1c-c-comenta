@@ -288,7 +288,7 @@ void initialize_bitmap(size_t block_count) {
     }
 
     for (size_t i = 0; i < BITMAP_SIZE; ++i) {
-		strcpy(BITMAP[i].bitarray , "N");
+		bitarray_set_bit(BITMAP, i);
     }
 
     if (msync(bitmap_data, BITMAP_SIZE, MS_SYNC) == -1) {
@@ -423,7 +423,7 @@ uint32_t seek_first_free_block(){
 
 	for (size_t i = 0; i < BLOCK_COUNT; i++)
 	{
-		if(strcmp(BITMAP[i].bitarray, "N")){
+		if(!(bitarray_test_bit(BITMAP, i))){
 			magic = i;
 			i = BLOCK_COUNT;
 		}
@@ -435,20 +435,21 @@ uint32_t seek_first_free_block(){
 int io_fs_create_io_operation(t_Payload *operation) {
 
 	char* file_name;
+	t_PID* op_pid;
+
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
     text_deserialize(operation, &(file_name));
 	uint32_t location = seek_first_free_block();
 
 
 	/* PASOS
-	deserializar
-	buscar espacio inicial
 	asignar
 	agregar al listado
 	actualizar bitmap
 	*/
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
-	t_FS_File* new_entry;
+	t_FS_File* new_entry = NULL;
 	strcpy(new_entry->name , file_name);
 	new_entry->process_pid = PID;
 	new_entry->initial_bloq = location;
@@ -456,9 +457,10 @@ int io_fs_create_io_operation(t_Payload *operation) {
 
 	//Checkiar si el FS es solo para este hilo o para todo el modulo
 	//Agregar un mutex
-	strcpy(BITMAP[location].bitarray , "Y");
 
-	//CONSULTAR ASIGNADO BITMAP -- BLOQUE DE DATOS QUE SIST DE LECTURA TIENE
+	bitarray_set_bit(BITMAP, location);
+
+	list_add(LIST_FILES, new_entry);
 
     return 0;
 }
