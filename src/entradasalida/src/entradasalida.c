@@ -430,6 +430,8 @@ uint32_t seek_first_free_block(){
 
 int io_fs_create_io_operation(t_Payload *operation) {
 
+
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
 	char* file_name;
 	t_PID* op_pid;
 
@@ -437,11 +439,9 @@ int io_fs_create_io_operation(t_Payload *operation) {
     text_deserialize(operation, &(file_name));
 	uint32_t location = seek_first_free_block();
 
-    // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
-
 	t_FS_File* new_entry = NULL;
 	strcpy(new_entry->name , file_name);
-	new_entry->process_pid = PID;
+	new_entry->process_pid = op_pid;
 	new_entry->initial_bloq = location;
 	new_entry->len = 0;
 
@@ -453,6 +453,10 @@ int io_fs_create_io_operation(t_Payload *operation) {
 	list_add(LIST_FILES, new_entry);
 
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
+
+	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
+	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
+	package_send(respond, CONNECTION_KERNEL.fd_connection);
 
     return 0;
 }
