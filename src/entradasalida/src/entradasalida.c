@@ -258,7 +258,7 @@ void initialize_blocks() {
 
 
 void initialize_bitmap(size_t block_count) {
-	float BITMAP_SIZE = block_count / 8;
+	size_t BITMAP_SIZE = ceil(block_count / 8);
     int fd = open("bitmap.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
@@ -278,17 +278,13 @@ void initialize_bitmap(size_t block_count) {
         return;
     }
 
-    BITMAP = bitarray_create((char *)bitmap_data, BITMAP_SIZE);
+    BITMAP = bitarray_create_with_mode((char *)bitmap_data, BITMAP_SIZE,LSB_FIRST);
     if (BITMAP == NULL) {
         log_error(MODULE_LOGGER, "Error al crear la estructura del bitmap");
         munmap(bitmap_data, BITMAP_SIZE);
         close(fd);
 
         return;
-    }
-
-    for (size_t i = 0; i < BITMAP_SIZE; ++i) {
-		bitarray_set_bit(BITMAP, i);
     }
 
     if (msync(bitmap_data, BITMAP_SIZE, MS_SYNC) == -1) {
@@ -421,7 +417,7 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 uint32_t seek_first_free_block(){
 	int magic = 0;
 
-	for (size_t i = 0; i < BLOCK_COUNT; i++)
+	for (size_t i = 0; i < (BLOCK_COUNT +1); i++)
 	{
 		if(!(bitarray_test_bit(BITMAP, i))){
 			magic = i;
@@ -441,12 +437,6 @@ int io_fs_create_io_operation(t_Payload *operation) {
     text_deserialize(operation, &(file_name));
 	uint32_t location = seek_first_free_block();
 
-
-	/* PASOS
-	asignar
-	agregar al listado
-	actualizar bitmap
-	*/
     // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
 
 	t_FS_File* new_entry = NULL;
@@ -461,6 +451,8 @@ int io_fs_create_io_operation(t_Payload *operation) {
 	bitarray_set_bit(BITMAP, location);
 
 	list_add(LIST_FILES, new_entry);
+
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
 
     return 0;
 }
