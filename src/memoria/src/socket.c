@@ -17,7 +17,7 @@ void initialize_sockets(void) {
     sem_init(&sem_coordinator_cpu_client_connected, 0, 0);
 
 	// [Server] Memory <- [Cliente(s)] Entrada/Salida + Kernel + CPU
-	pthread_create(&COORDINATOR_MEMORY.thread_server, NULL, memory_start_server, (void *) &COORDINATOR_MEMORY);
+	pthread_create(&COORDINATOR_MEMORY.thread_server, NULL, (void *(*)(void *)) memory_start_server, (void *) &COORDINATOR_MEMORY);
 
 	// Se bloquea hasta que se realicen todas las conexiones
     sem_wait(&sem_coordinator_kernel_client_connected);
@@ -33,8 +33,7 @@ void finish_sockets(void) {
         close(((t_Client *) list_get(COORDINATOR_MEMORY.shared_list_clients.list, i))->fd_client);
 }
 
-void *memory_start_server(void *server_parameter) {
-	t_Server *server = (t_Server *) server_parameter;
+void *memory_start_server(t_Server *server) {
 
 	int fd_new_client;
 	t_Client *new_client;
@@ -60,15 +59,14 @@ void *memory_start_server(void *server_parameter) {
 		new_client->fd_client = fd_new_client;
         new_client->client_type = server->clients_type;
         new_client->server = server;
-		pthread_create(&(new_client->thread_client_handler), NULL, memory_client_handler, (void *) new_client);
+		pthread_create(&(new_client->thread_client_handler), NULL, (void *(*)(void *)) memory_client_handler, (void *) new_client);
 		pthread_detach(new_client->thread_client_handler);
 	}
 
 	return NULL;
 }
 
-void *memory_client_handler(void *new_client_parameter) {
-	t_Client *new_client = (t_Client *) new_client_parameter;
+void *memory_client_handler(t_Client *new_client) {
 
     e_Port_Type port_type;
 

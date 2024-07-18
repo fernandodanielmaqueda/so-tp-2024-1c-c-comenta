@@ -59,10 +59,10 @@ void *list_remove_by_condition_with_comparation(t_list *list, bool (*condition)(
 	return NULL;
 }
 
-int list_add_unless_matches_with_any(t_list *list, void *data, bool (*condition)(void *, void*)) {
+int list_add_unless_any(t_list *list, void *data, bool (*condition)(void *, void*), void *comparation) {
     t_link_element **indirect = &(list->head);
     while (*indirect != NULL) {
-        if(condition((*indirect)->data, data))
+        if(condition((*indirect)->data, comparation))
             return 1;
         indirect = &((*indirect)->next);
     }

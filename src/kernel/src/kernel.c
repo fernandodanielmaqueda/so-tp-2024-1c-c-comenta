@@ -118,3 +118,8 @@ void read_module_config(t_config *module_config) {
 	resources_read_module_config(module_config);
 	MULTIPROGRAMMING_LEVEL = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
 }
+
+void pcb_free(t_PCB *pcb) {
+	payload_destroy(&(pcb->io_operation));
+	free(pcb);
+}

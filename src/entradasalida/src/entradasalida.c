@@ -137,9 +137,9 @@ void initialize_sockets(void) {
 	pthread_t thread_io_connect_to_memory;
 
 	// [Client] Entrada/Salida -> [Server] Kernel
-	pthread_create(&thread_io_connect_to_kernel, NULL, client_thread_connect_to_server, (void *) &CONNECTION_KERNEL);
+	pthread_create(&thread_io_connect_to_kernel, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_KERNEL);
 	// [Client] Entrada/Salida -> [Server] Memoria
-	pthread_create(&thread_io_connect_to_memory, NULL, client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
+	pthread_create(&thread_io_connect_to_memory, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
 
 	// Se bloquea hasta que se realicen todas las conexiones
 	pthread_join(thread_io_connect_to_kernel, NULL);
@@ -165,13 +165,13 @@ int io_operation_execute(t_Payload *io_operation) {
 	cpu_opcode_deserialize(io_operation, &io_opcode);
 
     if(IO_OPERATIONS[io_opcode].function == NULL) {
-		payload_destroy(&io_operation);
+		payload_destroy(io_operation);
         log_error(MODULE_LOGGER, "Funcion de operacion de IO no encontrada");
         return 1;
     }
 
     int exit_status = IO_OPERATIONS[io_opcode].function(io_operation);
-	payload_destroy(&io_operation);
+	payload_destroy(io_operation);
 	return exit_status;
 }
 

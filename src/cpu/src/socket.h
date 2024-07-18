@@ -33,6 +33,6 @@ extern sem_t CONNECTED_KERNEL_CPU_INTERRUPT;
 
 void initialize_sockets(void);
 void finish_sockets(void);
-void *cpu_start_server_for_kernel(void *server_parameter);
+void *cpu_start_server_for_kernel(t_Server *server);
 
 #endif /* CPU_SOCKET_H */

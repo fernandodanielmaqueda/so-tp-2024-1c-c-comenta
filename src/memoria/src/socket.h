@@ -27,7 +27,7 @@ extern t_Client *CLIENT_CPU;
 
 void initialize_sockets(void);
 void finish_sockets(void);
-void *memory_start_server(void *server_parameter);
-void *memory_client_handler(void *new_client_parameter);
+void *memory_start_server(t_Server *server);
+void *memory_client_handler(t_Client *new_client);
 
 #endif /* MEMORIA_SOCKET_H */

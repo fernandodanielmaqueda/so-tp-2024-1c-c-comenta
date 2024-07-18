@@ -15,11 +15,11 @@ void initialize_sockets(void) {
     pthread_t thread_cpu_connect_to_memory;
 
     // [Server] CPU (Dispatch) <- [Cliente] Kernel
-    pthread_create(&(SERVER_CPU_DISPATCH.thread_server), NULL, cpu_start_server_for_kernel, (void *) &SERVER_CPU_DISPATCH);
+    pthread_create(&(SERVER_CPU_DISPATCH.thread_server), NULL, (void *(*)(void *)) cpu_start_server_for_kernel, (void *) &SERVER_CPU_DISPATCH);
     // [Server] CPU (Interrupt) <- [Cliente] Kernel
-    pthread_create(&(SERVER_CPU_INTERRUPT.thread_server), NULL, kernel_cpu_interrupt_handler, NULL);
+    pthread_create(&(SERVER_CPU_INTERRUPT.thread_server), NULL, (void *(*)(void *)) kernel_cpu_interrupt_handler, NULL);
     // [Client] CPU -> [Server] Memoria
-    pthread_create(&thread_cpu_connect_to_memory, NULL, client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
+    pthread_create(&thread_cpu_connect_to_memory, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
 
     // Se bloquea hasta que se realicen todas las conexiones
     pthread_join(SERVER_CPU_DISPATCH.thread_server, NULL);
@@ -40,8 +40,7 @@ void finish_sockets(void) {
     close(CONNECTION_MEMORY.fd_connection);
 }
 
-void *cpu_start_server_for_kernel(void *server_parameter) {
-    t_Server *server = (t_Server *) server_parameter;
+void *cpu_start_server_for_kernel(t_Server *server) {
 
     e_Port_Type port_type;
     int fd_new_client;

@@ -35,6 +35,6 @@ extern t_Connection CONNECTION_CPU_INTERRUPT;
 
 void initialize_sockets(void);
 void finish_sockets(void);
-void *kernel_start_server_for_io(void *server_parameter);
+void *kernel_start_server_for_io(t_Server *server);
 
 #endif /* KERNEL_SOCKET_H */

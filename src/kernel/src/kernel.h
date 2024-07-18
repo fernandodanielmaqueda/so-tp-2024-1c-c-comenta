@@ -74,8 +74,6 @@ void finish_mutexes(void);
 void initialize_semaphores(void);
 void finish_semaphores(void);
 void read_module_config(t_config *module_config);
-void initialize_cpu_command_line_interface(void);
-void *receptor_mensajes_cpu(void*);
-void listen_cpu(int fd_cpu) ;
+void pcb_free(t_PCB *pcb);
 
 #endif /* KERNEL_H */

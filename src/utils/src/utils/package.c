@@ -69,7 +69,7 @@ int package_send(t_Package *package, int fd_socket) {
 
   void *buffer = malloc(bufferSize);
   if(buffer == NULL) {
-    log_error(SOCKET_LOGGER, "malloc: No se pudieron reservar %zu bytes de memoria\n", (size_t) bufferSize);
+    log_warning(SOCKET_LOGGER, "malloc: No se pudieron reservar %zu bytes de memoria\n", (size_t) bufferSize);
     return 1;
   }
 
@@ -84,11 +84,11 @@ int package_send(t_Package *package, int fd_socket) {
 
   ssize_t bytes = send(fd_socket, buffer, bufferSize, 0);
   if (bytes == -1) {
-      log_error(SOCKET_LOGGER, "Funcion send: %s\n", strerror(errno));
+      log_warning(SOCKET_LOGGER, "send: %s\n", strerror(errno));
       return 1;
   }
   if (bytes != bufferSize) {
-      log_error(SOCKET_LOGGER, "Funcion send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", bufferSize, bytes);
+      log_warning(SOCKET_LOGGER, "send: No coinciden los bytes enviados (%zd) con los que se esperaban enviar (%zd)\n", bufferSize, bytes);
       return 1;
   }
 
@@ -139,7 +139,7 @@ int package_receive_payload(t_Package *package, int fd_socket) {
 
   package->payload.stream = malloc((size_t) package->payload.size);
   if(package->payload.stream == NULL) {
-    log_error(SOCKET_LOGGER, "malloc: No se pudo reservar %zu bytes de memoria\n", (size_t) package->payload.size);
+    log_warning(SOCKET_LOGGER, "malloc: No se pudo reservar %zu bytes de memoria\n", (size_t) package->payload.size);
     return 1;
   }
 
@@ -150,15 +150,15 @@ int receive(int fd_socket, void *destination, size_t expected_bytes) {
 
   ssize_t bytes = recv(fd_socket, destination, expected_bytes, 0); // MSG_WAITALL
   if (bytes == 0) {
-      log_error(SOCKET_LOGGER, "Emisor Desconectado\n");
+      log_warning(SOCKET_LOGGER, "recv: No hay mensajes disponibles para recibir y el par ha realizado un cierre ordenado\n");
       return 1;
   }
   if (bytes == -1) {
-      log_error(SOCKET_LOGGER, "Funcion recv: %s\n", strerror(errno));
+      log_warning(SOCKET_LOGGER, "recv: %s\n", strerror(errno));
       return 1;
   }
   if (bytes != expected_bytes) {
-      log_error(SOCKET_LOGGER, "Funcion recv: No coinciden los bytes recibidos (%zu) con los que se esperaban recibir (%zd)\n", expected_bytes, bytes);
+      log_warning(SOCKET_LOGGER, "recv: No coinciden los bytes recibidos (%zu) con los que se esperaban recibir (%zd)\n", expected_bytes, bytes);
       return 1;
   }
 

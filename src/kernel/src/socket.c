@@ -15,13 +15,13 @@ void initialize_sockets(void) {
 	pthread_t thread_kernel_connect_to_cpu_interrupt;
 
 	// [Server] Kernel <- [Cliente(s)] Entrada/Salida
-	pthread_create(&(COORDINATOR_IO.thread_server), NULL, kernel_start_server_for_io, (void *) &COORDINATOR_IO);
+	pthread_create(&(COORDINATOR_IO.thread_server), NULL, (void *(*)(void *)) kernel_start_server_for_io, (void *) &COORDINATOR_IO);
 	// [Client] Kernel -> [Server] Memoria
-	pthread_create(&thread_kernel_connect_to_memory, NULL, client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
+	pthread_create(&thread_kernel_connect_to_memory, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
 	// [Client] Kernel -> [Server] CPU (Dispatch Port)
-	pthread_create(&thread_kernel_connect_to_cpu_dispatch, NULL, client_thread_connect_to_server, (void *) &CONNECTION_CPU_DISPATCH);
+	pthread_create(&thread_kernel_connect_to_cpu_dispatch, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_CPU_DISPATCH);
 	// [Client] Kernel -> [Server] CPU (Interrupt Port)
-	pthread_create(&thread_kernel_connect_to_cpu_interrupt, NULL, client_thread_connect_to_server, (void *) &CONNECTION_CPU_INTERRUPT);
+	pthread_create(&thread_kernel_connect_to_cpu_interrupt, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_CPU_INTERRUPT);
 
 	// Se bloquea hasta que se realicen todas las conexiones
 	pthread_join(thread_kernel_connect_to_memory, NULL);
@@ -37,8 +37,7 @@ void finish_sockets(void) {
 	// FALTA CERRAR TODOS LOS IOs
 }
 
-void *kernel_start_server_for_io(void *server_parameter) {
-	t_Server *server = (t_Server *) server_parameter;
+void *kernel_start_server_for_io(t_Server *server) {
 
 	int fd_new_client;
 	t_Client *new_client;
@@ -65,7 +64,7 @@ void *kernel_start_server_for_io(void *server_parameter) {
 		new_client->fd_client = fd_new_client;
 		new_client->client_type = server->clients_type;
 		new_client->server = server;
-		pthread_create(&(new_client->thread_client_handler), NULL, kernel_client_handler_for_io, (void *) new_client);
+		pthread_create(&(new_client->thread_client_handler), NULL, (void *(*)(void *)) kernel_client_handler_for_io, (void *) new_client);
 		pthread_detach(new_client->thread_client_handler);
 	}
 

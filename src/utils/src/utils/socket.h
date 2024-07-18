@@ -45,7 +45,7 @@ typedef struct t_Client {
     t_Server *server;
 } t_Client;
 
-void *client_thread_connect_to_server(void *connection_parameter);
+void *client_thread_connect_to_server(t_Connection *connection);
 int client_start_try(char* ip, char* port);
 void server_start(t_Server *server);
 int server_start_try(char* port);

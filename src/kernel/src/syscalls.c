@@ -144,30 +144,14 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
 
         switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
 
-        pthread_mutex_lock(&(interface->shared_list_blocked.mutex));
+        pthread_mutex_lock(&(interface->shared_list_blocked_ready.mutex));
 
-            list_add(interface->shared_list_blocked.list, SYSCALL_PCB);
+            list_add(interface->shared_list_blocked_ready.list, SYSCALL_PCB);
             log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, interface->name);
 
-            if(sem_trywait(&(interface.sem_concurrency))) {
-                if(errno != EAGAIN) {
-                    log_warning(CONSOLE_LOGGER, "sem_trywait: %s", strerror(errno));
-                    SYSCALL_PCB->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
-                    return 1;
-                }
-            }
-            else {
-
-                if((interface.shared_list_blocked.list)->head != NULL) {
-                    t_PCB *pcb = (t_PCB *) list_get(interface->shared_list_blocked.list, 0);
-                    if(send_io_operation_dispatch(pcb->exec_context.PID, pcb->io_operation, interface.client->fd_client)) {
-                        // 
-                    }
-                }
-
-            }
-
-        pthread_mutex_unlock(&(interface->shared_list_blocked.mutex));
+            sem_post(&(interface->sem_scheduler));
+        
+        pthread_mutex_unlock(&(interface->shared_list_blocked_ready.mutex));
         
     signal_draining_requests(&INTERFACES_SYNC);
 

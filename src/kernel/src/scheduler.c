@@ -108,24 +108,24 @@ void finish_scheduling(void) {
 }
 
 void initialize_long_term_scheduler(void) {
-	pthread_create(&THREAD_LONG_TERM_SCHEDULER_NEW, NULL, long_term_scheduler_new, NULL);
+	pthread_create(&THREAD_LONG_TERM_SCHEDULER_NEW, NULL, (void *(*)(void *)) long_term_scheduler_new, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
 	pthread_detach(THREAD_LONG_TERM_SCHEDULER_NEW);
-	pthread_create(&THREAD_LONG_TERM_SCHEDULER_EXIT, NULL, long_term_scheduler_exit, NULL);
+	pthread_create(&THREAD_LONG_TERM_SCHEDULER_EXIT, NULL, (void *(*)(void *)) long_term_scheduler_exit, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
 	pthread_detach(THREAD_LONG_TERM_SCHEDULER_EXIT);
 }
 
 void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENTO
-	pthread_create(&THREAD_SHORT_TERM_SCHEDULER, NULL, short_term_scheduler, NULL);
+	pthread_create(&THREAD_SHORT_TERM_SCHEDULER, NULL, (void *(*)(void *)) short_term_scheduler, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
 	pthread_detach(THREAD_SHORT_TERM_SCHEDULER);
-	pthread_create(&THREAD_MULTIPROGRAMMING_POSTER, NULL, multiprogramming_poster, NULL);
+	pthread_create(&THREAD_MULTIPROGRAMMING_POSTER, NULL, (void *(*)(void *)) multiprogramming_poster, NULL);
 	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
 	pthread_detach(THREAD_MULTIPROGRAMMING_POSTER);
 }
 
-void *long_term_scheduler_new(void *parameter) {
+void *long_term_scheduler_new(void *NULL_parameter) {
 
 	t_PCB *pcb;
 
@@ -186,7 +186,7 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 	return NULL;
 }
 
-void *short_term_scheduler(void *parameter) {
+void *short_term_scheduler(void *NULL_parameter) {
  
 	t_PCB *pcb;
 	e_Eviction_Reason eviction_reason;
@@ -214,12 +214,12 @@ void *short_term_scheduler(void *parameter) {
 				switch(SCHEDULING_ALGORITHM) {
 					case RR_SCHEDULING_ALGORITHM:
 						QUANTUM_INTERRUPT = 0;
-						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->exec_context.quantum));
+						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, (void *(*)(void *)) start_quantum, (void *) &(pcb->exec_context.quantum));
 						break;
 					case VRR_SCHEDULING_ALGORITHM:
 						TEMPORAL_DISPATCHED = temporal_create();
 						QUANTUM_INTERRUPT = 0;
-						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, start_quantum, (void *) &(pcb->exec_context.quantum));
+						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, (void *(*)(void *)) start_quantum, (void *) &(pcb->exec_context.quantum));
 						break;
 					case FIFO_SCHEDULING_ALGORITHM:
 						break;
@@ -339,7 +339,7 @@ void *short_term_scheduler(void *parameter) {
 	return NULL;
 }
 
-void *multiprogramming_poster(void *NULL_argument) {
+void *multiprogramming_poster(void *NULL_parameter) {
 
     while(1) {
         sem_wait(&SEM_MULTIPROGRAMMING_POSTER);
@@ -644,9 +644,7 @@ void pid_release(t_PID pid) {
 		pthread_cond_signal(&COND_LIST_RELEASED_PIDS);
 }
 
-void *start_quantum(void *pcb_parameter) {
-
-	t_PCB *pcb = (t_PCB *) pcb_parameter;
+void *start_quantum(t_PCB *pcb) {
 
     log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
 

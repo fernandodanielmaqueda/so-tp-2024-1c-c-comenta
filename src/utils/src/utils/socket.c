@@ -3,8 +3,7 @@
 
 #include "socket.h"
 
-void *client_thread_connect_to_server(void *connection_parameter) {
-  t_Connection *connection = (t_Connection*) connection_parameter;
+void *client_thread_connect_to_server(t_Connection *connection) {
 
   e_Port_Type port_type;
 
