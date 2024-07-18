@@ -394,7 +394,7 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", PID);
 
 			//Encolo devuelta el payload dentro del paquete creado
-			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
+			//payload_enqueue(package->payload, &(PID), sizeof(t_PID));
 			list_serialize(package->payload, *physical_addresses, physical_address_deserialize_element);
 			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
 
