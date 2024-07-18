@@ -149,7 +149,7 @@ void finish_sockets(void) {
 
 void generic_interface_function(void) {
 
-	t_Payload *io_operation;
+	t_Payload *io_operation = NULL;
 	//Espero peticiones
 	while(1) {
 		
@@ -166,7 +166,7 @@ void generic_interface_function(void) {
 
 void stdin_interface_function(void) {
 
-	t_Payload *io_operation;
+	t_Payload *io_operation = NULL;
 	//escuchar peticion siempre
 	while(1){
 		
@@ -183,7 +183,7 @@ void stdin_interface_function(void) {
 
 void stdout_interface_function(void) {
 
-	t_Payload *io_operation;
+	t_Payload *io_operation = NULL;
 	//escuchar peticion siempre
 	while(1) {
 		
@@ -382,9 +382,11 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			
 			t_list *physical_addresses = list_create();
 			t_MemorySize bytes;
+			char* text_receive = NULL;
 
 			//empiezo a "desencolar" el payload recibido
 			payload_dequeue(operation, &PID, sizeof(t_PID));
+			text_deserialize(operation, &text_receive);
 			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
 			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
 
@@ -401,7 +403,7 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			package_destroy(package);
 			
 			//Recibo nuevo paquete para imprimir por pantalla
-			t_Package *memory_package;
+			t_Package *memory_package = NULL;
 			package_receive(memory_package,CONNECTION_MEMORY.fd_connection);
 			//Desencolar e imprimir por pantalla
 
@@ -433,7 +435,7 @@ int io_fs_create_io_operation(t_Payload *operation) {
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
 	char* file_name;
-	t_PID* op_pid;
+	t_PID op_pid;
 
     payload_dequeue(operation, &op_pid, sizeof(t_PID));
     text_deserialize(operation, &(file_name));
