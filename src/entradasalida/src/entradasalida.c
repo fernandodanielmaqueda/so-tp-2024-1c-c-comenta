@@ -394,8 +394,7 @@ int io_fs_delete_io_operation(t_Payload *operation) {
     text_deserialize(operation, &(file_name));
 	
 	uint32_t size = list_size(LIST_FILES);
-	usleep(COMPRESSION_DELAY);
-	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
+
 	if(size > 0){
 		t_FS_File* file = list_get(LIST_FILES,0);
 		size_t file_target = 0;
@@ -418,7 +417,7 @@ int io_fs_delete_io_operation(t_Payload *operation) {
 
 		list_remove(LIST_FILES, file_target);
 	
-	log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
+
 	}
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
@@ -449,6 +448,8 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t initial_pos = file->initial_bloq + file->len;
+	usleep(COMPRESSION_DELAY);
+	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
 	if (file->len > valueNUM)
 	{//Se restan bloques
 		size_t diff = file->len - valueNUM;
@@ -458,6 +459,7 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
 			initial_pos--;
 		}
 		file->len = valueNUM;
+		log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
 	}
 	if (file->len < valueNUM)
 	{// Se agregan bloques
@@ -469,6 +471,7 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
 				initial_pos++;
 			}
 			file->len = valueNUM;
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
 		}
 		else{
         	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
