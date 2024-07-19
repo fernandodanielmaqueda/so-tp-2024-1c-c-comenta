@@ -587,16 +587,56 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
     return 0;
 }
 
+uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
+    uint32_t quantity_blocks = 0;
+
+    uint32_t nro_page = (uint32_t) floor(puntero / BLOCK_SIZE);
+    uint32_t offset = (uint32_t) (puntero - nro_page * BLOCK_SIZE);;
+
+    if (offset != 0)
+    {
+        bytes -= (BLOCK_SIZE - offset);
+        quantity_blocks++;
+    }
+
+    quantity_blocks += (uint32_t) floor(bytes / BLOCK_SIZE);
+    
+    return quantity_blocks;
+}
+
 int io_fs_write_io_operation(t_Payload *operation) {
 
-    // log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
+
 
     return 0;
 }
 
 int io_fs_read_io_operation(t_Payload *operation) {
 
-    // log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
+
+	char* file_name = NULL;
+	uint32_t ptro = 0;
+	uint32_t bytes = 0;
+	t_PID op_pid = 0;
+	t_list* list_dfs = list_create();
+
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
+    text_deserialize(operation, &(file_name));
+    payload_dequeue(operation, &ptro, sizeof(uint32_t));
+    payload_dequeue(operation, &bytes, sizeof(uint32_t));
+	list_deserialize(operation, list_dfs, physical_address_deserialize_element);
+
+	t_FS_File* file = seek_file(file_name);
+	uint32_t block_initial = ptro / BLOCK_SIZE;
+	uint32_t block_required = seek_quantity_blocks_required(ptro, bytes);
+
+	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
+
+	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA -> AVISAR KERNEL
+
 
     return 0;
 }
+

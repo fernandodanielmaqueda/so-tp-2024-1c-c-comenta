@@ -40,6 +40,8 @@ typedef enum e_Header {
     FRAME_REQUEST,
     PAGE_SIZE_REQUEST,
     //IO <---> Memoria
+    IO_FS_WRITE_MEMORY,
+    IO_FS_READ_MEMORY,
     IO_STDIN_WRITE_MEMORY,
     IO_STDOUT_READ_MEMORY
 } e_Header;

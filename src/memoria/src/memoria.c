@@ -309,6 +309,16 @@ void listen_io(int fd_io) {
                 read_memory(package->payload, fd_io);
                 break;
             
+            case IO_FS_READ_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (write) recibido.");
+                write_memory(package->payload, fd_io);
+                break;
+            
+            case IO_FS_WRITE_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
+                read_memory(package->payload, fd_io);
+                break;
+            
             default:
                 log_warning(MODULE_LOGGER, "Operacion desconocida..");
                 break;
