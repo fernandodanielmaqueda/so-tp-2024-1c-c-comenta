@@ -15,10 +15,22 @@ int module(int argc, char *argv[]) {
 
 	initialize_loggers();
 	initialize_configs(MODULE_CONFIG_PATHNAME);
+	
+	// initialize_global_variables();
 	init_resource_sync(&SCHEDULING_SYNC);
 	init_resource_sync(&INTERFACES_SYNC);
 	initialize_mutexes();
 	initialize_semaphores();
+	LIST_RELEASED_PIDS = list_create();
+
+	SHARED_LIST_NEW.list = list_create();
+	SHARED_LIST_READY.list = list_create();
+	SHARED_LIST_READY_PRIORITARY.list = list_create();
+	SHARED_LIST_EXEC.list = list_create();
+	SHARED_LIST_EXIT.list = list_create();
+	
+	LIST_INTERFACES = list_create();
+
 	initialize_sockets();
 	initialize_scheduling();
 
@@ -40,8 +52,6 @@ int module(int argc, char *argv[]) {
 }
 
 void initialize_mutexes(void) {
-	pthread_mutex_init(&COORDINATOR_IO.shared_list_clients.mutex, NULL);
-
 	pthread_mutex_init(&MUTEX_PID_COUNTER, NULL);
 	pthread_mutex_init(&MUTEX_PCB_ARRAY, NULL);
 	pthread_mutex_init(&MUTEX_LIST_RELEASED_PIDS, NULL);
@@ -63,8 +73,6 @@ void initialize_mutexes(void) {
 }
 
 void finish_mutexes(void) {
-	pthread_mutex_destroy(&COORDINATOR_IO.shared_list_clients.mutex);
-
 	pthread_mutex_destroy(&MUTEX_PID_COUNTER);
 	pthread_mutex_destroy(&MUTEX_PCB_ARRAY);
 	pthread_mutex_destroy(&MUTEX_LIST_RELEASED_PIDS);
@@ -106,7 +114,7 @@ void finish_semaphores(void) {
 }
 
 void read_module_config(t_config *module_config) {
-	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_PORT_TYPE, .clients_type = IO_PORT_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA"), .shared_list_clients.list = list_create()};
+	COORDINATOR_IO = (t_Server) {.server_type = KERNEL_PORT_TYPE, .clients_type = IO_PORT_TYPE, .port = config_get_string_value(module_config, "PUERTO_ESCUCHA")};
 	CONNECTION_MEMORY = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_MEMORIA"), .port = config_get_string_value(module_config, "PUERTO_MEMORIA")};
 	CONNECTION_CPU_DISPATCH = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = CPU_DISPATCH_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_DISPATCH")};
 	CONNECTION_CPU_INTERRUPT = (t_Connection) {.client_type = KERNEL_PORT_TYPE, .server_type = CPU_INTERRUPT_PORT_TYPE, .ip = config_get_string_value(module_config, "IP_CPU"), .port = config_get_string_value(module_config, "PUERTO_CPU_INTERRUPT")};

@@ -64,7 +64,7 @@ void create_process(t_Payload *socketRecibido);
  */
 void kill_process (t_Payload *socketRecibido);
 
-void listen_io(int fd_io);
+void listen_io(t_Client *client);
 
 /**
  * @brief Busca la lista de instruccion y devuelve la instruccion buscada
@@ -103,14 +103,14 @@ t_Process* seek_process_by_pid(t_PID pidBuscado);
  * @brief Funcion que encapsula al hilo escucha cpu
  * @param socket Socket escuchado
  */
-void listen_cpu(int socket);
+void listen_cpu(void);
 
 
 /**
  * @brief Funcion que encapsula al hilo escucha kernel
  * @param socket Socket escuchado
  */
-void listen_kernel(int socket);
+void listen_kernel(void);
 
 /**
  * @brief Crea los marcos e inicializa la lista de los mismos

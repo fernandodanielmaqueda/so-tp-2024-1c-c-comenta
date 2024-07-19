@@ -197,17 +197,25 @@ int kernel_command_start_process(int argc, char* argv[]) {
 
     t_PCB *pcb = pcb_create();
 
-    send_process_create(argv[1], pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection);
+    if(send_process_create(argv[1], pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
+    }
 
     t_Return_Value return_value;
-    receive_return_value_with_expected_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
+    if(receive_return_value_with_expected_header(PROCESS_CREATE_HEADER, &return_value, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+		exit(1);
+    }
     if(return_value) {
         log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", argv[1]);
         return 1;
     }
 
     wait_draining_requests(&SCHEDULING_SYNC);
-        list_add(SHARED_LIST_NEW.list, pcb);
+        pthread_mutex_lock(&(SHARED_LIST_NEW.mutex));
+            list_add(SHARED_LIST_NEW.list, pcb);
+        pthread_mutex_unlock(&(SHARED_LIST_NEW.mutex));
     signal_draining_requests(&SCHEDULING_SYNC);
 
     log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->exec_context.PID);
@@ -262,7 +270,10 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                 pthread_mutex_lock(&MUTEX_KILL_EXEC_PROCESS);
                     KILL_EXEC_PROCESS = 1;
                 pthread_mutex_unlock(&MUTEX_KILL_EXEC_PROCESS);
-                send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->exec_context.PID, CONNECTION_CPU_INTERRUPT.fd_connection);
+                if(send_kernel_interrupt(KILL_KERNEL_INTERRUPT, pcb->exec_context.PID, CONNECTION_CPU_INTERRUPT.fd_connection)) {
+                    // TODO
+                    exit(1);
+                }
                 break;
 
             case BLOCKED_STATE:

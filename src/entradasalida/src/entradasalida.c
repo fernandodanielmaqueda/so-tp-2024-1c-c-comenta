@@ -22,7 +22,7 @@ int BLOCK_COUNT;
 int COMPRESSION_DELAY;
 
 t_IO_Type IO_TYPES[] = {
-    [GENERIC_IO_TYPE] = {.name = "GENERIC", .function = generic_interface_function },
+    [GENERIC_IO_TYPE] = {.name = "GENERICA", .function = generic_interface_function },
     [STDIN_IO_TYPE] = {.name = "STDIN", .function = stdin_interface_function },
     [STDOUT_IO_TYPE] = {.name = "STDOUT", .function = stdout_interface_function },
     [DIALFS_IO_TYPE] = {.name = "DIALFS", .function = dialfs_interface_function}
@@ -60,9 +60,19 @@ int module(int argc, char *argv[]) {
 	log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
 	t_Return_Value return_value;
-	receive_expected_header(INTERFACE_DATA_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);	
-	send_interface_data(INTERFACE_NAME, IO_TYPE, CONNECTION_KERNEL.fd_connection);
-	receive_return_value_with_expected_header(INTERFACE_DATA_REQUEST_HEADER, &return_value, CONNECTION_KERNEL.fd_connection);
+	if(receive_expected_header(INTERFACE_DATA_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection)) {
+		// TODO
+		exit(1);
+	}	
+	if(send_interface_data(INTERFACE_NAME, IO_TYPE, CONNECTION_KERNEL.fd_connection)) {
+		// TODO
+		exit(1);
+	}
+	if(receive_return_value_with_expected_header(INTERFACE_DATA_REQUEST_HEADER, &return_value, CONNECTION_KERNEL.fd_connection)) {
+		// TODO
+		exit(1);
+	}
+	
 	if(return_value) {
 		log_error(MODULE_LOGGER, "No se pudo registrar la interfaz %s en el Kernel", INTERFACE_NAME);
 		exit(EXIT_FAILURE);
@@ -133,17 +143,27 @@ int io_type_find(char *name, e_IO_Type *destination) {
 }
 
 void initialize_sockets(void) {
-	pthread_t thread_io_connect_to_kernel;
-	pthread_t thread_io_connect_to_memory;
+	
 
 	// [Client] Entrada/Salida -> [Server] Kernel
+	pthread_t thread_io_connect_to_kernel;
 	pthread_create(&thread_io_connect_to_kernel, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_KERNEL);
-	// [Client] Entrada/Salida -> [Server] Memoria
-	pthread_create(&thread_io_connect_to_memory, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
-
-	// Se bloquea hasta que se realicen todas las conexiones
+	switch(IO_TYPE) {
+		case GENERIC_IO_TYPE:
+			break;
+		case STDIN_IO_TYPE:
+		case STDOUT_IO_TYPE:
+		case DIALFS_IO_TYPE:
+		{
+			// [Client] Entrada/Salida -> [Server] Memoria
+			pthread_t thread_io_connect_to_memory;
+			pthread_create(&thread_io_connect_to_memory, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
+			pthread_join(thread_io_connect_to_memory, NULL);
+			break;
+		}
+	}
+	
 	pthread_join(thread_io_connect_to_kernel, NULL);
-	pthread_join(thread_io_connect_to_memory, NULL);
 }
 
 void finish_sockets(void) {
@@ -166,7 +186,7 @@ int io_operation_execute(t_Payload *io_operation) {
 
     if(IO_OPERATIONS[io_opcode].function == NULL) {
 		payload_destroy(io_operation);
-        log_error(MODULE_LOGGER, "Funcion de operacion de IO no encontrada");
+        log_warning(MODULE_LOGGER, "Funcion de operacion de IO no encontrada");
         return 1;
     }
 
@@ -185,7 +205,7 @@ int io_gen_sleep_io_operation(t_Payload *operation_arguments) {
 
 			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
 
-			sleep(WORK_UNIT_TIME * work_units);
+			usleep(WORK_UNIT_TIME * work_units);
 
 			break;
 		}

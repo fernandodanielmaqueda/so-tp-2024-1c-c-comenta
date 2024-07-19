@@ -139,7 +139,7 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
             return 1;
         }
 
-        cpu_opcode_serialize(&(SYSCALL_PCB->io_operation), interface->io_type);
+        cpu_opcode_serialize(&(SYSCALL_PCB->io_operation), IO_GEN_SLEEP_CPU_OPCODE);
         payload_append(&(SYSCALL_PCB->io_operation), syscall_arguments->stream, (size_t) syscall_arguments->size);
 
         switch_process_state(SYSCALL_PCB, BLOCKED_STATE);

@@ -27,12 +27,14 @@
 
 extern t_Server SERVER_CPU_DISPATCH;
 extern t_Server SERVER_CPU_INTERRUPT;
-extern t_Connection CONNECTION_MEMORY;
 
-extern sem_t CONNECTED_KERNEL_CPU_INTERRUPT;
+extern t_Client CLIENT_KERNEL_CPU_DISPATCH;
+extern t_Client CLIENT_KERNEL_CPU_INTERRUPT;
+
+extern t_Connection CONNECTION_MEMORY;
 
 void initialize_sockets(void);
 void finish_sockets(void);
-void *cpu_start_server_for_kernel(t_Server *server);
+void *cpu_start_server_for_kernel(t_Client *new_client);
 
 #endif /* CPU_SOCKET_H */

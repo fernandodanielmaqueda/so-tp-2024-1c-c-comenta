@@ -31,12 +31,16 @@
 
 typedef struct t_Interface {
     t_Client *client;
+
     char *name;
 	e_IO_Type io_type;
+
 	t_Shared_List shared_list_blocked_ready;
 	t_Shared_List shared_list_blocked_exec;
+
     sem_t sem_scheduler;
     sem_t sem_concurrency;
+    
     pthread_t thread_io_interface_dispatcher;
 } t_Interface;
 
@@ -45,7 +49,6 @@ extern t_Drain_Ongoing_Resource_Sync INTERFACES_SYNC;
 
 void *kernel_client_handler_for_io(t_Client *new_client);
 void *kernel_io_interface_dispatcher(t_Interface *interface);
-void kernel_io_interface_listener(t_Interface *interface);
 t_Interface *interface_create(t_Client *client);
 void interface_exit(t_Interface *interface);
 bool interface_name_matches(t_Interface *interface, char *name);

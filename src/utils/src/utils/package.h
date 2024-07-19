@@ -15,23 +15,21 @@
 #include "utils/module.h"
 
 typedef enum e_Header {
-    // Uso general
-    DISCONNECTING_HEADER,
     // Handshake
     PORT_TYPE_HEADER,
-    // Kernel <---> CPU
+    // Kernel <==> CPU
     PROCESS_DISPATCH_HEADER,
     PROCESS_EVICTION_HEADER,
     KERNEL_INTERRUPT_HEADER,
-    // Kernel <---> Memoria
+    // Kernel <==> Memoria
     PROCESS_CREATE_HEADER,
     PROCESS_DESTROY_HEADER,
-    //Kernel <---> Entrada/Salida
+    //Kernel <==> Entrada/Salida
     INTERFACE_DATA_REQUEST_HEADER,
     IO_OPERATION_DISPATCH_HEADER,
     IO_OPERATION_FINISHED_HEADER,
 
-    // CPU <---> Memoria
+    // CPU <==> Memoria
     INSTRUCTION_REQUEST,
     READ_REQUEST, //utilizado en MEMORIA-IO
     WRITE_REQUEST, //utilizado en MEMORIA-IO
@@ -39,7 +37,7 @@ typedef enum e_Header {
     FRAME_ACCESS,    //PARA MEMORIA Y REVISAR LA TLB
     FRAME_REQUEST,
     PAGE_SIZE_REQUEST,
-    //IO <---> Memoria
+    //IO <==> Memoria
     IO_STDIN_WRITE_MEMORY,
     IO_STDOUT_READ_MEMORY
 } e_Header;

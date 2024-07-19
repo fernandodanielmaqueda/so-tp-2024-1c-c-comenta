@@ -5,32 +5,44 @@
 #include "socket.h"
 
 t_Server COORDINATOR_MEMORY;
-t_Client *CLIENT_KERNEL;
-t_Client *CLIENT_CPU;
 
-sem_t sem_coordinator_kernel_client_connected;
-sem_t sem_coordinator_cpu_client_connected;
+t_Client *CLIENT_KERNEL = NULL;
+pthread_mutex_t MUTEX_CLIENT_KERNEL;
+pthread_cond_t COND_CLIENT_KERNEL;
+
+t_Client *CLIENT_CPU = NULL;
+pthread_mutex_t MUTEX_CLIENT_CPU;
+pthread_cond_t COND_CLIENT_CPU;
+
+t_Shared_List SHARED_LIST_CLIENTS_IO;
 
 void initialize_sockets(void) {
 
-    sem_init(&sem_coordinator_kernel_client_connected, 0, 0);
-    sem_init(&sem_coordinator_cpu_client_connected, 0, 0);
+    pthread_mutex_init(&MUTEX_CLIENT_KERNEL, NULL);
+    pthread_cond_init(&COND_CLIENT_KERNEL, NULL);
+
+    pthread_mutex_init(&MUTEX_CLIENT_CPU, NULL);
+    pthread_cond_init(&COND_CLIENT_CPU, NULL);
 
 	// [Server] Memory <- [Cliente(s)] Entrada/Salida + Kernel + CPU
 	pthread_create(&COORDINATOR_MEMORY.thread_server, NULL, (void *(*)(void *)) memory_start_server, (void *) &COORDINATOR_MEMORY);
 
 	// Se bloquea hasta que se realicen todas las conexiones
-    sem_wait(&sem_coordinator_kernel_client_connected);
-    sem_destroy(&sem_coordinator_kernel_client_connected);
+    pthread_mutex_lock(&MUTEX_CLIENT_KERNEL);
+		while(CLIENT_KERNEL == NULL)
+            pthread_cond_wait(&COND_CLIENT_KERNEL, &MUTEX_CLIENT_KERNEL);
+    pthread_mutex_unlock(&MUTEX_CLIENT_KERNEL);
+    pthread_cond_destroy(&COND_CLIENT_KERNEL);
 
-    sem_wait(&sem_coordinator_cpu_client_connected);    
-    sem_destroy(&sem_coordinator_cpu_client_connected);
+    pthread_mutex_lock(&MUTEX_CLIENT_CPU);
+		while(CLIENT_CPU == NULL)
+            pthread_cond_wait(&COND_CLIENT_CPU, &MUTEX_CLIENT_CPU);
+    pthread_mutex_unlock(&MUTEX_CLIENT_CPU);
+    pthread_cond_destroy(&COND_CLIENT_CPU);
 }
 
 void finish_sockets(void) {
 	close(COORDINATOR_MEMORY.fd_listen);
-    for(int i = 0; i < list_size(COORDINATOR_MEMORY.shared_list_clients.list); i++)
-        close(((t_Client *) list_get(COORDINATOR_MEMORY.shared_list_clients.list, i))->fd_client);
 }
 
 void *memory_start_server(t_Server *server) {
@@ -41,7 +53,7 @@ void *memory_start_server(t_Server *server) {
 	server_start(server);
 
 	while(1) {
-		log_trace(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_trace(SOCKET_LOGGER, "Esperando [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		fd_new_client = server_accept(server->fd_listen);
 
 		if(fd_new_client == -1) {
@@ -51,8 +63,9 @@ void *memory_start_server(t_Server *server) {
 
         new_client = malloc(sizeof(t_Client));
 		if(new_client == NULL) {
-			log_error(SOCKET_LOGGER, "Error al reservar memoria para [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
-			exit(1);
+			log_warning(SOCKET_LOGGER, "Error al reservar memoria para [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+			close(fd_new_client);
+            continue;
 		}
 
 		log_trace(SOCKET_LOGGER, "Aceptado [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
@@ -70,60 +83,122 @@ void *memory_client_handler(t_Client *new_client) {
 
     e_Port_Type port_type;
 
-    receive_port_type(&port_type, new_client->fd_client);
+    if(receive_port_type(&port_type, new_client->fd_client)) {
+        log_warning(SOCKET_LOGGER, "Error al recibir Handshake de [Cliente]");
+
+        close(new_client->fd_client);
+        free(new_client);
+
+        return NULL;
+    }
 
     switch(port_type) {
         case KERNEL_PORT_TYPE:
             new_client->client_type = KERNEL_PORT_TYPE;
-            // REVISAR QUE NO SE PUEDA CONECTAR UN KERNEL MAS DE UNA VEZ
-            log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
-            send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
-            pthread_mutex_lock(&(new_client->server->shared_list_clients.mutex));
-                list_add(new_client->server->shared_list_clients.list, new_client);
-            pthread_mutex_unlock(&(new_client->server->shared_list_clients.mutex));
+            pthread_mutex_lock(&MUTEX_CLIENT_KERNEL);
 
-            CLIENT_KERNEL = new_client;
+                if(CLIENT_KERNEL != NULL) {
+                    pthread_mutex_unlock(&MUTEX_CLIENT_KERNEL);
+                    log_warning(SOCKET_LOGGER, "Ya conectado un [Cliente] Kernel");
+                    send_port_type(TO_BE_IDENTIFIED_PORT_TYPE, new_client->fd_client);
 
-            sem_post(&sem_coordinator_kernel_client_connected);
+                    close(new_client->fd_client);
+                    free(new_client);
+
+                    return NULL;
+                }
+
+                if(send_port_type(MEMORY_PORT_TYPE, new_client->fd_client)) {
+                    pthread_mutex_unlock(&MUTEX_CLIENT_KERNEL);
+                    log_warning(SOCKET_LOGGER, "Error al enviar Handshake a [Cliente] Kernel");
+
+                    close(new_client->fd_client);
+                    free(new_client);
+
+                    return NULL;
+                }
+
+                log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Kernel");
+
+                CLIENT_KERNEL = new_client;
+
+            pthread_mutex_unlock(&MUTEX_CLIENT_KERNEL);
+
+            pthread_cond_signal(&COND_CLIENT_KERNEL);
+
             return NULL;
         case CPU_PORT_TYPE:
             new_client->client_type = CPU_PORT_TYPE;
-            // REVISAR QUE NO SE PUEDA CONECTAR UNA CPU MAS DE UNA VEZ
-            log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
-            send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
-            pthread_mutex_lock(&(new_client->server->shared_list_clients.mutex));
-                list_add(new_client->server->shared_list_clients.list, new_client);
-            pthread_mutex_unlock(&(new_client->server->shared_list_clients.mutex));
+            pthread_mutex_lock(&MUTEX_CLIENT_CPU);
 
-            CLIENT_CPU = new_client;
+                if(CLIENT_CPU != NULL) {
+                    pthread_mutex_unlock(&MUTEX_CLIENT_CPU);
+                    log_warning(SOCKET_LOGGER, "Ya conectado un [Cliente] CPU");
+                    send_port_type(TO_BE_IDENTIFIED_PORT_TYPE, new_client->fd_client);
 
-            sem_post(&sem_coordinator_cpu_client_connected);
-            listen_cpu(new_client->fd_client);
+                    close(new_client->fd_client);
+                    free(new_client);
+
+                    return NULL;
+                }
+
+                if(send_port_type(MEMORY_PORT_TYPE, new_client->fd_client)) {
+                    pthread_mutex_unlock(&MUTEX_CLIENT_CPU);
+                    log_warning(SOCKET_LOGGER, "Error al enviar Handshake a [Cliente] CPU");
+
+                    close(new_client->fd_client);
+                    free(new_client);
+
+                    return NULL;
+                }
+
+                log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] CPU");
+
+                CLIENT_CPU = new_client;
+
+            pthread_mutex_unlock(&MUTEX_CLIENT_CPU);
+
+            pthread_cond_signal(&COND_CLIENT_CPU);
+
+            listen_cpu();
+
             return NULL;
         case IO_PORT_TYPE:
             new_client->client_type = IO_PORT_TYPE;
+
+            if(send_port_type(MEMORY_PORT_TYPE, new_client->fd_client)) {
+                log_warning(SOCKET_LOGGER, "Error al enviar Handshake a [Cliente] Entrada/Salida");
+
+                close(new_client->fd_client);
+                free(new_client);
+
+                return NULL;
+            }
+
             log_debug(SOCKET_LOGGER, "OK Handshake con [Cliente] Entrada/Salida");
-            send_port_type(MEMORY_PORT_TYPE, new_client->fd_client);
 
-            pthread_mutex_lock(&(new_client->server->shared_list_clients.mutex));
-                list_add(new_client->server->shared_list_clients.list, new_client);
-            pthread_mutex_unlock(&(new_client->server->shared_list_clients.mutex));
+            pthread_mutex_lock(&(SHARED_LIST_CLIENTS_IO.mutex));
+                list_add(SHARED_LIST_CLIENTS_IO.list, new_client);
+            pthread_mutex_unlock(&(SHARED_LIST_CLIENTS_IO.mutex));
 
-            listen_io(new_client->fd_client);
+            listen_io(new_client);
 
-            close(new_client->fd_client);
-            free(new_client);
             return NULL;
         default:
-            log_warning(SOCKET_LOGGER, "Error Handshake con [Cliente] No reconocido");
+            log_warning(SOCKET_LOGGER, "No reconocido Handshake de [Cliente]");
             send_port_type(TO_BE_IDENTIFIED_PORT_TYPE, new_client->fd_client);
 
             close(new_client->fd_client);
             free(new_client);
+
             return NULL;
     }
 
     return NULL;
+}
+
+bool client_matches_pthread(t_Client *client, pthread_t *thread) {
+    return pthread_equal(client->thread_client_handler, *thread);
 }

@@ -23,18 +23,28 @@ void *client_thread_connect_to_server(t_Connection *connection) {
 
     // Handshake
 
-    send_port_type(connection->client_type, connection->fd_connection);
-    receive_port_type(&port_type, connection->fd_connection);
-
-    if(port_type == connection->server_type) {
-      log_debug(SOCKET_LOGGER, "OK Handshake con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
-      break;
+    if(send_port_type(connection->client_type, connection->fd_connection)) {
+      log_warning(SOCKET_LOGGER, "Error al enviar Handshake a [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+      close(connection->fd_connection);
+      sleep(RETRY_CONNECTION_IN_SECONDS);
+      continue;
+    }
+    if(receive_port_type(&port_type, connection->fd_connection)) {
+      log_warning(SOCKET_LOGGER, "Error al recibir Handshake de [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+      close(connection->fd_connection);
+      sleep(RETRY_CONNECTION_IN_SECONDS);
+      continue;
     }
 
-    log_warning(SOCKET_LOGGER, "Error Handshake con [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
-    close(connection->fd_connection);
-    sleep(RETRY_CONNECTION_IN_SECONDS);
+    if(port_type != connection->server_type) {
+      log_warning(SOCKET_LOGGER, "No reconocido Handshake de [Servidor] %s en IP: %s - Puerto: %s. Reintentando en %d segundos...", PORT_NAMES[connection->server_type], connection->ip, connection->port, RETRY_CONNECTION_IN_SECONDS);
+      close(connection->fd_connection);
+      sleep(RETRY_CONNECTION_IN_SECONDS);
+      continue;
+    }
 
+    log_debug(SOCKET_LOGGER, "OK Handshake con [Servidor] %s en IP: %s - Puerto: %s", PORT_NAMES[connection->server_type], connection->ip, connection->port);
+    break;
   }
 
   return NULL;

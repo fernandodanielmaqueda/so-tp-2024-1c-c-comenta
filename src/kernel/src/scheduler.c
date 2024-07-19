@@ -87,17 +87,6 @@ int find_scheduling_algorithm(char *name, e_Scheduling_Algorithm *destination) {
 }
 
 void initialize_scheduling(void) {
-
-	LIST_RELEASED_PIDS = list_create();
-
-	SHARED_LIST_NEW.list = list_create();
-	SHARED_LIST_READY.list = list_create();
-	SHARED_LIST_READY_PRIORITARY.list = list_create();
-	SHARED_LIST_EXEC.list = list_create();
-	SHARED_LIST_EXIT.list = list_create();
-	
-	LIST_INTERFACES = list_create();
-
 	initialize_long_term_scheduler();
 	initialize_short_term_scheduler();
 }
@@ -166,19 +155,27 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 			pthread_mutex_unlock(&(SHARED_LIST_EXIT.mutex));
 		signal_draining_requests(&SCHEDULING_SYNC);
 
-		send_process_destroy(pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection);
+		if(send_process_destroy(pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection)) {
+			// TODO
+			exit(1);
+		}
 
 		// TODO: Falta liberar recursos asignados al proceso
 
-		receive_return_value_with_expected_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection);
+		if(receive_return_value_with_expected_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection)) {
+			// TODO
+        	exit(1);
+		}
+
 		if(return_value) {
+			// TODO
 			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo FINALIZAR_PROCESO %" PRIu32, pcb->exec_context.PID);
 		} else {
 			log_debug(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->exec_context.PID, EXIT_REASONS[pcb->exit_reason]);
 		}
 
 		//pid_release(pcb->PID);
-		free(pcb);
+		pcb_free(pcb);
 		sem_post(&SEM_MULTIPROGRAMMING_POSTER);
 		
 	}
@@ -208,7 +205,11 @@ void *short_term_scheduler(void *NULL_parameter) {
 			EXEC_PCB = 1;
 			while(EXEC_PCB) {
 
-				send_process_dispatch(pcb->exec_context, CONNECTION_CPU_DISPATCH.fd_connection);
+				if(send_process_dispatch(pcb->exec_context, CONNECTION_CPU_DISPATCH.fd_connection)) {
+					// TODO
+					exit(1);
+				}
+
 				signal_draining_requests(&SCHEDULING_SYNC);
 
 				switch(SCHEDULING_ALGORITHM) {
@@ -225,7 +226,10 @@ void *short_term_scheduler(void *NULL_parameter) {
 						break;
 				}
 
-				receive_process_eviction(&(pcb->exec_context), &eviction_reason, &syscall_instruction, CONNECTION_CPU_DISPATCH.fd_connection);
+				if(receive_process_eviction(&(pcb->exec_context), &eviction_reason, &syscall_instruction, CONNECTION_CPU_DISPATCH.fd_connection)) {
+					// TODO
+        			exit(1);
+				}
 
 				switch(SCHEDULING_ALGORITHM) {
 					case RR_SCHEDULING_ALGORITHM:
@@ -401,7 +405,6 @@ t_PCB *VRR_scheduling_algorithm(void) {
 void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 
 	e_Process_State previous_state = pcb->current_state;
-	pcb->current_state = new_state;
 
 	switch(previous_state) {
 		case NEW_STATE:
@@ -443,6 +446,8 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 		default:
 			break;
 	}
+
+	pcb->current_state = new_state;
 
 	switch(new_state) {
 		case READY_STATE:
@@ -509,8 +514,8 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 	}
 }
 
-bool pcb_matches_pid(t_PCB *pcb, t_PID pid) {
-	return pcb->exec_context.PID == pid;
+bool pcb_matches_pid(t_PCB *pcb, t_PID *pid) {
+	return pcb->exec_context.PID == *pid;
 }
 
 void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list) {
@@ -657,7 +662,10 @@ void *start_quantum(t_PCB *pcb) {
 		QUANTUM_INTERRUPT = 1;
 	pthread_mutex_unlock(&MUTEX_QUANTUM_INTERRUPT);
 
-    send_kernel_interrupt(QUANTUM_KERNEL_INTERRUPT, pcb->exec_context.PID, CONNECTION_CPU_INTERRUPT.fd_connection);
+    if(send_kernel_interrupt(QUANTUM_KERNEL_INTERRUPT, pcb->exec_context.PID, CONNECTION_CPU_INTERRUPT.fd_connection)) {
+		// TODO
+		exit(1);
+	}
 
     log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->exec_context.quantum);
 

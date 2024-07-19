@@ -51,6 +51,8 @@ int module(int argc, char *argv[])
 	initialize_semaphores();
     initialize_sockets();
 
+    pthread_create(&(CLIENT_KERNEL_CPU_INTERRUPT.thread_client_handler), NULL, (void *(*)(void *)) kernel_cpu_interrupt_handler, NULL);
+
     TLB = list_create();
 
     //Se pide a memoria el tamaño de pagina y lo setea como dato global
@@ -70,9 +72,6 @@ int module(int argc, char *argv[])
 }
 
 void initialize_mutexes(void) {
-    pthread_mutex_init(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex), NULL);
-    pthread_mutex_init(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex), NULL);
-
     pthread_mutex_init(&MUTEX_EXEC_CONTEXT, NULL);
     pthread_mutex_init(&MUTEX_EXECUTING, NULL);
     pthread_mutex_init(&MUTEX_KERNEL_INTERRUPT, NULL);    
@@ -80,9 +79,6 @@ void initialize_mutexes(void) {
 }
 
 void finish_mutexes(void) {
-    pthread_mutex_destroy(&(SERVER_CPU_DISPATCH.shared_list_clients.mutex));
-    pthread_mutex_destroy(&(SERVER_CPU_INTERRUPT.shared_list_clients.mutex));
-    
     pthread_mutex_destroy(&MUTEX_EXEC_CONTEXT);
     pthread_mutex_destroy(&MUTEX_EXECUTING);
     pthread_mutex_destroy(&MUTEX_KERNEL_INTERRUPT);    
@@ -100,8 +96,13 @@ void finish_semaphores(void) {
 void read_module_config(t_config *MODULE_CONFIG)
 {
     CONNECTION_MEMORY = (t_Connection){.client_type = CPU_PORT_TYPE, .server_type = MEMORY_PORT_TYPE, .ip = config_get_string_value(MODULE_CONFIG, "IP_MEMORIA"), .port = config_get_string_value(MODULE_CONFIG, "PUERTO_MEMORIA")};
-    SERVER_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH"), .shared_list_clients.list = list_create()};
-    SERVER_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT"), .shared_list_clients.list = list_create()};
+    
+    SERVER_CPU_DISPATCH = (t_Server){.server_type = CPU_DISPATCH_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_DISPATCH")};
+    CLIENT_KERNEL_CPU_DISPATCH = (t_Client){.client_type = KERNEL_PORT_TYPE, .server = &SERVER_CPU_DISPATCH};
+    
+    SERVER_CPU_INTERRUPT = (t_Server){.server_type = CPU_INTERRUPT_PORT_TYPE, .clients_type = KERNEL_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA_INTERRUPT")};
+    CLIENT_KERNEL_CPU_INTERRUPT = (t_Client){.client_type = KERNEL_PORT_TYPE, .server = &SERVER_CPU_INTERRUPT};
+    
     TLB_ENTRY_COUNT = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
     if(find_tlb_algorithm(config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB"), &TLB_ALGORITHM)) {
 		log_error(MODULE_LOGGER, "ALGORITMO_PLANIFICACION invalido");
@@ -141,7 +142,10 @@ void instruction_cycle(void)
         payload_init(&SYSCALL_INSTRUCTION);
 
         pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
-            receive_process_dispatch(&EXEC_CONTEXT, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+            if(receive_process_dispatch(&EXEC_CONTEXT, CLIENT_KERNEL_CPU_DISPATCH.fd_client)) {
+                // TODO
+                exit(1);
+            }
         pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
@@ -233,7 +237,10 @@ void instruction_cycle(void)
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
         pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
-            send_process_eviction(EXEC_CONTEXT, EVICTION_REASON, SYSCALL_INSTRUCTION, ((t_Client *) list_get(SERVER_CPU_DISPATCH.shared_list_clients.list, 0))->fd_client);
+            if(send_process_eviction(EXEC_CONTEXT, EVICTION_REASON, SYSCALL_INSTRUCTION, CLIENT_KERNEL_CPU_DISPATCH.fd_client)) {
+                // TODO
+                exit(1);
+            }
         pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
 
         payload_destroy(&SYSCALL_INSTRUCTION);
@@ -244,15 +251,15 @@ void instruction_cycle(void)
 
 void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 
-    cpu_start_server_for_kernel((void *) &SERVER_CPU_INTERRUPT);
-    sem_post(&CONNECTED_KERNEL_CPU_INTERRUPT);
-
     e_Kernel_Interrupt kernel_interrupt;
     t_PID pid;
 
     while(1) {
 
-        receive_kernel_interrupt(&kernel_interrupt, &pid, ((t_Client *) list_get(SERVER_CPU_INTERRUPT.shared_list_clients.list, 0))->fd_client);
+        if(receive_kernel_interrupt(&kernel_interrupt, &pid, CLIENT_KERNEL_CPU_INTERRUPT.fd_client)) {
+            // TODO
+            exit(1);
+        }
 
         pthread_mutex_lock(&MUTEX_EXECUTING);
             if(!EXECUTING) {
@@ -302,7 +309,10 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
             request_frame_memory(pid, page_number);
 
             t_Package *package;
-            package_receive(&package, CONNECTION_MEMORY.fd_connection);
+            if(package_receive(&package, CONNECTION_MEMORY.fd_connection)) {
+                // TODO
+                exit(1);
+            }
             t_PID pidBuscado;
             payload_shift(&(package->payload), &pidBuscado, sizeof(pidBuscado) );
             payload_shift(&(package->payload), &frame_number, sizeof(frame_number) );
@@ -456,15 +466,27 @@ void request_frame_memory(t_PID pid, t_Page_Number page) {
 }
 
 void cpu_fetch_next_instruction(char **line) {
-    send_instruction_request(EXEC_CONTEXT.PID, EXEC_CONTEXT.PC, CONNECTION_MEMORY.fd_connection);
-    receive_text_with_expected_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection);
+    if(send_instruction_request(EXEC_CONTEXT.PID, EXEC_CONTEXT.PC, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
+    }
+    if(receive_text_with_expected_header(INSTRUCTION_REQUEST, line, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
+    }
 }
 
 void ask_memory_page_size(void) {
-    send_header(PAGE_SIZE_REQUEST, CONNECTION_MEMORY.fd_connection);
+    if(send_header(PAGE_SIZE_REQUEST, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
+    }
 
     t_Package* package;
-    package_receive(&package, CONNECTION_MEMORY.fd_connection);
+    if(package_receive(&package, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
+    }
     payload_shift(&(package->payload), &PAGE_SIZE, sizeof(PAGE_SIZE));
     package_destroy(package);
 }
@@ -481,7 +503,10 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
-    receive_expected_header(WRITE_REQUEST,CONNECTION_MEMORY.fd_connection);
+    if(receive_expected_header(WRITE_REQUEST,CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
+    }
     log_info(MODULE_LOGGER, "PID: %i - Accion: ESCRIBIR OK", pid);
 }
 
@@ -496,14 +521,13 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
-    package_receive(&package, CONNECTION_MEMORY.fd_connection);
-    if (package == NULL) {
-        log_error(MODULE_LOGGER, "Error al recibir el paquete");
-        exit(EXIT_FAILURE);
-    } else {
-        log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
-        payload_shift(&(package->payload), &destination, bytes);
+    if(package_receive(&package, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
     }
+
+    log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
+    payload_shift(&(package->payload), &destination, bytes);
     package_destroy(package);
 }
 

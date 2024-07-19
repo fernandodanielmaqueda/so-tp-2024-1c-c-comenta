@@ -34,7 +34,7 @@ void finish_sockets(void) {
 	close(CONNECTION_MEMORY.fd_connection);
 	close(CONNECTION_CPU_DISPATCH.fd_connection);
 	close(CONNECTION_CPU_INTERRUPT.fd_connection);
-	// FALTA CERRAR TODOS LOS IOs
+	// TODO: CERRAR LOS IOs
 }
 
 void *kernel_start_server_for_io(t_Server *server) {

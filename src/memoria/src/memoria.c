@@ -31,6 +31,8 @@ int module(int argc, char* argv[]) {
     initialize_mutexes();
 	initialize_semaphores();
 
+    SHARED_LIST_CLIENTS_IO.list = list_create();
+
     MAIN_MEMORY = (void *) malloc(TAM_MEMORIA);
     memset(MAIN_MEMORY, (uint32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
     LIST_PROCESSES = list_create();
@@ -40,7 +42,7 @@ int module(int argc, char* argv[]) {
 
     log_debug(MODULE_LOGGER, "Modulo %s inicializado correctamente\n", MODULE_NAME);
 
-    listen_kernel(CLIENT_KERNEL->fd_client);
+    listen_kernel();
 
 	//finish_threads();
     free_memory();
@@ -54,11 +56,11 @@ int module(int argc, char* argv[]) {
 }
 
 void initialize_mutexes(void) {
-    pthread_mutex_init(&(COORDINATOR_MEMORY.shared_list_clients.mutex), NULL);
+    pthread_mutex_init(&(SHARED_LIST_CLIENTS_IO.mutex), NULL);
 }
 
 void finish_mutexes(void) {
-    pthread_mutex_destroy(&(COORDINATOR_MEMORY.shared_list_clients.mutex));
+    pthread_mutex_destroy(&(SHARED_LIST_CLIENTS_IO.mutex));
 }
 
 void initialize_semaphores(void) {
@@ -70,19 +72,22 @@ void finish_semaphores(void) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA"), .shared_list_clients.list = list_create()};
+    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
     TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
     RETARDO_RESPUESTA = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
 }
 
-void listen_kernel(int fd_kernel) {
+void listen_kernel(void) {
 
     t_Package* package;
     
     while(1) {
-        package_receive(&package, fd_kernel);
+        if(package_receive(&package, CLIENT_KERNEL->fd_client)) {
+            // TODO
+            exit(1);
+        }
         switch(package->header) {
             case PROCESS_CREATE_HEADER:
                 log_info(MODULE_LOGGER, "KERNEL: Proceso nuevo recibido.");
@@ -93,14 +98,9 @@ void listen_kernel(int fd_kernel) {
                 log_info(MODULE_LOGGER, "KERNEL: Proceso finalizado recibido.");
                 kill_process(&(package->payload));
                 break;
-
-            case DISCONNECTING_HEADER:
-                log_warning(MODULE_LOGGER, "Se desconecto kernel.");
-                log_destroy(MODULE_LOGGER);
-                return;
             
             default:
-                log_warning(MODULE_LOGGER, "Operacion desconocida..");
+                log_warning(MODULE_LOGGER, "%s: Header desconocido (%d)", "", package->header);
                 break;
         }
         package_destroy(package);
@@ -147,7 +147,10 @@ void create_process(t_Payload *process_data) {
     //CREAR LISTA INST CON EL PARSER
     if(parser_file(target_path, instructions_list)) {
         //ENVIAR RTA ERROR A KERNEL
-        send_return_value_with_header(PROCESS_CREATE_HEADER, 1, CLIENT_KERNEL->fd_client);
+        if(send_return_value_with_header(PROCESS_CREATE_HEADER, 1, CLIENT_KERNEL->fd_client)) {
+            // TODO
+            exit(1);
+        }
         return;
     }
 
@@ -159,7 +162,10 @@ void create_process(t_Payload *process_data) {
     log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
 
     //ENVIAR RTA OK A KERNEL
-    send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client);
+    if(send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client)) {
+        // TODO
+        exit(1);
+    }
     free(target_path);
 }
 
@@ -184,7 +190,10 @@ void kill_process(t_Payload *payload) {
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <%d>", (int) pid, size);
     
     //ENVIAR RTA OK A KERNEL
-    send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, CLIENT_KERNEL->fd_client);
+    if(send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, CLIENT_KERNEL->fd_client)) {
+        // TODO
+        exit(1);
+    }
     
 }
 
@@ -228,11 +237,14 @@ int parser_file(char* path, t_list *list_instruction) {
     return 0;
 }
 
-void listen_cpu(int fd_cpu) {
+void listen_cpu(void) {
     t_Package *package;
 
     while(1) {
-        package_receive(&package, fd_cpu);
+        if(package_receive(&package, CLIENT_CPU->fd_client)) {
+            // TODO
+            exit(1);
+        }
         switch (package->header) {
             case INSTRUCTION_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de instruccion recibido.");
@@ -282,35 +294,41 @@ void listen_cpu(int fd_cpu) {
                 break;
             
             default:
-                log_warning(MODULE_LOGGER, "Operacion desconocida..");
+                log_warning(MODULE_LOGGER, "%s: Header desconocido (%d)", "", package->header);
                 break;
         }
     }
 }
 
-void listen_io(int fd_io) {
+void listen_io(t_Client *client) {
     t_Package *package;
 
     while(1) {
-        package_receive(&package, fd_io);
+        if(package_receive(&package, client->fd_client)) {
+            log_warning(MODULE_LOGGER, "Terminada conexion con [Cliente] Entrada/Salida");
+
+            pthread_mutex_lock(&(SHARED_LIST_CLIENTS_IO.mutex));
+                list_remove_by_condition_with_comparation(SHARED_LIST_CLIENTS_IO.list, (bool (*)(void *, void *)) client_matches_pthread, (void *) &(client->thread_client_handler));
+            pthread_mutex_unlock(&(SHARED_LIST_CLIENTS_IO.mutex));
+
+            close(client->fd_client);
+            free(client);
+
+            return;
+        }
         switch(package->header) {
 
-            case DISCONNECTING_HEADER:
-                log_warning(MODULE_LOGGER, "Se desconecto kernel.");
-                log_destroy(MODULE_LOGGER);
-                return;
             case IO_STDIN_WRITE_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
-                write_memory(&(package->payload), fd_io);
+                write_memory(&(package->payload), client->fd_client);
                 break;
             
             case IO_STDOUT_READ_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
-                read_memory(&(package->payload), fd_io);
+                read_memory(&(package->payload), client->fd_client);
                 break;
-            
             default:
-                log_warning(MODULE_LOGGER, "Operacion desconocida..");
+                log_warning(MODULE_LOGGER, "%s: Header desconocido (%d)", "", package->header);
                 break;
         }
         package_destroy(package);
@@ -349,7 +367,10 @@ void seek_instruccion(t_Payload *payload) {
     }
 
     usleep(RETARDO_RESPUESTA * 1000);
-    send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, CLIENT_CPU->fd_client);
+    if(send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, CLIENT_CPU->fd_client)) {
+        // TODO
+        exit(1);
+    }
     log_info(MODULE_LOGGER, "Instruccion enviada.");
 }
 
@@ -535,7 +556,10 @@ void write_memory(t_Payload *payload, int socket){
 
     list_destroy_and_destroy_elements(list_physical_addresses, free);
 
-    send_return_value_with_header(WRITE_REQUEST, 0, socket);
+    if(send_return_value_with_header(WRITE_REQUEST, 0, socket)) {
+        // TODO
+        exit(1);
+    }
 }
 
 //Actualizar page y TDP
@@ -632,7 +656,10 @@ void resize_process(t_Payload *payload){
 
     //No hace falta el caso page == size ya que no sucederia nada
 
-    send_return_value_with_header(RESIZE_REQUEST, return_value, CLIENT_CPU->fd_client);
+    if(send_return_value_with_header(RESIZE_REQUEST, return_value, CLIENT_CPU->fd_client)) {
+        // TODO
+        exit(1);
+    }
 }
 
 int seek_oldest_page_updated(t_list* page_list){

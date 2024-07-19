@@ -323,7 +323,10 @@ int resize_cpu_operation(int argc, char **argv)
 	package_destroy(package);
 
     t_Return_Value return_value;
-    receive_return_value_with_expected_header(RESIZE_REQUEST, &return_value, CONNECTION_MEMORY.fd_connection);
+    if(receive_return_value_with_expected_header(RESIZE_REQUEST, &return_value, CONNECTION_MEMORY.fd_connection)) {
+        // TODO
+        exit(1);
+    }
     if(return_value) {
         EVICTION_REASON = OUT_OF_MEMORY_EVICTION_REASON;
         return 1;
