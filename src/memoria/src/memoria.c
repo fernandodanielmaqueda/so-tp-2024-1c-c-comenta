@@ -77,7 +77,7 @@ void read_module_config(t_config* MODULE_CONFIG) {
     TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
 
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
-        if(PATH_INSTRUCCIONES[0] != '\0') {
+        if(PATH_INSTRUCCIONES[0]) {
 
             size_t length = strlen(PATH_INSTRUCCIONES);
             if(PATH_INSTRUCCIONES[length - 1] == '/') {
@@ -141,7 +141,7 @@ void create_process(t_Payload *process_data) {
         target_path = argument_path;
     } else {
         // Ruta relativa
-        target_path = malloc(strlen(PATH_INSTRUCCIONES) + 1 + strlen(argument_path) + 1);
+        target_path = malloc((PATH_INSTRUCCIONES[0] ? (strlen(PATH_INSTRUCCIONES) + 1) : 0) + strlen(argument_path) + 1);
         if(target_path == NULL) {
             log_error(MODULE_LOGGER, "malloc: No se pudo reservar memoria para la ruta relativa.");
             exit(EXIT_FAILURE);
@@ -152,7 +152,8 @@ void create_process(t_Payload *process_data) {
             target_path[i] = PATH_INSTRUCCIONES[i];
         }
 
-        target_path[i++] = '/';
+        if(PATH_INSTRUCCIONES[0])
+            target_path[i++] = '/';
 
         register int j;
         for(j = 0; argument_path[j]; j++) {
