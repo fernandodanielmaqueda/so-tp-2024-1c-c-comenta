@@ -57,7 +57,6 @@ int module(int argc, char *argv[]) {
 	initialize_loggers();
 	initialize_configs(argv[2]);
 
-	LIST_FILES = list_create();
 
 	initialize_sockets();
 
@@ -67,6 +66,7 @@ int module(int argc, char *argv[]) {
 	receive_expected_header(INTERFACE_DATA_REQUEST_HEADER, CONNECTION_KERNEL.fd_connection);	
 	send_interface_data(INTERFACE_NAME, IO_TYPE, CONNECTION_KERNEL.fd_connection);
 	receive_return_value_with_expected_header(INTERFACE_DATA_REQUEST_HEADER, &return_value, CONNECTION_KERNEL.fd_connection);
+
 	if(return_value) {
 		log_error(MODULE_LOGGER, "No se pudo registrar la interfaz %s en el Kernel", INTERFACE_NAME);
 		exit(EXIT_FAILURE);
@@ -74,8 +74,10 @@ int module(int argc, char *argv[]) {
 
 	switch(IO_TYPE){
 		case DIALFS_IO_TYPE:
-		initialize_blocks();
-		initialize_bitmap(BLOCK_COUNT);
+			initialize_blocks();
+			initialize_bitmap(BLOCK_COUNT);
+			LIST_FILES = list_create();
+			break;
 	}
 
 	//finish_threads();
@@ -199,7 +201,19 @@ void stdout_interface_function(void) {
 }
 
 void dialfs_interface_function(void) {
+	t_Payload *io_operation = NULL;
+	//Espero peticiones
+	while(1) {
+		
+		//Recibo peticion
+		receive_io_operation_dispatch(&PID, io_operation, CONNECTION_KERNEL.fd_connection);
 
+		//Ejecuto operacion y retorno valor
+		t_Return_Value return_value = io_operation_execute(io_operation);
+		
+		// LE AVISO A KERNEL CÓMO SALIÓ LA OPERACIÓN
+		send_io_operation_finished(PID, return_value, CONNECTION_KERNEL.fd_connection);
+	}
 }
 
 int io_operation_execute(t_Payload *operation) {
@@ -215,6 +229,291 @@ int io_operation_execute(t_Payload *operation) {
     }
 
     return IO_OPERATIONS[io_opcode].function(operation);
+}
+
+
+
+int io_gen_sleep_io_operation(t_Payload *operation) {
+
+	switch(IO_TYPE) {
+		case GENERIC_IO_TYPE:
+		{
+			uint32_t work_units;
+			payload_dequeue(operation, &PID, sizeof(t_PID));
+			payload_dequeue(operation, &work_units, sizeof(uint32_t));
+
+			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
+
+			log_info(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>", PID);
+			sleep(WORK_UNIT_TIME * work_units);
+
+
+			break;
+		}
+		default:
+			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
+			return 1;
+	}
+
+    return 0;
+}
+
+int io_stdin_read_io_operation(t_Payload *operation) {
+
+    // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
+
+	switch(IO_TYPE){
+		case STDIN_IO_TYPE:
+		
+			//Inicializo Headers para memoria
+			//Creo paquete y argumentos necesarios para enviarle a memoria
+			t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
+			
+			t_list *physical_addresses = list_create();
+			t_MemorySize bytes;
+
+			//Empiezo a "desencolar" el payload recibido
+			payload_dequeue(operation, &PID, sizeof(t_PID));
+			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
+			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
+
+			//Aviso que operacion voy a hacer
+			log_info(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", PID);
+
+			//Encolo el payload en el paquete creado antes
+			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
+			list_serialize(package->payload, *physical_addresses, physical_address_deserialize_element);
+			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
+
+			//Envio el paquete y lo destruyo
+			package_send(package, CONNECTION_MEMORY.fd_connection);
+			package_destroy(package);
+
+			//Recibo si salio bien la operacion
+			receive_return_value_with_expected_header(WRITE_REQUEST, 0, CONNECTION_MEMORY.fd_connection);
+	
+			break;
+		default:
+			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
+			return 1;
+	}
+
+	return 0;	
+}
+
+int io_stdout_write_io_operation(t_Payload *operation) {
+    
+	switch(IO_TYPE){
+		case STDOUT_IO_TYPE:
+
+
+			//Creo header para memoria y el paquete con los argumentos
+			//e_Header IO_STDOUT_READ_MEMORY;
+			t_Package* package = package_create_with_header(IO_STDOUT_READ_MEMORY);
+			
+			t_list *physical_addresses = list_create();
+			t_MemorySize bytes;
+			char* text_received = NULL;
+
+			//empiezo a "desencolar" el payload recibido
+			payload_dequeue(operation, &PID, sizeof(t_PID));
+			//text_deserialize(operation, &text_received);
+			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
+			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
+
+			//Aviso la operacion que voy a hacer
+			log_info(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", PID);
+
+			//Encolo devuelta el payload dentro del paquete creado
+			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
+			list_serialize(package->payload, *physical_addresses, physical_address_deserialize_element);
+			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
+
+			//Envio el paquete y lo destruyo
+			package_send(package, CONNECTION_MEMORY.fd_connection);
+			package_destroy(package);
+			
+			//Recibo nuevo paquete para imprimir por pantalla
+			t_Package *memory_package = NULL;
+			package_receive(memory_package,CONNECTION_MEMORY.fd_connection);
+			//Desencolar e imprimir por pantalla
+			payload_dequeue(memory_package->payload, text_received,bytes);
+			log_info(MODULE_LOGGER, "Lo hallado en las direcciones de memoria es: %s", text_received);
+
+			break;
+		default:
+			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
+			return 1;
+	}
+    
+    return 0;
+}
+
+int io_fs_create_io_operation(t_Payload *operation) {
+
+
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
+	char* file_name;
+	t_PID op_pid;
+
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
+    text_deserialize(operation, &(file_name));
+	uint32_t location = seek_first_free_block();
+
+	t_FS_File* new_entry = NULL;
+	strcpy(new_entry->name , file_name);
+	new_entry->process_pid = op_pid;
+	new_entry->initial_bloq = location;
+	new_entry->len = 1;
+
+	//Checkiar si el FS es solo para este hilo o para todo el modulo
+	//Agregar un mutex
+
+	bitarray_set_bit(BITMAP, location);
+
+	list_add(LIST_FILES, new_entry);
+
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
+
+	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
+	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
+	package_send(respond, CONNECTION_KERNEL.fd_connection);
+	package_destroy(respond);
+
+    return 0;
+}
+
+int io_fs_delete_io_operation(t_Payload *operation) {
+
+	t_PID op_pid = 0;
+	char* file_name = NULL;
+
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
+    text_deserialize(operation, &(file_name));
+	
+	uint32_t size = list_size(LIST_FILES);
+	if(size > 0){
+		t_FS_File* file = list_get(LIST_FILES,0);
+		size_t file_target = 0;
+
+		for (size_t i = 0; i < size; i++)
+		{
+			t_FS_File* file = list_get(LIST_FILES,i);
+			if (strcmp(file->name, file_name)){
+				i = size;
+				file_target = i;
+			}
+		}
+
+		uint32_t initial_pos = file->initial_bloq + file->len;
+		for (size_t i = 0; i < file->len; i++)
+		{
+			bitarray_clean_bit(BITMAP, initial_pos);
+			initial_pos--;
+		}
+
+		list_remove(LIST_FILES, file_target);
+
+	}
+	
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
+	
+	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
+	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
+	package_send(respond, CONNECTION_KERNEL.fd_connection);
+	package_destroy(respond);
+
+    return 0;
+}
+
+
+int io_fs_truncate_io_operation(t_Payload *operation) {
+	
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
+
+	char* file_name = NULL;
+	char* value = NULL;
+	t_PID op_pid = 0;
+	
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
+    text_deserialize(operation, &(file_name));
+    text_deserialize(operation, &(value));
+
+	uint32_t valueNUM = atoi(value);
+
+	t_FS_File* file = seek_file(file_name);
+	uint32_t initial_pos = file->initial_bloq + file->len;
+	if (file->len > valueNUM)
+	{//Se restan bloques
+		size_t diff = file->len - valueNUM;
+		for (size_t i = 0; i < diff; i++)
+		{
+			bitarray_clean_bit(BITMAP, initial_pos);
+			initial_pos--;
+		}
+		file->len = valueNUM;
+	}
+	if (file->len < valueNUM)
+	{// Se agregan bloques
+		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
+			size_t diff = valueNUM - file->len;
+			for (size_t i = 0; i < diff; i++)
+			{
+				bitarray_set_bit(BITMAP, initial_pos);
+				initial_pos++;
+			}
+			file->len = valueNUM;
+		}
+		else{
+        	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
+			return 1;
+		}
+	}
+	
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
+	
+	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
+	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
+	package_send(respond, CONNECTION_KERNEL.fd_connection);
+	package_destroy(respond);
+    
+    return 0;
+}
+
+int io_fs_write_io_operation(t_Payload *operation) {
+
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
+
+
+    return 0;
+}
+
+int io_fs_read_io_operation(t_Payload *operation) {
+
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
+
+	char* file_name = NULL;
+	uint32_t ptro = 0;
+	uint32_t bytes = 0;
+	t_PID op_pid = 0;
+	t_list* list_dfs = list_create();
+
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
+    text_deserialize(operation, &(file_name));
+    payload_dequeue(operation, &ptro, sizeof(uint32_t));
+    payload_dequeue(operation, &bytes, sizeof(uint32_t));
+	list_deserialize(operation, list_dfs, physical_address_deserialize_element);
+
+	t_FS_File* file = seek_file(file_name);
+	uint32_t block_initial = ptro / BLOCK_SIZE;
+	uint32_t block_required = seek_quantity_blocks_required(ptro, bytes);
+
+	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
+
+	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA
+
+
+    return 0;
 }
 
 void initialize_blocks() {
@@ -300,122 +599,6 @@ void initialize_bitmap(size_t block_count) {
     log_info(MODULE_LOGGER, "Bitmap creado y mapeado correctamente.");
 }
 
-int io_gen_sleep_io_operation(t_Payload *operation) {
-
-	switch(IO_TYPE) {
-		case GENERIC_IO_TYPE:
-		{
-			uint32_t work_units;
-			payload_dequeue(operation, &PID, sizeof(t_PID));
-			payload_dequeue(operation, &work_units, sizeof(uint32_t));
-
-			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
-
-			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>", PID);
-			sleep(WORK_UNIT_TIME * work_units);
-
-
-			break;
-		}
-		default:
-			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-			return 1;
-	}
-
-    return 0;
-}
-
-int io_stdin_read_io_operation(t_Payload *operation) {
-
-    // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
-
-	switch(IO_TYPE){
-		case STDIN_IO_TYPE:
-		
-			//Inicializo Headers para memoria
-			//e_Header IO_STDIN_WRITE_MEMORY;	
-			//e_Header WRITE_REQUEST;
-			//Creo paquete y argumentos necesarios para enviarle a memoria
-			t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
-			
-			t_list *physical_addresses = list_create();
-			t_MemorySize bytes;
-
-			//Empiezo a "desencolar" el payload recibido
-			payload_dequeue(operation, &PID, sizeof(t_PID));
-			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
-			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
-
-			//Aviso que operacion voy a hacer
-			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", PID);
-
-			//Encolo el payload en el paquete creado antes
-			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
-			list_serialize(package->payload, *physical_addresses, physical_address_deserialize_element);
-			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
-
-			//Envio el paquete y lo destruyo
-			package_send(package, CONNECTION_MEMORY.fd_connection);
-			package_destroy(package);
-
-			//Recibo si salio bien la operacion
-			receive_return_value_with_expected_header(WRITE_REQUEST, 0, CONNECTION_MEMORY.fd_connection);
-	
-			break;
-		default:
-			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-			return 1;
-	}
-
-	return 0;	
-}
-
-int io_stdout_write_io_operation(t_Payload *operation) {
-    
-	switch(IO_TYPE){
-		case STDOUT_IO_TYPE:
-
-
-			//Creo header para memoria y el paquete con los argumentos
-			//e_Header IO_STDOUT_READ_MEMORY;
-			t_Package* package = package_create_with_header(IO_STDOUT_READ_MEMORY);
-			
-			t_list *physical_addresses = list_create();
-			t_MemorySize bytes;
-			char* text_receive = NULL;
-
-			//empiezo a "desencolar" el payload recibido
-			payload_dequeue(operation, &PID, sizeof(t_PID));
-			text_deserialize(operation, &text_receive);
-			list_deserialize(operation, physical_addresses, physical_address_deserialize_element);
-			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
-
-			//Aviso la operacion que voy a hacer
-			log_info(MODULE_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", PID);
-
-			//Encolo devuelta el payload dentro del paquete creado
-			//payload_enqueue(package->payload, &(PID), sizeof(t_PID));
-			list_serialize(package->payload, *physical_addresses, physical_address_deserialize_element);
-			payload_enqueue(package->payload, &bytes, sizeof(t_MemorySize));
-
-			//Envio el paquete y lo destruyo
-			package_send(package, CONNECTION_MEMORY.fd_connection);
-			package_destroy(package);
-			
-			//Recibo nuevo paquete para imprimir por pantalla
-			t_Package *memory_package = NULL;
-			package_receive(memory_package,CONNECTION_MEMORY.fd_connection);
-			//Desencolar e imprimir por pantalla
-
-			break;
-		default:
-			log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-			return 1;
-	}
-    
-    return 0;
-}
-
 uint32_t seek_first_free_block(){
 	int magic = 0;
 
@@ -428,83 +611,6 @@ uint32_t seek_first_free_block(){
 	}
 
 	return magic;
-}
-
-int io_fs_create_io_operation(t_Payload *operation) {
-
-
-    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
-	char* file_name;
-	t_PID op_pid;
-
-    payload_dequeue(operation, &op_pid, sizeof(t_PID));
-    text_deserialize(operation, &(file_name));
-	uint32_t location = seek_first_free_block();
-
-	t_FS_File* new_entry = NULL;
-	strcpy(new_entry->name , file_name);
-	new_entry->process_pid = op_pid;
-	new_entry->initial_bloq = location;
-	new_entry->len = 1;
-
-	//Checkiar si el FS es solo para este hilo o para todo el modulo
-	//Agregar un mutex
-
-	bitarray_set_bit(BITMAP, location);
-
-	list_add(LIST_FILES, new_entry);
-
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
-
-	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
-	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond);
-
-    return 0;
-}
-
-int io_fs_delete_io_operation(t_Payload *operation) {
-
-	t_PID op_pid = 0;
-	char* file_name = NULL;
-
-    payload_dequeue(operation, &op_pid, sizeof(t_PID));
-    text_deserialize(operation, &(file_name));
-	
-	uint32_t size = list_size(LIST_FILES);
-	if(size > 0){
-		t_FS_File* file = list_get(LIST_FILES,0);
-		size_t file_target = 0;
-
-		for (size_t i = 0; i < size; i++)
-		{
-			t_FS_File* file = list_get(LIST_FILES,i);
-			if (strcmp(file->name, file_name)){
-				i = size;
-				file_target = i;
-			}
-		}
-
-		uint32_t initial_pos = file->initial_bloq + file->len;
-		for (size_t i = 0; i < file->len; i++)
-		{
-			bitarray_clean_bit(BITMAP, initial_pos);
-			initial_pos--;
-		}
-
-		list_remove(LIST_FILES, file_target);
-
-	}
-	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
-	
-	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
-	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond);
-
-    return 0;
 }
 
 t_FS_File* seek_file(char* file_name){
@@ -521,6 +627,7 @@ t_FS_File* seek_file(char* file_name){
 	return file;
 }
 
+
 bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len){
 	uint32_t addition = final_len - len;
 	uint32_t final_pos = initial_position + len + addition;
@@ -531,60 +638,6 @@ bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_le
 	}
 
 	return true;
-}
-
-
-int io_fs_truncate_io_operation(t_Payload *operation) {
-	
-    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
-
-	char* file_name = NULL;
-	char* value = NULL;
-	t_PID op_pid = 0;
-	
-    payload_dequeue(operation, &op_pid, sizeof(t_PID));
-    text_deserialize(operation, &(file_name));
-    text_deserialize(operation, &(value));
-
-	uint32_t valueNUM = atoi(value);
-
-	t_FS_File* file = seek_file(file_name);
-	uint32_t initial_pos = file->initial_bloq + file->len;
-	if (file->len > valueNUM)
-	{//Se restan bloques
-		size_t diff = file->len - valueNUM;
-		for (size_t i = 0; i < diff; i++)
-		{
-			bitarray_clean_bit(BITMAP, initial_pos);
-			initial_pos--;
-		}
-		file->len = valueNUM;
-	}
-	if (file->len < valueNUM)
-	{// Se agregan bloques
-		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
-			size_t diff = valueNUM - file->len;
-			for (size_t i = 0; i < diff; i++)
-			{
-				bitarray_set_bit(BITMAP, initial_pos);
-				initial_pos++;
-			}
-			file->len = valueNUM;
-		}
-		else{
-        	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
-			return 1;
-		}
-	}
-	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
-	
-	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
-	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond);
-    
-    return 0;
 }
 
 uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
@@ -603,40 +656,3 @@ uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
     
     return quantity_blocks;
 }
-
-int io_fs_write_io_operation(t_Payload *operation) {
-
-    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
-
-
-    return 0;
-}
-
-int io_fs_read_io_operation(t_Payload *operation) {
-
-    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
-
-	char* file_name = NULL;
-	uint32_t ptro = 0;
-	uint32_t bytes = 0;
-	t_PID op_pid = 0;
-	t_list* list_dfs = list_create();
-
-    payload_dequeue(operation, &op_pid, sizeof(t_PID));
-    text_deserialize(operation, &(file_name));
-    payload_dequeue(operation, &ptro, sizeof(uint32_t));
-    payload_dequeue(operation, &bytes, sizeof(uint32_t));
-	list_deserialize(operation, list_dfs, physical_address_deserialize_element);
-
-	t_FS_File* file = seek_file(file_name);
-	uint32_t block_initial = ptro / BLOCK_SIZE;
-	uint32_t block_required = seek_quantity_blocks_required(ptro, bytes);
-
-	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
-
-	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA -> AVISAR KERNEL
-
-
-    return 0;
-}
-
