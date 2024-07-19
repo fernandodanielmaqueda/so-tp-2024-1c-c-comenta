@@ -445,7 +445,7 @@ int io_fs_create_io_operation(t_Payload *operation) {
 	strcpy(new_entry->name , file_name);
 	new_entry->process_pid = op_pid;
 	new_entry->initial_bloq = location;
-	new_entry->len = 0;
+	new_entry->len = 1;
 
 	//Checkiar si el FS es solo para este hilo o para todo el modulo
 	//Agregar un mutex
@@ -470,9 +470,81 @@ int io_fs_delete_io_operation(t_Payload *operation) {
     return 0;
 }
 
-int io_fs_truncate_io_operation(t_Payload *operation) {
+t_FS_File* seek_file(char* file_name){
 
-    // log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
+	t_FS_File* file = list_get(LIST_FILES,0);
+
+	for (size_t i = 0; i < list_size(LIST_FILES); i++)
+	{
+		
+		t_FS_File* file = list_get(LIST_FILES,i);
+		if (strcmp(file->name, file_name)) i = list_size(LIST_FILES);
+	}
+	
+	return file;
+}
+
+bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len){
+	uint32_t addition = final_len - len;
+	uint32_t final_pos = initial_position + len + addition;
+
+	for (size_t i = (initial_position + len); i < final_pos; i++)
+	{
+		if(	bitarray_test_bit (BITMAP, i)) return false;
+	}
+
+	return true;
+}
+
+
+int io_fs_truncate_io_operation(t_Payload *operation) {
+	
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
+
+	char* file_name = NULL;
+	char* value = NULL;
+	t_PID op_pid = 0;
+	
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
+    text_deserialize(operation, &(file_name));
+    text_deserialize(operation, &(value));
+
+	uint32_t valueNUM = atoi(value);
+
+	t_FS_File* file = seek_file(file_name);
+	uint32_t initial_pos = file->initial_bloq + file->len;
+	if (file->len > valueNUM)
+	{//Se restan bloques
+		size_t diff = file->len - valueNUM;
+		for (size_t i = 0; i < diff; i++)
+		{
+			bitarray_clean_bit(BITMAP, initial_pos);
+			initial_pos--;
+		}
+		file->len = valueNUM;
+	}
+	if (file->len < valueNUM)
+	{// Se agregan bloques
+		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
+			size_t diff = valueNUM - file->len;
+			for (size_t i = 0; i < diff; i++)
+			{
+				bitarray_set_bit(BITMAP, initial_pos);
+				initial_pos++;
+			}
+			file->len = valueNUM;
+		}
+		else{
+        	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
+			return 1;
+		}
+	}
+	
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
+	
+	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
+	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
+	package_send(respond, CONNECTION_KERNEL.fd_connection);
     
     return 0;
 }

@@ -81,6 +81,8 @@ int io_fs_truncate_io_operation(t_Payload *instruction);
 int io_fs_write_io_operation(t_Payload *instruction);
 int io_fs_read_io_operation(t_Payload *instruction);
 uint32_t seek_first_free_block();
+t_FS_File* seek_file(char* file_name);
+bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len);
 void initialize_bitmap(size_t block_count);
 void initialize_blocks();
 

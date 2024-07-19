@@ -532,7 +532,7 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(SYSCALL_INSTRUCTION, IO_STDOUT_WRITE_CPU_OPCODE);
-    payload_enqueue(SYSCALL_INSTRUCTION, &EXEC_CONTEXT.PID, sizeof(t_PID));
+    //payload_enqueue(SYSCALL_INSTRUCTION, &EXEC_CONTEXT.PID, sizeof(t_PID));
     text_serialize(SYSCALL_INSTRUCTION, argv[1]);
     payload_enqueue(SYSCALL_INSTRUCTION, &size, sizeof(size));
     list_serialize(SYSCALL_INSTRUCTION, *list_physical_addresses, physical_address_serialize_element);
