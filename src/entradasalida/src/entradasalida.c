@@ -459,13 +459,50 @@ int io_fs_create_io_operation(t_Payload *operation) {
 	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
 	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
+	package_destroy(respond);
 
     return 0;
 }
 
 int io_fs_delete_io_operation(t_Payload *operation) {
 
-    // log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
+	t_PID op_pid = 0;
+	char* file_name = NULL;
+
+    payload_dequeue(operation, &op_pid, sizeof(t_PID));
+    text_deserialize(operation, &(file_name));
+	
+	uint32_t size = list_size(LIST_FILES);
+	if(size > 0){
+		t_FS_File* file = list_get(LIST_FILES,0);
+		size_t file_target = 0;
+
+		for (size_t i = 0; i < size; i++)
+		{
+			t_FS_File* file = list_get(LIST_FILES,i);
+			if (strcmp(file->name, file_name)){
+				i = size;
+				file_target = i;
+			}
+		}
+
+		uint32_t initial_pos = file->initial_bloq + file->len;
+		for (size_t i = 0; i < file->len; i++)
+		{
+			bitarray_clean_bit(BITMAP, initial_pos);
+			initial_pos--;
+		}
+
+		list_remove(LIST_FILES, file_target);
+
+	}
+	
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
+	
+	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
+	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
+	package_send(respond, CONNECTION_KERNEL.fd_connection);
+	package_destroy(respond);
 
     return 0;
 }
@@ -545,6 +582,7 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
 	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
 	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
+	package_destroy(respond);
     
     return 0;
 }
