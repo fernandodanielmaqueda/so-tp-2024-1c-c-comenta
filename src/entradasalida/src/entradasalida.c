@@ -356,6 +356,7 @@ int io_fs_create_io_operation(t_Payload *operation) {
 	char* file_name;
 	t_PID op_pid;
 
+	usleep(WORK_UNIT_TIME);
     payload_dequeue(operation, &op_pid, sizeof(t_PID));
     text_deserialize(operation, &(file_name));
 	uint32_t location = seek_first_free_block();
@@ -375,10 +376,10 @@ int io_fs_create_io_operation(t_Payload *operation) {
 
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
 
-	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
+/* 	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
 	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond);
+	package_destroy(respond); */
 
     return 0;
 }
@@ -388,10 +389,13 @@ int io_fs_delete_io_operation(t_Payload *operation) {
 	t_PID op_pid = 0;
 	char* file_name = NULL;
 
+	usleep(WORK_UNIT_TIME);
     payload_dequeue(operation, &op_pid, sizeof(t_PID));
     text_deserialize(operation, &(file_name));
 	
 	uint32_t size = list_size(LIST_FILES);
+	usleep(COMPRESSION_DELAY);
+	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
 	if(size > 0){
 		t_FS_File* file = list_get(LIST_FILES,0);
 		size_t file_target = 0;
@@ -413,15 +417,16 @@ int io_fs_delete_io_operation(t_Payload *operation) {
 		}
 
 		list_remove(LIST_FILES, file_target);
-
+	
+	log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
 	}
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
 	
-	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
+/* 	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
 	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond);
+	package_destroy(respond); */
 
     return 0;
 }
@@ -435,6 +440,7 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
 	char* value = NULL;
 	t_PID op_pid = 0;
 	
+	usleep(WORK_UNIT_TIME);
     payload_dequeue(operation, &op_pid, sizeof(t_PID));
     text_deserialize(operation, &(file_name));
     text_deserialize(operation, &(value));
@@ -472,10 +478,10 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
 	
-	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
+/* 	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
 	payload_enqueue(respond->payload, &op_pid, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond);
+	package_destroy(respond); */
     
     return 0;
 }
@@ -498,6 +504,7 @@ int io_fs_read_io_operation(t_Payload *operation) {
 	t_PID op_pid = 0;
 	t_list* list_dfs = list_create();
 
+	usleep(WORK_UNIT_TIME);
     payload_dequeue(operation, &op_pid, sizeof(t_PID));
     text_deserialize(operation, &(file_name));
     payload_dequeue(operation, &ptro, sizeof(uint32_t));
@@ -508,7 +515,7 @@ int io_fs_read_io_operation(t_Payload *operation) {
 	uint32_t block_initial = ptro / BLOCK_SIZE;
 	uint32_t block_required = seek_quantity_blocks_required(ptro, bytes);
 
-	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
+//	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
 
 	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA
 
