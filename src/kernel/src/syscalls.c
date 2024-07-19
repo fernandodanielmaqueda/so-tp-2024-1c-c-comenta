@@ -113,11 +113,51 @@ int signal_kernel_syscall(t_Payload *syscall_arguments) {
 }
 
 int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_GEN_SLEEP_CPU_OPCODE, GENERIC_IO_TYPE);
+}
 
+int io_stdin_read_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_STDIN_READ_CPU_OPCODE, STDIN_IO_TYPE);
+}
+
+int io_stdout_write_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_STDOUT_WRITE_CPU_OPCODE, STDOUT_IO_TYPE);
+}
+
+int io_fs_create_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_FS_CREATE_CPU_OPCODE, DIALFS_IO_TYPE);
+}
+
+int io_fs_delete_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_FS_DELETE_CPU_OPCODE, DIALFS_IO_TYPE);
+}
+
+int io_fs_truncate_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_FS_TRUNCATE_CPU_OPCODE, DIALFS_IO_TYPE);
+}
+
+int io_fs_write_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_FS_WRITE_CPU_OPCODE, DIALFS_IO_TYPE);
+}
+
+int io_fs_read_kernel_syscall(t_Payload *syscall_arguments) {
+    return process_io_syscall(syscall_arguments, IO_FS_READ_CPU_OPCODE, DIALFS_IO_TYPE);
+}
+
+int exit_kernel_syscall(t_Payload *syscall_arguments) {
+
+    log_trace(MODULE_LOGGER, "EXIT");
+
+    EXEC_PCB = 0;
+
+    return 0;
+}
+
+int process_io_syscall(t_Payload *syscall_arguments, e_CPU_OpCode syscall_opcode, e_IO_Type required_io_type) {
     char *interface_name;
     text_deserialize(syscall_arguments, &interface_name);
 
-    log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s", interface_name);
+    log_trace(MODULE_LOGGER, "%s %s", SYSCALLS[syscall_opcode].name, interface_name);
 
     EXEC_PCB = 0;
 
@@ -133,13 +173,13 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
 
         free(interface_name);
 
-        if(interface->io_type != GENERIC_IO_TYPE) {
+        if(interface->io_type != required_io_type) {
             log_warning(MODULE_LOGGER, "%s: la interfaz no admite la operacion solicitada", interface->name);
             SYSCALL_PCB->exit_reason = INVALID_INTERFACE_EXIT_REASON;
             return 1;
         }
 
-        cpu_opcode_serialize(&(SYSCALL_PCB->io_operation), IO_GEN_SLEEP_CPU_OPCODE);
+        cpu_opcode_serialize(&(SYSCALL_PCB->io_operation), syscall_opcode);
         payload_append(&(SYSCALL_PCB->io_operation), syscall_arguments->stream, (size_t) syscall_arguments->size);
 
         switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
@@ -154,78 +194,6 @@ int io_gen_sleep_kernel_syscall(t_Payload *syscall_arguments) {
         pthread_mutex_unlock(&(interface->shared_list_blocked_ready.mutex));
         
     signal_draining_requests(&INTERFACES_SYNC);
-
-    return 0;
-}
-
-int io_stdin_read_kernel_syscall(t_Payload *syscall_arguments) {
-
-    // log_trace(MODULE_LOGGER, "IO_STDIN_READ %s %s %s", argv[1], argv[2], argv[3]);
-
-    EXEC_PCB = 0;
-
-    return 0;
-}
-
-int io_stdout_write_kernel_syscall(t_Payload *syscall_arguments) {
-
-    // log_trace(MODULE_LOGGER, "IO_STDOUT_WRITE %s %s %s", argv[1], argv[2], argv[3]);
-
-    EXEC_PCB = 0;
-    
-    return 0;
-}
-
-int io_fs_create_kernel_syscall(t_Payload *syscall_arguments) {
-
-    // log_trace(MODULE_LOGGER, "IO_FS_CREATE %s %s", argv[1], argv[2]);
-
-    EXEC_PCB = 0;
-
-    return 0;
-}
-
-int io_fs_delete_kernel_syscall(t_Payload *syscall_arguments) {
-
-    // log_trace(MODULE_LOGGER, "IO_FS_DELETE %s %s", argv[1], argv[2]);
-
-    EXEC_PCB = 0;
-
-    return 0;
-}
-
-int io_fs_truncate_kernel_syscall(t_Payload *syscall_arguments) {
-
-    // log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
-
-    EXEC_PCB = 0;
-    
-    return 0;
-}
-
-int io_fs_write_kernel_syscall(t_Payload *syscall_arguments) {
-
-    // log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
-
-    EXEC_PCB = 0;
-
-    return 0;
-}
-
-int io_fs_read_kernel_syscall(t_Payload *syscall_arguments) {
-
-    // log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
-
-    EXEC_PCB = 0;
-
-    return 0;
-}
-
-int exit_kernel_syscall(t_Payload *syscall_arguments) {
-
-    log_trace(MODULE_LOGGER, "EXIT");
-
-    EXEC_PCB = 0;
 
     return 0;
 }

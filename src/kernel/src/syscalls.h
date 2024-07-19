@@ -44,5 +44,6 @@ int io_fs_truncate_kernel_syscall(t_Payload *syscall_arguments);
 int io_fs_write_kernel_syscall(t_Payload *syscall_arguments);
 int io_fs_read_kernel_syscall(t_Payload *syscall_arguments);
 int exit_kernel_syscall(t_Payload *syscall_arguments);
+int process_io_syscall(t_Payload *syscall_arguments, e_CPU_OpCode syscall_opcode, e_IO_Type required_io_type);
 
 #endif // KERNEL_SYSCALLS_H
