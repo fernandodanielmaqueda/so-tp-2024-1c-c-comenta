@@ -244,7 +244,7 @@ int io_gen_sleep_io_operation(t_Payload *operation) {
 
 			log_trace(MODULE_LOGGER, "IO_GEN_SLEEP %s %" PRIu32, INTERFACE_NAME, work_units);
 
-			log_info(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>", PID);
+			log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>", PID);
 			sleep(WORK_UNIT_TIME * work_units);
 
 
@@ -278,7 +278,7 @@ int io_stdin_read_io_operation(t_Payload *operation) {
 			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
 
 			//Aviso que operacion voy a hacer
-			log_info(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", PID);
+			log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", PID);
 
 			//Encolo el payload en el paquete creado antes
 			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
@@ -322,7 +322,7 @@ int io_stdout_write_io_operation(t_Payload *operation) {
 			payload_dequeue(operation, &bytes, sizeof(t_MemorySize));
 
 			//Aviso la operacion que voy a hacer
-			log_info(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", PID);
+			log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", PID);
 
 			//Encolo devuelta el payload dentro del paquete creado
 			payload_enqueue(package->payload, &(PID), sizeof(t_PID));
@@ -448,8 +448,8 @@ int io_fs_truncate_io_operation(t_Payload *operation) {
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t initial_pos = file->initial_bloq + file->len;
-	usleep(COMPRESSION_DELAY);
 	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
+	usleep(COMPRESSION_DELAY);
 	if (file->len > valueNUM)
 	{//Se restan bloques
 		size_t diff = file->len - valueNUM;
