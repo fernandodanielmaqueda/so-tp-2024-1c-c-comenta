@@ -98,10 +98,11 @@ int receive_return_value_with_expected_header(e_Header expected_header, t_Return
 
 // Kernel - Memoria
 
-int send_process_create(char *instructions_path, t_PID pid, int fd_socket) {
+int send_process_create(t_PID pid, char *instructions_path, t_Return_Value flag_relative_path, int fd_socket) {
     t_Package *package = package_create_with_header(PROCESS_CREATE_HEADER);
-    text_serialize(&(package->payload), instructions_path);
     payload_append(&(package->payload), &pid, sizeof(pid));
+    text_serialize(&(package->payload), instructions_path);
+    return_value_serialize(&(package->payload), flag_relative_path);
     if(package_send(package, fd_socket))
       return 1;
     package_destroy(package);

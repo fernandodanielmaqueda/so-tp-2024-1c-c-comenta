@@ -142,16 +142,39 @@ t_Command *find_command (char *name) {
 
 int kernel_command_run_script(int argc, char* argv[]) {
 
-    if(argc != 2) {
-        log_warning(CONSOLE_LOGGER, "Uso: EJECUTAR_SCRIPT <PATH (EN KERNEL)>");
-        return 1;
+    char *script_filename;
+
+    switch(argc) {
+        case 2:
+            if(*(argv[1]) == '/')
+                script_filename = argv[1] + 1;
+            else {
+                script_filename = argv[1];
+            }
+
+            log_trace(CONSOLE_LOGGER, "EJECUTAR_SCRIPT %s", argv[1]);
+
+            break;
+        
+        case 3:
+            if(strcmp(argv[1], "-a") != 0) {
+                log_warning(CONSOLE_LOGGER, "%s: Opción no reconocida", argv[1]);
+                return 1;
+            }
+
+            script_filename = argv[2];
+            log_trace(CONSOLE_LOGGER, "EJECUTAR_SCRIPT -a %s", argv[2]);
+
+            break;
+
+        default:
+            log_warning(CONSOLE_LOGGER, "Uso: EJECUTAR_SCRIPT [-a] <PATH (EN KERNEL)>");
+            return 1;
     }
 
-    log_trace(CONSOLE_LOGGER, "EJECUTAR_SCRIPT %s", argv[1]);
-
-    FILE *script = fopen(argv[1], "r");
+    FILE *script = fopen(script_filename, "r");
     if(script == NULL) {
-        log_warning(CONSOLE_LOGGER, "%s: No se pudo abrir el <PATH>: %s", argv[1], strerror(errno));
+        log_warning(CONSOLE_LOGGER, "%s: No se pudo abrir el <PATH>: %s", script_filename, strerror(errno));
         return 1;
     }
 
@@ -188,16 +211,42 @@ int kernel_command_run_script(int argc, char* argv[]) {
 
 int kernel_command_start_process(int argc, char* argv[]) {
 
-    if(argc != 2) {
-        log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PROCESO <PATH (EN MEMORIA)>");
-        return 1;
-    }
+    char *filename;
+    t_Return_Value flag_relative_path;
 
-    log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
+    switch(argc) {
+        case 2:
+            if(*(argv[1]) == '/')
+                filename = argv[1] + 1;
+            else {
+                filename = argv[1];
+            }
+
+            log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
+            flag_relative_path = 1;
+
+            break;
+        
+        case 3:
+            if(strcmp(argv[1], "-a") != 0) {
+                log_warning(CONSOLE_LOGGER, "%s: Opción no reconocida", argv[1]);
+                return 1;
+            }
+
+            filename = argv[2];
+            log_trace(CONSOLE_LOGGER, "INICIAR_PROCESO -a %s", argv[2]);
+            flag_relative_path = 0;
+
+            break;
+
+        default:
+            log_warning(CONSOLE_LOGGER, "Uso: INICIAR_PROCESO [-a] <PATH (EN MEMORIA)>");
+            return 1;
+    }
 
     t_PCB *pcb = pcb_create();
 
-    if(send_process_create(argv[1], pcb->exec_context.PID, CONNECTION_MEMORY.fd_connection)) {
+    if(send_process_create(pcb->exec_context.PID, filename, flag_relative_path, CONNECTION_MEMORY.fd_connection)) {
         // TODO
         exit(1);
     }
@@ -208,7 +257,8 @@ int kernel_command_start_process(int argc, char* argv[]) {
 		exit(1);
     }
     if(return_value) {
-        log_warning(MODULE_LOGGER, "[Memoria]: No se pudo INICIAR_PROCESO %s", argv[1]);
+        log_warning(MODULE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
+        // TODO
         return 1;
     }
 

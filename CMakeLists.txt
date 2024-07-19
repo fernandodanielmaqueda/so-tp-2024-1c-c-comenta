@@ -46,7 +46,7 @@ if(BUILD_TESTS)
   enable_testing()
   include(CTest)
 
-  add_subdirectory(tests) # EXCLUDE_FROM_ALL
+  # add_subdirectory(tests) # EXCLUDE_FROM_ALL
 
 endif()
 

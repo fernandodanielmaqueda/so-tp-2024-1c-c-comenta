@@ -75,7 +75,24 @@ void read_module_config(t_config* MODULE_CONFIG) {
     COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
     TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
+
     PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
+        if(PATH_INSTRUCCIONES[0] != '\0') {
+
+            size_t length = strlen(PATH_INSTRUCCIONES);
+            if(PATH_INSTRUCCIONES[length - 1] == '/') {
+                PATH_INSTRUCCIONES[length - 1] = '\0';
+            }
+
+            DIR *dir = opendir(PATH_INSTRUCCIONES);
+            if(dir == NULL) {
+                log_error(MODULE_LOGGER, "No se pudo abrir el directorio de instrucciones.");
+                // TODO
+                exit(EXIT_FAILURE);
+            }
+            // closedir(dir);
+        }
+
     RETARDO_RESPUESTA = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
 }
 
@@ -110,14 +127,16 @@ void listen_kernel(void) {
 void create_process(t_Payload *process_data) {
 
     char *argument_path, *target_path;
+    t_Return_Value flag_relative_path;
     t_Process *new_process = malloc(sizeof(t_Process));
     t_list *instructions_list = list_create();
     t_list *pages_table = list_create();
 
-    text_deserialize(process_data, &(argument_path));
     payload_shift(process_data, &(new_process->PID), sizeof(new_process->PID));
+    text_deserialize(process_data, &(argument_path));
+    return_value_deserialize(process_data, &flag_relative_path);
 
-    if(argument_path[0] == '/') {
+    if(!flag_relative_path) {
         // Ruta absoluta
         target_path = argument_path;
     } else {

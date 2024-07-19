@@ -51,7 +51,7 @@ int receive_return_value_with_expected_header(e_Header expected_header, t_Return
 // Kernel - Memoria
 
 
-int send_process_create(char *instructions_path, t_PID pid, int fd_socket);
+int send_process_create(t_PID pid, char *instructions_path, t_Return_Value flag_relative_path, int fd_socket);
 
 
 int send_process_destroy(t_PID pid, int fd_socket);

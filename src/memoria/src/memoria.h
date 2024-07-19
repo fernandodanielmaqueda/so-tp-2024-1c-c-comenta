@@ -4,6 +4,7 @@
 #ifndef MEMORIA_H
 #define MEMORIA_H
 
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
