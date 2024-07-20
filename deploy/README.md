@@ -11,6 +11,10 @@ Algunas de las cosas que se listan también sirven para poder trabajar sobre el 
 - Hacer un script que tome las IPs del Host y del Guest y que haga las conexiones SSH automáticamente y edite los .config acordemente
 - Editar el archivo /home/utnso/base.sh acordemente
 - Conexión a GitHub
+- Agregar comandos para bajarse los submódulos
+- Agregar comandos para compilar e instalar las commons, los cspec y los archivos de test
+- Comandos de tmux
+- Que el fstab tome todas las IPs y no haya que agregarlas manualmente
 - Sistema operativo Host utilizado en las computadoras de la facultad: Windows o Linux
 - Acceso a GitHub desde las computadoras de la facultad
 	- https://stackoverflow.com/questions/69336114/the-application-requires-one-of-the-following-versions-of-the-net-framework-ho
@@ -29,13 +33,30 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 ## 2. Descargar Git Bash Portable
 
+- https://git-scm.com/download/win
+32-bits:
+	- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-32-bit.7z.exe
+64-bits:
+	- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-64-bit.7z.exe 
+
 -----------------------------
 
-## 3. Iniciar sesión en Git Bash
+## 3. Descomprimir y abrir el Git Bash PORTABLE e iniciar sesión en GitHub
+```bash
+git config --global user.name 'Nombre y Apellido(s)'
+git config --global user.mail 'ejemplo@frba.utn.edu.ar'
+```
 
 -----------------------------
 
 ## 4. Clonar este repositorio
+```bash
+cd ~ ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
+```
+Debería ser equivalente a:
+```bash
+cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
+```
 
 -----------------------------
 
@@ -268,7 +289,9 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 11. Montar carpeta compartida de VirtualBox en la VM
+## 11. Montar una carpeta compartida en la VM
+
+### Alternativa 1: Montar una carpeta compartida usando vboxsf (VirtualBox Shared Folders)
 
 1. Crear el directorio donde montaremos la carpeta compartida en la VM
 ```bash
@@ -306,14 +329,17 @@ Agregarle la siguiente línea al final de dicho archivo.
 vboxsf
 ```
 
-### Nota sobre las carpetas compartidas de VirtualBox
+#### Nota sobre las carpetas compartidas de VirtualBox
 
-No andan los `Run and Debug` (`launch.json`) de VSCode para depurar los ejecutables si estos están dentro de las carpetas compartidas
-Parece ser por una limitación de los permisos de ejecución del filesystem de VirtualBox (vboxsf)
+No se puede ejecutar un programa más de una vez en simultáneo (múltiples instancias de un programa)
+No se pueden depurar con GDB los ejecutables si estos están dentro de las carpetas compartidas (sólo se puede hasta cargar los símbolos de depuración del mismo)
+Esto es por una limitación de los permisos de ejecución que tiene el filesystem de VirtualBox (vboxsf):
+Mientras un programa está en ejecución, se quitan los permisos de ejecución y de escritura sobre el mismo (x y w)
+Los permisos NO se pueden modificar con chmod. chown tampoco tiene efecto. Es independiente del gid y del pid, seas usuario utnso, root y/o parte del grupo vboxsf
 
 -----------------------------
 
-## Opcional. Montar una carpeta compartida usando Samba (SMB)
+### Alternativa 2: Montar una carpeta compartida usando Samba (SMB)
 
 Este método no tiene la limitación anteriormente mencionada.
 
@@ -331,7 +357,7 @@ mkdir /home/utnso/smbCompartida
 
 3. Montar manualmente la carpeta compartida en la VM
 ```bash
-sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida -o username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777
+sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida -o username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777,uid=1000,gid=1000
 ```
 
 4. Verificar que la carpeta compartida se haya montado correctamente en la VM
@@ -350,6 +376,14 @@ Agregarle la siguiente línea al final de dicho archivo.
 ```
 
 Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cambiarse a 2.0, por ejemplo, de ser necesario
+
+-----------------------------
+
+### Alternativa 3: Montar una carpeta compartida usando ...
+
+- NFS
+- sshfs (ssh filesystem): sudo apt-get install sshfs
+- gdbserver
 
 -----------------------------
 
@@ -612,7 +646,44 @@ sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 
 -----------------------------
 
-## Anexo 1: Comandos útiles
+## Anexo 1: Comandos de make
+
+> Compilar todos los módulos
+```bash
+clear ; make -j -O
+```
+Es equivalente a:
+```bash
+clear ; make all -j -O
+```
+
+> Compilar un módulo en particular con las utils
+```bash
+clear ; make src/cpu/bin/cpu -j -O
+clear ; make src/entradasalida/bin/entradasalida -j -O
+clear ; make src/kernel/bin/kernel -j -O
+clear ; make src/memoria/bin/memoria -j -O
+```
+
+> Compilar sólo las utils
+```bash
+clear ; make src/utils/bin/libutils.a -j -O
+```
+
+> Borrar todo lo que se genera al compilar
+```bash
+clear ; make cleandirs
+```
+
+> Ejecutar un módulo
+```bash
+clear ; make run-kernel
+clear ; make run-cpu
+clear ; make run-memoria
+clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+```
+
+## Anexo 2: Comandos útiles
 
 > Cambiar a root
 ```bash
@@ -654,17 +725,48 @@ shutdown now
 ```bash
 shutdown -r now
 ```
+```bash
+reboot
+```
 
 > Listar procesos
 ```bash
 htop
 ```
 
+> Listar todos los grupos:
+```bash
+groups
+```
+
+> Listar todos los grupos a los que pertenece un usuario:
+```bash
+groups utnso
+groups root
+```
+
+> Listar las opciones de montaje:
+```bash
+mount | grep vboxsf
+```
+
+> Listar ids
+```bash
+id
+id -u
+id -g
+```
+
+> Listar permisos de archivos
+```bash
+ls -l
+```
+
 -----------------------------
 
-## Anexo 2: tmux (Terminal MUltipleXer)
+## Anexo 3: tmux (Terminal MUltipleXer)
 
-Abrir una sesión nueva
+> Abrir una sesión nueva
 ```bash
 tmux
 ```
@@ -672,12 +774,12 @@ Equivalente:
 ```bash
 tmux new
 ```
-Abrir una sesión nueva y ponerle un nombre:
+> Abrir una sesión nueva y ponerle un nombre:
 ```bash
 tmux new -s 'NombreDeSesion'
 ```
 
-Cerrar la ventana actual de una sesión
+> Cerrar la ventana actual de una sesión
 ```bash
 exit
 ```
@@ -721,7 +823,7 @@ tmux kill -t 'NombreDeSesion'
 
 -----------------------------
 
-## Anexo 3: Opciones importantes de gcc
+## Anexo 4: Opciones importantes de gcc
 
 `-DDEBUG -fdiagnostics-color=always -lcommons -lpthread -lreadline -lm`
 
