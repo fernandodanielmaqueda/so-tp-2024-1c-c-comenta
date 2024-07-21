@@ -123,12 +123,9 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 
 			pthread_mutex_lock(&(resource->mutex_instances));
 
-			resource->available++;
-
-			if(resource->total < resource->available)
-				resource->total = resource->available;
+			resource->instances++;
 				
-			if(resource->available <= 0) {
+			if(resource->instances <= 0) {
 				pthread_mutex_unlock(&(resource->mutex_instances));
 
 				pthread_mutex_lock(&(resource->shared_list_blocked.mutex));

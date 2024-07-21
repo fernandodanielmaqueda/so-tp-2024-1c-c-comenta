@@ -50,9 +50,9 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
 
     pthread_mutex_lock(&(resource->mutex_instances));
 
-    resource->available--;
+    resource->instances--;
 
-    if(resource->available < 0) {
+    if(resource->instances < 0) {
         pthread_mutex_unlock(&(resource->mutex_instances));
 
         switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
@@ -99,12 +99,9 @@ int signal_kernel_syscall(t_Payload *syscall_arguments) {
 
     pthread_mutex_lock(&(resource->mutex_instances));
 
-    resource->available++;
+    resource->instances++;
 
-    if(resource->total < resource->available)
-        resource->total = resource->available;
-
-    if(resource->available <= 0) {
+    if(resource->instances <= 0) {
         pthread_mutex_unlock(&(resource->mutex_instances));
 
         pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));

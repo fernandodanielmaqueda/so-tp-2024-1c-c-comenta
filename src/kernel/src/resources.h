@@ -30,9 +30,8 @@
 #include "scheduler.h"
 
 typedef struct t_Resource {
+    long instances;
     char *name;
-    long total;
-    long available;
     pthread_mutex_t mutex_instances;
     t_Shared_List shared_list_blocked;
 } t_Resource;

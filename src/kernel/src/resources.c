@@ -26,18 +26,15 @@ void resources_read_module_config(t_config *module_config) {
 	}
 
 	char *end;
-	long instances;
 
 	for(register int i = 0; i < RESOURCE_QUANTITY; i++) {
-		instances = strtol(resource_instances[i], &end, 10);
+		RESOURCES[i].instances = strtol(resource_instances[i], &end, 10);
 		if(!*(resource_instances[i]) || *end) {
 			log_error(MODULE_LOGGER, "La cantidad de instancias del recurso %s no es un número válido: %s", resource_names[i], resource_instances[i]);
 			exit(EXIT_FAILURE);
 		}
 
 		RESOURCES[i].name = resource_names[i];
-		RESOURCES[i].total = instances;
-		RESOURCES[i].available = instances;
 		RESOURCES[i].shared_list_blocked.list = list_create();
 		pthread_mutex_init(&(RESOURCES[i].shared_list_blocked.mutex), NULL);
 	}
@@ -52,7 +49,7 @@ t_Resource *resource_find(char *name) {
 }
 
 void resource_log(t_Resource *resource) {
-	log_trace(MODULE_LOGGER, "Recurso: %s - Instancias disponibles %ld/%ld", resource->name, resource->available, resource->total);
+	log_trace(MODULE_LOGGER, "Recurso: %s - Instancias %ld", resource->name, resource->instances);
 }
 
 void resources_free(void) {
