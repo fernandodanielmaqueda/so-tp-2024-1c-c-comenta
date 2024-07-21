@@ -347,6 +347,17 @@ void listen_io(t_Client *client) {
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
                 read_memory(&(package->payload), client->fd_client);
                 break;
+            
+            case IO_FS_READ_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (write) recibido.");
+                write_memory(&(package->payload), client->fd_client);
+                break;
+            
+            case IO_FS_WRITE_MEMORY:
+                log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
+                read_memory(&(package->payload), client->fd_client);
+                break;
+            
             default:
                 log_warning(MODULE_LOGGER, "%s: Header desconocido (%d)", "", package->header);
                 break;

@@ -28,7 +28,6 @@ typedef enum e_Header {
     INTERFACE_DATA_REQUEST_HEADER,
     IO_OPERATION_DISPATCH_HEADER,
     IO_OPERATION_FINISHED_HEADER,
-
     // CPU <==> Memoria
     INSTRUCTION_REQUEST,
     READ_REQUEST, //utilizado en MEMORIA-IO
@@ -38,6 +37,8 @@ typedef enum e_Header {
     FRAME_REQUEST,
     PAGE_SIZE_REQUEST,
     //IO <==> Memoria
+    IO_FS_WRITE_MEMORY,
+    IO_FS_READ_MEMORY,
     IO_STDIN_WRITE_MEMORY,
     IO_STDOUT_READ_MEMORY
 } e_Header;

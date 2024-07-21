@@ -13,13 +13,19 @@
 #include <math.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"
 #include "commons/collections/list.h"
+#include "commons/bitarray.h"
 #include "utils/module.h"
 #include "utils/send.h"
 #include "utils/socket.h"
+#include "utils/package.h"
+
 
 typedef struct t_IO_Type {
     char *name;
@@ -31,6 +37,13 @@ typedef struct t_IO_Operation {
     int (*function) (t_Payload *);
 } t_IO_Operation;
 
+typedef struct t_FS_File {
+    char *name;
+    t_PID process_pid;
+    uint32_t initial_bloq;
+    uint32_t len;
+} t_FS_File;
+
 extern char *INTERFACE_NAME;
 
 extern int WORK_UNIT_TIME;
@@ -39,8 +52,8 @@ extern t_Connection CONNECTION_KERNEL;
 extern t_Connection CONNECTION_MEMORY;
 
 extern char *PATH_BASE_DIALFS;
-extern int BLOCK_SIZE;
-extern int BLOCK_COUNT;
+extern size_t BLOCK_SIZE;
+extern size_t BLOCK_COUNT;
 extern int COMPRESSION_DELAY;
 
 extern t_IO_Type IO_TYPES[];
@@ -67,5 +80,11 @@ int io_fs_delete_io_operation(t_Payload *instruction);
 int io_fs_truncate_io_operation(t_Payload *instruction);
 int io_fs_write_io_operation(t_Payload *instruction);
 int io_fs_read_io_operation(t_Payload *instruction);
+uint32_t seek_first_free_block();
+t_FS_File* seek_file(char* file_name);
+bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len);
+uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes);
+void initialize_bitmap(size_t block_count);
+void initialize_blocks();
 
 #endif /* ENTRADASALIDA_H */
