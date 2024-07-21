@@ -23,6 +23,7 @@ int COMPRESSION_DELAY;
 
 t_list *LIST_FILES;
 t_bitarray *BITMAP;
+char* BLOCKS_DATA;
 
 t_IO_Type IO_TYPES[] = {
     [GENERIC_IO_TYPE] = {.name = "GENERICA", .function = generic_interface_function },
@@ -97,7 +98,8 @@ int module(int argc, char *argv[]) {
 			exit(1);
 		}
 	}
-
+	
+	free_bitmap_blocks();
 	//finish_threads();
 	finish_sockets();
 	//finish_configs();
@@ -489,7 +491,7 @@ int io_fs_read_io_operation(t_Payload *operation_arguments) {
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t block_initial = ptro / BLOCK_SIZE;
-	uint32_t block_required = seek_quantity_blocks_required(ptro, bytes);
+	uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
 
 //	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
 
@@ -514,26 +516,27 @@ void initialize_blocks() {
         return;
     }
 
-    char *blocks_data = mmap(NULL, blocks_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (blocks_data == MAP_FAILED) {
+    BLOCKS_DATA = mmap(NULL, blocks_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (BLOCKS_DATA == MAP_FAILED) {
         log_error(MODULE_LOGGER, "Error al mapear el archivo bloques.dat a memoria: %s", strerror(errno));
         close(fd);
         return;
     }
-
+/* --No realiza ningunca accion--
     for (int i = 0; i < BLOCK_COUNT; ++i) {
-        int *block_data = (int *)(blocks_data + i * BLOCK_SIZE);
+        int *block_data = (int *)(BLOCKS_DATA + i * BLOCK_SIZE);
         *block_data = i;
     }
+	*/
 
-    if (msync(blocks_data, blocks_size, MS_SYNC) == -1) {
+    if (msync(BLOCKS_DATA, blocks_size, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
     }
-
-    if (munmap(blocks_data, blocks_size) == -1) {
+/*
+    if (munmap(BLOCKS_DATA, blocks_size) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
     }
-
+*/
     close(fd);
     log_info(MODULE_LOGGER, "Bloques creados y mapeados correctamente.");
 }
@@ -638,4 +641,15 @@ uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
     quantity_blocks += (uint32_t) floor(bytes / BLOCK_SIZE);
     
     return quantity_blocks;
+}
+
+
+void free_bitmap_blocks(){
+	
+    if (munmap(BLOCKS_DATA, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
+        log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
+    }
+
+	free(BITMAP);
+
 }
