@@ -1,9 +1,9 @@
 # Notas de Deploy SSOO
 
-Algunas de las cosas que se listan también sirven para poder trabajar sobre el repositorio de manera cómoda, no todo es exclusivo para el deploy para la presentación del TP.
+- Algunas de las cosas que se listan también sirven para poder trabajar sobre el repositorio de manera cómoda, no todo es exclusivo para el deploy para la presentación del TP.
+- Las máquinas de la facultad tienen Windows, y NO hay permisos de administrador: no se pueden instalar programas, etc.
 
 ## TODO
-- Revisar permisos necesarios de administrador en Windows: en las máquinas de la facultad no tenemos :(
 - Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad
 - Hacer un script/comando que habilite/deshabilite características de Windows
 - Hacer un script que configure automáticamente la VM en VirtualBox, o llevar los archivos de configuración ya hechos
@@ -11,17 +11,38 @@ Algunas de las cosas que se listan también sirven para poder trabajar sobre el 
 - Hacer un script que tome las IPs del Host y del Guest y que haga las conexiones SSH automáticamente y edite los .config acordemente
 - Editar el archivo /home/utnso/base.sh acordemente
 - Conexión a GitHub
+- Buscar un gestor de descargas que sea portable
+- Agregar PuTTY
 - Agregar comandos para bajarse los submódulos
 - Agregar comandos para compilar e instalar las commons, los cspec y los archivos de test
 - Comandos de tmux
 - Que el fstab tome todas las IPs y no haya que agregarlas manualmente
-- Sistema operativo Host utilizado en las computadoras de la facultad: Windows o Linux
 - Acceso a GitHub desde las computadoras de la facultad
 	- https://stackoverflow.com/questions/69336114/the-application-requires-one-of-the-following-versions-of-the-net-framework-ho
 
 -----------------------------
 
-# Al entrar
+# De antemano
+
+## A. Generar las credenciales de GitHub
+
+TODO
+
+## B. Anotarse en el Sistema de Inscripciones
+
+- https://inscripciones.utnso.com.ar/
+
+-----------------------------
+
+# (Sólo Deploy) Al entrar al laboratorio
+
+## A. Anunciarse
+
+-----------------------------
+
+# Una vez con las máquinas del laboratorio
+
+-----------------------------
 
 ## 1. Encender e iniciar sesión en la computadora
 
@@ -31,11 +52,13 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 -----------------------------
 
-## 2. Descargar Git Bash Portable
+## 2. Descargar Git Bash PORTABLE
 
 - https://git-scm.com/download/win
+
 32-bits:
 	- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-32-bit.7z.exe
+
 64-bits:
 	- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-64-bit.7z.exe 
 
@@ -43,8 +66,8 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 ## 3. Descomprimir y abrir el Git Bash PORTABLE e iniciar sesión en GitHub
 ```bash
+git config --global user.email 'ejemplo@frba.utn.edu.ar'
 git config --global user.name 'Nombre y Apellido(s)'
-git config --global user.mail 'ejemplo@frba.utn.edu.ar'
 ```
 
 -----------------------------
@@ -223,7 +246,7 @@ sudo apt update
 
 -----------------------------
 
-## Opcional: GRUB (para settear el tamaño de pantalla FIJO de la VM)
+## Opcional: GRUB (para configurar el tamaño de pantalla FIJO de la VM)
 
 1. Backupear el archivo `/etc/default/grub` original
 ```bash
@@ -625,8 +648,8 @@ gh auth login
 4. Hacer los git config
 
 ```bash
-git config --global user.email "ejemplo@frba.utn.edu.ar"
-git config --global user.name "FDM"
+git config --global user.email 'ejemplo@frba.utn.edu.ar'
+git config --global user.name 'Nombre y Apellido(s)'
 ```
 
 -----------------------------
@@ -646,44 +669,7 @@ sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 
 -----------------------------
 
-## Anexo 1: Comandos de make
-
-> Compilar todos los módulos
-```bash
-clear ; make -j -O
-```
-Es equivalente a:
-```bash
-clear ; make all -j -O
-```
-
-> Compilar un módulo en particular con las utils
-```bash
-clear ; make src/cpu/bin/cpu -j -O
-clear ; make src/entradasalida/bin/entradasalida -j -O
-clear ; make src/kernel/bin/kernel -j -O
-clear ; make src/memoria/bin/memoria -j -O
-```
-
-> Compilar sólo las utils
-```bash
-clear ; make src/utils/bin/libutils.a -j -O
-```
-
-> Borrar todo lo que se genera al compilar
-```bash
-clear ; make cleandirs
-```
-
-> Ejecutar un módulo
-```bash
-clear ; make run-kernel
-clear ; make run-cpu
-clear ; make run-memoria
-clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
-```
-
-## Anexo 2: Comandos útiles
+## Anexo 1: Comandos generales
 
 > Cambiar a root
 ```bash
@@ -760,6 +746,45 @@ id -g
 > Listar permisos de archivos
 ```bash
 ls -l
+```
+
+-----------------------------
+
+## Anexo 2: Comandos de make
+
+> Compilar todos los módulos
+```bash
+clear ; make -j -O
+```
+Es equivalente a:
+```bash
+clear ; make all -j -O
+```
+
+> Compilar un módulo en particular con las utils
+```bash
+clear ; make src/cpu/bin/cpu -j -O
+clear ; make src/entradasalida/bin/entradasalida -j -O
+clear ; make src/kernel/bin/kernel -j -O
+clear ; make src/memoria/bin/memoria -j -O
+```
+
+> Compilar sólo las utils
+```bash
+clear ; make src/utils/bin/libutils.a -j -O
+```
+
+> Borrar todo lo que se genera al compilar
+```bash
+clear ; make cleandirs
+```
+
+> Ejecutar un módulo
+```bash
+clear ; make run-kernel
+clear ; make run-cpu
+clear ; make run-memoria
+clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
 -----------------------------

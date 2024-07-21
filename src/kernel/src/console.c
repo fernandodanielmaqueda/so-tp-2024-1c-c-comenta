@@ -17,6 +17,19 @@ t_Command CONSOLE_COMMANDS[] = {
 
 int EXIT_CONSOLE = 0;
 
+int KILL_EXEC_PROCESS = 0;
+pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
+
+unsigned int MULTIPROGRAMMING_LEVEL;
+sem_t SEM_MULTIPROGRAMMING_LEVEL;
+unsigned int MULTIPROGRAMMING_DIFFERENCE = 0;
+pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
+sem_t SEM_MULTIPROGRAMMING_POSTER;
+pthread_t THREAD_MULTIPROGRAMMING_POSTER;
+
+int SCHEDULING_PAUSED;
+pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
+
 void *initialize_kernel_console(void *argument) {
 
     CONSOLE_LOGGER = log_create(CONSOLE_LOG_PATHNAME, "Console", true, LOG_LEVEL_TRACE);
@@ -327,10 +340,17 @@ int kernel_command_kill_process(int argc, char* argv[]) {
                 break;
 
             case BLOCKED_STATE:
-                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
+            {
+                wait_draining_requests(&INTERFACES_SYNC); // En realidad esto no hace falta, pero lo dejo por escalabilidad
+                    //pthread_mutex_lock(&(interface->shared_list_blocked_exec.mutex));
+
+                    //pthread_mutex_unlock(&(interface->shared_list_blocked_exec.mutex));
+                signal_draining_requests(&INTERFACES_SYNC);
+
                 // TODO: Sacar de la lista de bloqueados que corresponda
                 switch_process_state(pcb, EXIT_STATE);
                 break;
+            }
 
             case EXIT_STATE:
                 break;
@@ -448,6 +468,11 @@ int kernel_command_process_states(int argc, char* argv[]) {
         pcb_list_to_pid_string(SHARED_LIST_EXEC.list, &pid_string_exec);
 
         // TODO: Recorrer todas las listas de bloqueados
+        wait_draining_requests(&INTERFACES_SYNC); // En realidad esto no hace falta, pero lo dejo por escalabilidad
+            //pthread_mutex_lock(&(interface->shared_list_blocked_exec.mutex));
+
+            //pthread_mutex_unlock(&(interface->shared_list_blocked_exec.mutex));
+        signal_draining_requests(&INTERFACES_SYNC);
         //pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
 
         pcb_list_to_pid_string(SHARED_LIST_EXIT.list, &pid_string_exit);

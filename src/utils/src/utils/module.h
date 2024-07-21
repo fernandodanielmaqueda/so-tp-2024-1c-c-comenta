@@ -5,6 +5,8 @@
 #define UTILS_MODULE_H
 
 #include <stdlib.h>
+#include <semaphore.h>
+#include <pthread.h>
 #include "commons/log.h"
 #include "commons/config.h"
 
@@ -12,6 +14,14 @@ typedef struct t_Shared_List {
     t_list *list;
     pthread_mutex_t mutex;
 } t_Shared_List;
+
+typedef struct t_Drain_Ongoing_Resource_Sync {
+	pthread_mutex_t mutex_resource;
+	sem_t sem_drain_requests_count;
+	pthread_cond_t cond_drain_requests;
+	sem_t sem_ongoing_count;
+	pthread_cond_t cond_ongoing;
+} t_Drain_Ongoing_Resource_Sync;
 
 extern char *MODULE_NAME;
 
@@ -36,8 +46,18 @@ void initialize_configs(char *pathname);
 void finish_configs(void);
 void read_module_config(t_config*);
 
+void init_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void destroy_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_ongoing_locking(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_ongoing_unlocking(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void wait_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
+void signal_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync);
+
 void *list_remove_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation);
 int list_add_unless_any(t_list *list, void *data, bool (*condition)(void *, void*), void *comparation);
 void *list_find_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation);
+bool pointers_match(void * ptr_1, void *ptr_2);
 
 #endif // UTILS_MODULE_H

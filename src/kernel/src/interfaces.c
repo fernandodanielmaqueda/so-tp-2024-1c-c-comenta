@@ -84,7 +84,9 @@ void *kernel_client_handler_for_io(t_Client *new_client) {
 
                     pcb = (t_PCB *) list_remove_by_condition_with_comparation(interface->shared_list_blocked_exec.list, (bool (*)(void *, void *)) pcb_matches_pid, &(pid));
                     if(pcb != NULL) {
+                        
                         payload_destroy(&(pcb->io_operation));
+
                         if(return_value) {
                             pcb->exit_reason = UNEXPECTED_ERROR_EXIT_REASON;
                             switch_process_state(pcb, EXIT_STATE);
@@ -92,6 +94,7 @@ void *kernel_client_handler_for_io(t_Client *new_client) {
                         else {
                             switch_process_state(pcb, READY_STATE);
                         }
+                        
                     }
 
                     sem_post(&(interface->sem_concurrency));
@@ -214,8 +217,8 @@ void interface_destroy(t_Interface *interface) {
 
     free(interface->name);
 
-    list_destroy_and_destroy_elements(interface->shared_list_blocked_ready.list, (void (*)(void *)) pcb_free);
-    list_destroy_and_destroy_elements(interface->shared_list_blocked_exec.list, (void (*)(void *)) pcb_free);
+    list_destroy_and_destroy_elements(interface->shared_list_blocked_ready.list, (void (*)(void *)) pcb_destroy);
+    list_destroy_and_destroy_elements(interface->shared_list_blocked_exec.list, (void (*)(void *)) pcb_destroy);
 
     pthread_mutex_destroy(&(interface->shared_list_blocked_ready.mutex));
     pthread_mutex_destroy(&(interface->shared_list_blocked_exec.mutex));

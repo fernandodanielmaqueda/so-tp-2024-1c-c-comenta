@@ -28,14 +28,6 @@
 #include "console.h"
 #include "socket.h"
 
-typedef struct t_Drain_Ongoing_Resource_Sync {
-	pthread_mutex_t mutex_resource;
-	sem_t sem_drain_requests_count;
-	pthread_cond_t cond_drain_requests;
-	sem_t sem_ongoing_count;
-	pthread_cond_t cond_ongoing;
-} t_Drain_Ongoing_Resource_Sync;
-
 typedef enum e_Process_State {
     NEW_STATE,
     READY_STATE,
@@ -49,6 +41,8 @@ typedef struct t_PCB {
 
     e_Process_State current_state;
     t_Shared_List *shared_list_state;
+
+    t_list *assigned_resources;
 
     t_Payload io_operation;
 
@@ -68,12 +62,34 @@ extern char *MINIMAL_LOG_PATHNAME;
 extern t_config *MODULE_CONFIG;
 extern char *MODULE_CONFIG_PATHNAME;
 
+extern t_PID PID_COUNTER;
+extern pthread_mutex_t MUTEX_PID_COUNTER;
+extern t_PCB **PCB_ARRAY;
+extern pthread_mutex_t MUTEX_PCB_ARRAY;
+extern t_list *LIST_RELEASED_PIDS; // LIFO
+extern pthread_mutex_t MUTEX_LIST_RELEASED_PIDS;
+extern pthread_cond_t COND_LIST_RELEASED_PIDS;
+
+extern const char *STATE_NAMES[];
+
+extern const char *EXIT_REASONS[];
+
 int module(int, char*[]);
 void initialize_mutexes(void);
 void finish_mutexes(void);
 void initialize_semaphores(void);
 void finish_semaphores(void);
 void read_module_config(t_config *module_config);
-void pcb_free(t_PCB *pcb);
+
+t_PCB *pcb_create(void);
+void pcb_destroy(t_PCB *pcb);
+
+t_PID pid_assign(t_PCB *pcb);
+void pid_release(t_PID pid);
+
+bool pcb_matches_pid(t_PCB *pcb, t_PID *pid);
+
+void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list);
+void pcb_list_to_pid_string(t_list *pcb_list, char **destination);
 
 #endif /* KERNEL_H */

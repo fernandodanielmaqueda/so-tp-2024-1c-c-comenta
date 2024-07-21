@@ -11,6 +11,32 @@ char *MODULE_LOG_PATHNAME = "kernel.log";
 t_config *MODULE_CONFIG;
 char *MODULE_CONFIG_PATHNAME = "kernel.config";
 
+t_PID PID_COUNTER = 0;
+pthread_mutex_t MUTEX_PID_COUNTER;
+t_PCB **PCB_ARRAY = NULL;
+pthread_mutex_t MUTEX_PCB_ARRAY;
+t_list *LIST_RELEASED_PIDS; // LIFO
+pthread_mutex_t MUTEX_LIST_RELEASED_PIDS;
+pthread_cond_t COND_LIST_RELEASED_PIDS;
+
+const char *STATE_NAMES[] = {
+	[NEW_STATE] = "NEW",
+	[READY_STATE] = "READY",
+	[EXEC_STATE] = "EXEC",
+	[BLOCKED_STATE] = "BLOCKED",
+	[EXIT_STATE] = "EXIT"
+};
+
+const char *EXIT_REASONS[] = {
+	[UNEXPECTED_ERROR_EXIT_REASON] = "UNEXPECTED ERROR",
+
+	[SUCCESS_EXIT_REASON] = "SUCCESS",
+	[INVALID_RESOURCE_EXIT_REASON] = "INVALID_RESOURCE",
+	[INVALID_INTERFACE_EXIT_REASON] = "INVALID_INTERFACE",
+	[OUT_OF_MEMORY_EXIT_REASON] = "OUT_OF_MEMORY",
+	[INTERRUPTED_BY_USER_EXIT_REASON] = "INTERRUPTED_BY_USER"
+};
+
 int module(int argc, char *argv[]) {
 
 	initialize_loggers();
@@ -127,7 +153,147 @@ void read_module_config(t_config *module_config) {
 	MULTIPROGRAMMING_LEVEL = config_get_int_value(module_config, "GRADO_MULTIPROGRAMACION");
 }
 
-void pcb_free(t_PCB *pcb) {
+t_PCB *pcb_create(void) {
+
+	t_PCB *pcb = malloc(sizeof(t_PCB));
+	if(pcb == NULL) {
+		log_error(MODULE_LOGGER, "No se pudo reservar memoria para el PCB");
+		exit(EXIT_FAILURE);
+	}
+
+	pcb->exec_context.PID = pid_assign(pcb);
+    pcb->exec_context.PC = 0;
+	pcb->exec_context.quantum = QUANTUM;
+    pcb->exec_context.cpu_registers.AX = 0;
+    pcb->exec_context.cpu_registers.BX = 0;
+    pcb->exec_context.cpu_registers.CX = 0;
+    pcb->exec_context.cpu_registers.DX = 0;
+    pcb->exec_context.cpu_registers.EAX = 0;
+    pcb->exec_context.cpu_registers.EBX = 0;
+    pcb->exec_context.cpu_registers.ECX = 0;
+    pcb->exec_context.cpu_registers.EDX = 0;
+    pcb->exec_context.cpu_registers.RAX = 0;
+    pcb->exec_context.cpu_registers.RBX = 0;
+    pcb->exec_context.cpu_registers.RCX = 0;
+    pcb->exec_context.cpu_registers.RDX = 0;
+    pcb->exec_context.cpu_registers.SI = 0;
+    pcb->exec_context.cpu_registers.DI = 0;
+
+	pcb->current_state = NEW_STATE;
+	pcb->shared_list_state = NULL;
+
+	pcb->assigned_resources = list_create();
+
+	payload_init(&(pcb->io_operation));
+
+	return pcb;
+}
+
+void pcb_destroy(t_PCB *pcb) {
+	list_destroy(pcb->assigned_resources);
+
 	payload_destroy(&(pcb->io_operation));
+
 	free(pcb);
+}
+
+t_PID pid_assign(t_PCB *pcb) {
+
+	pthread_mutex_lock(&MUTEX_LIST_RELEASED_PIDS);
+		if(LIST_RELEASED_PIDS->head == NULL && PID_COUNTER <= PID_MAX) {
+			// Si no hay PID liberados y no se alcanzó el máximo de PID, se asigna un nuevo PID
+			pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
+
+			pthread_mutex_lock(&MUTEX_PCB_ARRAY);
+				t_PCB **new_pcb_array = realloc(PCB_ARRAY, sizeof(t_PCB *) * (PID_COUNTER + 1));
+				if(new_pcb_array == NULL) {
+					log_error(MODULE_LOGGER, "No se pudo reservar memoria para el array de PCBs");
+					exit(EXIT_FAILURE);
+				}
+				PCB_ARRAY = new_pcb_array;
+
+				PCB_ARRAY[PID_COUNTER] = pcb;
+			pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
+
+			return PID_COUNTER++;
+		}
+
+		// Se espera hasta que haya algún PID liberado para reutilizarlo
+		while(LIST_RELEASED_PIDS->head == NULL)
+			pthread_cond_wait(&COND_LIST_RELEASED_PIDS, &MUTEX_LIST_RELEASED_PIDS);
+
+		t_link_element *element = LIST_RELEASED_PIDS->head;
+
+		LIST_RELEASED_PIDS->head = element->next;
+		LIST_RELEASED_PIDS->elements_count--;
+	pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
+
+	t_PID pid = (*(t_PID *) element->data);
+
+	free(element->data);
+	free(element);
+
+	pthread_mutex_lock(&MUTEX_PCB_ARRAY);
+		PCB_ARRAY[pid] = pcb;
+	pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
+
+	return pid;
+
+}
+
+void pid_release(t_PID pid) {
+	pthread_mutex_lock(&MUTEX_PCB_ARRAY);
+		PCB_ARRAY[pid] = NULL;
+	pthread_mutex_unlock(&MUTEX_PCB_ARRAY);
+
+	t_link_element *element = malloc(sizeof(t_link_element));
+		if(element == NULL) {
+			log_error(MODULE_LOGGER, "No se pudo reservar memoria para el elemento de la lista de PID libres");
+			exit(EXIT_FAILURE);
+		}
+
+		element->data = malloc(sizeof(t_PID));
+		if(element->data == NULL) {
+			log_error(MODULE_LOGGER, "No se pudo reservar memoria para el PID");
+			exit(EXIT_FAILURE);
+		}
+		(*(t_PID *) element->data) = pid;
+
+		pthread_mutex_lock(&MUTEX_LIST_RELEASED_PIDS);
+			element->next = LIST_RELEASED_PIDS->head;
+			LIST_RELEASED_PIDS->head = element;
+		pthread_mutex_unlock(&MUTEX_LIST_RELEASED_PIDS);
+
+		pthread_cond_signal(&COND_LIST_RELEASED_PIDS);
+}
+
+bool pcb_matches_pid(t_PCB *pcb, t_PID *pid) {
+	return pcb->exec_context.PID == *pid;
+}
+
+void log_state_list(t_log *logger, const char *state_name, t_list *pcb_list) {
+	char *pid_string = string_new();
+	pcb_list_to_pid_string(pcb_list, &pid_string);
+	log_info(logger, "%s: %s", state_name, pid_string);
+	free(pid_string);
+}
+
+void pcb_list_to_pid_string(t_list *pcb_list, char **destination) {
+	if(destination == NULL || *destination == NULL || pcb_list == NULL)
+		return;
+
+	t_link_element *element = pcb_list->head;
+
+	if(**destination && element != NULL)
+		string_append(destination, ", ");
+
+	char *pid_as_string;
+	while(element != NULL) {
+        pid_as_string = string_from_format("%" PRIu32, ((t_PCB *) element->data)->exec_context.PID);
+        string_append(destination, pid_as_string);
+        free(pid_as_string);
+		element = element->next;
+        if(element != NULL)
+            string_append(destination, ", ");
+    }
 }

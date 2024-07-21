@@ -48,20 +48,26 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
         return 1;
     }
 
+    pthread_mutex_lock(&(resource->mutex_instances));
+
     resource->available--;
+
     if(resource->available < 0) {
-        wait_draining_requests(&SCHEDULING_SYNC);
+        pthread_mutex_unlock(&(resource->mutex_instances));
 
-            switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
+        switch_process_state(SYSCALL_PCB, BLOCKED_STATE);
 
-            pthread_mutex_lock(&(resource->shared_list_blocked.mutex));
-                list_add(resource->shared_list_blocked.list, SYSCALL_PCB);
-                log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, resource_name);
-            pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
+        pthread_mutex_lock(&(resource->shared_list_blocked.mutex));
+            list_add(resource->shared_list_blocked.list, SYSCALL_PCB);
+            log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, resource_name);
+        pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
 
-        signal_draining_requests(&SCHEDULING_SYNC);
         EXEC_PCB = 0;
     } else {
+        pthread_mutex_unlock(&(resource->mutex_instances));
+
+        list_add(SYSCALL_PCB->assigned_resources, resource);
+
         EXEC_PCB = 1;
     }
 
@@ -89,24 +95,35 @@ int signal_kernel_syscall(t_Payload *syscall_arguments) {
 
     EXEC_PCB = 1;
 
+    list_remove_by_condition_with_comparation(SYSCALL_PCB->assigned_resources, (bool (*)(void *, void *)) pointers_match, (void *) resource);
+
+    pthread_mutex_lock(&(resource->mutex_instances));
+
     resource->available++;
+
+    if(resource->total < resource->available)
+        resource->total = resource->available;
+
     if(resource->available <= 0) {
-        wait_draining_requests(&SCHEDULING_SYNC);
+        pthread_mutex_unlock(&(resource->mutex_instances));
 
-            pthread_mutex_lock(&(resource->shared_list_blocked.mutex));
+        pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
 
-                if((resource->shared_list_blocked.list)->head == NULL) {
-                    pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
-                    signal_draining_requests(&SCHEDULING_SYNC);
-                    return 0;
-                }
+            if((resource->shared_list_blocked.list)->head == NULL) {
+                pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
+                return 0;
+            }
 
-                t_PCB *pcb = (t_PCB *) list_remove(resource->shared_list_blocked.list, 0);
+            t_PCB *pcb = (t_PCB *) list_remove(resource->shared_list_blocked.list, 0);
 
-            pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
-            
-            switch_process_state(pcb, READY_STATE);
-        signal_draining_requests(&SCHEDULING_SYNC);
+        pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
+
+        list_add(pcb->assigned_resources, resource);
+      
+        switch_process_state(pcb, READY_STATE);
+    }
+    else {
+        pthread_mutex_unlock(&(resource->mutex_instances));
     }
 
     return 0;

@@ -3,11 +3,8 @@
 
 #include "resources.h"
 
-t_Resource *RESOURCES;
-
-t_list *ASSIGNED_RESOURCES;
-
 int RESOURCE_QUANTITY;
+t_Resource *RESOURCES;
 
 void resources_read_module_config(t_config *module_config) {
 	char **resource_names = config_get_array_value(module_config, "RECURSOS");
@@ -20,16 +17,18 @@ void resources_read_module_config(t_config *module_config) {
 		exit(EXIT_FAILURE);
 	}
 
-	RESOURCES = malloc(sizeof(t_Resource) * (RESOURCE_QUANTITY + 1));
-	if(RESOURCES == NULL) {
-		log_error(MODULE_LOGGER, "No se pudo reservar memoria para los recursos");
-		exit(EXIT_FAILURE);
+	if(RESOURCE_QUANTITY > 0) {
+		RESOURCES = malloc(sizeof(t_Resource) * RESOURCE_QUANTITY);
+		if(RESOURCES == NULL) {
+			log_error(MODULE_LOGGER, "No se pudo reservar memoria para los recursos");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	char *end;
 	long instances;
 
-	for(int i = 0; i < RESOURCE_QUANTITY; i++) {
+	for(register int i = 0; i < RESOURCE_QUANTITY; i++) {
 		instances = strtol(resource_instances[i], &end, 10);
 		if(!*(resource_instances[i]) || *end) {
 			log_error(MODULE_LOGGER, "La cantidad de instancias del recurso %s no es un número válido: %s", resource_names[i], resource_instances[i]);
@@ -37,27 +36,26 @@ void resources_read_module_config(t_config *module_config) {
 		}
 
 		RESOURCES[i].name = resource_names[i];
-		RESOURCES[i].available = instances;
 		RESOURCES[i].total = instances;
+		RESOURCES[i].available = instances;
 		RESOURCES[i].shared_list_blocked.list = list_create();
 		pthread_mutex_init(&(RESOURCES[i].shared_list_blocked.mutex), NULL);
 	}
-
-	RESOURCES[RESOURCE_QUANTITY].name = NULL;
 }
 
-void resources_free(void) {
-	free(RESOURCES);
+t_Resource *resource_find(char *name) {
+    for(register int i = 0; i < RESOURCE_QUANTITY; i++)
+        if(strcmp((RESOURCES[i]).name, name) == 0)
+            return (&(RESOURCES[i]));
+
+    return NULL;
 }
 
 void resource_log(t_Resource *resource) {
 	log_trace(MODULE_LOGGER, "Recurso: %s - Instancias disponibles %ld/%ld", resource->name, resource->available, resource->total);
 }
 
-t_Resource *resource_find(char *name) {
-    for(register int i = 0; RESOURCES[i].name != NULL; i++)
-        if(strcmp(RESOURCES[i].name, name) == 0)
-            return (&RESOURCES[i]);
-
-    return NULL;
+void resources_free(void) {
+	free(RESOURCES);
+	// TODO: Liberar lista de bloqueados
 }

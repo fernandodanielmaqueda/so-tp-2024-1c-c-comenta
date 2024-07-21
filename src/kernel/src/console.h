@@ -26,6 +26,9 @@
 
 #define MAX_CONSOLE_ARGC 1 + 2
 
+extern t_log *CONSOLE_LOGGER;
+extern char *CONSOLE_LOG_PATHNAME;
+
 typedef struct t_Command {
     char *name;
     int (*function) (int, char*[]);
@@ -33,8 +36,20 @@ typedef struct t_Command {
 
 extern t_Command CONSOLE_COMMANDS[];
 
-extern t_log *CONSOLE_LOGGER;
-extern char *CONSOLE_LOG_PATHNAME;
+extern int EXIT_CONSOLE;
+
+extern int KILL_EXEC_PROCESS;
+extern pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
+
+extern unsigned int MULTIPROGRAMMING_LEVEL;
+extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
+extern unsigned int MULTIPROGRAMMING_DIFFERENCE;
+extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
+extern sem_t SEM_MULTIPROGRAMMING_POSTER;
+extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
+
+extern int SCHEDULING_PAUSED;
+extern pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
 
 void *initialize_kernel_console(void *argument);
 void initialize_readline(void);

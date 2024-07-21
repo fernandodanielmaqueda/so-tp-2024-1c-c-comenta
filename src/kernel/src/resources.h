@@ -31,15 +31,18 @@
 
 typedef struct t_Resource {
     char *name;
-    long available;
     long total;
+    long available;
+    pthread_mutex_t mutex_instances;
     t_Shared_List shared_list_blocked;
 } t_Resource;
 
-//extern t_Resource *TOTAL_RESOURCES;
+extern int RESOURCE_QUANTITY;
 extern t_Resource *RESOURCES;
 
 void resources_read_module_config(t_config *module_config);
-t_Resource *resource_find (char *name);
+t_Resource *resource_find(char *name);
+void resource_log(t_Resource *resource);
+void resources_free(void);
 
 #endif // KERNEL_RESOURCES_H

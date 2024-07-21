@@ -41,6 +41,72 @@ void finish_configs(void) {
 	config_destroy(MODULE_CONFIG);
 }
 
+void init_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	pthread_mutex_init(&(resource_sync->mutex_resource), NULL);
+	sem_init(&(resource_sync->sem_drain_requests_count), 0, 0);
+	pthread_cond_init(&(resource_sync->cond_drain_requests), NULL);
+	sem_init(&(resource_sync->sem_ongoing_count), 0, 0);
+	pthread_cond_init(&(resource_sync->cond_ongoing), NULL);
+}
+
+void destroy_resource_sync(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	pthread_mutex_destroy(&(resource_sync->mutex_resource));
+	sem_destroy(&(resource_sync->sem_drain_requests_count));
+	pthread_cond_destroy(&(resource_sync->cond_drain_requests));
+	sem_destroy(&(resource_sync->sem_ongoing_count));
+	pthread_cond_destroy(&(resource_sync->cond_ongoing));
+}
+
+void wait_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+    wait_ongoing_locking(resource_sync);
+    pthread_mutex_unlock(&(resource_sync->mutex_resource));
+}
+
+void signal_ongoing(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+    sem_wait(&(resource_sync->sem_drain_requests_count));
+
+    // Acá se podría agregar un if para hacer el broadcast sólo si el semáforo efectivamente quedó en 0
+    pthread_cond_broadcast(&(resource_sync->cond_drain_requests));
+}
+
+void wait_ongoing_locking(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+    sem_post(&(resource_sync->sem_drain_requests_count));
+
+    int sem_value;
+    pthread_mutex_lock(&(resource_sync->mutex_resource));
+        while(1) {
+            sem_getvalue(&(resource_sync->sem_ongoing_count), &sem_value);
+            if(!sem_value)
+                break;
+            pthread_cond_wait(&(resource_sync->cond_ongoing), &(resource_sync->mutex_resource));
+        }
+}
+
+void signal_ongoing_unlocking(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	pthread_mutex_unlock(&(resource_sync->mutex_resource));
+	signal_ongoing(resource_sync);
+}
+
+void wait_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+
+    int sem_value;
+    pthread_mutex_lock(&(resource_sync->mutex_resource));
+		while(1) {
+			sem_getvalue(&(resource_sync->sem_drain_requests_count), &sem_value);
+			if(!sem_value)
+				break;
+			pthread_cond_wait(&(resource_sync->cond_drain_requests), &(resource_sync->mutex_resource));
+		}
+		sem_post(&(resource_sync->sem_ongoing_count));
+    pthread_mutex_unlock(&(resource_sync->mutex_resource));
+}
+
+void signal_draining_requests(t_Drain_Ongoing_Resource_Sync *resource_sync) {
+	sem_wait(&(resource_sync->sem_ongoing_count));
+	// Acá se podría agregar un if para hacer el signal sólo si el semáforo efectivamente quedó en 0
+	pthread_cond_signal(&(resource_sync->cond_ongoing)); // podría ser un broadcast en lugar de un wait si hay más de un comando de consola esperando
+}
+
 void *list_remove_by_condition_with_comparation(t_list *list, bool (*condition)(void *, void *), void *comparation) {
 	t_link_element **indirect = &(list->head);
 	while (*indirect != NULL) {
@@ -91,4 +157,8 @@ void *list_find_by_condition_with_comparation(t_list *list, bool (*condition)(vo
 		indirect = &((*indirect)->next);
 	}
 	return NULL;
+}
+
+bool pointers_match(void * ptr_1, void *ptr_2) {
+	return ptr_1 == ptr_2;
 }
