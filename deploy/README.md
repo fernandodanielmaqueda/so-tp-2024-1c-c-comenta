@@ -24,19 +24,25 @@
 
 # De antemano
 
-## A. Generar las credenciales de GitHub
+## A. Anotarse en el Sistema de Inscripciones
 
-TODO
+Cualquier integrante del grupo podrá ingresar al Sistema de Inscripciones y deberá indicar la franja horaria en que el grupo pueda presentarse.
 
-## B. Anotarse en el Sistema de Inscripciones
+El grupo luego recibirá la fecha y horario estimado de evaluación. Los mismos se asignarán en base a la cantidad de grupos inscriptos. La inscripción cerrará el día anterior a la fecha de entrega a las 20:00hs.
 
 - https://inscripciones.utnso.com.ar/
+
+## B. Generar las credenciales de GitHub
+
+TODO
 
 -----------------------------
 
 # (Sólo Deploy) Al entrar al laboratorio
 
 ## A. Anunciarse
+
+El día de la evaluación, el grupo deberá notificar su llegada a los ayudantes cuando todos los integrantes se encuentren presentes.
 
 -----------------------------
 
@@ -52,19 +58,25 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 -----------------------------
 
-## 2. Descargar Git Bash PORTABLE
+## 2. Abrir un navegador web
+
+## 3. Loguearse en la cuenta de GitHub
+
+## 4. Acceder a este repositorio grupal
+
+- https://github.com/sisoputnfrba/tp-2024-1c-Operativos
+
+## 5. Descargar Git Bash PORTABLE
 
 - https://git-scm.com/download/win
-
-32-bits:
-	- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-32-bit.7z.exe
-
-64-bits:
-	- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-64-bit.7z.exe 
+	- 32-bits:
+		- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-32-bit.7z.exe
+	- 64-bits:
+		- https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/PortableGit-2.45.2-64-bit.7z.exe 
 
 -----------------------------
 
-## 3. Descomprimir y abrir el Git Bash PORTABLE e iniciar sesión en GitHub
+## 6. Descomprimir y abrir el Git Bash PORTABLE e iniciar sesión en GitHub
 ```bash
 git config --global user.email 'ejemplo@frba.utn.edu.ar'
 git config --global user.name 'Nombre y Apellido(s)'
@@ -72,7 +84,7 @@ git config --global user.name 'Nombre y Apellido(s)'
 
 -----------------------------
 
-## 4. Clonar este repositorio
+## 7. Clonar este repositorio
 ```bash
 cd ~ ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
@@ -83,13 +95,26 @@ cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnf
 
 -----------------------------
 
-## 5. Descargar VirtualBox
+## 8. Clonarse los submódulos del repositorio
+```bash
+cd tp-2024-1c-Operativos ; git submodule update --init --recursive
+```
+
+-----------------------------
+
+## 9. Ejecutar Scripts Automáticos
+
+TODO
+
+-----------------------------
+
+## 10. (NO en Deploy) Descargar VirtualBox
 
 - https://www.virtualbox.org/wiki/Downloads
 
 -----------------------------
 
-## 6. Descargar la VM de Ubuntu Server
+## 11. (NO en Deploy) Descargar la VM de Ubuntu Server
 
 Página oficial
 - https://docs.utnso.com.ar/recursos/vms
@@ -110,13 +135,13 @@ Gestor de descargas (Ubuntu)
 
 -----------------------------
 
-## 7. Características de Windows
+## 12. (NO en Deploy) Revisar características de Windows
 
 - Desactivar `Plataforma de Hipervisor de Windows`
 
 -----------------------------
 
-## 8. Configuración de la VM (Ubuntu Server) en VirtualBox
+## 13. (NO en Deploy) Configuración de la VM (Ubuntu Server) en VirtualBox
 
 - General
 	- Básico
@@ -238,7 +263,12 @@ Gestor de descargas (Ubuntu)
 		- [X] .
 
 -----------------------------
-## 9. Actualizar el índice de paquetes local en la VM
+## 14. Iniciar la VM Server
+
+TODO
+
+-----------------------------
+## 15. Actualizar el índice de paquetes local en la VM
 
 ```bash
 sudo apt update
@@ -246,7 +276,7 @@ sudo apt update
 
 -----------------------------
 
-## Opcional: GRUB (para configurar el tamaño de pantalla FIJO de la VM)
+## 16. (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
 
 1. Backupear el archivo `/etc/default/grub` original
 ```bash
@@ -285,7 +315,7 @@ init 6
 
 -----------------------------
 
-## 10. Instalar VirtualBox Guest Additions (para las carpetas compartidas)
+## 17. Instalar VirtualBox Guest Additions (para las carpetas compartidas)
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
@@ -312,7 +342,7 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 11. Montar una carpeta compartida en la VM
+## 18. Montar una carpeta compartida en la VM
 
 ### Alternativa 1: Montar una carpeta compartida usando vboxsf (VirtualBox Shared Folders)
 
@@ -410,7 +440,7 @@ Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cam
 
 -----------------------------
 
-## 12. Configurar SSH en la VM
+## 19. Configurar SSH en la VM
 
 1. Descargar e instalar openssh-server
 ```bash
@@ -509,7 +539,7 @@ less /var/log/auth.log
 
 -----------------------------
 
-## 13. Conectarse por SSH a la VM
+## 20. Conectarse por SSH a la VM
 
 ### En Windows (PowerShell):
 
@@ -522,11 +552,11 @@ ipconfig
 ```powershell
 ssh utnso@NúmeroIP -p 22
 ```
-Nota: el puerto por lo general es 22
+Nota: el puerto por defecto para SSH es 22
 
 -----------------------------
 
-## 14. Configurar VSCode
+## 21. Configurar VSCode
 
 ### Extensiones:
 	Remote - SSH
@@ -623,7 +653,7 @@ Host NúmeroIP
 
 -----------------------------
 
-## 15. Configurar Git en la VM
+## 22. Configurar Git en la VM
 
 1. Generar un token en GitHub
 	- Tokens (classic)
@@ -654,7 +684,7 @@ git config --global user.name 'Nombre y Apellido(s)'
 
 -----------------------------
 
-## 16. Instalar la versión más reciente de CMake
+## 23. (NO en el Deploy) Instalar la versión más reciente de CMake
 
 https://cmake.org/download/
 
@@ -787,6 +817,30 @@ clear ; make run-memoria
 clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
+> Ejecutar con memcheck un módulo
+```bash
+clear ; make valgrind-memcheck-kernel
+clear ; make valgrind-memcheck-cpu
+clear ; make valgrind-memcheck-memoria
+clear ; make valgrind-memcheck-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+```
+
+> Ejecutar con helgrind un módulo
+```bash
+clear ; make valgrind-helgrind-kernel
+clear ; make valgrind-helgrind-cpu
+clear ; make valgrind-helgrind-memoria
+clear ; make valgrind-helgrind-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+```
+
+> Ejecutar con valgrind (sin ninguna herramienta) un módulo
+```bash
+clear ; make valgrind-none-kernel
+clear ; make valgrind-none-cpu
+clear ; make valgrind-none-memoria
+clear ; make valgrind-none-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+```
+
 -----------------------------
 
 ## Anexo 3: tmux (Terminal MUltipleXer)
@@ -856,4 +910,14 @@ tmux kill -t 'NombreDeSesion'
 
 # Al salir
 
-## 1. Desloguearse de Git, sacar las credenciales de Windows
+## 1. Desloguearse de las cuentas del navegador
+
+## 2. Borrar el historial del navegador
+
+## 3. Desloguearse de Git
+
+## 4. Quitar las credenciales de Git en el Administrador de Credenciales de Windows
+
+## 5. Eliminar el repositorio clonado
+
+## 6. Volver la VM Server a un Snapshot anterior
