@@ -84,6 +84,7 @@ void *kernel_client_handler_for_io(t_Client *new_client) {
 
                     pcb = (t_PCB *) list_remove_by_condition_with_comparation(interface->shared_list_blocked_exec.list, (bool (*)(void *, void *)) pcb_matches_pid, &(pid));
                     if(pcb != NULL) {
+                        pcb->shared_list_state = NULL;
                         
                         payload_destroy(&(pcb->io_operation));
 
@@ -130,6 +131,7 @@ void *kernel_io_interface_dispatcher(t_Interface *interface) {
                     }
                     else {
                         pcb = (t_PCB *) list_remove(interface->shared_list_blocked_ready.list, 0);
+                        pcb->shared_list_state = NULL;
                     }
                 pthread_cleanup_pop(1);
 
@@ -137,6 +139,7 @@ void *kernel_io_interface_dispatcher(t_Interface *interface) {
                     pthread_mutex_lock(&(interface->shared_list_blocked_exec.mutex));
                     pthread_cleanup_push((void (*)(void *)) pthread_mutex_unlock, (void *) &(interface->shared_list_blocked_exec.mutex));
                         list_add(interface->shared_list_blocked_exec.list, pcb);
+                        pcb->shared_list_state = &(interface->shared_list_blocked_exec);
                     pthread_cleanup_pop(1);
 
                     pthread_testcancel();
@@ -194,6 +197,7 @@ void interface_exit(t_Interface *interface) {
     pthread_mutex_lock(&(interface->shared_list_blocked_ready.mutex));
         while((interface->shared_list_blocked_ready.list)->elements_count > 0) {
             pcb = (t_PCB *) list_remove(interface->shared_list_blocked_ready.list, 0);
+            pcb->shared_list_state = NULL;
             payload_destroy(&(pcb->io_operation));
             pcb->exit_reason = INVALID_INTERFACE_EXIT_REASON;
             switch_process_state(pcb, EXIT_STATE);
@@ -203,6 +207,7 @@ void interface_exit(t_Interface *interface) {
     pthread_mutex_lock(&(interface->shared_list_blocked_exec.mutex));
         while((interface->shared_list_blocked_exec.list)->elements_count > 0) {
             pcb = (t_PCB *) list_remove(interface->shared_list_blocked_exec.list, 0);
+            pcb->shared_list_state = NULL;
             payload_destroy(&(pcb->io_operation));
             pcb->exit_reason = INVALID_INTERFACE_EXIT_REASON;
             switch_process_state(pcb, EXIT_STATE);

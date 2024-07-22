@@ -60,6 +60,7 @@ int wait_kernel_syscall(t_Payload *syscall_arguments) {
         pthread_mutex_lock(&(resource->shared_list_blocked.mutex));
             list_add(resource->shared_list_blocked.list, SYSCALL_PCB);
             log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, resource_name);
+            SYSCALL_PCB->shared_list_state = &(resource->shared_list_blocked);
         pthread_mutex_unlock(&(resource->shared_list_blocked.mutex));
 
         EXEC_PCB = 0;
@@ -202,6 +203,7 @@ int process_io_syscall(t_Payload *syscall_arguments, e_CPU_OpCode syscall_opcode
 
             list_add(interface->shared_list_blocked_ready.list, SYSCALL_PCB);
             log_debug(MINIMAL_LOGGER, "PID: <%d> - Bloqueado por: <%s>", (int) SYSCALL_PCB->exec_context.PID, interface->name);
+            SYSCALL_PCB->shared_list_state = &(interface->shared_list_blocked_ready);
 
             sem_post(&(interface->sem_scheduler));
         

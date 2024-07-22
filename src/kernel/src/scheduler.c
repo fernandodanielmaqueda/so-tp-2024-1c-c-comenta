@@ -421,42 +421,33 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 	e_Process_State previous_state = pcb->current_state;
 
 	switch(previous_state) {
+
 		case NEW_STATE:
 			pthread_mutex_lock(&(SHARED_LIST_NEW.mutex));
 				list_remove_by_condition_with_comparation((SHARED_LIST_NEW.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
+				pcb->shared_list_state = NULL;
 			pthread_mutex_unlock(&(SHARED_LIST_NEW.mutex));
 			break;
+
 		case READY_STATE:
 		{
-			switch(SCHEDULING_ALGORITHM) {
-				case VRR_SCHEDULING_ALGORITHM:
-
-					if(pcb->exec_context.quantum < QUANTUM) {
-						pthread_mutex_lock(&(SHARED_LIST_READY_PRIORITARY.mutex));
-							list_remove_by_condition_with_comparation((SHARED_LIST_READY_PRIORITARY.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
-						pthread_mutex_unlock(&(SHARED_LIST_READY_PRIORITARY.mutex));
-					} else {
-						pthread_mutex_lock(&(SHARED_LIST_READY.mutex));
-							list_remove_by_condition_with_comparation((SHARED_LIST_READY.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
-						pthread_mutex_unlock(&(SHARED_LIST_READY.mutex));
-					}
-					break;
-				case RR_SCHEDULING_ALGORITHM:
-				case FIFO_SCHEDULING_ALGORITHM:
-					pthread_mutex_lock(&(SHARED_LIST_READY.mutex));
-						list_remove_by_condition_with_comparation((SHARED_LIST_READY.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
-					pthread_mutex_unlock(&(SHARED_LIST_READY.mutex));
-					break;
-			}
+			t_Shared_List *shared_list_state = pcb->shared_list_state;
+			pthread_mutex_lock(&(shared_list_state->mutex));
+				list_remove_by_condition_with_comparation((shared_list_state->list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
+				pcb->shared_list_state = NULL;
+			pthread_mutex_unlock(&(shared_list_state->mutex));
 			break;
 		}
+
 		case EXEC_STATE:
 		{
 			pthread_mutex_lock(&(SHARED_LIST_EXEC.mutex));
 				list_remove_by_condition_with_comparation((SHARED_LIST_EXEC.list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
+				pcb->shared_list_state = NULL;
 			pthread_mutex_unlock(&(SHARED_LIST_EXEC.mutex));
 			break;
 		}
+
 		default:
 			break;
 	}
@@ -464,32 +455,37 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 	pcb->current_state = new_state;
 
 	switch(new_state) {
+
 		case READY_STATE:
 		{
 
 			switch(SCHEDULING_ALGORITHM) {
-				case VRR_SCHEDULING_ALGORITHM:
 
+				case VRR_SCHEDULING_ALGORITHM:
 					if(pcb->exec_context.quantum < QUANTUM) {
 						pthread_mutex_lock(&(SHARED_LIST_READY_PRIORITARY.mutex));
 							log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", (int) pcb->exec_context.PID, STATE_NAMES[previous_state]);
 							list_add((SHARED_LIST_READY_PRIORITARY.list), pcb);
 							log_state_list(MODULE_LOGGER, "Ready Prioridad", (SHARED_LIST_READY_PRIORITARY.list));
-						pthread_mutex_unlock(&(SHARED_LIST_READY_PRIORITARY.mutex));
+							pcb->shared_list_state = &(SHARED_LIST_READY_PRIORITARY);
+						pthread_mutex_unlock(&(SHARED_LIST_READY_PRIORITARY.mutex));					
 					} else {
 						pthread_mutex_lock(&(SHARED_LIST_READY.mutex));
 							log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", (int) pcb->exec_context.PID, STATE_NAMES[previous_state]);
 							list_add((SHARED_LIST_READY.list), pcb);
 							log_state_list(MODULE_LOGGER, "Cola Ready", (SHARED_LIST_READY.list));
+							pcb->shared_list_state = &(SHARED_LIST_READY);
 						pthread_mutex_unlock(&(SHARED_LIST_READY.mutex));
 					}
 					break;
+				
 				case RR_SCHEDULING_ALGORITHM:
 				case FIFO_SCHEDULING_ALGORITHM:
 					pthread_mutex_lock(&(SHARED_LIST_READY.mutex));
 						log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <READY>", (int) pcb->exec_context.PID, STATE_NAMES[previous_state]);
 						list_add((SHARED_LIST_READY.list), pcb);
 						log_state_list(MODULE_LOGGER, "Cola Ready", (SHARED_LIST_READY.list));
+						pcb->shared_list_state = &(SHARED_LIST_READY);
 					pthread_mutex_unlock(&(SHARED_LIST_READY.mutex));
 					break;
 			}
@@ -497,32 +493,36 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 			sem_post(&SEM_SHORT_TERM_SCHEDULER);
 			break;
 		}
+
 		case EXEC_STATE:
 		{
-			
 			pthread_mutex_lock(&(SHARED_LIST_EXEC.mutex));
 				log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXEC>", (int) pcb->exec_context.PID, STATE_NAMES[previous_state]);
 				list_add((SHARED_LIST_EXEC.list), pcb);
+				pcb->shared_list_state = &(SHARED_LIST_EXEC);
 			pthread_mutex_unlock(&(SHARED_LIST_EXEC.mutex));
-	
 			break;
 		}
+
 		case BLOCKED_STATE:
 		{
 			log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <BLOCKED>", (int) pcb->exec_context.PID, STATE_NAMES[previous_state]);	
 			break;
 		}
+
 		case EXIT_STATE:
 		{
 			pthread_mutex_lock(&(SHARED_LIST_EXIT.mutex));
 				log_debug(MINIMAL_LOGGER, "PID: <%d> - Estado Anterior: <%s> - Estado Actual: <EXIT>", (int) pcb->exec_context.PID, STATE_NAMES[previous_state]);
 				list_add((SHARED_LIST_EXIT.list), pcb);
+				pcb->shared_list_state = &(SHARED_LIST_EXIT);
 			pthread_mutex_unlock(&(SHARED_LIST_EXIT.mutex));
 
 			sem_post(&SEM_LONG_TERM_SCHEDULER_EXIT);
 
 			break;
 		}
+
 		default:
 			break;
 	}

@@ -275,11 +275,9 @@ int kernel_command_start_process(int argc, char* argv[]) {
         return 1;
     }
 
-    wait_draining_requests(&SCHEDULING_SYNC);
-        pthread_mutex_lock(&(SHARED_LIST_NEW.mutex));
-            list_add(SHARED_LIST_NEW.list, pcb);
-        pthread_mutex_unlock(&(SHARED_LIST_NEW.mutex));
-    signal_draining_requests(&SCHEDULING_SYNC);
+    pthread_mutex_lock(&(SHARED_LIST_NEW.mutex));
+        list_add(SHARED_LIST_NEW.list, pcb);
+    pthread_mutex_unlock(&(SHARED_LIST_NEW.mutex));
 
     log_debug(MINIMAL_LOGGER, "Se crea el proceso <%d> en NEW", pcb->exec_context.PID);
 
@@ -341,13 +339,14 @@ int kernel_command_kill_process(int argc, char* argv[]) {
 
             case BLOCKED_STATE:
             {
-                wait_draining_requests(&INTERFACES_SYNC); // En realidad esto no hace falta, pero lo dejo por escalabilidad
-                    //pthread_mutex_lock(&(interface->shared_list_blocked_exec.mutex));
+                pcb->exit_reason = INTERRUPTED_BY_USER_EXIT_REASON;
 
-                    //pthread_mutex_unlock(&(interface->shared_list_blocked_exec.mutex));
-                signal_draining_requests(&INTERFACES_SYNC);
+                t_Shared_List *shared_list_state = pcb->shared_list_state;
+                pthread_mutex_lock(&(shared_list_state->mutex));
+                    list_remove_by_condition_with_comparation((shared_list_state->list), (bool (*)(void *, void *)) pcb_matches_pid, &(pcb->exec_context.PID));
+                    pcb->shared_list_state = NULL;
+                pthread_mutex_unlock(&(shared_list_state->mutex));
 
-                // TODO: Sacar de la lista de bloqueados que corresponda
                 switch_process_state(pcb, EXIT_STATE);
                 break;
             }
@@ -460,22 +459,32 @@ int kernel_command_process_states(int argc, char* argv[]) {
     char *pid_string_exit = string_new();
 
     wait_ongoing(&SCHEDULING_SYNC);
+
+        // NEW
         pcb_list_to_pid_string(SHARED_LIST_NEW.list, &pid_string_new);
 
+        // READY
         pcb_list_to_pid_string(SHARED_LIST_READY.list, &pid_string_ready);
         pcb_list_to_pid_string(SHARED_LIST_READY_PRIORITARY.list, &pid_string_ready);
 
+        // EXEC
         pcb_list_to_pid_string(SHARED_LIST_EXEC.list, &pid_string_exec);
 
-        // TODO: Recorrer todas las listas de bloqueados
-        wait_draining_requests(&INTERFACES_SYNC); // En realidad esto no hace falta, pero lo dejo por escalabilidad
-            //pthread_mutex_lock(&(interface->shared_list_blocked_exec.mutex));
+        // BLOCKED
+            // RECURSOS
+        for(register int i = 0; i < RESOURCE_QUANTITY; i++) {
+            pcb_list_to_pid_string(RESOURCES[i].shared_list_blocked.list, &pid_string_blocked);
+        }
 
-            //pthread_mutex_unlock(&(interface->shared_list_blocked_exec.mutex));
-        signal_draining_requests(&INTERFACES_SYNC);
-        //pcb_list_to_pid_string(SHARED_LIST_BLOCKED.list, &pid_string_blocked);
+            // INTERFACES
+        for(t_link_element **indirect = &(LIST_INTERFACES->head); (*indirect) != NULL; indirect = &((*indirect)->next)) {
+            pcb_list_to_pid_string(((t_Interface *) ((*indirect)->data))->shared_list_blocked_ready.list, &pid_string_blocked);
+            pcb_list_to_pid_string(((t_Interface *) ((*indirect)->data))->shared_list_blocked_exec.list, &pid_string_blocked);
+        }
 
+        // EXIT
         pcb_list_to_pid_string(SHARED_LIST_EXIT.list, &pid_string_exit);
+
     signal_ongoing(&SCHEDULING_SYNC);
 
     log_info(CONSOLE_LOGGER,
