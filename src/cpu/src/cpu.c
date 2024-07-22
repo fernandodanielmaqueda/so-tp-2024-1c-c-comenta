@@ -205,6 +205,7 @@ void instruction_cycle(void)
                 break;
             }
 
+            // Check Interrupts
             if(cpu_opcode == EXIT_CPU_OPCODE) {
                 EVICTION_REASON = EXIT_EVICTION_REASON;
                 break;
@@ -218,7 +219,7 @@ void instruction_cycle(void)
                 }
             pthread_mutex_unlock(&MUTEX_KERNEL_INTERRUPT);
 
-            if (SYSCALL_CALLED) {
+            if(SYSCALL_CALLED) {
                 EVICTION_REASON = SYSCALL_EVICTION_REASON;
                 break;
             }
@@ -269,7 +270,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
         pthread_mutex_unlock(&MUTEX_EXECUTING);
 
         pthread_mutex_lock(&MUTEX_EXEC_CONTEXT);
-            if(pid == EXEC_CONTEXT.PID) {
+            if(pid != EXEC_CONTEXT.PID) {
                 pthread_mutex_unlock(&MUTEX_EXEC_CONTEXT);
                 continue;
             }
