@@ -17,7 +17,7 @@ void initialize_sockets(void) {
     // [Server] CPU (Dispatch) <- [Cliente] Kernel
     pthread_create(&(SERVER_CPU_DISPATCH.thread_server), NULL, (void *(*)(void *)) cpu_start_server_for_kernel, (void *) &CLIENT_KERNEL_CPU_DISPATCH);
     // [Server] CPU (Interrupt) <- [Cliente] Kernel
-    pthread_create(&(SERVER_CPU_INTERRUPT.thread_server), NULL, (void *(*)(void *)) cpu_start_server_for_kernel, &CLIENT_KERNEL_CPU_INTERRUPT);
+    pthread_create(&(SERVER_CPU_INTERRUPT.thread_server), NULL, (void *(*)(void *)) cpu_start_server_for_kernel, (void *) &CLIENT_KERNEL_CPU_INTERRUPT);
     // [Client] CPU -> [Server] Memoria
     pthread_create(&thread_cpu_connect_to_memory, NULL, (void *(*)(void *)) client_thread_connect_to_server, (void *) &CONNECTION_MEMORY);
 
@@ -79,6 +79,8 @@ void *cpu_start_server_for_kernel(t_Client *new_client) {
     }
 
     new_client->fd_client = fd_new_client;
+
+    close(new_client->server->fd_listen);
 
     return NULL;
 }

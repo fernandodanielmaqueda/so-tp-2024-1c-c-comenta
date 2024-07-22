@@ -21,7 +21,7 @@
 #include "utils/socket.h"
 #include "memoria.h"
 
-extern t_Server COORDINATOR_MEMORY;
+extern t_Server SERVER_MEMORY;
 
 extern t_Client *CLIENT_KERNEL;
 extern pthread_mutex_t MUTEX_CLIENT_KERNEL;

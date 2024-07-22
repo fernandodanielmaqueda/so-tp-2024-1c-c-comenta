@@ -72,7 +72,7 @@ void finish_semaphores(void) {
 }
 
 void read_module_config(t_config* MODULE_CONFIG) {
-    COORDINATOR_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
+    SERVER_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
     TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
     TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
 
@@ -103,6 +103,19 @@ void listen_kernel(void) {
     while(1) {
         if(package_receive(&package, CLIENT_KERNEL->fd_client)) {
             // TODO
+
+            pthread_cancel(SERVER_MEMORY.thread_server);
+            pthread_join(SERVER_MEMORY.thread_server, NULL);
+            close(SERVER_MEMORY.fd_listen);
+
+            // ESTE ES EL HILO PRINCIPAL
+            // pthread_cancel(CLIENT_KERNEL->thread_client_handler);
+            // pthread_join(CLIENT_KERNEL->thread_client_handler, NULL);
+            close(CLIENT_KERNEL->fd_client);
+
+            pthread_cancel(CLIENT_CPU->thread_client_handler);
+            pthread_join(CLIENT_CPU->thread_client_handler, NULL);
+            close(CLIENT_CPU->fd_client);
             exit(1);
         }
         switch(package->header) {
@@ -169,6 +182,19 @@ void create_process(t_Payload *process_data) {
         //ENVIAR RTA ERROR A KERNEL
         if(send_return_value_with_header(PROCESS_CREATE_HEADER, 1, CLIENT_KERNEL->fd_client)) {
             // TODO
+
+            pthread_cancel(SERVER_MEMORY.thread_server);
+            pthread_join(SERVER_MEMORY.thread_server, NULL);
+            close(SERVER_MEMORY.fd_listen);
+
+            // ESTE ES EL HILO PRINCIPAL
+            // pthread_cancel(CLIENT_KERNEL->thread_client_handler);
+            // pthread_join(CLIENT_KERNEL->thread_client_handler, NULL);
+            close(CLIENT_KERNEL->fd_client);
+
+            pthread_cancel(CLIENT_CPU->thread_client_handler);
+            pthread_join(CLIENT_CPU->thread_client_handler, NULL);
+            close(CLIENT_CPU->fd_client);
             exit(1);
         }
         return;
@@ -184,6 +210,19 @@ void create_process(t_Payload *process_data) {
     //ENVIAR RTA OK A KERNEL
     if(send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client)) {
         // TODO
+
+        pthread_cancel(SERVER_MEMORY.thread_server);
+        pthread_join(SERVER_MEMORY.thread_server, NULL);
+        close(SERVER_MEMORY.fd_listen);
+
+        // ESTE ES EL HILO PRINCIPAL
+        // pthread_cancel(CLIENT_KERNEL->thread_client_handler);
+        // pthread_join(CLIENT_KERNEL->thread_client_handler, NULL);
+        close(CLIENT_KERNEL->fd_client);
+
+        pthread_cancel(CLIENT_CPU->thread_client_handler);
+        pthread_join(CLIENT_CPU->thread_client_handler, NULL);
+        close(CLIENT_CPU->fd_client);
         exit(1);
     }
     free(target_path);
@@ -212,6 +251,19 @@ void kill_process(t_Payload *payload) {
     //ENVIAR RTA OK A KERNEL
     if(send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, CLIENT_KERNEL->fd_client)) {
         // TODO
+
+        pthread_cancel(SERVER_MEMORY.thread_server);
+        pthread_join(SERVER_MEMORY.thread_server, NULL);
+        close(SERVER_MEMORY.fd_listen);
+
+        // ESTE ES EL HILO PRINCIPAL
+        // pthread_cancel(CLIENT_KERNEL->thread_client_handler);
+        // pthread_join(CLIENT_KERNEL->thread_client_handler, NULL);
+        close(CLIENT_KERNEL->fd_client);
+
+        pthread_cancel(CLIENT_CPU->thread_client_handler);
+        pthread_join(CLIENT_CPU->thread_client_handler, NULL);
+        close(CLIENT_CPU->fd_client);
         exit(1);
     }
     
@@ -263,6 +315,20 @@ void listen_cpu(void) {
     while(1) {
         if(package_receive(&package, CLIENT_CPU->fd_client)) {
             // TODO
+
+            pthread_cancel(SERVER_MEMORY.thread_server);
+            pthread_join(SERVER_MEMORY.thread_server, NULL);
+            close(SERVER_MEMORY.fd_listen);
+
+            pthread_cancel(CLIENT_KERNEL->thread_client_handler);
+            pthread_join(CLIENT_KERNEL->thread_client_handler, NULL);
+            close(CLIENT_KERNEL->fd_client);
+
+            
+            // ES ESTE HILO
+            // pthread_cancel(CLIENT_CPU->thread_client_handler);
+            // pthread_join(CLIENT_CPU->thread_client_handler, NULL);
+            close(CLIENT_CPU->fd_client);
             exit(1);
         }
         switch (package->header) {
@@ -400,6 +466,20 @@ void seek_instruccion(t_Payload *payload) {
     usleep(RETARDO_RESPUESTA * 1000);
     if(send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, CLIENT_CPU->fd_client)) {
         // TODO
+
+        pthread_cancel(SERVER_MEMORY.thread_server);
+        pthread_join(SERVER_MEMORY.thread_server, NULL);
+        close(SERVER_MEMORY.fd_listen);
+
+        pthread_cancel(CLIENT_KERNEL->thread_client_handler);
+        pthread_join(CLIENT_KERNEL->thread_client_handler, NULL);
+        close(CLIENT_KERNEL->fd_client);
+
+        
+        // ES ESTE HILO
+        // pthread_cancel(CLIENT_CPU->thread_client_handler);
+        // pthread_join(CLIENT_CPU->thread_client_handler, NULL);
+        close(CLIENT_CPU->fd_client);
         exit(1);
     }
     log_info(MODULE_LOGGER, "Instruccion enviada.");
@@ -689,6 +769,20 @@ void resize_process(t_Payload *payload){
 
     if(send_return_value_with_header(RESIZE_REQUEST, return_value, CLIENT_CPU->fd_client)) {
         // TODO
+
+        pthread_cancel(SERVER_MEMORY.thread_server);
+        pthread_join(SERVER_MEMORY.thread_server, NULL);
+        close(SERVER_MEMORY.fd_listen);
+
+        pthread_cancel(CLIENT_KERNEL->thread_client_handler);
+        pthread_join(CLIENT_KERNEL->thread_client_handler, NULL);
+        close(CLIENT_KERNEL->fd_client);
+
+        
+        // ES ESTE HILO
+        // pthread_cancel(CLIENT_CPU->thread_client_handler);
+        // pthread_join(CLIENT_CPU->thread_client_handler, NULL);
+        close(CLIENT_CPU->fd_client);
         exit(1);
     }
 }

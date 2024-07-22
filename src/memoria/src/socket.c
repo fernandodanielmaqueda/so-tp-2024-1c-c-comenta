@@ -4,7 +4,7 @@
 
 #include "socket.h"
 
-t_Server COORDINATOR_MEMORY;
+t_Server SERVER_MEMORY;
 
 t_Client *CLIENT_KERNEL = NULL;
 pthread_mutex_t MUTEX_CLIENT_KERNEL;
@@ -25,7 +25,7 @@ void initialize_sockets(void) {
     pthread_cond_init(&COND_CLIENT_CPU, NULL);
 
 	// [Server] Memory <- [Cliente(s)] Entrada/Salida + Kernel + CPU
-	pthread_create(&COORDINATOR_MEMORY.thread_server, NULL, (void *(*)(void *)) memory_start_server, (void *) &COORDINATOR_MEMORY);
+	pthread_create(&SERVER_MEMORY.thread_server, NULL, (void *(*)(void *)) memory_start_server, (void *) &SERVER_MEMORY);
 
 	// Se bloquea hasta que se realicen todas las conexiones
     pthread_mutex_lock(&MUTEX_CLIENT_KERNEL);
@@ -42,7 +42,7 @@ void initialize_sockets(void) {
 }
 
 void finish_sockets(void) {
-	close(COORDINATOR_MEMORY.fd_listen);
+	close(SERVER_MEMORY.fd_listen);
 }
 
 void *memory_start_server(t_Server *server) {
