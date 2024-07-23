@@ -206,12 +206,12 @@ void *short_term_scheduler(void *NULL_parameter) {
 				switch(SCHEDULING_ALGORITHM) {
 					case RR_SCHEDULING_ALGORITHM:
 						QUANTUM_INTERRUPT = 0;
-						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, (void *(*)(void *)) start_quantum, (void *) &(pcb->exec_context.quantum));
+						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, (void *(*)(void *)) start_quantum, (void *) pcb);
 						break;
 					case VRR_SCHEDULING_ALGORITHM:
 						TEMPORAL_DISPATCHED = temporal_create();
 						QUANTUM_INTERRUPT = 0;
-						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, (void *(*)(void *)) start_quantum, (void *) &(pcb->exec_context.quantum));
+						pthread_create(&THREAD_QUANTUM_INTERRUPT, NULL, (void *(*)(void *)) start_quantum, (void *) pcb);
 						break;
 					case FIFO_SCHEDULING_ALGORITHM:
 						break;
@@ -243,6 +243,7 @@ void *short_term_scheduler(void *NULL_parameter) {
 						temporal_stop(TEMPORAL_DISPATCHED);
 							cpu_burst = temporal_gettime(TEMPORAL_DISPATCHED);
 						temporal_destroy(TEMPORAL_DISPATCHED);
+						log_trace(MODULE_LOGGER, "PID: <%d> - Rafaga de CPU: %" PRId64, (int) pcb->exec_context.PID, cpu_burst);
 
 						pcb->exec_context.quantum -= cpu_burst;
 						if(pcb->exec_context.quantum <= 0)
@@ -336,12 +337,15 @@ void *short_term_scheduler(void *NULL_parameter) {
 
 void *start_quantum(t_PCB *pcb) {
 
-    log_trace(MODULE_LOGGER, "Se crea hilo para INTERRUPT");
+	t_Quantum quantum = pcb->exec_context.quantum;
 
-    usleep((pcb->exec_context.quantum) * 1000); // en milisegundos
+    log_trace(MODULE_LOGGER, "PID: <%d> - Se crea hilo para interrupción por quantum de %li milisegundos", (int) pcb->exec_context.PID, quantum);
+
+    usleep(quantum * 1000); // en milisegundos
 
 	// ENVIAR LA INTERRUPCIÓN SÓLO SI HAY MÁS PROCESOS EN READY
 	sem_wait(&SEM_SHORT_TERM_SCHEDULER);
+	sem_post(&SEM_SHORT_TERM_SCHEDULER);
 
 	pthread_mutex_lock(&MUTEX_QUANTUM_INTERRUPT);
 		QUANTUM_INTERRUPT = 1;
@@ -352,7 +356,7 @@ void *start_quantum(t_PCB *pcb) {
 		exit(1);
 	}
 
-    log_trace(MODULE_LOGGER, "Envie interrupcion por Quantum tras %li milisegundos", pcb->exec_context.quantum);
+    log_trace(MODULE_LOGGER, "PID: <%d> - Se envia interrupcion por quantum tras %li milisegundos", (int) pcb->exec_context.PID, quantum);
 
 	return NULL;
 }
@@ -488,9 +492,11 @@ void switch_process_state(t_PCB *pcb, e_Process_State new_state) {
 						pcb->shared_list_state = &(SHARED_LIST_READY);
 					pthread_mutex_unlock(&(SHARED_LIST_READY.mutex));
 					break;
+
 			}
 
 			sem_post(&SEM_SHORT_TERM_SCHEDULER);
+
 			break;
 		}
 

@@ -27,8 +27,6 @@
 #include "cpu.h"
 
 typedef struct t_CPU_Operation {
-    char *name;
-    enum e_CPU_OpCode opcode;
     int (*function) (int, char**);
 } t_CPU_Operation;
 

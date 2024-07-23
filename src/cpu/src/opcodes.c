@@ -4,25 +4,25 @@
 #include "opcodes.h"
 
 t_CPU_Operation CPU_OPERATIONS[] = {
-    [SET_CPU_OPCODE] = {.name = "SET" , .function = set_cpu_operation},
-    [MOV_IN_CPU_OPCODE] = {.name = "MOV_IN" , .function = mov_in_cpu_operation},
-    [MOV_OUT_CPU_OPCODE] = {.name = "MOV_OUT" , .function = mov_out_cpu_operation},
-    [SUM_CPU_OPCODE] = {.name = "SUM" , .function = sum_cpu_operation},
-    [SUB_CPU_OPCODE] = {.name = "SUB" , .function = sub_cpu_operation},
-    [JNZ_CPU_OPCODE] = {.name = "JNZ" , .function = jnz_cpu_operation},
-    [RESIZE_CPU_OPCODE] = {.name = "RESIZE" , .function = resize_cpu_operation},
-    [COPY_STRING_CPU_OPCODE] = {.name = "COPY_STRING" , .function = copy_string_cpu_operation},
-    [WAIT_CPU_OPCODE] = {.name = "WAIT" , .function = wait_cpu_operation},
-    [SIGNAL_CPU_OPCODE] = {.name = "SIGNAL" , .function = signal_cpu_operation},
-    [IO_GEN_SLEEP_CPU_OPCODE] = {.name = "IO_GEN_SLEEP" , .function = io_gen_sleep_cpu_operation},
-    [IO_STDIN_READ_CPU_OPCODE] = {.name = "IO_STDIN_READ" , .function = io_stdin_read_cpu_operation},
-    [IO_STDOUT_WRITE_CPU_OPCODE] = {.name = "IO_STDOUT_WRITE" , .function = io_stdout_write_cpu_operation},
-    [IO_FS_CREATE_CPU_OPCODE] = {.name = "IO_FS_CREATE" , .function = io_fs_create_cpu_operation},
-    [IO_FS_DELETE_CPU_OPCODE] = {.name = "IO_FS_DELETE" , .function = io_fs_delete_cpu_operation},
-    [IO_FS_TRUNCATE_CPU_OPCODE] = {.name = "IO_FS_TRUNCATE" , .function = io_fs_truncate_cpu_operation},
-    [IO_FS_WRITE_CPU_OPCODE] = {.name = "IO_FS_WRITE" , .function = io_fs_write_cpu_operation},
-    [IO_FS_READ_CPU_OPCODE] = {.name = "IO_FS_READ" , .function = io_fs_read_cpu_operation},
-    [EXIT_CPU_OPCODE] = {.name = "EXIT" , .function = exit_cpu_operation}
+    [SET_CPU_OPCODE] = {.function = set_cpu_operation},
+    [MOV_IN_CPU_OPCODE] = {.function = mov_in_cpu_operation},
+    [MOV_OUT_CPU_OPCODE] = {.function = mov_out_cpu_operation},
+    [SUM_CPU_OPCODE] = {.function = sum_cpu_operation},
+    [SUB_CPU_OPCODE] = {.function = sub_cpu_operation},
+    [JNZ_CPU_OPCODE] = {.function = jnz_cpu_operation},
+    [RESIZE_CPU_OPCODE] = {.function = resize_cpu_operation},
+    [COPY_STRING_CPU_OPCODE] = {.function = copy_string_cpu_operation},
+    [WAIT_CPU_OPCODE] = {.function = wait_cpu_operation},
+    [SIGNAL_CPU_OPCODE] = {.function = signal_cpu_operation},
+    [IO_GEN_SLEEP_CPU_OPCODE] = {.function = io_gen_sleep_cpu_operation},
+    [IO_STDIN_READ_CPU_OPCODE] = {.function = io_stdin_read_cpu_operation},
+    [IO_STDOUT_WRITE_CPU_OPCODE] = {.function = io_stdout_write_cpu_operation},
+    [IO_FS_CREATE_CPU_OPCODE] = {.function = io_fs_create_cpu_operation},
+    [IO_FS_DELETE_CPU_OPCODE] = {.function = io_fs_delete_cpu_operation},
+    [IO_FS_TRUNCATE_CPU_OPCODE] = {.function = io_fs_truncate_cpu_operation},
+    [IO_FS_WRITE_CPU_OPCODE] = {.function = io_fs_write_cpu_operation},
+    [IO_FS_READ_CPU_OPCODE] = {.function = io_fs_read_cpu_operation},
+    [EXIT_CPU_OPCODE] = {.function = exit_cpu_operation}
 };
 
 int decode_instruction(char *name, e_CPU_OpCode *destination)
@@ -30,10 +30,9 @@ int decode_instruction(char *name, e_CPU_OpCode *destination)
     
     if(name == NULL || destination == NULL)
         return 1;
-    
-    size_t opcodes_number = sizeof(CPU_OPERATIONS) / sizeof(CPU_OPERATIONS[0]);
-    for (register e_CPU_OpCode cpu_opcode = 0; cpu_opcode < opcodes_number; cpu_opcode++)
-        if (strcmp(CPU_OPERATIONS[cpu_opcode].name, name) == 0) {
+
+    for (register e_CPU_OpCode cpu_opcode = 0; CPU_OPCODE_NAMES[cpu_opcode] != NULL; cpu_opcode++)
+        if (strcmp(CPU_OPCODE_NAMES[cpu_opcode], name) == 0) {
             *destination = cpu_opcode;
             return 0;
         }
@@ -44,8 +43,7 @@ int decode_instruction(char *name, e_CPU_OpCode *destination)
 int set_cpu_operation(int argc, char **argv)
 {
 
-    if (argc != 3)
-    {
+    if (argc != 3) {
         log_error(MODULE_LOGGER, "Uso: SET <REGISTRO> <VALOR>");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
@@ -66,8 +64,6 @@ int set_cpu_operation(int argc, char **argv)
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
     set_register_value(&EXEC_CONTEXT, destination_register, value);
 
@@ -103,8 +99,6 @@ int mov_in_cpu_operation(int argc, char **argv)
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro datos: %s - Registro direccion: %s ", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
     t_Logical_Address logical_address;
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
@@ -152,8 +146,6 @@ int mov_out_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Registro direccion: %s - Registro datos: %s ", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
-
     void *source = get_register_pointer(&EXEC_CONTEXT, register_data);
     size_t bytes = get_register_size(register_data);
 
@@ -196,8 +188,6 @@ int sum_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s ", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
-
     uint32_t value_register_destination;
     uint32_t value_register_origin;
     get_register_value(EXEC_CONTEXT, register_destination, &value_register_destination);
@@ -237,8 +227,6 @@ int sub_cpu_operation(int argc, char **argv)
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro destino: %s - Registro origen: %s", (int) EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
 
     uint32_t value_register_destination;
     uint32_t value_register_origin;
@@ -280,8 +268,6 @@ int jnz_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Registro: %s - Valor: %s", EXEC_CONTEXT.PID, argv[0], argv[1], argv[2]);
-
     uint32_t value_cpu_register;
     get_register_value(EXEC_CONTEXT, cpu_register, &value_cpu_register);
 
@@ -313,8 +299,6 @@ int resize_cpu_operation(int argc, char **argv)
     }
 
     log_trace(MODULE_LOGGER, "RESIZE %s", argv[1]);
-
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s ", EXEC_CONTEXT.PID, argv[0], argv[1]);
 
     t_Package *package = package_create_with_header(RESIZE_REQUEST);
     payload_append(&(package->payload), &(EXEC_CONTEXT.PID), sizeof(EXEC_CONTEXT.PID));
@@ -357,8 +341,6 @@ int copy_string_cpu_operation(int argc, char **argv)
     }
 
     log_trace(MODULE_LOGGER, "COPY_STRING %s", argv[1]);
-
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s- Tamaño: %s", EXEC_CONTEXT.PID, argv[0], argv[1]);
 
     t_Logical_Address logical_address_si;
     get_register_value(EXEC_CONTEXT, SI_REGISTER, &logical_address_si);
@@ -472,9 +454,6 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Interfaz: %s - Registro direccion: %s - Registro tamanio: %s", 
-        EXEC_CONTEXT.PID, argv[0], argv[1], argv[2], argv[3]);    
-
     t_MemorySize size;
     get_register_value(EXEC_CONTEXT, register_size, &size);
 
@@ -519,9 +498,6 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-
-    log_info(MODULE_LOGGER, "PID: %d - Ejecutando instruccion: %s - Interfaz: %s - Registro direccion: %s - Registro tamanio: %s", 
-        EXEC_CONTEXT.PID, argv[0], argv[1], argv[2], argv[3]);
 
     t_MemorySize size;
     get_register_value(EXEC_CONTEXT, register_size, &size);
@@ -741,7 +717,6 @@ int exit_cpu_operation(int argc, char **argv)
             list_remove(TLB, i);
         }
     }
-    log_info(MODULE_LOGGER, "Proceso %i finalizado y en TLB", EXEC_CONTEXT.PID);
 
     EXEC_CONTEXT.PC++;
     
