@@ -134,6 +134,7 @@ void *kernel_io_interface_dispatcher(t_Interface *interface) {
                         empty = 1;
                     }
                     else {
+                        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
                         pcb = (t_PCB *) list_remove(interface->shared_list_blocked_ready.list, 0);
                         pcb->shared_list_state = NULL;
                     }
@@ -146,19 +147,19 @@ void *kernel_io_interface_dispatcher(t_Interface *interface) {
                         pcb->shared_list_state = &(interface->shared_list_blocked_exec);
                     pthread_cleanup_pop(1);
 
-                    pthread_testcancel();
-
                     if(send_io_operation_dispatch(pcb->exec_context.PID, pcb->io_operation, interface->client->fd_client)) {
                         log_warning(MODULE_LOGGER, "Error al enviar operacion de [Interfaz] Entrada/Salida");
                         pthread_exit(NULL);
                     }
+
+                    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
                 }
 
             pthread_cleanup_pop(1);
         pthread_cleanup_pop(1);
         
-        pthread_cleanup_pop(1);
-        pthread_cleanup_pop(1);
+        pthread_cleanup_pop(0);
+        pthread_cleanup_pop(0);
     }
 
     return NULL;
