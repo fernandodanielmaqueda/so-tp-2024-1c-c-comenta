@@ -236,10 +236,12 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 		log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
 		return 1;
 	}
-	char* pointer_verifier;
-	int char_to_verify = '\n';			
+			
 	t_list *physical_addresses = list_create();
 	t_MemorySize bytes;
+	char* text_to_send[bytes];
+	char* pointer_verifier;
+	int char_to_verify = '\n';
 
 	//Empiezo a "desencolar" el payload recibido
 	payload(operation_arguments, &PID, sizeof(PID));
@@ -249,9 +251,26 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	//Aviso que operacion voy a hacer
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", (int) PID);
 
+	log_info("Escriba una cadena de %d caracteres", (int)bytes);
+	fgets(text_to_send, bytes + 1, stdin);
+	
+	/* 	while(strlen(text_to_send) != bytes){
+		log_info("Escriba una cadena de %d caracteres", (int)bytes);
+		fgets(text_to_send, bytes + 1, stdin);		
+	} */
+
+	pointer_verifier = strchr(text_to_send, char_to_verify);
+
+	while(pointer_verifier != NULL){
+		log_info("Escriba una cadena de %d caracteres", (int)bytes);
+		fgets(text_to_send, bytes + 1, stdin);
+		pointer_verifier = strchr(text_to_send, char_to_verify);
+	}
+
 	//Creo paquete y argumentos necesarios para enviarle a memoria
 	t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 	payload_append(&(package->payload), &PID, sizeof(PID));
+	payload_append(&(package->payload), text_to_send, sizeof(text_to_send));
 	list_serialize(&(package->payload), *physical_addresses, physical_address_deserialize_element);
 	payload_append(&(package->payload), &bytes, sizeof(bytes));
 	package_send(package, CONNECTION_MEMORY.fd_connection);
@@ -260,6 +279,8 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	//Recibo si salio bien la operacion
 	receive_return_value_with_expected_header(WRITE_REQUEST, 0, CONNECTION_MEMORY.fd_connection);
 
+	free(pointer_verifier);
+	
 	return 0;	
 }
 
