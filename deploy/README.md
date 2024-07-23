@@ -811,33 +811,33 @@ clear ; make cleandirs
 
 > Ejecutar un módulo
 ```bash
-clear ; make run-kernel
-clear ; make run-cpu
-clear ; make run-memoria
+clear ; make run-kernel 'kernel_ARGS='
+clear ; make run-cpu 'cpu_ARGS='
+clear ; make run-memoria 'memoria_ARGS='
 clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
 > Ejecutar con memcheck un módulo
 ```bash
-clear ; make valgrind-memcheck-kernel
-clear ; make valgrind-memcheck-cpu
-clear ; make valgrind-memcheck-memoria
+clear ; make valgrind-memcheck-kernel 'kernel_ARGS='
+clear ; make valgrind-memcheck-cpu 'cpu_ARGS='
+clear ; make valgrind-memcheck-memoria 'memoria_ARGS='
 clear ; make valgrind-memcheck-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
 > Ejecutar con helgrind un módulo
 ```bash
-clear ; make valgrind-helgrind-kernel
-clear ; make valgrind-helgrind-cpu
-clear ; make valgrind-helgrind-memoria
+clear ; make valgrind-helgrind-kernel 'kernel_ARGS='
+clear ; make valgrind-helgrind-cpu 'cpu_ARGS='
+clear ; make valgrind-helgrind-memoria 'memoria_ARGS='
 clear ; make valgrind-helgrind-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
 > Ejecutar con valgrind (sin ninguna herramienta) un módulo
 ```bash
-clear ; make valgrind-none-kernel
-clear ; make valgrind-none-cpu
-clear ; make valgrind-none-memoria
+clear ; make valgrind-none-kernel 'kernel_ARGS='
+clear ; make valgrind-none-cpu 'cpu_ARGS='
+clear ; make valgrind-none-memoria 'memoria_ARGS='
 clear ; make valgrind-none-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
@@ -910,14 +910,16 @@ tmux kill -t 'NombreDeSesion'
 
 # Al salir
 
-## 1. Desloguearse de las cuentas del navegador
+### 1. Desloguearse de las cuentas del navegador
 
-## 2. Borrar el historial del navegador
+### 2. Borrar el historial del navegador
 
-## 3. Desloguearse de Git
+### 3. Desloguearse de Git
 
-## 4. Quitar las credenciales de Git en el Administrador de Credenciales de Windows
+### 4. Quitar las credenciales de Git en el Administrador de Credenciales de Windows
 
-## 5. Eliminar el repositorio clonado
+### 5. Eliminar el repositorio clonado
 
-## 6. Volver la VM Server a un Snapshot anterior
+### 6. Vaciar la papelera de reciclaje
+
+### 7. Volver la VM Server a un Snapshot anterior
