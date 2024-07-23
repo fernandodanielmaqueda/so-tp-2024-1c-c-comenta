@@ -8,6 +8,8 @@ t_Drain_Ongoing_Resource_Sync INTERFACES_SYNC;
 
 void *kernel_client_handler_for_io(t_Client *new_client) {
 
+    log_trace(MODULE_LOGGER, "Hilo receptor de [Interfaz] de Entrada/Salida iniciado");
+
 	e_Port_Type port_type;
 
 	if(receive_port_type(&port_type, new_client->fd_client)) {
@@ -109,6 +111,8 @@ void *kernel_client_handler_for_io(t_Client *new_client) {
 }
 
 void *kernel_io_interface_dispatcher(t_Interface *interface) {
+
+    log_trace(MODULE_LOGGER, "Hilo emisor de [Interfaz] de Entrada/Salida iniciado");
 
     t_PCB *pcb;
 

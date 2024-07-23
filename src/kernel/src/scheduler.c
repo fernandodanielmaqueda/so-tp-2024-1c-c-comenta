@@ -77,6 +77,8 @@ void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENT
 
 void *long_term_scheduler_new(void *NULL_parameter) {
 
+	log_trace(MODULE_LOGGER, "Hilo planificador de largo plazo (en NEW) iniciado");
+
 	t_PCB *pcb;
 
 	while(1) {
@@ -104,6 +106,9 @@ void *long_term_scheduler_new(void *NULL_parameter) {
 }
 
 void *long_term_scheduler_exit(void *NULL_parameter) {
+
+	log_trace(MODULE_LOGGER, "Hilo planificador de largo plazo (en EXIT) iniciado");
+
 	t_PCB *pcb;
 	t_Return_Value return_value;
 
@@ -175,6 +180,8 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 }
 
 void *short_term_scheduler(void *NULL_parameter) {
+
+	log_trace(MODULE_LOGGER, "Hilo planificador de corto plazo iniciado");
  
 	t_PCB *pcb;
 	e_Eviction_Reason eviction_reason;
@@ -339,7 +346,7 @@ void *start_quantum(t_PCB *pcb) {
 
 	t_Quantum quantum = pcb->exec_context.quantum;
 
-    log_trace(MODULE_LOGGER, "PID: <%d> - Se crea hilo para interrupción por quantum de %li milisegundos", (int) pcb->exec_context.PID, quantum);
+    log_trace(MODULE_LOGGER, "PID: <%d> - Hilo de interrupción por quantum de %li milisegundos iniciado", (int) pcb->exec_context.PID, quantum);
 
     usleep(quantum * 1000); // en milisegundos
 
@@ -362,6 +369,8 @@ void *start_quantum(t_PCB *pcb) {
 }
 
 void *multiprogramming_poster(void *NULL_parameter) {
+
+	log_trace(MODULE_LOGGER, "Hilo administrador de multiprogramación iniciado");
 
     while(1) {
         sem_wait(&SEM_MULTIPROGRAMMING_POSTER);

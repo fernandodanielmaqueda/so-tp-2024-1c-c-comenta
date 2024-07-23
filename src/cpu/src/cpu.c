@@ -252,6 +252,8 @@ void instruction_cycle(void)
 
 void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 
+    log_trace(MODULE_LOGGER, "Hilo de manejo de interrupciones de Kernel iniciado");
+
     e_Kernel_Interrupt kernel_interrupt;
     t_PID pid;
 

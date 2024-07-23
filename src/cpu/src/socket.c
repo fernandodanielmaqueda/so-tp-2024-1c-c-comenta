@@ -35,6 +35,8 @@ void finish_sockets(void) {
 
 void *cpu_start_server_for_kernel(t_Client *new_client) {
 
+    log_trace(MODULE_LOGGER, "Hilo de [Servidor] %s para [Cliente] %s iniciado", PORT_NAMES[new_client->server->server_type], PORT_NAMES[new_client->server->clients_type]);
+
     e_Port_Type port_type;
     int fd_new_client;
 

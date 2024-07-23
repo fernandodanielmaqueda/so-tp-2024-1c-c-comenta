@@ -5,6 +5,8 @@
 
 void *client_thread_connect_to_server(t_Connection *connection) {
 
+  log_trace(MODULE_LOGGER, "Hilo de conexión con [Servidor] %s iniciado", PORT_NAMES[connection->server_type]);
+
   e_Port_Type port_type;
 
   while(1) {

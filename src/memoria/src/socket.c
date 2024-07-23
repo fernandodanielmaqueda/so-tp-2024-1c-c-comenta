@@ -47,6 +47,8 @@ void finish_sockets(void) {
 
 void *memory_start_server(t_Server *server) {
 
+    log_trace(MODULE_LOGGER, "Hilo coordinador de [Servidor] %s iniciado", PORT_NAMES[server->server_type]);
+
 	int fd_new_client;
 	t_Client *new_client;
 
@@ -80,6 +82,8 @@ void *memory_start_server(t_Server *server) {
 }
 
 void *memory_client_handler(t_Client *new_client) {
+
+    log_trace(MODULE_LOGGER, "Hilo manejador de [Cliente] %s iniciado", PORT_NAMES[new_client->client_type]);
 
     e_Port_Type port_type;
 

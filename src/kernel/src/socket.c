@@ -39,6 +39,8 @@ void finish_sockets(void) {
 
 void *kernel_start_server_for_io(t_Server *server) {
 
+	log_trace(MODULE_LOGGER, "Hilo coordinador de [Cliente(s)] %s iniciado", PORT_NAMES[server->clients_type]);
+
 	int fd_new_client;
 	t_Client *new_client;
 
@@ -46,7 +48,7 @@ void *kernel_start_server_for_io(t_Server *server) {
 
 	while(1) {
 
-		log_trace(SOCKET_LOGGER, "Esperando [Cliente(s)] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
+		log_trace(SOCKET_LOGGER, "Esperando [Cliente] %s en Puerto: %s", PORT_NAMES[server->clients_type], server->port);
 		fd_new_client = server_accept(server->fd_listen);
 
 		if(fd_new_client == -1) {
