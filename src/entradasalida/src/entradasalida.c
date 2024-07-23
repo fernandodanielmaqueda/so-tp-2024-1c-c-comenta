@@ -236,11 +236,13 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 		log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
 		return 1;
 	}
-			
+	char* pointer_verifier;
+	int char_to_verify = '\n';			
 	t_list *physical_addresses = list_create();
 	t_MemorySize bytes;
 
 	//Empiezo a "desencolar" el payload recibido
+	payload(operation_arguments, &PID, sizeof(PID));
 	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 	payload_shift(operation_arguments, &bytes, sizeof(bytes));
 
