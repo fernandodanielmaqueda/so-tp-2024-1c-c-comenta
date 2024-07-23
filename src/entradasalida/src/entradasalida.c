@@ -244,27 +244,26 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	int char_to_verify = '\n';
 
 	//Empiezo a "desencolar" el payload recibido
-	payload(operation_arguments, &PID, sizeof(PID));
 	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 	payload_shift(operation_arguments, &bytes, sizeof(bytes));
 
 	//Aviso que operacion voy a hacer
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", (int) PID);
 
-	log_info("Escriba una cadena de %d caracteres", (int)bytes);
-	fgets(text_to_send, bytes + 1, stdin);
+	log_info(MODULE_LOGGER, "Escriba una cadena de %d caracteres", (int)bytes);
+	fgets(*text_to_send, bytes + 1, stdin);
 	
 	/* 	while(strlen(text_to_send) != bytes){
 		log_info("Escriba una cadena de %d caracteres", (int)bytes);
 		fgets(text_to_send, bytes + 1, stdin);		
 	} */
 
-	pointer_verifier = strchr(text_to_send, char_to_verify);
+	pointer_verifier = strchr(*text_to_send, char_to_verify);
 
 	while(pointer_verifier != NULL){
-		log_info("Escriba una cadena de %d caracteres", (int)bytes);
-		fgets(text_to_send, bytes + 1, stdin);
-		pointer_verifier = strchr(text_to_send, char_to_verify);
+		log_info(MODULE_LOGGER, "Escriba una cadena de %d caracteres", (int) bytes);
+		fgets(*text_to_send, bytes + 1, stdin);
+		pointer_verifier = strchr(*text_to_send, char_to_verify);
 	}
 
 	//Creo paquete y argumentos necesarios para enviarle a memoria
