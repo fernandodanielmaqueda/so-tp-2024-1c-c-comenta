@@ -23,6 +23,7 @@ typedef enum e_Kernel_Interrupt {
     KILL_KERNEL_INTERRUPT
 } e_Kernel_Interrupt;
 
+extern const char *KERNEL_INTERRUPT_NAMES[];
 
 /**
  * @brief Serializacion de un e_Kernel_Interrupt para ser enviado.

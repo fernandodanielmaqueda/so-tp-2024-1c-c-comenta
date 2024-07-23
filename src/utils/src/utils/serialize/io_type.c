@@ -3,6 +3,13 @@
 
 #include "utils/serialize/io_type.h"
 
+const char *IO_TYPE_NAMES[] = {
+  [GENERIC_IO_TYPE] = "GENERIC_IO_TYPE",
+  [STDIN_IO_TYPE] = "STDIN_IO_TYPE",
+  [STDOUT_IO_TYPE] = "STDOUT_IO_TYPE",
+  [DIALFS_IO_TYPE] = "DIALFS_IO_TYPE"
+};
+
 void io_type_serialize(t_Payload *payload, e_IO_Type source) {
   if(payload == NULL)
     return;
@@ -29,7 +36,7 @@ void io_type_deserialize(t_Payload *payload, e_IO_Type *destination) {
 
 void io_type_log(e_IO_Type source) {
   log_info(SERIALIZE_LOGGER,
-    "e_IO_Type: %d"
-    , source
+    "e_IO_Type: %s"
+    , IO_TYPE_NAMES[source]
   );
 }

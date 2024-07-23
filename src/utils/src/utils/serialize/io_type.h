@@ -24,6 +24,7 @@ typedef enum e_IO_Type {
     DIALFS_IO_TYPE
 } e_IO_Type;
 
+extern const char *IO_TYPE_NAMES[];
 
 /**
  * @brief Serializacion de un e_IO_Type para ser enviado.

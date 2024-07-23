@@ -3,6 +3,12 @@
 
 #include "utils/serialize/kernel_interrupt.h"
 
+const char *KERNEL_INTERRUPT_NAMES[] = {
+  [NONE_KERNEL_INTERRUPT] = "NONE_KERNEL_INTERRUPT",
+  [QUANTUM_KERNEL_INTERRUPT] = "QUANTUM_KERNEL_INTERRUPT",
+  [KILL_KERNEL_INTERRUPT] = "KILL_KERNEL_INTERRUPT"
+};
+
 void kernel_interrupt_serialize(t_Payload *payload, e_Kernel_Interrupt source) {
   if(payload == NULL)
     return;
@@ -27,9 +33,9 @@ void kernel_interrupt_deserialize(t_Payload *payload, e_Kernel_Interrupt *destin
   kernel_interrupt_log(*destination);
 }
 
-void kernel_interrupt_log(e_Kernel_Interrupt kernel_interrupt) {
+void kernel_interrupt_log(e_Kernel_Interrupt source) {
   log_info(SERIALIZE_LOGGER,
-    "e_Kernel_Interrupt: %d"
-    , kernel_interrupt
+    "e_Kernel_Interrupt: %s"
+    , KERNEL_INTERRUPT_NAMES[source]
   );
 }

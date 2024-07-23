@@ -26,6 +26,7 @@ typedef enum e_Eviction_Reason {
     QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON
 } e_Eviction_Reason;
 
+extern const char *EVICTION_REASON_NAMES[];
 
 /**
  * @brief Serializacion de un e_Eviction_Reason para ser enviado.

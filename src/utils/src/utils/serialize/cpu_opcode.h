@@ -41,6 +41,7 @@ typedef enum e_CPU_OpCode {
     IO_FS_READ_CPU_OPCODE
 } e_CPU_OpCode;
 
+extern const char *CPU_OPCODE_NAMES[];
 
 /**
  * @brief Serializacion de un e_CPU_OpCode para ser enviado.

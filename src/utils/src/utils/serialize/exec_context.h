@@ -22,7 +22,7 @@ typedef uint16_t t_PID;
 
 typedef uint32_t t_PC;
 
-typedef uint64_t t_Quantum;
+typedef int64_t t_Quantum;
 
 typedef struct t_CPU_Registers {
     uint8_t AX;

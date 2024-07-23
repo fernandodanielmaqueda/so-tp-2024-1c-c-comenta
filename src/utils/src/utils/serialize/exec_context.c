@@ -58,7 +58,7 @@ void exec_context_log(t_Exec_Context source) {
     "t_Exec_Context:\n"
     "* PID: %" PRIu32 "\n"
     "* PC: %" PRIu32 "\n"
-    "* quantum: %" PRIu64 "\n"
+    "* quantum: %" PRId64 "\n"
     "* AX: %" PRIu8 "\n"
     "* BX: %" PRIu8 "\n"
     "* CX: %" PRIu8 "\n"

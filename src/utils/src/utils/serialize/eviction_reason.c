@@ -3,16 +3,14 @@
 
 #include "utils/serialize/eviction_reason.h"
 
-/*
-const char *t_interrupt_type_string[] = {
+const char *EVICTION_REASON_NAMES[] = {
     [UNEXPECTED_ERROR_EVICTION_REASON] = "UNEXPECTED_ERROR_EVICTION_REASON",
-    
+    [OUT_OF_MEMORY_EVICTION_REASON] = "OUT_OF_MEMORY_EVICTION_REASON",
     [EXIT_EVICTION_REASON] = "EXIT_EVICTION_REASON",
     [KILL_KERNEL_INTERRUPT_EVICTION_REASON] = "KILL_KERNEL_INTERRUPT_EVICTION_REASON",
     [SYSCALL_EVICTION_REASON] = "SYSCALL_EVICTION_REASON",
     [QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON] = "QUANTUM_KERNEL_INTERRUPT_EVICTION_REASON"  
 };
-*/
 
 void eviction_reason_serialize(t_Payload *payload, e_Eviction_Reason source) {
   if(payload == NULL)
@@ -40,7 +38,7 @@ void eviction_reason_deserialize(t_Payload *payload, e_Eviction_Reason *destinat
 
 void eviction_reason_log(e_Eviction_Reason eviction_reason) {
   log_info(SERIALIZE_LOGGER,
-    "e_Eviction_Reason: %d"
-    , eviction_reason
+    "e_Eviction_Reason: %s"
+    , EVICTION_REASON_NAMES[eviction_reason]
   );
 }

@@ -23,7 +23,7 @@ void return_value_deserialize(t_Payload *payload, t_Return_Value *destination) {
 
 void return_value_log(t_Return_Value source) {
   log_info(SERIALIZE_LOGGER,
-    "t_Return_Value: %d"
+    "t_Return_Value: %" PRId8
     , source
   );
 }
