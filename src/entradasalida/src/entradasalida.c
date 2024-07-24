@@ -244,6 +244,7 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	int char_to_verify = '\n';
 
 	//Empiezo a "desencolar" el payload recibido
+	payload_shift(operation_arguments, &PID, sizeof(PID));
 	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 	payload_shift(operation_arguments, &bytes, sizeof(bytes));
 
