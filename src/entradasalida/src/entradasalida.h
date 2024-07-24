@@ -88,6 +88,5 @@ void initialize_bitmap();
 void initialize_blocks();
 void free_bitmap_blocks();
 void create_file(char* file_name);
-void create_blocks_bitmap();
 
 #endif /* ENTRADASALIDA_H */

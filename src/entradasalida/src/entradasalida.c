@@ -27,7 +27,8 @@ char* PTRO_BITMAP;
 
 t_list *LIST_FILES;
 t_bitarray *BITMAP;
-char* BLOCKS_DATA;
+char* PTRO_BLOCKS;
+size_t BLOCKS_TOTAL_SIZE;
 
 t_IO_Type IO_TYPES[] = {
     [GENERIC_IO_TYPE] = {.name = "GENERICA", .function = generic_interface_function },
@@ -530,42 +531,43 @@ int io_fs_read_io_operation(t_Payload *operation_arguments) {
 }
 
 void initialize_blocks() {
-    size_t blocks_size = BLOCK_SIZE * BLOCK_COUNT;
+    BLOCKS_TOTAL_SIZE = BLOCK_SIZE * BLOCK_COUNT;
+    //size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bitmap.dat"); //1 por la '/'
+	char* path_file_blocks = string_new();
+	strcpy (path_file_blocks, PATH_BASE_DIALFS);
+	string_append(&path_file_blocks, "/");
+	string_append(&path_file_blocks, "bloques.dat");
 
-    int fd = open("bloques.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file_blocks, F_OK) == 0)remove(path_file_blocks);
+
+    int fd = open(path_file_blocks, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bloques.dat: %s", strerror(errno));
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    if (ftruncate(fd, blocks_size) == -1) {
+    if (ftruncate(fd, BLOCKS_TOTAL_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bloques.dat: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    BLOCKS_DATA = mmap(NULL, blocks_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (BLOCKS_DATA == MAP_FAILED) {
+    PTRO_BLOCKS = mmap(NULL, BLOCKS_TOTAL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (PTRO_BLOCKS == MAP_FAILED) {
         log_error(MODULE_LOGGER, "Error al mapear el archivo bloques.dat a memoria: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
-/* --No realiza ningunca accion--
-    for (int i = 0; i < BLOCK_COUNT; ++i) {
-        int *block_data = (int *)(BLOCKS_DATA + i * BLOCK_SIZE);
-        *block_data = i;
-    }
-	*/
 
-    if (msync(BLOCKS_DATA, blocks_size, MS_SYNC) == -1) {
+    if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
     }
 /*
-    if (munmap(BLOCKS_DATA, blocks_size) == -1) {
+    if (munmap(BLOCKS_DATA, BLOCKS_TOTAL_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
     }
 */
-    close(fd);
     log_info(MODULE_LOGGER, "Bloques creados y mapeados correctamente.");
 }
 
@@ -612,11 +614,11 @@ void initialize_bitmap() {
     if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
     }
-
+/*
     if (munmap(PTRO_BITMAP, BITMAP_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
     }
-
+*/
     log_info(MODULE_LOGGER, "Bitmap creado y mapeado correctamente.");
 }
 
@@ -681,7 +683,7 @@ uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
 
 void free_bitmap_blocks(){
 	
-    if (munmap(BLOCKS_DATA, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
+    if (munmap(PTRO_BLOCKS, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
     }
 
