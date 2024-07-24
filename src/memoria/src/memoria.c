@@ -152,7 +152,7 @@ void create_process(t_Payload *process_data) {
     t_Return_Value flag_relative_path;
     t_Process *new_process = malloc(sizeof(t_Process));
     t_list *instructions_list = list_create();
-    t_list *pages_table = list_create();
+    //t_list *pages_table = list_create();
 
     payload_shift(process_data, &(new_process->PID), sizeof(new_process->PID));
     text_deserialize(process_data, &(argument_path));
@@ -211,7 +211,7 @@ void create_process(t_Payload *process_data) {
 
     new_process->number_of_instructions = list_size(instructions_list);
     new_process->instructions_list = instructions_list;
-    new_process->pages_table = pages_table;
+    new_process->pages_table = list_create();
     list_add(LIST_PROCESSES, new_process);
     
     log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
