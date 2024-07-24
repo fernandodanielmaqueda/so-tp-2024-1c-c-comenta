@@ -20,6 +20,9 @@ char *PATH_BASE_DIALFS;
 size_t BLOCK_SIZE;
 size_t BLOCK_COUNT;
 int COMPRESSION_DELAY;
+FILE* FILE_BLOQS;
+FILE* FILE_METADATA;
+FILE* FILE_BITMAP;
 
 t_list *LIST_FILES;
 t_bitarray *BITMAP;
@@ -98,7 +101,7 @@ int module(int argc, char *argv[]) {
 			exit(1);
 		}
 	}
-	
+
 	free_bitmap_blocks();
 	//finish_threads();
 	finish_sockets();
@@ -675,4 +678,16 @@ void free_bitmap_blocks(){
 
 	free(BITMAP);
 
+}
+
+void create_files(){
+
+	char* path_file_bloqs = "";
+	char* path_file_bitmap = "";
+	strcpy (path_file_bloqs, PATH_BASE_DIALFS);
+	strcpy (path_file_bitmap, PATH_BASE_DIALFS);
+	string_append(&path_file_bloqs, "/bloques.dat");
+	string_append(&path_file_bloqs, "/bitmap.dat");
+
+	//Chekiar si estan creados, eliminarlos --> Crearlos
 }
