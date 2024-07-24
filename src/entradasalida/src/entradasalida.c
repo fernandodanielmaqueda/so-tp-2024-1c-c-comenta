@@ -20,9 +20,10 @@ char *PATH_BASE_DIALFS;
 size_t BLOCK_SIZE;
 size_t BLOCK_COUNT;
 int COMPRESSION_DELAY;
-FILE* FILE_BLOQS;
+FILE* FILE_BLOCKS;
 FILE* FILE_METADATA;
 FILE* FILE_BITMAP;
+char* PTRO_BITMAP;
 
 t_list *LIST_FILES;
 t_bitarray *BITMAP;
@@ -195,8 +196,9 @@ void stdout_interface_function(void) {
 }
 
 void dialfs_interface_function(void) {
+	create_blocks_bitmap();
 	initialize_blocks();
-	initialize_bitmap(BLOCK_COUNT);
+	initialize_bitmap();
 	LIST_FILES = list_create();
 }
 
@@ -568,46 +570,53 @@ void initialize_blocks() {
 }
 
 
-void initialize_bitmap(size_t block_count) {
-	size_t BITMAP_SIZE = ceil(block_count / 8);
+void initialize_bitmap() {
+	size_t BITMAP_SIZE = ceil(BLOCK_COUNT / 8);
+	
+    //size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bitmap.dat"); //1 por la '/'
+	char* path_file_bitmap = string_new();
+	strcpy (path_file_bitmap, PATH_BASE_DIALFS);
+	string_append(&path_file_bitmap, "/");
+	string_append(&path_file_bitmap, "bitmap.dat");
+
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file_bitmap, F_OK) == 0)remove(path_file_bitmap);
+	
     int fd = open("bitmap.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
-        return;
+        exit(EXIT_FAILURE);
     }
 
     if (ftruncate(fd, BITMAP_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bitmap.dat: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    unsigned char *bitmap_data = mmap(NULL, BITMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (bitmap_data == MAP_FAILED) {
+    PTRO_BITMAP = mmap(NULL, BITMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (PTRO_BITMAP == MAP_FAILED) {
         log_error(MODULE_LOGGER, "Error al mapear el archivo bitmap.dat a memoria: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    BITMAP = bitarray_create_with_mode((char *)bitmap_data, BITMAP_SIZE,LSB_FIRST);
+    BITMAP = bitarray_create_with_mode((char *)PTRO_BITMAP, BITMAP_SIZE,LSB_FIRST);
     if (BITMAP == NULL) {
         log_error(MODULE_LOGGER, "Error al crear la estructura del bitmap");
-        munmap(bitmap_data, BITMAP_SIZE);
+        munmap(PTRO_BITMAP, BITMAP_SIZE);
         close(fd);
-
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    if (msync(bitmap_data, BITMAP_SIZE, MS_SYNC) == -1) {
+    if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
     }
 
-    if (munmap(bitmap_data, BITMAP_SIZE) == -1) {
+    if (munmap(PTRO_BITMAP, BITMAP_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
     }
 
-    //free(bitmap);
-    close(fd);
     log_info(MODULE_LOGGER, "Bitmap creado y mapeado correctamente.");
 }
 
@@ -679,15 +688,43 @@ void free_bitmap_blocks(){
 	free(BITMAP);
 
 }
-
-void create_files(){
-
-	char* path_file_bloqs = "";
-	char* path_file_bitmap = "";
+/*
+void create_blocks(){
+    size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bloques.dat"); //1 por la '/'
+	char* path_file_bloqs = string_new();
 	strcpy (path_file_bloqs, PATH_BASE_DIALFS);
-	strcpy (path_file_bitmap, PATH_BASE_DIALFS);
-	string_append(&path_file_bloqs, "/bloques.dat");
-	string_append(&path_file_bloqs, "/bitmap.dat");
+	string_append(&path_file_bloqs, "/");
+	string_append(&path_file_bloqs, "bloques.dat");
 
-	//Chekiar si estan creados, eliminarlos --> Crearlos
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file_bloqs, F_OK) == 0)remove(path_file_bloqs);
+
+	FILE_BLOCKS = fopen(path_file_bloqs, "w+"); 
+	
+    if (FILE_BLOCKS == -1)
+    {
+        log_error(MODULE_LOGGER, "Error al abrir el archivo bloques.dat");
+        exit(EXIT_FAILURE);
+    }
+}
+*/
+void create_file(char* file_name){
+    //size_t path_len = strlen(PATH_BASE_DIALFS) + 1 +strlen(file_name); //1 por la '/'
+	char* path_file = string_new();
+	strcpy (path_file, PATH_BASE_DIALFS);
+	string_append(&path_file, "/");
+	string_append(&path_file, file_name);
+
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file, F_OK) == 0)remove(path_file);
+
+    int fd = open(path_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1)
+    {
+        log_error(MODULE_LOGGER, "Error al abrir el archivo %s", file_name);
+        exit(EXIT_FAILURE);
+    }
+    close(fd);
+		
+	free(path_file);
 }

@@ -84,8 +84,10 @@ uint32_t seek_first_free_block();
 t_FS_File* seek_file(char* file_name);
 bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len);
 uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes);
-void initialize_bitmap(size_t block_count);
+void initialize_bitmap();
 void initialize_blocks();
 void free_bitmap_blocks();
+void create_file(char* file_name);
+void create_blocks_bitmap();
 
 #endif /* ENTRADASALIDA_H */
