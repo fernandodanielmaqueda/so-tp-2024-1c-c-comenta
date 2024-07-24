@@ -335,14 +335,12 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
 	char* file_name;
 	char* new_file_path;
-	//t_PID op_pid;
+
 
     payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 
-	//uint32_t location = seek_first_free_block();
-
-   	log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
+   	log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) PID, file_name);
 	usleep(WORK_UNIT_TIME);
 
 	new_file_path = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) + 1);
@@ -351,10 +349,10 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	strcat(new_file_path, file_name);
 
 	//busco bloque libre en el bitarray
-	t_list* free_blocks_list = free_blocks(1, BITMAP->bitarray);
+	t_list* list_of_free_blocks = free_blocks_list(1, BITMAP->bitarray);
 
 	//obtengo el primer bloque libre
-	int* first_block = list_get(free_blocks_list, 0);
+	int* first_block = list_get(list_of_free_blocks, 0);
 
 	//creo el archivo
 	FILE* file = fopen(new_file_path, "w");
@@ -364,7 +362,7 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	fprintf(file, "TAMAÑO ARCHIVO = %d", 0);
 
 	//ocupo los bloques
-	fill_blocks(free_blocks_list, BITMAP->bitarray);
+	fill_blocks(list_of_free_blocks, BITMAP->bitarray);
 
 	log_info(MODULE_LOGGER, "Archivo %s creado\n", file_name);
 
@@ -372,16 +370,7 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	free(new_file_path);
 	free(file_name);
 
-	/* t_FS_File* new_entry = NULL;
-	strcpy(new_entry->name , file_name);
-	new_entry->process_pid = op_pid;
-	new_entry->initial_bloq = location;
-	new_entry->len = 1; */
 
-	/* bitarray_set_bit(BITMAP, location);
-
-	list_add(LIST_FILES, new_entry);
- */
 
     return 0;
 }
@@ -393,46 +382,38 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 		return 1;
 	}
 
-	t_PID op_pid = 0;
+	//t_PID op_pid = 0;
 	char* file_name = NULL;
+	char* file_to_delete_path;
 
-	usleep(WORK_UNIT_TIME);
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
+	payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
-	
-	uint32_t size = list_size(LIST_FILES);
 
-	if(size > 0){
-		t_FS_File* file = list_get(LIST_FILES,0);
-		size_t file_target = 0;
+	log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>",(int) PID, file_name);
+	usleep(WORK_UNIT_TIME);
 
-		for (size_t i = 0; i < size; i++)
-		{
-			t_FS_File* file = list_get(LIST_FILES,i);
-			if (strcmp(file->name, file_name)){
-				i = size;
-				file_target = i;
-			}
-		}
+	//creo un path para el archivo a borrar
+	file_to_delete_path = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) + 1);
 
-		uint32_t initial_pos = file->initial_bloq + file->len;
-		for (size_t i = 0; i < file->len; i++)
-		{
-			bitarray_clean_bit(BITMAP, initial_pos);
-			initial_pos--;
-		}
+	//le copio el path del base dial fs
+	//le agrego al path el nombre del archivo
+	strcpy(file_to_delete_path, PATH_BASE_DIALFS);
+	strcat(file_to_delete_path, file_name);
 
-		list_remove(LIST_FILES, file_target);
-	
+	//obtengo los valores del bloque inicial y del tamaño del archivo
+	t_Metadata metadata = obtain_data(file_to_delete_path);
 
+	if(remove(file_name) == 0){
+		log_info(MODULE_LOGGER, "Archivo %s borrado", file_name);
+
+		int blocks = ceil((double)metadata.file_size / (double)BLOCK_SIZE);
+
+		free_blocks(metadata.initial_bloq, blocks);
+	}else{
+		log_info(MODULE_LOGGER, "El archivo a borrar no existe");
 	}
-	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
-	
-/* 	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
-	payload_append(respond->payload, &op_pid, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond); */
+
+	free(file_name);
 
     return 0;
 }
@@ -447,55 +428,67 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
 
 	char* file_name = NULL;
-	char* value = NULL;
-	t_PID op_pid = 0;
-	
-	usleep(WORK_UNIT_TIME);
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
+	int new_value = NULL;
+	char* file_to_truncate_path;
+	t_Metadata metadata_values = malloc(sizeof(t_Metadata));
+
+    payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
-    text_deserialize(operation_arguments, &(value));
+    payload_shift(operation_arguments, &(new_value));
 
-	uint32_t valueNUM = atoi(value);
+	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Truncate", (int)PID);
+	usleep(WORK_UNIT_TIME);
 
-	t_FS_File* file = seek_file(file_name);
-	uint32_t initial_pos = file->initial_bloq + file->len;
-	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
-	usleep(COMPRESSION_DELAY);
-	if (file->len > valueNUM)
-	{//Se restan bloques
-		size_t diff = file->len - valueNUM;
-		for (size_t i = 0; i < diff; i++)
-		{
-			bitarray_clean_bit(BITMAP, initial_pos);
-			initial_pos--;
-		}
-		file->len = valueNUM;
-		log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
-	}
-	if (file->len < valueNUM)
-	{// Se agregan bloques
-		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
-			size_t diff = valueNUM - file->len;
-			for (size_t i = 0; i < diff; i++)
-			{
-				bitarray_set_bit(BITMAP, initial_pos);
-				initial_pos++;
-			}
-			file->len = valueNUM;
-			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
-		}
-		else{
-        	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
-			return 1;
-		}
-	}
+	//le creo un path al archivo a truncar
+	file_to_truncate_path = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) + 1);
+
+	//le copio el path del base dial fs
+	//le agrego al path el nombre del archivo
+	strcpy(file_to_truncate_path, PATH_BASE_DIALFS);
+	strcat(file_to_truncate_path, file_name);
+
+	//creo un config con los valores para obtener lo que ya tengo de metadata
+	t_config* config_metadata = create_config(file_to_truncate_path);
+
+	int first_block = config_get_int_value(config_metadata, "BLOQUE_INICIAL");
+	int actual_size = config_get_int_value(config_metadata, "TAMANIO_ARCHIVO");
 	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
-	
-/* 	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
-	payload_append(respond->payload, &op_pid, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond); */
+	int new_blocks = ceil((double)new_value / (double)BLOCK_SIZE);
+	int actual_blocks = ceil((double)actual_size / (double) BLOCK_SIZE);
+	int blocks_to_modify;
+
+	//chequeo que los bloques actuales sean 0 (no puede pasar eso)
+	if(actual_blocks == 0){
+		actual_blocks = 1;
+	}
+
+	metadata_values->initial_bloq = first_block;
+	metadata_values->file_size = new_value;
+
+	update_metadata(file_to_truncate_path, metadata_values);
+
+	if(new_blocks > actual_blocks){
+		blocks_to_modify = new_blocks - actual_blocks;
+
+		if(verify_availability_of_blocks(first_block + actual_blocks,blocks_to_modify)){
+
+			setearNBits(first_block, new_blocks):
+		}else{
+			//compacto el bitmap
+			compact_bitmap(file_to_truncate_path, file_name);
+		}
+
+	}
+	else if(actual_blocks > new_blocks){
+		blocks_to_modify = actual_blocks - new_blocks;
+		free_blocks(first_block + new_blocks, blocks_to_modify);
+	}
+
+	log_info(MODULE_LOGGER, "Archivo %s truncado", file_name);
+
+	free(metadata_values);
+	free(file_to_truncate_path);
+	config_destroy(config_metadata);
     
     return 0;
 }
@@ -621,7 +614,7 @@ uint32_t seek_first_free_block(){
 }
 
 //Funcion para devolver lista de los bloques libres
-t_list* free_blocks(int quantity_blocks, t_bitarray* block){
+t_list* free_blocks_list(int quantity_blocks, t_bitarray* block){
     t_list* free_blocks = list_create();
     int i = 0;
     int j = 0;
@@ -652,7 +645,7 @@ t_list* free_blocks(int quantity_blocks, t_bitarray* block){
 }
 
 //Funcion para ocupar bloques del bitmap
-void fill_blocks(t_list* fill_blocks , t_bitarray* blocl)
+void fill_blocks(t_list* fill_blocks , t_bitarray* block)
 {
     int i = 0;
 	int* n;
@@ -664,6 +657,157 @@ void fill_blocks(t_list* fill_blocks , t_bitarray* blocl)
         bitarray_set_bit(block, *n);
         i++;
     }
+}
+
+//funcion para obtener los datos de la metadata
+t_Metadata obtain_data(char* path){
+	t_config* data = config_create(path);
+	t_Metadata metadata;
+
+	metadata.initial_bloq = config_get_int_value(data, "BLOQUE_INICIAL");
+	metadata.file_size = config_get_int_value(data, "TAMANIO_ARCHIVO");
+
+	config_destroy(data);
+
+	return metadata;
+}
+
+//funcion para liberar bloques
+void free_blocks(int initial_bloq, int quantity_blocks)
+{
+    if(quantity_blocks == 0)
+    {
+        bitarray_clean_bit(BITMAP->bitarray, initial_bloq);
+    }
+
+    else
+    {
+        int final_bloq = initial_bloq + quantity_blocks;
+
+        //Limpio el bitarray
+        for(int i = initial_bloq; i < final_bloq; i++)
+        {
+            bitarray_clean_bit(BITMAP->bitarray, i);
+        }
+    }
+}
+
+//funcion para actualizar los valores de un archivo de metadata
+void update_metadata(char* path, t_Metadata* metadata)
+{
+    t_config* metadata_to_modify = config_create(path);
+
+    char initial_bloq[12];
+    sprintf(initial_bloq, "%d", metadata->initial_bloq);
+    char size[12];
+    sprintf(size, "%d", metadata->file_size);
+
+    config_set_value(metadata_to_modify,"BLOQUE_INICIAL",  initial_bloq);
+    config_set_value(metadata_to_modify,"TAMANIO_ARCHIVO", size);
+
+    config_save(metadata_to_modify);
+    config_destroy(metadata_to_modify);
+}
+
+//funcion para verificar la disponibilidad de los bloques
+bool verify_availability_of_blocks(int initial_bloq, int blocks_to_modify)
+{
+    for(int i = 0; i < blocks_to_modify; i++)
+    {
+        if(bitarray_test_bit(BITMAP->bitarray, i + initial_bloq))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+//Funcion para setear la cantidad de bits especificada
+void setearNBits(int first, int bits_quantity)
+{
+    for(int i = first; i < bits_quantity; i++)
+    {
+        bitarray_set_bit(BITMAP->bitarray, i);
+    }
+}
+
+void compact_bitmap(char* file_to_truncate_path, char* file_name){
+	log_info(MODULE_LOGGER, "Iniciar compactacion...");
+
+	//obtengo los datos del archivo que causó la compactacion
+	t_Metadata metadata = obtain_data(file_to_truncate_path);
+	free_blocks(metadata.initial_bloq, metadata.file_size);
+
+	int contador_bloques = compact_first_files(file_name);
+
+	metadata.initial_bloq = contador_bloques;
+
+	if(metadata.file_size == 0){
+		contador_bloques += 1;
+	}else{
+		contador_bloques += ceil((double),metadata.file_size / (double)BLOCK_SIZE);
+	}
+
+	//Actualizo la metadata con los nuevos valores
+	update_metadata(file_to_delete_path, &metadata);
+
+	//seteo los bits necesarios
+	setearNBits(0, contador_bloques);
+
+	//se hace el sleep de la compactacion
+	uslep(COMPRESSION_DELAY, * 1000);
+
+	log_info(MODULE_LOGGER, "Fin compatación");
+
+	free(file_to_truncate_path);
+}
+
+int compact_first_files(char* file_name)
+{
+
+    //Creo las estructuras del directorio de dialfs
+    DIR* directorioFS = opendir(PATH_BASE_DIALFS);
+    struct dirent* archivoDirectorio;
+
+    //Declaro las funciones que necesito para modificar
+    int contadorBloques = 0;
+    t_Metadata aux;
+
+    //Leo hasta que no hay mas archivos en el directorio
+    while((archivoDirectorio = readdir(directorioFS))!=NULL)
+    {
+        //Si el directorio es .txt y no es el culpable, lo voy compactando
+        if(strstr(archivoDirectorio->d_name, ".txt") != NULL && strcmp(archivoDirectorio->d_name, file_name) != 0) 
+        {
+            //Reservo espacio para el path de este archivo .txt
+            char* pathArchivo = malloc(strlen(archivoDirectorio->d_name) + strlen(PATH_BASE_DIALFS) + 1);
+            strcpy(pathArchivo, PATH_BASE_DIALFS);
+            strcat(pathArchivo, archivoDirectorio->d_name);
+
+            //Extraigo los datos y libero sus bloques
+            aux = obtain_data(pathArchivo);
+            free_blocks(aux.initial_bloq, aux.file_size);
+
+            //Actualizo su metadata e incremento el contador
+            aux.initial_bloq = contadorBloques;
+            if(aux.tamanioArchivo == 0)
+            {
+                contadorBloques += 1;
+            }
+            else
+            {
+                contadorBloques += ceil((double)aux.file_size / BLOCK_SIZE);
+            }
+            update_metadata(pathArchivo, &aux);
+
+            free(pathArchivo);
+        }
+    }
+
+    //Cierro el directorio y retorno el contador
+    closedir(directorioFS);
+
+    return contadorBloques;
 }
 /* t_FS_File* seek_file(char* file_name){
 
