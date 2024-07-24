@@ -22,7 +22,7 @@ size_t BLOCK_COUNT;
 int COMPRESSION_DELAY;
 
 t_list *LIST_FILES;
-t_bitarray *BITMAP;
+t_Bitmap *BITMAP;
 char* BLOCKS_DATA;
 
 t_IO_Type IO_TYPES[] = {
@@ -334,32 +334,54 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
 	char* file_name;
-	t_PID op_pid;
+	char* new_file_path;
+	//t_PID op_pid;
 
-	usleep(WORK_UNIT_TIME);
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
+    payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
-	uint32_t location = seek_first_free_block();
 
-	t_FS_File* new_entry = NULL;
+	//uint32_t location = seek_first_free_block();
+
+   	log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
+	usleep(WORK_UNIT_TIME);
+
+	new_file_path = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) + 1);
+
+	strcpy(new_file_path, PATH_BASE_DIALFS);
+	strcat(new_file_path, file_name);
+
+	//busco bloque libre en el bitarray
+	t_list* free_blocks_list = free_blocks(1, BITMAP->bitarray);
+
+	//obtengo el primer bloque libre
+	int* first_block = list_get(free_blocks_list, 0);
+
+	//creo el archivo
+	FILE* file = fopen(new_file_path, "w");
+
+	//Escribo sobre el archivo
+	fprintf(file, "BLOQUE INICIAL = %d\n", first_block);
+	fprintf(file, "TAMAÑO ARCHIVO = %d", 0);
+
+	//ocupo los bloques
+	fill_blocks(free_blocks_list, BITMAP->bitarray);
+
+	log_info(MODULE_LOGGER, "Archivo %s creado\n", file_name);
+
+	fclose(file);
+	free(new_file_path);
+	free(file_name);
+
+	/* t_FS_File* new_entry = NULL;
 	strcpy(new_entry->name , file_name);
 	new_entry->process_pid = op_pid;
 	new_entry->initial_bloq = location;
-	new_entry->len = 1;
+	new_entry->len = 1; */
 
-	//Checkiar si el FS es solo para este hilo o para todo el modulo
-	//Agregar un mutex
-
-	bitarray_set_bit(BITMAP, location);
+	/* bitarray_set_bit(BITMAP, location);
 
 	list_add(LIST_FILES, new_entry);
-
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
-
-/* 	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
-	payload_append(respond->payload, &op_pid, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond); */
+ */
 
     return 0;
 }
@@ -525,104 +547,125 @@ int io_fs_read_io_operation(t_Payload *operation_arguments) {
 }
 
 void initialize_blocks() {
-    size_t blocks_size = BLOCK_SIZE * BLOCK_COUNT;
 
-    int fd = open("bloques.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (fd == -1) {
-        log_error(MODULE_LOGGER, "Error al abrir el archivo bloques.dat: %s", strerror(errno));
-        return;
-    }
+    char* path_blocks = malloc(strlen("bloques.dat") + strlen(PATH_BASE_DIALFS) + 1);
+	uint32_t size_blocks = BLOCK_COUNT * BLOCK_SIZE;
 
-    if (ftruncate(fd, blocks_size) == -1) {
-        log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bloques.dat: %s", strerror(errno));
-        close(fd);
-        return;
-    }
+	//copia lo que hay en pathdialfs a path_blocks
+	strcpy(path_blocks, PATH_BASE_DIALFS);
+	//pongo .dat al final
+	strcat(path_blocks, "bloques.dat");
 
-    BLOCKS_DATA = mmap(NULL, blocks_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (BLOCKS_DATA == MAP_FAILED) {
-        log_error(MODULE_LOGGER, "Error al mapear el archivo bloques.dat a memoria: %s", strerror(errno));
-        close(fd);
-        return;
-    }
-/* --No realiza ningunca accion--
-    for (int i = 0; i < BLOCK_COUNT; ++i) {
-        int *block_data = (int *)(BLOCKS_DATA + i * BLOCK_SIZE);
-        *block_data = i;
-    }
-	*/
+	FILE* nFile = fopen(path_blocks, "ab+");
 
-    if (msync(BLOCKS_DATA, blocks_size, MS_SYNC) == -1) {
-        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
-    }
-/*
-    if (munmap(BLOCKS_DATA, blocks_size) == -1) {
-        log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
-    }
-*/
-    close(fd);
-    log_info(MODULE_LOGGER, "Bloques creados y mapeados correctamente.");
+	truncate(path_blocks, size_blocks);
+
+	fclose(nFIle);
+
+	free(path_blocks);
+
 }
 
 
-void initialize_bitmap(size_t block_count) {
-	size_t BITMAP_SIZE = ceil(block_count / 8);
-    int fd = open("bitmap.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (fd == -1) {
-        log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
-        return;
+void initialize_bitmap() {
+	char* path_bitmap = malloc(strlen("bitmap.dat") + strlen(PATH_BASE_DIALFS) + 1);
+
+	strcpy(path_bitmap, PATH_BASE_DIALFS);
+	strcat(path_bitmap, "bitmap.dat");
+
+	BITMAP = malloc(sizeof(t_Bitmap));
+
+	int fdBitmapFile = open(path_bitmap, O_RDWR | O_CREAT, 0644);
+
+	BITMAP->tamanio = (uint32_t)ceil(BLOCK_COUNT / 8);
+	if(ftruncate(fdBitmapFile, BITMAP->tamanio) == -1){
+        log_info(MODULE_LOGGER,"Error truncando el archivo bitmap");
     }
 
-    if (ftruncate(fd, BITMAP_SIZE) == -1) {
-        log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bitmap.dat: %s", strerror(errno));
-        close(fd);
-        return;
+	BITMAP->posicion = mmap(NULL, BITMAP->tamanio, PROT_READ | PROT_WRITE , MAP_SHARED, fdBitmapFile, 0);
+    BITMAP->bitarray = bitarray_create_with_mode(BITMAP->posicion, BITMAP->tamanio, LSB_FIRST);
+
+	if (!BITMAP->bitarray){
+        log_error(MODULE_LOGGER, "Error creando el bitarray");
+        munmap(BITMAP->posicion, BITMAP->tamanio);
+        close(fdBitmapFile);
+        free(BITMAP);
     }
 
-    unsigned char *bitmap_data = mmap(NULL, BITMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (bitmap_data == MAP_FAILED) {
-        log_error(MODULE_LOGGER, "Error al mapear el archivo bitmap.dat a memoria: %s", strerror(errno));
-        close(fd);
-        return;
+    if(msync(BITMAP->posicion, BITMAP->tamanio, MS_SYNC) == -1)
+    {
+        log_error(MODULE_LOGGER, "Error sincronizando el bitmap");
     }
 
-    BITMAP = bitarray_create_with_mode((char *)bitmap_data, BITMAP_SIZE,LSB_FIRST);
-    if (BITMAP == NULL) {
-        log_error(MODULE_LOGGER, "Error al crear la estructura del bitmap");
-        munmap(bitmap_data, BITMAP_SIZE);
-        close(fd);
+    close(fdBitmapFile);
 
-        return;
-    }
-
-    if (msync(bitmap_data, BITMAP_SIZE, MS_SYNC) == -1) {
-        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
-    }
-
-    if (munmap(bitmap_data, BITMAP_SIZE) == -1) {
-        log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
-    }
-
-    //free(bitmap);
-    close(fd);
-    log_info(MODULE_LOGGER, "Bitmap creado y mapeado correctamente.");
+    free(pathBitmap);	
 }
 
+
+//Funcion para ver el primer bloque libre
 uint32_t seek_first_free_block(){
 	int magic = 0;
+	bool used_block;
 
-	for (size_t i = 0; i < (BLOCK_COUNT +1); i++)
+	for (magic = 0; magic < bitarray_get_max_bit(BITMAP->bitarray); magic)
 	{
-		if(!(bitarray_test_bit(BITMAP, i))){
-			magic = i;
-			i = BLOCK_COUNT;
+		used_block = bitarray_test_bit(BITMAP->bitarray, magic);
+		if(!used_block){
+			return -1;
+			break;
 		}
 	}
 
-	return magic;
+	return -1;
 }
 
-t_FS_File* seek_file(char* file_name){
+//Funcion para devolver lista de los bloques libres
+t_list* free_blocks(int quantity_blocks, t_bitarray* block){
+    t_list* free_blocks = list_create();
+    int i = 0;
+    int j = 0;
+
+    //Mientras j sea menor a la cantidad de bloques pedida e i sea menor a la cantidad maxima de bloques
+    while((j < quantity_blocks) && (i < bitarray_get_max_bit(block)))
+    {
+        //Me fijo si el bloque esta ocupado
+        if(!bitarray_test_bit(block, i))
+        {	
+            //Si no lo esta entonces almaceno su index en la lista de bloquesLibres
+			int* aux = malloc(sizeof(int));
+            *aux = i;
+
+            list_add(free_blocks, aux);
+
+            j++;
+        }
+        i++;
+    }
+
+    if (j < quantity_blocks) {
+        list_destroy_and_destroy_elements(free_blocks,free);
+        return NULL;
+    }
+
+    return free_blocks;
+}
+
+//Funcion para ocupar bloques del bitmap
+void fill_blocks(t_list* fill_blocks , t_bitarray* blocl)
+{
+    int i = 0;
+	int* n;
+
+    //Pongo en 1 todos los bits de los bloques que ocupe
+    while(i < (list_size(fill_blocks)))
+    {
+    	n = list_get(fill_blocks, i);
+        bitarray_set_bit(block, *n);
+        i++;
+    }
+}
+/* t_FS_File* seek_file(char* file_name){
 
 	t_FS_File* file = list_get(LIST_FILES,0);
 
@@ -635,7 +678,7 @@ t_FS_File* seek_file(char* file_name){
 	
 	return file;
 }
-
+ */
 
 bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len){
 	uint32_t addition = final_len - len;
