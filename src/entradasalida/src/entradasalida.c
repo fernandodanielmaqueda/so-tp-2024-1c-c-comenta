@@ -99,7 +99,7 @@ int module(int argc, char *argv[]) {
 		}
 	}
 	
-	free_bitmap_blocks();
+	//free_bitmap_blocks();
 	//finish_threads();
 	finish_sockets();
 	//finish_configs();
@@ -370,8 +370,6 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	free(new_file_path);
 	free(file_name);
 
-
-
     return 0;
 }
 
@@ -428,13 +426,13 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
 
 	char* file_name = NULL;
-	int new_value = NULL;
+	int new_value;
 	char* file_to_truncate_path;
-	t_Metadata metadata_values = malloc(sizeof(t_Metadata));
+	t_Metadata* metadata_values = malloc(sizeof(t_Metadata));
 
     payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
-    payload_shift(operation_arguments, &(new_value));
+    payload_shift(operation_arguments, &(new_value),sizeof(new_value));
 
 	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Truncate", (int)PID);
 	usleep(WORK_UNIT_TIME);
@@ -448,7 +446,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	strcat(file_to_truncate_path, file_name);
 
 	//creo un config con los valores para obtener lo que ya tengo de metadata
-	t_config* config_metadata = create_config(file_to_truncate_path);
+	t_config* config_metadata = config_create(file_to_truncate_path);
 
 	int first_block = config_get_int_value(config_metadata, "BLOQUE_INICIAL");
 	int actual_size = config_get_int_value(config_metadata, "TAMANIO_ARCHIVO");
@@ -472,7 +470,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
 		if(verify_availability_of_blocks(first_block + actual_blocks,blocks_to_modify)){
 
-			setearNBits(first_block, new_blocks):
+			setearNBits(first_block, new_blocks);
 		}else{
 			//compacto el bitmap
 			compact_bitmap(file_to_truncate_path, file_name);
@@ -527,9 +525,6 @@ int io_fs_read_io_operation(t_Payload *operation_arguments) {
     payload_shift(operation_arguments, &bytes, sizeof(uint32_t));
 	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
 
-	t_FS_File* file = seek_file(file_name);
-	uint32_t block_initial = ptro / BLOCK_SIZE;
-	uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
 
 //	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
 
@@ -553,7 +548,7 @@ void initialize_blocks() {
 
 	truncate(path_blocks, size_blocks);
 
-	fclose(nFIle);
+	fclose(nFile);
 
 	free(path_blocks);
 
@@ -592,7 +587,7 @@ void initialize_bitmap() {
 
     close(fdBitmapFile);
 
-    free(pathBitmap);	
+    free(path_bitmap);	
 }
 
 
@@ -745,17 +740,17 @@ void compact_bitmap(char* file_to_truncate_path, char* file_name){
 	if(metadata.file_size == 0){
 		contador_bloques += 1;
 	}else{
-		contador_bloques += ceil((double),metadata.file_size / (double)BLOCK_SIZE);
+		contador_bloques += ceil((double)metadata.file_size / (double)BLOCK_SIZE);
 	}
 
 	//Actualizo la metadata con los nuevos valores
-	update_metadata(file_to_delete_path, &metadata);
+	update_metadata(file_to_truncate_path, &metadata);
 
 	//seteo los bits necesarios
 	setearNBits(0, contador_bloques);
 
 	//se hace el sleep de la compactacion
-	uslep(COMPRESSION_DELAY, * 1000);
+	usleep(COMPRESSION_DELAY * 1000);
 
 	log_info(MODULE_LOGGER, "Fin compatación");
 
@@ -790,7 +785,7 @@ int compact_first_files(char* file_name)
 
             //Actualizo su metadata e incremento el contador
             aux.initial_bloq = contadorBloques;
-            if(aux.tamanioArchivo == 0)
+            if(aux.file_size == 0)
             {
                 contadorBloques += 1;
             }
@@ -808,58 +803,4 @@ int compact_first_files(char* file_name)
     closedir(directorioFS);
 
     return contadorBloques;
-}
-/* t_FS_File* seek_file(char* file_name){
-
-	t_FS_File* file = list_get(LIST_FILES,0);
-
-	for (size_t i = 0; i < list_size(LIST_FILES); i++)
-	{
-		
-		t_FS_File* file = list_get(LIST_FILES,i);
-		if (strcmp(file->name, file_name)) i = list_size(LIST_FILES);
-	}
-	
-	return file;
-}
- */
-
-bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len){
-	uint32_t addition = final_len - len;
-	uint32_t final_pos = initial_position + len + addition;
-
-	for (size_t i = (initial_position + len); i < final_pos; i++)
-	{
-		if(	bitarray_test_bit (BITMAP, i)) return false;
-	}
-
-	return true;
-}
-
-uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
-    uint32_t quantity_blocks = 0;
-
-    uint32_t nro_page = (uint32_t) floor(puntero / BLOCK_SIZE);
-    uint32_t offset = (uint32_t) (puntero - nro_page * BLOCK_SIZE);;
-
-    if (offset != 0)
-    {
-        bytes -= (BLOCK_SIZE - offset);
-        quantity_blocks++;
-    }
-
-    quantity_blocks += (uint32_t) floor(bytes / BLOCK_SIZE);
-    
-    return quantity_blocks;
-}
-
-
-void free_bitmap_blocks(){
-	
-    if (munmap(BLOCKS_DATA, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
-        log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
-    }
-
-	free(BITMAP);
-
 }

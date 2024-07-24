@@ -25,7 +25,7 @@
 #include "utils/send.h"
 #include "utils/socket.h"
 #include "utils/package.h"
-
+#include <dirent.h>
 
 typedef struct t_IO_Type {
     char *name;
@@ -37,12 +37,23 @@ typedef struct t_IO_Operation {
     int (*function) (t_Payload *);
 } t_IO_Operation;
 
-typedef struct t_FS_File {
+typedef struct t_Bitmap{
+	char* posicion;
+	int tamanio;
+	t_bitarray* bitarray;
+}t_Bitmap;
+
+typedef struct t_Metadata{
+    uint32_t file_size;
+    uint32_t initial_bloq;
+}t_Metadata;
+
+/* typedef struct t_FS_File {
     char *name;
     t_PID process_pid;
     uint32_t initial_bloq;
     uint32_t len;
-} t_FS_File;
+} t_FS_File; */
 
 extern char *INTERFACE_NAME;
 
@@ -81,11 +92,23 @@ int io_fs_truncate_io_operation(t_Payload *instruction);
 int io_fs_write_io_operation(t_Payload *instruction);
 int io_fs_read_io_operation(t_Payload *instruction);
 uint32_t seek_first_free_block();
-t_FS_File* seek_file(char* file_name);
-bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len);
-uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes);
-void initialize_bitmap(size_t block_count);
+t_list* free_blocks_list(int quantity_blocks, t_bitarray* block);
+void fill_blocks(t_list *fill_blocks, t_bitarray* block);
+t_Metadata obtain_data(char* path);
+void free_blocks(int initial_bloq, int quantity_blocks);
+void update_metadata(char* path, t_Metadata* metadata);
+bool verify_availability_of_blocks(int initial_bloq, int blocks_to_modify);
+void setearNBits(int first, int quantity);
+void compact_bitmap(char* path, char* file_name);
+int compact_first_files(char* file_name);
+
+//uint32_t seek_first_free_block();
+//t_FS_File* seek_file(char* file_name);
+//bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len);
+//uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes);
+void initialize_bitmap();
 void initialize_blocks();
-void free_bitmap_blocks();
+
+//void free_bitmap_blocks();
 
 #endif /* ENTRADASALIDA_H */
