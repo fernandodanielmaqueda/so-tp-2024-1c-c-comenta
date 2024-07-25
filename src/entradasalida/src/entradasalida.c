@@ -832,6 +832,9 @@ void free_bitmap_blocks(){
     if (munmap(PTRO_BLOCKS, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
     }
+    if (munmap(PTRO_BITMAP, BITMAP_SIZE) == -1) {
+        log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
+    }
 
 	free(BITMAP);
 
