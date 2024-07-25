@@ -276,9 +276,9 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	//Creo paquete y argumentos necesarios para enviarle a memoria
 	t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 	payload_append(&(package->payload), &PID, sizeof(PID));
-	payload_append(&(package->payload), text_to_send, sizeof(text_to_send));
 	list_serialize(&(package->payload), *physical_addresses, physical_address_deserialize_element);
 	payload_append(&(package->payload), &bytes, sizeof(bytes));
+	payload_append(&(package->payload), text_to_send, sizeof(text_to_send));
 	package_send(package, CONNECTION_MEMORY.fd_connection);
 	package_destroy(package);
 
