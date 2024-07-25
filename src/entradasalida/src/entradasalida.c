@@ -454,7 +454,6 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t initial_pos = file->initial_bloq + file->len;
-	//usleep(COMPRESSION_DELAY);
 	if (file->len > valueNUM)
 	{//Se restan bloques
 		size_t diff = file->len - valueNUM;
@@ -464,6 +463,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 			initial_pos--;
 		}
 		file->len = valueNUM;
+		file->size = valueSize;
 	}
 	if (file->len < valueNUM)
 	{// Se agregan bloques
@@ -476,6 +476,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 				initial_pos++;
 			}
 			file->len = valueNUM;
+			file->size = valueSize;
 
 		}
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
@@ -491,6 +492,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 				initial_pos++;
 			}
 			file->len = valueNUM;
+			file->size = valueSize;
 
 		}
 		else{
@@ -577,6 +579,7 @@ del valor del Registro Puntero Archivo.*/
 
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - Escribir Archivo: <%s> - Tamaño a Escribir: <%d> - Puntero Archivo: <%d>",
 				 (int) PID, file_name, (int)bytes, (int)ptro);
+
 	
     if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
@@ -907,10 +910,10 @@ t_FS_File* seek_file_by_header_index(uint32_t position){
 }
 
 void compact_blocks(){
+	usleep(COMPRESSION_DELAY * 1000);
 	int total_free_spaces = 0;
 	int len = 0;
 
-	
 			for (uint32_t i = 0; i < BLOCK_COUNT; i++)
 			{
 				if (!(bitarray_test_bit(BITMAP,i)))//Cuento los espacios vacios
