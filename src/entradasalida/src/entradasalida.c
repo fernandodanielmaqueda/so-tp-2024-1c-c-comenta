@@ -518,6 +518,12 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
 int io_fs_write_io_operation(t_Payload *operation_arguments) {
 
+/*O_FS_WRITE (Interfaz, Nombre Archivo, Registro Dirección, Registro Tamaño, Registro
+Puntero Archivo): Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, se
+lea desde Memoria la cantidad de bytes indicadas por el Registro Tamaño a partir de la
+dirección lógica que se encuentra en el Registro Dirección y se escriban en el archivo a partir
+del valor del Registro Puntero Archivo.*/
+
 	if(IO_TYPE != DIALFS_IO_TYPE) {
 		log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
 		return 1;
@@ -529,6 +535,12 @@ int io_fs_write_io_operation(t_Payload *operation_arguments) {
 }
 
 int io_fs_read_io_operation(t_Payload *operation_arguments) {
+
+	/*O_FS_READ (Interfaz, Nombre Archivo, Registro Dirección, Registro Tamaño, Registro
+Puntero Archivo): Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, se
+lea desde el archivo a partir del valor del Registro Puntero Archivo la cantidad de bytes
+indicada por Registro Tamaño y se escriban en la Memoria a partir de la dirección lógica
+indicada en el Registro Dirección*/
 
 	if(IO_TYPE != DIALFS_IO_TYPE) {
 		log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
@@ -551,7 +563,8 @@ int io_fs_read_io_operation(t_Payload *operation_arguments) {
 	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
 
 	t_FS_File* file = seek_file(file_name);
-	uint32_t block_initial = ptro / BLOCK_SIZE;
+	uint32_t block_initial = floor(ptro / BLOCK_SIZE);
+	uint32_t offset = ptro % BLOCK_SIZE;
 	uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
 
 //	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
@@ -812,11 +825,6 @@ t_FS_File* seek_file_by_header_index(uint32_t position){
 }
 
 void compact_blocks(){
-	/*
-	Buscar del principio al final espacio libre
-	Si se encuentra> guardar POSITION y al siguiente moverlo X posiciones hacia atras
-	actualizar archivo proceso
-	*/
 	int total_free_spaces = 0;
 	int len = 0;
 
@@ -835,7 +843,7 @@ void compact_blocks(){
 						temp_entry->initial_bloq -= total_free_spaces;
 						update_file(temp_entry->name, temp_entry->size, i);
 					}
-					i+=len;				
+					i+=len; //Salteo los casos ya contemplados en moveBlock
 
 				}
 				
