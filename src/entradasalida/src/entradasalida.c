@@ -563,10 +563,16 @@ indicada en el Registro Dirección*/
 	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
 
 	t_FS_File* file = seek_file(file_name);
-	uint32_t block_initial = floor(ptro / BLOCK_SIZE);
-	uint32_t offset = ptro % BLOCK_SIZE;
+	uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
+    uint32_t offset = (uint32_t) (ptro - block_initial * BLOCK_SIZE);;
 	uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
-
+/*
+    void* context = malloc(bytes);
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE));
+    memcpy(context, posicion, bytes); 
+	posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + ((location - free_spaces) * BLOCK_SIZE));
+    memcpy(posicion, context, size); 
+*/
 //	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
 
 	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA
