@@ -452,8 +452,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t initial_pos = file->initial_bloq + file->len;
-	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
-	usleep(COMPRESSION_DELAY);
+	//usleep(COMPRESSION_DELAY);
 	if (file->len > valueNUM)
 	{//Se restan bloques
 		size_t diff = file->len - valueNUM;
@@ -463,25 +462,42 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 			initial_pos--;
 		}
 		file->len = valueNUM;
-		log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
 	}
 	if (file->len < valueNUM)
 	{// Se agregan bloques
+		size_t diff = valueNUM - file->len;
 		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
-			size_t diff = valueNUM - file->len;
 			for (size_t i = 0; i < diff; i++)
 			{
 				bitarray_set_bit(BITMAP, initial_pos);
 				initial_pos++;
 			}
 			file->len = valueNUM;
+		}
+		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
+			//compact_blocks();
 			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
+			initial_pos = file->initial_bloq + file->len;
+			for (size_t i = 0; i < diff; i++)
+			{
+				bitarray_set_bit(BITMAP, initial_pos);
+				initial_pos++;
+			}
+			file->len = valueNUM;
+
+
 		}
 		else{
         	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
 			return 1;
 		}
 	}
+	
+		if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+        	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        	exit(EXIT_FAILURE);
+    	}
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
 	
@@ -671,6 +687,19 @@ bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_le
 	}
 
 	return true;
+}
+
+int quantity_free_blocks(){
+	int magic = 0;
+
+	if(BLOCK_COUNT == 0) return magic;
+
+	for (size_t i = 0; i < BLOCK_COUNT; i++)
+	{
+		if(	!(bitarray_test_bit (BITMAP, i))) magic++;
+	}
+
+	return magic;
 }
 
 uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
