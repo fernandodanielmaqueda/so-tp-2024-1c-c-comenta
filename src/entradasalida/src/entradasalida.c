@@ -481,7 +481,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
 
 			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
-			//compact_blocks();
+			compact_blocks();
 			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
 
 			initial_pos = file->initial_bloq + file->len;
