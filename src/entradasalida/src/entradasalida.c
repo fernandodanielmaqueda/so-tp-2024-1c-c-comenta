@@ -352,6 +352,7 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	new_entry->process_pid = op_pid;
 	new_entry->initial_bloq = location;
 	new_entry->len = 1;
+	new_entry->size = 0;
 
 	create_file(file_name, location); //Creo archivo y lo seteo
 	bitarray_set_bit(BITMAP, location);
