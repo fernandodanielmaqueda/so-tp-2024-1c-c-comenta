@@ -231,7 +231,7 @@ int io_gen_sleep_io_operation(t_Payload *operation_arguments) {
 
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>", (int) PID);
 
-	usleep(WORK_UNIT_TIME * work_units);
+	usleep(WORK_UNIT_TIME * work_units * 1000);
 
     return 0;
 }
@@ -342,7 +342,7 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	char* file_name;
 	t_PID op_pid;
 
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 	uint32_t location = seek_first_free_block();
@@ -380,7 +380,7 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 	t_PID op_pid = 0;
 	char* file_name = NULL;
 
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 	
@@ -444,7 +444,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	char* value = NULL;
 	t_PID op_pid = 0;
 	
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
     text_deserialize(operation_arguments, &(value));
@@ -539,7 +539,7 @@ del valor del Registro Puntero Archivo.*/
 	t_PID op_pid = 0;
 	t_list* list_dfs = list_create();
 
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido de kernel
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
@@ -610,7 +610,7 @@ indicada en el Registro Dirección*/
 	t_PID op_pid = 0;
 	t_list* list_dfs = list_create();
 
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
