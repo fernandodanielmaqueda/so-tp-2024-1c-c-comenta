@@ -352,7 +352,6 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	new_entry->process_pid = op_pid;
 	new_entry->initial_bloq = location;
 	new_entry->len = 1;
-	new_entry->size = 0;
 
 	create_file(file_name, location); //Creo archivo y lo seteo
 	bitarray_set_bit(BITMAP, location);
@@ -411,7 +410,13 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 			initial_pos++;
 		}
 
+		if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+        	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        	exit(EXIT_FAILURE);
+    	}
+
 		list_remove(LIST_FILES, file_target);
+		update_file(file_name,0,-1);
 	}
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
@@ -565,6 +570,7 @@ void initialize_blocks() {
 
     if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        exit(EXIT_FAILURE);
     }
 /*
     if (munmap(BLOCKS_DATA, BLOCKS_TOTAL_SIZE) == -1) {
@@ -729,9 +735,27 @@ void create_file(char* file_name, uint32_t initial_block){
         exit(EXIT_FAILURE);
     }
 
-	fprintf(FILE_METADATA, "BLOQUE_INICIAL=%d\n", initial_block);
-	fprintf(FILE_METADATA, "TAMAÑO_ARCHIVO=0");
+	t_config* config_temp = config_create(path_file);
+    config_set_value(config_temp, "BLOQUE_INICIAL", "0");
+    config_set_value(config_temp, "TAMAÑO_ARCHIVO", string_itoa(initial_block));
+	config_save_in_file(config_temp,path_file);
+	config_destroy(config_temp);
 		
 	free(path_file);
 	fclose(FILE_METADATA);
+}
+
+void update_file(char* file_name, uint32_t size, uint32_t location){
+	char* path_file = string_new();
+	strcpy (path_file, PATH_BASE_DIALFS);
+	string_append(&path_file, "/");
+	string_append(&path_file, file_name);
+
+	t_config* config_temp = config_create(path_file);
+    config_set_value(config_temp, "BLOQUE_INICIAL", string_itoa(location));
+    config_set_value(config_temp, "TAMAÑO_ARCHIVO", string_itoa(size));
+	config_save_in_file(config_temp,path_file);
+	config_destroy(config_temp);
+
+	free(path_file);
 }
