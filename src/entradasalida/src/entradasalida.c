@@ -197,7 +197,6 @@ void stdout_interface_function(void) {
 }
 
 void dialfs_interface_function(void) {
-	create_blocks_bitmap();
 	initialize_blocks();
 	initialize_bitmap();
 	LIST_FILES = list_create();
@@ -347,15 +346,15 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
     text_deserialize(operation_arguments, &(file_name));
 	uint32_t location = seek_first_free_block();
 
+	//Crear variable de control de archivo
 	t_FS_File* new_entry = NULL;
 	strcpy(new_entry->name , file_name);
 	new_entry->process_pid = op_pid;
 	new_entry->initial_bloq = location;
 	new_entry->len = 1;
+	new_entry->size = 0;
 
-	//Checkiar si el FS es solo para este hilo o para todo el modulo
-	//Agregar un mutex
-
+	create_file(file_name, location); //Creo archivo y lo seteo
 	bitarray_set_bit(BITMAP, location);
 
 	list_add(LIST_FILES, new_entry);
@@ -710,7 +709,7 @@ void create_blocks(){
     }
 }
 */
-void create_file(char* file_name){
+void create_file(char* file_name, uint32_t initial_block){
     //size_t path_len = strlen(PATH_BASE_DIALFS) + 1 +strlen(file_name); //1 por la '/'
 	char* path_file = string_new();
 	strcpy (path_file, PATH_BASE_DIALFS);
@@ -719,14 +718,16 @@ void create_file(char* file_name){
 
 	//Checkeo si el file ya esta creado, sino lo elimino
 	if (access(path_file, F_OK) == 0)remove(path_file);
-
-    int fd = open(path_file, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-    if (fd == -1)
-    {
+ 
+	FILE_METADATA = fopen(path_file, "wb");
+    if (FILE_METADATA == NULL) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo %s", file_name);
         exit(EXIT_FAILURE);
     }
-    close(fd);
+
+	fprintf(FILE_METADATA, "BLOQUE_INICIAL=%d\n", initial_block);
+	fprintf(FILE_METADATA, "TAMAÑO_ARCHIVO=0");
 		
 	free(path_file);
+	fclose(FILE_METADATA);
 }
