@@ -531,6 +531,50 @@ del valor del Registro Puntero Archivo.*/
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
 
+	char* file_name = NULL;
+	t_MemorySize ptro = 0;
+	t_MemorySize bytes = 0;
+	t_PID op_pid = 0;
+	t_list* list_dfs = list_create();
+
+	usleep(WORK_UNIT_TIME);
+	//Leo el payload recibido de kernel
+    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
+    text_deserialize(operation_arguments, &(file_name));
+    payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
+    payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
+	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
+
+	
+	//Busco el file buscado
+	t_FS_File* file = seek_file(file_name);
+	//uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
+	uint32_t block_initial = file->initial_bloq;
+
+	//Envio paquete a memoria
+	t_Package* pack_request = package_create_with_header(IO_FS_WRITE_MEMORY);
+	payload_append(&pack_request->payload, &op_pid, sizeof(t_PID));
+    list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
+	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
+	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
+	package_destroy(pack_request);
+
+	//Recibo respuesta de memoria con el contenido
+	t_Package* package_memory = NULL;
+	package_receive(&package_memory, CONNECTION_MEMORY.fd_connection);
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
+	//void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (ptro));
+    payload_shift(&package_memory->payload, posicion, (size_t) bytes);
+	package_destroy(package_memory);
+    //void* context = malloc(bytes);
+    //memcpy(posicion, context, bytes); 
+	//free(context);
+
+    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
+        // TODO
+        exit(1);
+    }
+	
     return 0;
 }
 
