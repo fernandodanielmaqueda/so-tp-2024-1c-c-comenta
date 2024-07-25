@@ -299,7 +299,6 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 			
 	t_list *physical_addresses = list_create();
 	t_MemorySize bytes;
-	char* text_received = NULL;
 
 	//empiezo a "desencolar" el payload recibido
 	payload_shift(operation_arguments, &PID, sizeof(PID));
@@ -323,9 +322,12 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	//Recibo nuevo paquete para imprimir por pantalla
 	package_receive(&package, CONNECTION_MEMORY.fd_connection);
 	//Desencolar e imprimir por pantalla
+	char* text_received = malloc(bytes);
 	payload_shift(&(package->payload), text_received, bytes);
 
-	fputs(text_received, stdout);
+	log_info(MODULE_LOGGER, "[IO] Mensaje leido: <%s>", text_received);
+
+	//fputs(text_received, stdout);
 	free(text_received);
     
     return 0;
