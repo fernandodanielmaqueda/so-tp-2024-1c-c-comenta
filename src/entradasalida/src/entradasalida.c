@@ -550,33 +550,54 @@ indicada en el Registro Dirección*/
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
 
 	char* file_name = NULL;
-	uint32_t ptro = 0;
-	uint32_t bytes = 0;
+	t_MemorySize ptro = 0;
+	t_MemorySize bytes = 0;
 	t_PID op_pid = 0;
 	t_list* list_dfs = list_create();
 
 	usleep(WORK_UNIT_TIME);
+	//Leo el payload recibido
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
-    payload_shift(operation_arguments, &ptro, sizeof(uint32_t));
-    payload_shift(operation_arguments, &bytes, sizeof(uint32_t));
+    payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
+    payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
 	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
 
+	//Busco el file buscado
 	t_FS_File* file = seek_file(file_name);
-	uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
-    uint32_t offset = (uint32_t) (ptro - block_initial * BLOCK_SIZE);;
-	uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
-/*
+	//uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
+	uint32_t block_initial = file->initial_bloq;
+    //uint32_t offset = (uint32_t) (ptro - block_initial * BLOCK_SIZE);;
+	//uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
+
     void* context = malloc(bytes);
-	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE));
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
+	//void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (ptro));
     memcpy(context, posicion, bytes); 
-	posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + ((location - free_spaces) * BLOCK_SIZE));
+/* 	posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + ((location - free_spaces) * BLOCK_SIZE));
     memcpy(posicion, context, size); 
 */
-//	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
 
-	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA
+	//Se crea paquete y se envia a memoria
+	t_Package* pack_request = package_create_with_header(IO_FS_READ_MEMORY);
+	payload_append(&pack_request->payload, &op_pid, sizeof(t_PID));
+    list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
+	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
+	payload_append(&pack_request->payload, &context, sizeof(bytes));
+	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
+	package_destroy(pack_request);
 
+	free(context);
+
+	if(receive_return_value_with_expected_header(WRITE_REQUEST,0,CONNECTION_MEMORY.fd_connection)){
+		
+        exit(1);
+	}
+
+    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
+        // TODO
+        exit(1);
+    }
 
     return 0;
 }
