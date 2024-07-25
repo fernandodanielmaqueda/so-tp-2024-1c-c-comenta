@@ -448,7 +448,8 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
     text_deserialize(operation_arguments, &(file_name));
     text_deserialize(operation_arguments, &(value));
 
-	uint32_t valueNUM = atoi(value);
+	uint32_t valueSize = atoi(value);
+	uint32_t valueNUM = ceil(valueSize/BLOCK_SIZE);
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t initial_pos = file->initial_bloq + file->len;
@@ -467,17 +468,21 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	{// Se agregan bloques
 		size_t diff = valueNUM - file->len;
 		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
+
 			for (size_t i = 0; i < diff; i++)
 			{
 				bitarray_set_bit(BITMAP, initial_pos);
 				initial_pos++;
 			}
 			file->len = valueNUM;
+
 		}
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
+
 			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
 			//compact_blocks();
 			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
+
 			initial_pos = file->initial_bloq + file->len;
 			for (size_t i = 0; i < diff; i++)
 			{
@@ -486,13 +491,14 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 			}
 			file->len = valueNUM;
 
-
 		}
 		else{
         	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
 			return 1;
 		}
 	}
+
+	update_file(file_name,valueSize,file->initial_bloq);
 	
 		if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
         	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
