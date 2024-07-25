@@ -333,18 +333,22 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	}
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
+	
+	//declaro el nombre archivo y el path para el nuevo archivo
 	char* file_name;
 	char* new_file_path;
 
-
+	//desencolo el pid y el nombre
     payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 
    	log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) PID, file_name);
 	usleep(WORK_UNIT_TIME);
 
+	//empiezo a reservar el espacio para el nombre del archivo
 	new_file_path = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) + 1);
 
+	//le copio el path al dialfs y le agrego el nombre del archivo
 	strcpy(new_file_path, PATH_BASE_DIALFS);
 	strcat(new_file_path, file_name);
 
@@ -380,10 +384,11 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 		return 1;
 	}
 
-	//t_PID op_pid = 0;
+	//defino el nombre del archivo y el path
 	char* file_name = NULL;
 	char* file_to_delete_path;
 
+	//desencolo el pid y el nombre
 	payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 
@@ -401,6 +406,7 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 	//obtengo los valores del bloque inicial y del tamaño del archivo
 	t_Metadata metadata = obtain_data(file_to_delete_path);
 
+	//corroboro si fue borrado el archivo
 	if(remove(file_name) == 0){
 		log_info(MODULE_LOGGER, "Archivo %s borrado", file_name);
 
@@ -425,11 +431,13 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
 
+	//declaro las variables que voy a utilizar
 	char* file_name = NULL;
 	int new_value;
 	char* file_to_truncate_path;
 	t_Metadata* metadata_values = malloc(sizeof(t_Metadata));
 
+	//desencolo el pid, el nombre archivo y el nuevo tamaño
     payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
     payload_shift(operation_arguments, &(new_value),sizeof(new_value));
@@ -448,9 +456,11 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	//creo un config con los valores para obtener lo que ya tengo de metadata
 	t_config* config_metadata = config_create(file_to_truncate_path);
 
+	//me fijo su bloque inicial y su tamaño actual
 	int first_block = config_get_int_value(config_metadata, "BLOQUE_INICIAL");
 	int actual_size = config_get_int_value(config_metadata, "TAMANIO_ARCHIVO");
 	
+	//me fijo cuantos bloques va a ocupar y cuantos ocupa actualmente
 	int new_blocks = ceil((double)new_value / (double)BLOCK_SIZE);
 	int actual_blocks = ceil((double)actual_size / (double) BLOCK_SIZE);
 	int blocks_to_modify;
@@ -463,22 +473,27 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	metadata_values->initial_bloq = first_block;
 	metadata_values->file_size = new_value;
 
+	//le actualizo al archivo con su nuevo tamaño
 	update_metadata(file_to_truncate_path, metadata_values);
 
+	// si la nueva cantidad de bloques es mayor a la actual
 	if(new_blocks > actual_blocks){
+		//cuantos van a ser los bloques a modificar
 		blocks_to_modify = new_blocks - actual_blocks;
-
+		
+		//me fijo si hay bloques disponibles para asignar
 		if(verify_availability_of_blocks(first_block + actual_blocks,blocks_to_modify)){
 
 			setearNBits(first_block, new_blocks);
 		}else{
-			//compacto el bitmap
+			//Si no hay bloques suficientes, compacto el bitmap
 			compact_bitmap(file_to_truncate_path, file_name);
 		}
 
-	}
+	}//si los bloques actuales son mayores a la nueva cantidad
 	else if(actual_blocks > new_blocks){
 		blocks_to_modify = actual_blocks - new_blocks;
+		//libero bloques
 		free_blocks(first_block + new_blocks, blocks_to_modify);
 	}
 
@@ -505,14 +520,15 @@ int io_fs_write_io_operation(t_Payload *operation_arguments) {
 	char* file_name;
 	t_list* physical_addresses = list_create();
 	t_MemorySize bytes;
-	char* pointer_for_writing;
+	uint32_t pointer_for_writing;
+	char* content;
 
 	//desencolo lo que me llega de kernel
     payload_shift(operation_arguments, &PID, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 	payload_shift(operation_arguments, &bytes, sizeof(bytes));
-	list_deserialize(operation_arguments, pointer_for_writing, sizeof(pointer_for_writing));	
+	payload_shift(operation_arguments, pointer_for_writing, sizeof(uint32_t));	
 
 	//le mando a memoria lo que necesita y creo el paquete
 	t_Package *package = package_create_with_header(IO_FS_WRITE_MEMORY);
@@ -523,12 +539,13 @@ int io_fs_write_io_operation(t_Payload *operation_arguments) {
 	package_destroy(package);
 
 	//Recibo nuevo paquete con la info para escribir
+	log_info(MINIMAL_LOGGER, "PID: <%d> - Escribir archivo: <%s> - Tamaño a escribir <%d> - Puntero Archivo <%d>", (int)PID, file_name, (int) bytes,(int) pointer_for_writing);
+
 	usleep(WORK_UNIT_TIME);	
 	package_receive(&package, CONNECTION_MEMORY.fd_connection);
 
 	//Inicio la operacion y guardo en el puntero lo que hay que escribir en el archivo
-	log_info(MINIMAL_LOGGER, "PID: <%d> - Escribir archivo: <%s> - Tamaño a escribir <%d> - Puntero Archivo <%s>", (int)PID, file_name, (int) bytes, pointer_for_writing);
-	payload_shift(&(package->payload), pointer_for_writing, bytes);
+	payload_shift(&(package->payload), content, bytes);
 
 	//Genero el path del archivo
 	path_file_to_write = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) +1);
@@ -550,14 +567,17 @@ int io_fs_write_io_operation(t_Payload *operation_arguments) {
 
 	//Chequeo que el tamaño del archivo sea mayor a lo que hay que escribir
 	if(size > bytes){
+
 		//se abre el archivo de bloques en modo lectura y escritua
 		FILE* blocks_file = fopen(blocks_path, "wb+");
+
 		//si existe el archivo de bloques
 		if(blocks_file != NULL){
 			//vamos al desplazamiento del primer bloque
 			fseek(blocks_file, (first_block * BLOCK_SIZE) + pointer_for_writing, SEEK_SET);
+			
 			//Escribo en el archivo lo que corresponde
-			fwrite(pointer_for_writing, 1, bytes, blocks_file);
+			fwrite(content, 1, bytes, blocks_file);
 
 			log_info(MODULE_LOGGER, "Archivo escrito correctamente");
 			fclose(blocks_file);
@@ -570,6 +590,7 @@ int io_fs_write_io_operation(t_Payload *operation_arguments) {
 
 	free(blocks_path);
 	free(path_file_to_write);
+	config_destroy(&config_file);
 
     return 0;
 }
@@ -583,25 +604,65 @@ int io_fs_read_io_operation(t_Payload *operation_arguments) {
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
 
-	char* file_name = NULL;
-	uint32_t ptro = 0;
-	uint32_t bytes = 0;
-	t_PID op_pid = 0;
-	t_list* list_dfs = list_create();
+	//inicializo las variables que voy a necesitar
+	char* path_file_to_read;
+	char* file_name;
+	t_list* physical_addresses = list_create();
+	t_MemorySize bytes;
+	uint32_t pointer_for_reading;
+
+
+    payload_shift(operation_arguments, &PID, sizeof(t_PID));
+    text_deserialize(operation_arguments, &(file_name));
+    payload_shift(operation_arguments, physical_addresses, physical_address_deserialize_element);
+    payload_shift(operation_arguments, &bytes, sizeof(bytes));
+	list_deserialize(operation_arguments, pointer_for_reading, sizeof(pointer_for_reading));
 
 	usleep(WORK_UNIT_TIME);
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
-    text_deserialize(operation_arguments, &(file_name));
-    payload_shift(operation_arguments, &ptro, sizeof(uint32_t));
-    payload_shift(operation_arguments, &bytes, sizeof(uint32_t));
-	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
+	log_info(MINIMAL_LOGGER, "PID: <%d> - Leer archivo: <%s> - Tamaño a escribir <%d> - Puntero Archivo <%s>", (int)PID, file_name, (int) bytes, pointer_for_reading);
+
+	path_file_to_read = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) + 1);
+	strcpy(path_file_to_read, PATH_BASE_DIALFS);
+	strcat(path_file_to_read, PATH_BASE_DIALFS);
+
+	t_config* config_file = config_create(path_file_to_read);
+	
+	void* content = malloc(bytes);
+
+	int first_block = config_get_int_value(config_file, "BLOQUE_INICIAL");
+
+	char* blocks_path = malloc(strlen("bloques.dat") + strlen(PATH_BASE_DIALFS) + 1);
+	strcpy(blocks_path, PATH_BASE_DIALFS);
+	strcat(blocks_path, "bloques.dat");
+
+	//Se abre el archivo en modo lectura y escritura
+	FILE* blocks_file = fopen(blocks_path, "rb");
+
+	if(blocks_file != NULL){
+		//
+		fseek(blocks_file, (first_block * BLOCK_SIZE) + pointer_for_reading, SEEK_SET);
+		fread(content, 1, bytes, blocks_file);
+
+		log_info(MODULE_LOGGER, "El contenido del archivo es %s", (char*)content);
+		fclose(blocks_file);
+	}else{
+		log_info(MODULE_LOGGER, "No se pudo abrir el archivo");
+	}
+
+	//creo el paquete para memoria
+
+	free(path_file_to_read);
+	free(blocks_path);
+	config_destroy(&config_file);
 
 
-//	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
-
-	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA
-
-
+	t_Package *package = package_create_with_header(IO_FS_READ_MEMORY);
+	payload_append(&(package->payload), &PID, sizeof(PID));
+	list_serialize(&(package->payload), *physical_addresses, physical_address_deserialize_element);
+	payload_append(&(package->payload), content, sizeof(content));
+	payload_append(&(package->payload), &bytes, sizeof(bytes));
+	package_send(package, CONNECTION_MEMORY.fd_connection);
+	
     return 0;
 }
 
@@ -667,7 +728,7 @@ uint32_t seek_first_free_block(){
 	int magic = 0;
 	bool used_block;
 
-	for (magic = 0; magic < bitarray_get_max_bit(BITMAP->bitarray); magic)
+	for (magic = 0; magic < bitarray_get_max_bit(BITMAP->bitarray); magic++)
 	{
 		used_block = bitarray_test_bit(BITMAP->bitarray, magic);
 		if(!used_block){
