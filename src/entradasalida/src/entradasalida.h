@@ -91,5 +91,8 @@ void free_bitmap_blocks();
 void create_file(char* file_name, uint32_t first_block);
 void update_file(char* file_name, uint32_t size, uint32_t location);
 int quantity_free_blocks();
+void compact_blocks();
+t_FS_File* seek_file_by_header_index(uint32_t position);
+void moveBlock(uint32_t blocks_to_move, uint32_t size, uint32_t free_spaces, uint32_t location);
 
 #endif /* ENTRADASALIDA_H */

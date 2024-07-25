@@ -24,6 +24,7 @@ FILE* FILE_BLOCKS;
 FILE* FILE_METADATA;
 FILE* FILE_BITMAP;
 char* PTRO_BITMAP;
+size_t BITMAP_SIZE;
 
 t_list *LIST_FILES;
 t_bitarray *BITMAP;
@@ -411,7 +412,7 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 			initial_pos++;
 		}
 
-		if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+		if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
         	exit(EXIT_FAILURE);
     	}
@@ -500,7 +501,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
 	update_file(file_name,valueSize,file->initial_bloq);
 	
-		if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+		if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
         	exit(EXIT_FAILURE);
     	}
@@ -605,7 +606,7 @@ void initialize_blocks() {
 
 
 void initialize_bitmap() {
-	size_t BITMAP_SIZE = ceil(BLOCK_COUNT / 8);
+	BITMAP_SIZE = ceil(BLOCK_COUNT / 8);
 	
     //size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bitmap.dat"); //1 por la '/'
 	char* path_file_bitmap = string_new();
@@ -794,4 +795,78 @@ void update_file(char* file_name, uint32_t size, uint32_t location){
 	config_destroy(config_temp);
 
 	free(path_file);
+}
+
+
+t_FS_File* seek_file_by_header_index(uint32_t position){
+
+	t_FS_File* magic = NULL;
+
+	for (size_t i = 0; i < list_size(LIST_FILES); i++)
+	{
+		magic = list_get(LIST_FILES,i);
+		if (magic->initial_bloq == position) return magic;
+	}
+
+	return magic;
+}
+
+void compact_blocks(){
+	/*
+	Buscar del principio al final espacio libre
+	Si se encuentra> guardar POSITION y al siguiente moverlo X posiciones hacia atras
+	actualizar archivo proceso
+	*/
+	int total_free_spaces = 0;
+	int len = 0;
+
+	
+			for (uint32_t i = 0; i < BLOCK_COUNT; i++)
+			{
+				if (!(bitarray_test_bit(BITMAP,i)))//Cuento los espacios vacios
+				{
+					total_free_spaces++;
+				}
+				else{//Busco el header
+					t_FS_File* temp_entry = seek_file_by_header_index(i);
+					len = temp_entry->len;
+					if (total_free_spaces != 0){//Mueve el bloque y actualiza el bitmap
+						moveBlock(temp_entry->len, temp_entry->size, total_free_spaces, i);
+						temp_entry->initial_bloq -= total_free_spaces;
+						update_file(temp_entry->name, temp_entry->size, i);
+					}
+					i+=len;				
+
+				}
+				
+			}
+			
+    if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
+    }
+	
+    if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+void moveBlock(uint32_t blocks_to_move, uint32_t size, uint32_t free_spaces, uint32_t location){
+	//Mueve el bloque y actualiza el bitmap
+
+    void* context = malloc(size);
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (location * BLOCK_SIZE));
+    memcpy(context, posicion, size); 
+	posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + ((location - free_spaces) * BLOCK_SIZE));
+    memcpy(posicion, context, size); 
+
+	for (size_t i = 0; i < blocks_to_move; i++)
+	{
+		bitarray_clean_bit(BITMAP,(location + i));
+		bitarray_set_bit(BITMAP,(location + i - free_spaces));
+	}
+
+	free(context);
+	
 }
