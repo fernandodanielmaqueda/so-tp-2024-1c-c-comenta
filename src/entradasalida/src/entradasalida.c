@@ -387,9 +387,9 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 
 	if(size > 0){
 		t_FS_File* file = list_get(LIST_FILES,0);
-		size_t file_target = 0;
+		size_t file_target = -1;
 
-		for (size_t i = 0; i < size; i++)
+		for (size_t i = 0; i < size; i++) //busqueda del file indicado
 		{
 			t_FS_File* file = list_get(LIST_FILES,i);
 			if (strcmp(file->name, file_name)){
@@ -398,16 +398,20 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 			}
 		}
 
-		uint32_t initial_pos = file->initial_bloq + file->len;
+		if(file_target == -1) {
+			log_info(MODULE_LOGGER, "[ERROR] PID: <%d> - Archivo <%s> a eliminar no encontrado", (int) op_pid, file_name);
+			return 1;
+		}
+
+		//Liberacion del bitarray
+		uint32_t initial_pos = file->initial_bloq;
 		for (size_t i = 0; i < file->len; i++)
 		{
 			bitarray_clean_bit(BITMAP, initial_pos);
-			initial_pos--;
+			initial_pos++;
 		}
 
 		list_remove(LIST_FILES, file_target);
-	
-
 	}
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
