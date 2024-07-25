@@ -500,6 +500,77 @@ int io_fs_write_io_operation(t_Payload *operation_arguments) {
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
 
+	//defino las variables que voy a usar
+	char* path_file_to_write;
+	char* file_name;
+	t_list* physical_addresses = list_create();
+	t_MemorySize bytes;
+	char* pointer_for_writing;
+
+	//desencolo lo que me llega de kernel
+    payload_shift(operation_arguments, &PID, sizeof(t_PID));
+    text_deserialize(operation_arguments, &(file_name));
+	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
+	payload_shift(operation_arguments, &bytes, sizeof(bytes));
+	list_deserialize(operation_arguments, pointer_for_writing, sizeof(pointer_for_writing));	
+
+	//le mando a memoria lo que necesita y creo el paquete
+	t_Package *package = package_create_with_header(IO_FS_WRITE_MEMORY);
+	payload_append(&(package->payload), &PID, sizeof(PID));
+	list_serialize(&(package->payload), *physical_addresses, physical_address_deserialize_element);
+	payload_append(&(package->payload), &bytes, sizeof(bytes));
+	package_send(package, CONNECTION_MEMORY.fd_connection);
+	package_destroy(package);
+
+	//Recibo nuevo paquete con la info para escribir
+	usleep(WORK_UNIT_TIME);	
+	package_receive(&package, CONNECTION_MEMORY.fd_connection);
+
+	//Inicio la operacion y guardo en el puntero lo que hay que escribir en el archivo
+	log_info(MINIMAL_LOGGER, "PID: <%d> - Escribir archivo: <%s> - Tamaño a escribir <%d> - Puntero Archivo <%s>", (int)PID, file_name, (int) bytes, pointer_for_writing);
+	payload_shift(&(package->payload), pointer_for_writing, bytes);
+
+	//Genero el path del archivo
+	path_file_to_write = malloc(strlen(file_name) + strlen(PATH_BASE_DIALFS) +1);
+	strcpy(path_file_to_write, PATH_BASE_DIALFS);
+	strcat(file_name, PATH_BASE_DIALFS);
+
+	//Creo el config del path del archivo
+	t_config* config_file = config_create(path_file_to_write);
+
+	//Veo los valores del archivo (bloque inicial y longitud)
+	int first_block = config_get_int_value(config_file, "BLOQUE_INICIAL");
+	int size = config_get_int_value(config_file, "TAMANIO_ARCHIVO");
+
+	//Agarro el archivo de bloques de datos
+	char* blocks_path = malloc(strlen("bloques.dat") + strlen(PATH_BASE_DIALFS) + 1);
+
+	strcpy(blocks_path, PATH_BASE_DIALFS);
+	strcat(blocks_path, "bloques.dat");
+
+	//Chequeo que el tamaño del archivo sea mayor a lo que hay que escribir
+	if(size > bytes){
+		//se abre el archivo de bloques en modo lectura y escritua
+		FILE* blocks_file = fopen(blocks_path, "wb+");
+		//si existe el archivo de bloques
+		if(blocks_file != NULL){
+			//vamos al desplazamiento del primer bloque
+			fseek(blocks_file, (first_block * BLOCK_SIZE) + pointer_for_writing, SEEK_SET);
+			//Escribo en el archivo lo que corresponde
+			fwrite(pointer_for_writing, 1, bytes, blocks_file);
+
+			log_info(MODULE_LOGGER, "Archivo escrito correctamente");
+			fclose(blocks_file);
+		}else{
+			log_info(MODULE_LOGGER, "No se pudo abrir el archivo");
+		}
+	}else{
+		log_error(MODULE_LOGGER, "No entra el contenido en el archivo");
+	}
+
+	free(blocks_path);
+	free(path_file_to_write);
+
     return 0;
 }
 
