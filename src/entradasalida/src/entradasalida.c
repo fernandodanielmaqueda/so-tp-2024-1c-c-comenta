@@ -574,6 +574,14 @@ del valor del Registro Puntero Archivo.*/
         // TODO
         exit(1);
     }
+
+	log_debug(MINIMAL_LOGGER, "PID: <%d> - Escribir Archivo: <%s> - Tamaño a Escribir: <%d> - Puntero Archivo: <%d>",
+				 (int) PID, file_name, (int)bytes, (int)ptro);
+	
+    if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
 	
     return 0;
 }
@@ -632,6 +640,9 @@ indicada en el Registro Dirección*/
 	package_destroy(pack_request);
 
 	free(context);
+
+	log_debug(MINIMAL_LOGGER, "PID: <%d> - Leer Archivo: <%s> - Tamaño a Leer: <%d> - Puntero Archivo: <%d>",
+				 (int) PID, file_name, (int)bytes, (int)ptro);
 
 	if(receive_return_value_with_expected_header(WRITE_REQUEST,0,CONNECTION_MEMORY.fd_connection)){
 		
