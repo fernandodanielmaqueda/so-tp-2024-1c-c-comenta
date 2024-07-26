@@ -42,6 +42,7 @@ typedef struct t_FS_File {
     t_PID process_pid;
     uint32_t initial_bloq;
     uint32_t len;
+    uint32_t size;
 } t_FS_File;
 
 extern char *INTERFACE_NAME;
@@ -84,8 +85,14 @@ uint32_t seek_first_free_block();
 t_FS_File* seek_file(char* file_name);
 bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len);
 uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes);
-void initialize_bitmap(size_t block_count);
+void initialize_bitmap();
 void initialize_blocks();
 void free_bitmap_blocks();
+void create_file(char* file_name, uint32_t first_block);
+void update_file(char* file_name, uint32_t size, uint32_t location);
+int quantity_free_blocks();
+void compact_blocks();
+t_FS_File* seek_file_by_header_index(uint32_t position);
+void moveBlock(uint32_t blocks_to_move, uint32_t size, uint32_t free_spaces, uint32_t location);
 
 #endif /* ENTRADASALIDA_H */

@@ -20,10 +20,16 @@ char *PATH_BASE_DIALFS;
 size_t BLOCK_SIZE;
 size_t BLOCK_COUNT;
 int COMPRESSION_DELAY;
+FILE* FILE_BLOCKS;
+FILE* FILE_METADATA;
+FILE* FILE_BITMAP;
+char* PTRO_BITMAP;
+size_t BITMAP_SIZE;
 
 t_list *LIST_FILES;
 t_bitarray *BITMAP;
-char* BLOCKS_DATA;
+char* PTRO_BLOCKS;
+size_t BLOCKS_TOTAL_SIZE;
 
 t_IO_Type IO_TYPES[] = {
     [GENERIC_IO_TYPE] = {.name = "GENERICA", .function = generic_interface_function },
@@ -98,7 +104,7 @@ int module(int argc, char *argv[]) {
 			exit(1);
 		}
 	}
-	
+
 	free_bitmap_blocks();
 	//finish_threads();
 	finish_sockets();
@@ -193,7 +199,7 @@ void stdout_interface_function(void) {
 
 void dialfs_interface_function(void) {
 	initialize_blocks();
-	initialize_bitmap(BLOCK_COUNT);
+	initialize_bitmap();
 	LIST_FILES = list_create();
 }
 
@@ -225,7 +231,7 @@ int io_gen_sleep_io_operation(t_Payload *operation_arguments) {
 
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_GEN_SLEEP>", (int) PID);
 
-	usleep(WORK_UNIT_TIME * work_units);
+	usleep(WORK_UNIT_TIME * work_units * 1000);
 
     return 0;
 }
@@ -244,6 +250,7 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	int char_to_verify = '\n';
 
 	//Empiezo a "desencolar" el payload recibido
+	payload_shift(operation_arguments, &PID, sizeof(PID));
 	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 	payload_shift(operation_arguments, &bytes, sizeof(bytes));
 
@@ -269,9 +276,9 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	//Creo paquete y argumentos necesarios para enviarle a memoria
 	t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 	payload_append(&(package->payload), &PID, sizeof(PID));
-	payload_append(&(package->payload), text_to_send, sizeof(text_to_send));
 	list_serialize(&(package->payload), *physical_addresses, physical_address_serialize_element);
 	payload_append(&(package->payload), &bytes, sizeof(bytes));
+	payload_append(&(package->payload), text_to_send, sizeof(text_to_send));
 	package_send(package, CONNECTION_MEMORY.fd_connection);
 	package_destroy(package);
 
@@ -292,7 +299,6 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 			
 	t_list *physical_addresses = list_create();
 	t_MemorySize bytes;
-	char* text_received = NULL;
 
 	//empiezo a "desencolar" el payload recibido
 	payload_shift(operation_arguments, &PID, sizeof(PID));
@@ -316,9 +322,12 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	//Recibo nuevo paquete para imprimir por pantalla
 	package_receive(&package, CONNECTION_MEMORY.fd_connection);
 	//Desencolar e imprimir por pantalla
+	char* text_received = malloc(bytes);
 	payload_shift(&(package->payload), text_received, bytes);
 
-	fputs(text_received, stdout);
+	log_info(MODULE_LOGGER, "[IO] Mensaje leido: <%s>", text_received);
+
+	//fputs(text_received, stdout);
 	free(text_received);
     
     return 0;
@@ -335,20 +344,20 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	char* file_name;
 	t_PID op_pid;
 
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 	uint32_t location = seek_first_free_block();
 
+	//Crear variable de control de archivo
 	t_FS_File* new_entry = NULL;
 	strcpy(new_entry->name , file_name);
 	new_entry->process_pid = op_pid;
 	new_entry->initial_bloq = location;
 	new_entry->len = 1;
+	new_entry->size = 0;
 
-	//Checkiar si el FS es solo para este hilo o para todo el modulo
-	//Agregar un mutex
-
+	create_file(file_name, location); //Creo archivo y lo seteo
 	bitarray_set_bit(BITMAP, location);
 
 	list_add(LIST_FILES, new_entry);
@@ -373,7 +382,7 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 	t_PID op_pid = 0;
 	char* file_name = NULL;
 
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 	
@@ -381,9 +390,9 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 
 	if(size > 0){
 		t_FS_File* file = list_get(LIST_FILES,0);
-		size_t file_target = 0;
+		size_t file_target = -1;
 
-		for (size_t i = 0; i < size; i++)
+		for (size_t i = 0; i < size; i++) //busqueda del file indicado
 		{
 			t_FS_File* file = list_get(LIST_FILES,i);
 			if (strcmp(file->name, file_name)){
@@ -392,16 +401,26 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 			}
 		}
 
-		uint32_t initial_pos = file->initial_bloq + file->len;
+		if(file_target == -1) {
+			log_info(MODULE_LOGGER, "[ERROR] PID: <%d> - Archivo <%s> a eliminar no encontrado", (int) op_pid, file_name);
+			return 1;
+		}
+
+		//Liberacion del bitarray
+		uint32_t initial_pos = file->initial_bloq;
 		for (size_t i = 0; i < file->len; i++)
 		{
 			bitarray_clean_bit(BITMAP, initial_pos);
-			initial_pos--;
+			initial_pos++;
 		}
 
-		list_remove(LIST_FILES, file_target);
-	
+		if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
+        	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        	exit(EXIT_FAILURE);
+    	}
 
+		list_remove(LIST_FILES, file_target);
+		update_file(file_name,0,-1);
 	}
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
@@ -427,17 +446,16 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	char* value = NULL;
 	t_PID op_pid = 0;
 	
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
     text_deserialize(operation_arguments, &(value));
 
-	uint32_t valueNUM = atoi(value);
+	uint32_t valueSize = atoi(value);
+	uint32_t valueNUM = ceil(valueSize/BLOCK_SIZE);
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t initial_pos = file->initial_bloq + file->len;
-	log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
-	usleep(COMPRESSION_DELAY);
 	if (file->len > valueNUM)
 	{//Se restan bloques
 		size_t diff = file->len - valueNUM;
@@ -447,25 +465,50 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 			initial_pos--;
 		}
 		file->len = valueNUM;
-		log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
+		file->size = valueSize;
 	}
 	if (file->len < valueNUM)
 	{// Se agregan bloques
+		size_t diff = valueNUM - file->len;
 		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
-			size_t diff = valueNUM - file->len;
+
 			for (size_t i = 0; i < diff; i++)
 			{
 				bitarray_set_bit(BITMAP, initial_pos);
 				initial_pos++;
 			}
 			file->len = valueNUM;
+			file->size = valueSize;
+
+		}
+		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
+
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
+			compact_blocks();
 			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
+
+			initial_pos = file->initial_bloq + file->len;
+			for (size_t i = 0; i < diff; i++)
+			{
+				bitarray_set_bit(BITMAP, initial_pos);
+				initial_pos++;
+			}
+			file->len = valueNUM;
+			file->size = valueSize;
+
 		}
 		else{
         	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
 			return 1;
 		}
 	}
+
+	update_file(file_name,valueSize,file->initial_bloq);
+	
+		if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
+        	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        	exit(EXIT_FAILURE);
+    	}
 	
     log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
 	
@@ -479,17 +522,11 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
 int io_fs_write_io_operation(t_Payload *operation_arguments) {
 
-	if(IO_TYPE != DIALFS_IO_TYPE) {
-		log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
-		return 1;
-	}
-
-    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
-
-    return 0;
-}
-
-int io_fs_read_io_operation(t_Payload *operation_arguments) {
+/*O_FS_WRITE (Interfaz, Nombre Archivo, Registro Dirección, Registro Tamaño, Registro
+Puntero Archivo): Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, se
+lea desde Memoria la cantidad de bytes indicadas por el Registro Tamaño a partir de la
+dirección lógica que se encuentra en el Registro Dirección y se escriban en el archivo a partir
+del valor del Registro Puntero Archivo.*/
 
 	if(IO_TYPE != DIALFS_IO_TYPE) {
 		log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
@@ -499,111 +536,222 @@ int io_fs_read_io_operation(t_Payload *operation_arguments) {
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
 
 	char* file_name = NULL;
-	uint32_t ptro = 0;
-	uint32_t bytes = 0;
+	t_MemorySize ptro = 0;
+	t_MemorySize bytes = 0;
 	t_PID op_pid = 0;
 	t_list* list_dfs = list_create();
 
-	usleep(WORK_UNIT_TIME);
+	usleep(WORK_UNIT_TIME * 1000);
+	//Leo el payload recibido de kernel
     payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
-    payload_shift(operation_arguments, &ptro, sizeof(uint32_t));
-    payload_shift(operation_arguments, &bytes, sizeof(uint32_t));
+    payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
+    payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
 	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
 
+	
+	//Busco el file buscado
 	t_FS_File* file = seek_file(file_name);
-	uint32_t block_initial = ptro / BLOCK_SIZE;
-	uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
+	//uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
+	uint32_t block_initial = file->initial_bloq;
 
-//	t_Package* pack_respond = package_create_with_header(IO_FS_READ_MEMORY);
+	//Envio paquete a memoria
+	t_Package* pack_request = package_create_with_header(IO_FS_WRITE_MEMORY);
+	payload_append(&pack_request->payload, &op_pid, sizeof(t_PID));
+    list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
+	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
+	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
+	package_destroy(pack_request);
 
-	//FALTA TERMINAR: LEER FS --> REQUEST de WRITE MEMORIA
+	//Recibo respuesta de memoria con el contenido
+	t_Package* package_memory = NULL;
+	package_receive(&package_memory, CONNECTION_MEMORY.fd_connection);
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
+	//void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (ptro));
+    payload_shift(&package_memory->payload, posicion, (size_t) bytes);
+	package_destroy(package_memory);
+    //void* context = malloc(bytes);
+    //memcpy(posicion, context, bytes); 
+	//free(context);
 
+    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
+        // TODO
+        exit(1);
+    }
+
+	log_debug(MINIMAL_LOGGER, "PID: <%d> - Escribir Archivo: <%s> - Tamaño a Escribir: <%d> - Puntero Archivo: <%d>",
+				 (int) PID, file_name, (int)bytes, (int)ptro);
+
+	
+    if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+	
+    return 0;
+}
+
+int io_fs_read_io_operation(t_Payload *operation_arguments) {
+
+	/*O_FS_READ (Interfaz, Nombre Archivo, Registro Dirección, Registro Tamaño, Registro
+Puntero Archivo): Esta instrucción solicita al Kernel que mediante la interfaz seleccionada, se
+lea desde el archivo a partir del valor del Registro Puntero Archivo la cantidad de bytes
+indicada por Registro Tamaño y se escriban en la Memoria a partir de la dirección lógica
+indicada en el Registro Dirección*/
+
+	if(IO_TYPE != DIALFS_IO_TYPE) {
+		log_info(MODULE_LOGGER, "No puedo realizar esta instruccion");
+		return 1;
+	}
+
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
+
+	char* file_name = NULL;
+	t_MemorySize ptro = 0;
+	t_MemorySize bytes = 0;
+	t_PID op_pid = 0;
+	t_list* list_dfs = list_create();
+
+	usleep(WORK_UNIT_TIME * 1000);
+	//Leo el payload recibido
+    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
+    text_deserialize(operation_arguments, &(file_name));
+    payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
+    payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
+	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
+
+	//Busco el file buscado
+	t_FS_File* file = seek_file(file_name);
+	//uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
+	uint32_t block_initial = file->initial_bloq;
+    //uint32_t offset = (uint32_t) (ptro - block_initial * BLOCK_SIZE);;
+	//uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
+
+    void* context = malloc(bytes);
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
+	//void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (ptro));
+    memcpy(context, posicion, bytes); 
+/* 	posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + ((location - free_spaces) * BLOCK_SIZE));
+    memcpy(posicion, context, size); 
+*/
+
+	//Se crea paquete y se envia a memoria
+	t_Package* pack_request = package_create_with_header(IO_FS_READ_MEMORY);
+	payload_append(&pack_request->payload, &op_pid, sizeof(t_PID));
+    list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
+	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
+	payload_append(&pack_request->payload, &context, sizeof(bytes));
+	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
+	package_destroy(pack_request);
+
+	free(context);
+
+	log_debug(MINIMAL_LOGGER, "PID: <%d> - Leer Archivo: <%s> - Tamaño a Leer: <%d> - Puntero Archivo: <%d>",
+				 (int) PID, file_name, (int)bytes, (int)ptro);
+
+	if(receive_return_value_with_expected_header(WRITE_REQUEST,0,CONNECTION_MEMORY.fd_connection)){
+		
+        exit(1);
+	}
+
+    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
+        // TODO
+        exit(1);
+    }
 
     return 0;
 }
 
 void initialize_blocks() {
-    size_t blocks_size = BLOCK_SIZE * BLOCK_COUNT;
+    BLOCKS_TOTAL_SIZE = BLOCK_SIZE * BLOCK_COUNT;
+    //size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bitmap.dat"); //1 por la '/'
+	char* path_file_blocks = string_new();
+	strcpy (path_file_blocks, PATH_BASE_DIALFS);
+	string_append(&path_file_blocks, "/");
+	string_append(&path_file_blocks, "bloques.dat");
 
-    int fd = open("bloques.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file_blocks, F_OK) == 0)remove(path_file_blocks);
+
+    int fd = open(path_file_blocks, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bloques.dat: %s", strerror(errno));
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    if (ftruncate(fd, blocks_size) == -1) {
+    if (ftruncate(fd, BLOCKS_TOTAL_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bloques.dat: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    BLOCKS_DATA = mmap(NULL, blocks_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (BLOCKS_DATA == MAP_FAILED) {
+    PTRO_BLOCKS = mmap(NULL, BLOCKS_TOTAL_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (PTRO_BLOCKS == MAP_FAILED) {
         log_error(MODULE_LOGGER, "Error al mapear el archivo bloques.dat a memoria: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
-/* --No realiza ningunca accion--
-    for (int i = 0; i < BLOCK_COUNT; ++i) {
-        int *block_data = (int *)(BLOCKS_DATA + i * BLOCK_SIZE);
-        *block_data = i;
-    }
-	*/
 
-    if (msync(BLOCKS_DATA, blocks_size, MS_SYNC) == -1) {
+    if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        exit(EXIT_FAILURE);
     }
 /*
-    if (munmap(BLOCKS_DATA, blocks_size) == -1) {
+    if (munmap(BLOCKS_DATA, BLOCKS_TOTAL_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
     }
 */
-    close(fd);
     log_info(MODULE_LOGGER, "Bloques creados y mapeados correctamente.");
 }
 
 
-void initialize_bitmap(size_t block_count) {
-	size_t BITMAP_SIZE = ceil(block_count / 8);
+void initialize_bitmap() {
+	BITMAP_SIZE = ceil(BLOCK_COUNT / 8);
+	
+    //size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bitmap.dat"); //1 por la '/'
+	char* path_file_bitmap = string_new();
+	strcpy (path_file_bitmap, PATH_BASE_DIALFS);
+	string_append(&path_file_bitmap, "/");
+	string_append(&path_file_bitmap, "bitmap.dat");
+
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file_bitmap, F_OK) == 0)remove(path_file_bitmap);
+	
     int fd = open("bitmap.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
-        return;
+        exit(EXIT_FAILURE);
     }
 
     if (ftruncate(fd, BITMAP_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al ajustar el tamaño del archivo bitmap.dat: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    unsigned char *bitmap_data = mmap(NULL, BITMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (bitmap_data == MAP_FAILED) {
+    PTRO_BITMAP = mmap(NULL, BITMAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (PTRO_BITMAP == MAP_FAILED) {
         log_error(MODULE_LOGGER, "Error al mapear el archivo bitmap.dat a memoria: %s", strerror(errno));
         close(fd);
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    BITMAP = bitarray_create_with_mode((char *)bitmap_data, BITMAP_SIZE,LSB_FIRST);
+    BITMAP = bitarray_create_with_mode((char *)PTRO_BITMAP, BITMAP_SIZE,LSB_FIRST);
     if (BITMAP == NULL) {
         log_error(MODULE_LOGGER, "Error al crear la estructura del bitmap");
-        munmap(bitmap_data, BITMAP_SIZE);
+        munmap(PTRO_BITMAP, BITMAP_SIZE);
         close(fd);
-
-        return;
+        exit(EXIT_FAILURE);
     }
 
-    if (msync(bitmap_data, BITMAP_SIZE, MS_SYNC) == -1) {
+    if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
     }
-
-    if (munmap(bitmap_data, BITMAP_SIZE) == -1) {
+/*
+    if (munmap(PTRO_BITMAP, BITMAP_SIZE) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
     }
-
-    //free(bitmap);
-    close(fd);
+*/
     log_info(MODULE_LOGGER, "Bitmap creado y mapeado correctamente.");
 }
 
@@ -648,6 +796,19 @@ bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_le
 	return true;
 }
 
+int quantity_free_blocks(){
+	int magic = 0;
+
+	if(BLOCK_COUNT == 0) return magic;
+
+	for (size_t i = 0; i < BLOCK_COUNT; i++)
+	{
+		if(	!(bitarray_test_bit (BITMAP, i))) magic++;
+	}
+
+	return magic;
+}
+
 uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
     uint32_t quantity_blocks = 0;
 
@@ -668,10 +829,142 @@ uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
 
 void free_bitmap_blocks(){
 	
-    if (munmap(BLOCKS_DATA, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
+    if (munmap(PTRO_BLOCKS, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
+    }
+    if (munmap(PTRO_BITMAP, BITMAP_SIZE) == -1) {
+        log_error(MODULE_LOGGER, "Error al desmapear el archivo bitmap.dat de la memoria: %s", strerror(errno));
     }
 
 	free(BITMAP);
 
+}
+/*
+void create_blocks(){
+    size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bloques.dat"); //1 por la '/'
+	char* path_file_bloqs = string_new();
+	strcpy (path_file_bloqs, PATH_BASE_DIALFS);
+	string_append(&path_file_bloqs, "/");
+	string_append(&path_file_bloqs, "bloques.dat");
+
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file_bloqs, F_OK) == 0)remove(path_file_bloqs);
+
+	FILE_BLOCKS = fopen(path_file_bloqs, "w+"); 
+	
+    if (FILE_BLOCKS == -1)
+    {
+        log_error(MODULE_LOGGER, "Error al abrir el archivo bloques.dat");
+        exit(EXIT_FAILURE);
+    }
+}
+*/
+void create_file(char* file_name, uint32_t initial_block){
+    //size_t path_len = strlen(PATH_BASE_DIALFS) + 1 +strlen(file_name); //1 por la '/'
+	char* path_file = string_new();
+	strcpy (path_file, PATH_BASE_DIALFS);
+	string_append(&path_file, "/");
+	string_append(&path_file, file_name);
+
+	//Checkeo si el file ya esta creado, sino lo elimino
+	if (access(path_file, F_OK) == 0)remove(path_file);
+ 
+	FILE_METADATA = fopen(path_file, "wb");
+    if (FILE_METADATA == NULL) {
+        log_error(MODULE_LOGGER, "Error al abrir el archivo %s", file_name);
+        exit(EXIT_FAILURE);
+    }
+
+	t_config* config_temp = config_create(path_file);
+    config_set_value(config_temp, "BLOQUE_INICIAL", "0");
+    config_set_value(config_temp, "TAMAÑO_ARCHIVO", string_itoa(initial_block));
+	config_save_in_file(config_temp,path_file);
+	config_destroy(config_temp);
+		
+	free(path_file);
+	fclose(FILE_METADATA);
+}
+
+void update_file(char* file_name, uint32_t size, uint32_t location){
+	char* path_file = string_new();
+	strcpy (path_file, PATH_BASE_DIALFS);
+	string_append(&path_file, "/");
+	string_append(&path_file, file_name);
+
+	t_config* config_temp = config_create(path_file);
+    config_set_value(config_temp, "BLOQUE_INICIAL", string_itoa(location));
+    config_set_value(config_temp, "TAMAÑO_ARCHIVO", string_itoa(size));
+	config_save_in_file(config_temp,path_file);
+	config_destroy(config_temp);
+
+	free(path_file);
+}
+
+
+t_FS_File* seek_file_by_header_index(uint32_t position){
+
+	t_FS_File* magic = NULL;
+
+	for (size_t i = 0; i < list_size(LIST_FILES); i++)
+	{
+		magic = list_get(LIST_FILES,i);
+		if (magic->initial_bloq == position) return magic;
+	}
+
+	return magic;
+}
+
+void compact_blocks(){
+	usleep(COMPRESSION_DELAY * 1000);
+	int total_free_spaces = 0;
+	int len = 0;
+
+			for (uint32_t i = 0; i < BLOCK_COUNT; i++)
+			{
+				if (!(bitarray_test_bit(BITMAP,i)))//Cuento los espacios vacios
+				{
+					total_free_spaces++;
+				}
+				else{//Busco el header
+					t_FS_File* temp_entry = seek_file_by_header_index(i);
+					len = temp_entry->len;
+					if (total_free_spaces != 0){//Mueve el bloque y actualiza el bitmap
+						moveBlock(temp_entry->len, temp_entry->size, total_free_spaces, i);
+						temp_entry->initial_bloq -= total_free_spaces;
+						update_file(temp_entry->name, temp_entry->size, i);
+					}
+					i+=len; //Salteo los casos ya contemplados en moveBlock
+
+				}
+				
+			}
+			
+    if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
+    }
+	
+    if (msync(PTRO_BLOCKS, BLOCKS_TOTAL_SIZE, MS_SYNC) == -1) {
+        log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+void moveBlock(uint32_t blocks_to_move, uint32_t size, uint32_t free_spaces, uint32_t location){
+	//Mueve el bloque y actualiza el bitmap
+
+    void* context = malloc(size);
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (location * BLOCK_SIZE));
+    memcpy(context, posicion, size); 
+	posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + ((location - free_spaces) * BLOCK_SIZE));
+    memcpy(posicion, context, size); 
+
+	for (size_t i = 0; i < blocks_to_move; i++)
+	{
+		bitarray_clean_bit(BITMAP,(location + i));
+		bitarray_set_bit(BITMAP,(location + i - free_spaces));
+	}
+
+	free(context);
+	
 }
