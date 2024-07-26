@@ -108,7 +108,13 @@ int mov_in_cpu_operation(int argc, char **argv)
     t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, bytes);
 
     void *destination = get_register_pointer(&EXEC_CONTEXT, register_data);
-    void *source;
+    void *source = malloc((size_t) bytes);
+    if(source == NULL) {
+        log_error(MODULE_LOGGER, "malloc: ");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
+
     attend_read(EXEC_CONTEXT.PID, list_physical_addresses, &source, bytes);
     memcpy(destination, source, bytes);
     free(source);

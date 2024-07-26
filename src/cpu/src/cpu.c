@@ -104,6 +104,7 @@ void read_module_config(t_config *MODULE_CONFIG)
     CLIENT_KERNEL_CPU_INTERRUPT = (t_Client){.client_type = KERNEL_PORT_TYPE, .server = &SERVER_CPU_INTERRUPT};
     
     TLB_ENTRY_COUNT = config_get_int_value(MODULE_CONFIG, "CANTIDAD_ENTRADAS_TLB");
+
     if(find_tlb_algorithm(config_get_string_value(MODULE_CONFIG, "ALGORITMO_TLB"), &TLB_ALGORITHM)) {
 		log_error(MODULE_LOGGER, "ALGORITMO_PLANIFICACION invalido");
 		exit(EXIT_FAILURE);
@@ -157,7 +158,7 @@ void instruction_cycle(void)
         while(1) {
 
             // Fetch
-            log_debug(MINIMAL_LOGGER,"PID: %d - FETCH - Program Counter: %d", EXEC_CONTEXT.PID, EXEC_CONTEXT.PC);
+            log_debug(MINIMAL_LOGGER,"PID: %" PRIu16 " - FETCH - Program Counter: %" PRIu32, EXEC_CONTEXT.PID, EXEC_CONTEXT.PC);
             cpu_fetch_next_instruction(&IR);
             if(IR == NULL) {
                 log_error(MODULE_LOGGER, "Error al fetchear la instruccion");
@@ -290,16 +291,18 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 }
 
 t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
+
     t_Page_Number page_number = (t_Page_Number) floor(logical_address / PAGE_SIZE);
     t_Offset offset = (t_Offset) (logical_address - page_number * PAGE_SIZE);
 
     t_Frame_Number frame_number;
-    t_Physical_Address physical_address;
+    t_Physical_Address *physical_address;
 
     t_list *list_physical_addresses = list_create();
     t_Page_Quantity required_pages = seek_quantity_pages_required(logical_address, bytes);
 
     for(size_t i = 0; i < required_pages; i++) {
+        //log_error(MODULE_LOGGER, "For: %d", (int) i);
         page_number += i;
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
@@ -307,7 +310,7 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
         if(check_tlb(pid, page_number, &frame_number)) { // NO HAY HIT
             pthread_mutex_unlock(&MUTEX_TLB);
 
-            log_debug(MINIMAL_LOGGER, "PID: %i - TLB MISS - PAGINA: %i ", pid, page_number);
+            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB MISS - PAGINA: %" PRIu32, pid, page_number);
 
             request_frame_memory(pid, page_number);
 
@@ -321,7 +324,7 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
             payload_shift(&(package->payload), &frame_number, sizeof(frame_number) );
             package_destroy(package);
             
-            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %i", pid, page_number, frame_number);
+            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %" PRIu32 " - Marco: %" PRIu32, pid, page_number, frame_number);
 
             if (TLB_ENTRY_COUNT > 0) {
                 if (list_size(TLB) < TLB_ENTRY_COUNT)
@@ -339,17 +342,23 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
         } else { // HAY HIT
             pthread_mutex_unlock(&MUTEX_TLB);
 
-            log_debug(MINIMAL_LOGGER, "PID: %i - TLB HIT - PAGINA: %i ", pid, page_number);
-            log_debug(MINIMAL_LOGGER, "PID: %i - OBTENER MARCO - Página: %i - Marco: %d", pid, page_number, frame_number);
+            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB HIT - PAGINA: %" PRIu32, pid, page_number);
+            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %" PRIu32 " - Marco: %" PRIu32, pid, page_number, frame_number);
 
         }
 
-        physical_address = frame_number * PAGE_SIZE + offset;
+        physical_address = malloc(sizeof(t_Physical_Address));
+        if(physical_address == NULL) {
+            log_error(MODULE_LOGGER, "No se pudo reservar memoria para la direccion fisica");
+            exit(EXIT_FAILURE);
+        }
+
+        *physical_address = frame_number * PAGE_SIZE + offset;
 
         if(offset)
             offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
-        list_add(list_physical_addresses, &physical_address);
+        list_add(list_physical_addresses, physical_address);
     }
     
     return list_physical_addresses;
@@ -501,7 +510,7 @@ void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size
     package = package_create_with_header(WRITE_REQUEST);
     payload_append(&(package->payload), &pid, sizeof(pid));
     list_serialize(&(package->payload), *list_physical_addresses, physical_address_serialize_element);
-    payload_append(&(package->payload), &bytes, sizeof(t_MemorySize));
+    payload_append(&(package->payload), &bytes, sizeof(bytes));
     payload_append(&(package->payload), source, (size_t) bytes);
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
@@ -538,7 +547,7 @@ t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t b
     t_Page_Quantity quantity_pages = 0;
 
     t_Page_Number nro_page = (t_Page_Number) floor(dir_log / PAGE_SIZE);
-    t_Offset offset = (t_Offset) (dir_log - nro_page * PAGE_SIZE);;
+    t_Offset offset = (t_Offset) (dir_log - nro_page * PAGE_SIZE);
 
     if (offset != 0)
     {
@@ -546,7 +555,7 @@ t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t b
         quantity_pages++;
     }
 
-    quantity_pages += (t_Page_Quantity) floor(bytes / PAGE_SIZE);
+    quantity_pages += (t_Page_Quantity) ceil((double) bytes / (double) PAGE_SIZE);
     
     return quantity_pages;
 }

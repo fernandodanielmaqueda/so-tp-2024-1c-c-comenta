@@ -246,7 +246,7 @@ void kill_process(t_Payload *payload) {
     }
     free(process);
     
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño: <%d>", (int) pid, size);
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño: <%" PRIu32">", pid, size);
     
     //ENVIAR RTA OK A KERNEL
     if(send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, CLIENT_KERNEL->fd_client)) {
@@ -524,7 +524,7 @@ void respond_frame_request(t_Payload *payload){
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     t_Frame_Number marcoEncontrado = seek_frame_number_by_page_number(procesoBuscado->pages_table, page_number);
             
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Pagina: <%d> - Marco: <%d>", (int) pidProceso, (int) page_number, (int) marcoEncontrado);
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", pidProceso, page_number, marcoEncontrado);
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
@@ -563,7 +563,7 @@ void read_memory(t_Payload *payload, int socket) {
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
 
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <LEER> - Direccion fisica: <%d> - Tamaño <%d>", (int) pid, physical_address, bytes);
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
 
     t_Frame_Number current_frame = physical_address / TAM_PAGINA;
 
@@ -610,7 +610,7 @@ void read_memory(t_Payload *payload, int socket) {
     package_destroy(package);
 }
 
-void write_memory(t_Payload *payload, int socket){
+void write_memory(t_Payload *payload, int socket) {
     t_PID pid;
     t_list *list_physical_addresses = list_create();
     t_MemorySize bytes;
@@ -624,7 +624,7 @@ void write_memory(t_Payload *payload, int socket){
     
     t_Frame_Number current_frame = physical_address / TAM_PAGINA;
 
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Accion: <ESCRIBIR> - Direccion fisica: <%d> - Tamaño <%d>", (int) pid, physical_address, bytes);
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
 
 //COMIENZA LA ESCRITURA
     if(list_size(list_physical_addresses) == 1) {//En caso de que sea igual a 1 página
@@ -721,7 +721,7 @@ void resize_process(t_Payload *payload){
             return_value = 1;
         else {
             
-            log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Ampliar: <%d>", (int) pid, size, paginas);
+            log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Ampliar: <%" PRIu32 ">", pid, size, paginas);
 
             //CASO: HAY ESPACIO Y SUMA PAGINAS
             for (size_t i = size; i < paginas; i++)
@@ -749,7 +749,7 @@ void resize_process(t_Payload *payload){
 
     if(size > paginas) { // RESTA paginas
             
-        log_debug(MINIMAL_LOGGER, "PID: <%d> - Tamaño Actual: <%d> - Tamaño a Reducir: <%d>", (int) pid, size, paginas);
+        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Reducir: <%" PRIu32 ">", pid, size, paginas);
          
         for (size_t i = size; i > paginas; i--)
         {

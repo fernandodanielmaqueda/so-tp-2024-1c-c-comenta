@@ -270,7 +270,7 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 	payload_append(&(package->payload), &PID, sizeof(PID));
 	payload_append(&(package->payload), text_to_send, sizeof(text_to_send));
-	list_serialize(&(package->payload), *physical_addresses, physical_address_deserialize_element);
+	list_serialize(&(package->payload), *physical_addresses, physical_address_serialize_element);
 	payload_append(&(package->payload), &bytes, sizeof(bytes));
 	package_send(package, CONNECTION_MEMORY.fd_connection);
 	package_destroy(package);
@@ -308,7 +308,7 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	//Creo header para memoria y el paquete con los argumentos
 	package = package_create_with_header(IO_STDOUT_READ_MEMORY);
 	payload_append(&(package->payload), &PID, sizeof(PID));
-	list_serialize(&(package->payload), *physical_addresses, physical_address_deserialize_element);
+	list_serialize(&(package->payload), *physical_addresses, physical_address_serialize_element);
 	payload_append(&(package->payload), &bytes, sizeof(bytes));
 	package_send(package, CONNECTION_MEMORY.fd_connection);
 	package_destroy(package);

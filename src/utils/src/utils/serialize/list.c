@@ -8,7 +8,7 @@ void list_serialize(t_Payload *payload, t_list source, void (*element_serializer
     return;
 
   t_ListSize list_size = (t_ListSize) source.elements_count;
-  payload_append(payload, (void *) &(list_size), sizeof(list_size));
+  payload_append(payload, (void *) &list_size, sizeof(list_size));
 
   t_link_element *element = source.head;
   for(; list_size > 0; list_size--) {
@@ -19,12 +19,12 @@ void list_serialize(t_Payload *payload, t_list source, void (*element_serializer
   list_log(source);
 }
 
-void list_deserialize(t_Payload *payload, t_list *destination, void (*element_deserializer)(t_Payload *, void *)) {
+void list_deserialize(t_Payload *payload, t_list *destination, void (*element_deserializer)(t_Payload *, void **)) {
   if(payload == NULL || destination == NULL || element_deserializer == NULL)
     return;
 
   t_ListSize list_size;
-  payload_shift(payload, (void *) &(list_size), sizeof(list_size));
+  payload_shift(payload, (void *) &list_size, sizeof(list_size));
   destination->elements_count = (int) list_size;
 
   t_link_element *new_element, **last_element = &(destination->head);

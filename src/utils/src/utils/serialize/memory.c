@@ -10,11 +10,17 @@ void physical_address_serialize_element(t_Payload *payload, void *source) {
     physical_address_serialize(payload, *(t_Physical_Address *) source);
 }
 
-void physical_address_deserialize_element(t_Payload *payload, void *destination) {
+void physical_address_deserialize_element(t_Payload *payload, void **destination) {
   if(payload == NULL || destination == NULL)
     return;
 
-  physical_address_deserialize(payload, (t_Physical_Address *) destination);
+  *destination = malloc(sizeof(t_Physical_Address));
+  if(*destination == NULL) {
+    log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para el t_Physical_Address");
+    exit(EXIT_FAILURE);
+  }
+
+  physical_address_deserialize(payload, (t_Physical_Address *) *destination);
 }
 
 void physical_address_serialize(t_Payload *payload, t_Physical_Address source) {

@@ -29,7 +29,7 @@ typedef uint32_t t_Page_Quantity;
 void physical_address_serialize_element(t_Payload *payload, void *source);
 
 
-void physical_address_deserialize_element(t_Payload *payload, void *destination);
+void physical_address_deserialize_element(t_Payload *payload, void **destination);
 
 
 /**
