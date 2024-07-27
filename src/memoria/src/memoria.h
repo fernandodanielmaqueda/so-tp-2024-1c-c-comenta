@@ -32,18 +32,18 @@ typedef struct t_Process {
 } t_Process;
 
 typedef struct t_Page {
-    int pagid;
+    t_Page_Number pagid;
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
-    int assigned_frame;
+    t_Frame_Number assigned_frame;
     time_t last_use;
 } t_Page;
 
 typedef struct t_Frame {
     t_PID PID;
-    int id;
-    t_Page* assigned_page;
+    t_Frame_Number id;
+    t_Page *assigned_page;
 } t_Frame;
 
 int module(int, char*[]);

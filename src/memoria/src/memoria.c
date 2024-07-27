@@ -19,10 +19,8 @@ t_list *LIST_PROCESSES;
 t_list *LIST_FRAMES;
 t_list *LIST_FREE_FRAMES;
 
-
 pthread_mutex_t MUTEX_MAIN_MEMORY;
 pthread_mutex_t MUTEX_LIST_FREE_FRAMES;
-
 
 t_MemorySize TAM_MEMORIA;
 t_MemorySize TAM_PAGINA;
@@ -524,19 +522,19 @@ void free_frames(){
 
 }
 
-void respond_frame_request(t_Payload *payload){
+void respond_frame_request(t_Payload *payload) {
 //Recibir parametros
     t_Page_Number page_number;
     t_PID pidProceso;
 
-    payload_shift(payload, &page_number, sizeof(page_number) );
-    payload_shift(payload, &pidProceso, sizeof(pidProceso) );
+    payload_shift(payload, &page_number, sizeof(page_number));
+    payload_shift(payload, &pidProceso, sizeof(pidProceso));
 
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
     t_Frame_Number marcoEncontrado = seek_frame_number_by_page_number(procesoBuscado->pages_table, page_number);
-            
-    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", pidProceso, page_number, marcoEncontrado);
+
+    log_debug(MINIMAL_LOGGER, "AAA PID: <%" PRIu16 "> - Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", pidProceso, page_number, marcoEncontrado);
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
@@ -545,20 +543,21 @@ void respond_frame_request(t_Payload *payload){
     payload_append(&(package->payload), &pidProceso, sizeof(pidProceso));
     payload_append(&(package->payload), &marcoEncontrado, sizeof(marcoEncontrado));
     package_send(package, CLIENT_CPU->fd_client);
-    
 }
 
-t_Frame_Number seek_frame_number_by_page_number(t_list* tablaPaginas, t_Page_Number page_number) {
-    t_Page* paginaBuscada;
-    int frame_number = -1;
-    int size= list_size(tablaPaginas);
+t_Frame_Number seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Number page_number) {
+    t_Page *paginaBuscada;
+    t_Frame_Number frame_number;
+    int size = list_size(tablaPaginas);
     for(size_t i = 0; i < size ; i++) {
-        paginaBuscada = list_get(tablaPaginas, i);
+        paginaBuscada = (t_Page *) list_get(tablaPaginas, i);
         if(paginaBuscada->pagid == page_number) {
             frame_number = paginaBuscada->assigned_frame;
             i = size + 1;
         }
     }
+
+    log_error(MINIMAL_LOGGER, "DEBUGGG Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", page_number, frame_number);
 
     return frame_number;
 }
@@ -793,6 +792,9 @@ void resize_process(t_Payload *payload){
             {
                 int pos_lista = seek_oldest_page_updated(procesoBuscado->pages_table);
                 t_Page* pagina = list_get(procesoBuscado->pages_table, pos_lista);
+
+                log_error(MINIMAL_LOGGER, "DEBUGGG Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", pagina->pagid, pagina->assigned_frame);
+
                 list_remove(procesoBuscado->pages_table, pos_lista);
                 pthread_mutex_lock(&(MUTEX_LIST_FREE_FRAMES));
                 t_Frame* marco = list_get(LIST_FRAMES, pagina->assigned_frame);

@@ -355,7 +355,7 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
 
         *physical_address = frame_number * PAGE_SIZE + offset;
 
-            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB HIT - PAGINA: %" PRIu32 " - DF: %"PRIu32, pid, page_number, physical_address);
+            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB HIT - PAGINA: %" PRIu32 " - DF: %" PRIu32, pid, page_number, *physical_address);
         if(offset)
             offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
