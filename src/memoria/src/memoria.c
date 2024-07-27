@@ -551,7 +551,7 @@ t_Frame_Number seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Num
     uint32_t size = list_size(tablaPaginas);
 
     if(size >= page_number){
-        log_error(MODULE_LOGGER, "La PAGINA <%d> buscada supera el limite de la tabla de paginas <%d>. ", (int) page_number, (int) frame_number);
+        log_error(MODULE_LOGGER, "El numero de página <%" PRIu32 "> no existe en la tabla de paginas.", page_number);
         exit(1);
     }
 
@@ -562,8 +562,6 @@ t_Frame_Number seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Num
             i = size + 1;
         }
     }
-
-    log_error(MINIMAL_LOGGER, "DEBUGGG Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", page_number, frame_number);
 
     return frame_number;
 }
@@ -798,9 +796,6 @@ void resize_process(t_Payload *payload){
             {
                 int pos_lista = seek_oldest_page_updated(procesoBuscado->pages_table);
                 t_Page* pagina = list_get(procesoBuscado->pages_table, pos_lista);
-
-                log_error(MINIMAL_LOGGER, "DEBUGGG Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", pagina->pagid, pagina->assigned_frame);
-
                 list_remove(procesoBuscado->pages_table, pos_lista);
                 pthread_mutex_lock(&(MUTEX_LIST_FREE_FRAMES));
                 t_Frame* marco = list_get(LIST_FRAMES, pagina->assigned_frame);
