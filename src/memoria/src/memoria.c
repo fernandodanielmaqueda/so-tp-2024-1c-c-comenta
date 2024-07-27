@@ -550,7 +550,7 @@ t_Frame_Number seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Num
     t_Frame_Number frame_number;
     uint32_t size = list_size(tablaPaginas);
 
-    if(size >= page_number){
+    if(size <= page_number){
         log_error(MODULE_LOGGER, "El numero de página <%" PRIu32 "> no existe en la tabla de paginas.", page_number);
         exit(1);
     }
