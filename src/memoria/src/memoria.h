@@ -146,4 +146,7 @@ int seek_oldest_page_updated(t_list* page_list);
 void free_memory();
 void free_all_process();
 
+void io_write_memory(t_Payload *payload, int socket);
+void io_read_memory(t_Payload *payload, int socket);
+
 #endif /* MEMORIA_H */

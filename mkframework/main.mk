@@ -51,7 +51,7 @@ MKFWK_FOOTER_DIR:=$(MKFWK_LAST_INCLUDED_DIR)footer/
 MKFWK_LANG_DIR:=$(MKFWK_LAST_INCLUDED_DIR)lang/
 # Subdirectory where the *.mk language-specific code makefiles of the GNU Make framework to be included are located.
 #   By default: en_US/
-MKFWK_CODE_DIR:=en_US/
+MKFWK_CODE_DIR:=es_AR/
 
 # Adds to the list of binary prefixes.
 BINARY_PREFIXES+=BIN

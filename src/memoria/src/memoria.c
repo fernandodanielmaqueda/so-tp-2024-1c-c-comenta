@@ -414,12 +414,12 @@ void listen_io(t_Client *client) {
 
             case IO_STDIN_WRITE_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDIN_IO (write) recibido.");
-                write_memory(&(package->payload), client->fd_client);
+                io_write_memory(&(package->payload), client->fd_client);
                 break;
             
             case IO_STDOUT_READ_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
-                read_memory(&(package->payload), client->fd_client);
+                io_read_memory(&(package->payload), client->fd_client);
                 break;
             
             case IO_FS_READ_MEMORY:
@@ -565,6 +565,167 @@ t_Frame_Number *seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Nu
     }
 
     return NULL;
+}
+
+void io_read_memory(t_Payload *payload, int socket) {
+    t_PID pid;
+    t_list *list_physical_addresses = list_create();
+    t_MemorySize bytes;
+
+    payload_shift(payload, &pid, sizeof(pid));
+    list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
+    payload_shift(payload, &bytes, sizeof(bytes));
+
+    char text_to_send[bytes + 1];
+    size_t offset = 0;
+
+    t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
+    
+    void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
+
+    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+
+    t_Package* package = package_create_with_header(READ_REQUEST);
+
+    if(list_size(list_physical_addresses) == 1) { //En caso de que sea igual a una página
+        pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+        payload_append(&(package->payload), posicion, bytes);
+        
+        memcpy((void *)(((char *) text_to_send) + offset), posicion, bytes);
+        offset += bytes;
+
+        pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+         //Actualizar pagina/TDP
+        update_page(current_frame);
+    }
+    else { //En caso de que el contenido supere a 1 pagina
+        t_MemorySize bytes_restantes = bytes;
+        int bytes_inicial = TAM_PAGINA - (physical_address - (current_frame * TAM_PAGINA));
+        
+        for (t_MemorySize i = 1; i > list_size(list_physical_addresses); i++)
+        {
+            physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, i - 1));
+            current_frame = physical_address / TAM_PAGINA;
+            //Posicion de la proxima escritura
+            posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+
+            if (i == 1)//Primera pagina
+            {
+                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+                payload_append(&(package->payload), posicion, bytes_inicial);
+
+                memcpy((void *)(((char *) text_to_send) + offset), posicion, bytes_inicial);
+                offset += bytes_restantes;
+                
+                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+                update_page(current_frame);
+                bytes_restantes -= bytes_inicial;
+            }
+            if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
+            {
+                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+                payload_append(&(package->payload), posicion, bytes_restantes);
+
+                memcpy((void *)(((char *) text_to_send) + offset), posicion, bytes_restantes);
+                offset += bytes_restantes;
+
+                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+                update_page(current_frame);
+            }
+            if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
+            {
+                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+                payload_append(&(package->payload), posicion, TAM_PAGINA);
+
+                memcpy((void *)(((char *) text_to_send) + offset), posicion, TAM_PAGINA);
+                offset += TAM_PAGINA;
+
+                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+                update_page(current_frame);
+                bytes_restantes -= TAM_PAGINA;
+            }
+            
+        }
+    }
+
+    text_to_send[bytes] = '\0';
+    log_error(MODULE_LOGGER, "Texto a enviar: %s", text_to_send);
+
+    package_send(package, socket);
+    package_destroy(package);
+}
+
+void io_write_memory(t_Payload *payload, int socket) {
+    t_PID pid;
+    t_list *list_physical_addresses = list_create();
+    t_MemorySize bytes;
+    
+    payload_shift(payload, &pid, sizeof(pid));
+    list_deserialize(payload, list_physical_addresses, physical_address_deserialize_element);
+    payload_shift(payload, &bytes, sizeof(bytes));
+
+    t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
+    void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+    
+    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
+
+//COMIENZA LA ESCRITURA
+    if(list_size(list_physical_addresses) == 1) {//En caso de que sea igual a 1 página
+        pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+        payload_shift(payload, posicion, (size_t) bytes);
+        pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+         //Actualizar pagina/TDP
+        update_page(current_frame);
+    }
+    else{//En caso de que el contenido supere a 1 pagina
+        t_MemorySize bytes_restantes = bytes;
+        int bytes_inicial = TAM_PAGINA - (physical_address - (current_frame * TAM_PAGINA));
+        
+        for (t_MemorySize i = 1; i > list_size(list_physical_addresses); i++)
+        {
+            physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, i - 1));
+            current_frame = physical_address / TAM_PAGINA;
+            //Posicion de la proxima escritura
+            posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+
+            if (i == 1)//Primera pagina
+            {
+                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+                payload_shift(payload, posicion, (size_t) bytes_inicial);
+                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+                update_page(current_frame);
+                bytes_restantes -= bytes_inicial;
+            }
+            if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
+            {
+                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+                payload_shift(payload, posicion, (size_t) bytes_restantes);
+                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+                update_page(current_frame);
+                bytes_restantes -= bytes_inicial;
+            }
+            if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
+            {
+                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+                payload_shift(payload, posicion, (size_t) TAM_PAGINA);
+                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+                update_page(current_frame);
+                bytes_restantes -= TAM_PAGINA;
+            }
+            
+        }
+    }
+
+    list_destroy_and_destroy_elements(list_physical_addresses, free);
+
+    if(send_return_value_with_header(WRITE_REQUEST, 0, socket)) {
+        // TODO
+        exit(1);
+    }
 }
 
 void read_memory(t_Payload *payload, int socket) {
