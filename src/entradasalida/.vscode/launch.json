@@ -4,11 +4,111 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "(gdb) Launch src/entradasalida/bin/entradasalida",
+      "name": "(gdb) Launch src/entradasalida/bin/entradasalida GENERICA",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
-      "args": [],
+      "args": ["GENERICA", "GENERICA.config"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "make src/entradasalida/bin/entradasalida"
+    },
+    {
+      "name": "(gdb) Launch src/entradasalida/bin/entradasalida TECLADO",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
+      "args": ["GENERICA", "TECLADO.config"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "make src/entradasalida/bin/entradasalida"
+    },
+    {
+      "name": "(gdb) Launch src/entradasalida/bin/entradasalida MONITOR",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
+      "args": ["MONITOR", "MONITOR.config"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "make src/entradasalida/bin/entradasalida"
+    },
+    {
+      "name": "(gdb) Launch src/entradasalida/bin/entradasalida SLP1",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
+      "args": ["SLP1", "SLP1.config"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "make src/entradasalida/bin/entradasalida"
+    },
+    {
+      "name": "(gdb) Launch src/entradasalida/bin/entradasalida ESPERA",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
+      "args": ["ESPERA", "ESPERA.config"],
+      "stopAtEntry": true,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "make src/entradasalida/bin/entradasalida"
+    },
+    {
+      "name": "(gdb) Launch src/entradasalida/bin/entradasalida FS",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
+      "args": ["FS", "FS.config"],
       "stopAtEntry": true,
       "cwd": "${workspaceFolder}",
       "environment": [],
