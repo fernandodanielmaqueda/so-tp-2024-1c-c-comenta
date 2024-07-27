@@ -355,6 +355,7 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
 
         *physical_address = frame_number * PAGE_SIZE + offset;
 
+            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB HIT - PAGINA: %" PRIu32 " - DF: %"PRIu32, pid, page_number, physical_address);
         if(offset)
             offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
@@ -528,8 +529,8 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
 
     t_Package* package = package_create_with_header(READ_REQUEST);
     payload_append(&(package->payload), &(pid), sizeof(pid));
-    payload_append(&(package->payload), &bytes, sizeof(t_MemorySize));
-    list_serialize(&(package->payload), *list_physical_addresses, physical_address_serialize_element);          
+    list_serialize(&(package->payload), *list_physical_addresses, physical_address_serialize_element);
+    payload_append(&(package->payload), &bytes, sizeof(t_MemorySize));          
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 

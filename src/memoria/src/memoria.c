@@ -390,6 +390,7 @@ void listen_cpu(void) {
             
             default:
                 log_warning(MODULE_LOGGER, "%s: Header desconocido (%d)", "", package->header);
+                package_destroy(package);
                 break;
         }
     }
