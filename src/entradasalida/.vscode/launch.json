@@ -28,7 +28,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/bin/${workspaceFolderBasename}",
-      "args": ["GENERICA", "TECLADO.config"],
+      "args": ["TECLADO", "TECLADO.config"],
       "stopAtEntry": true,
       "cwd": "${workspaceFolder}",
       "environment": [],

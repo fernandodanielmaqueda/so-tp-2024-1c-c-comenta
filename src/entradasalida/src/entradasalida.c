@@ -250,9 +250,9 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	int char_to_verify = '\n';
 
 	//Empiezo a "desencolar" el payload recibido
-	payload_shift(operation_arguments, &PID, sizeof(PID));
-	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
+	
 	payload_shift(operation_arguments, &bytes, sizeof(bytes));
+	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 
 	//Aviso que operacion voy a hacer
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDIN_READ>", (int) PID);
@@ -301,10 +301,9 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	t_MemorySize bytes;
 
 	//empiezo a "desencolar" el payload recibido
-	payload_shift(operation_arguments, &PID, sizeof(PID));
 	//text_deserialize(operation_arguments, &text_received);
-	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 	payload_shift(operation_arguments, &bytes, sizeof(bytes));
+	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
 
 	//Aviso la operacion que voy a hacer
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", (int) PID);
@@ -342,17 +341,15 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_CREATE recibido.");
 	char* file_name;
-	t_PID op_pid;
 
 	usleep(WORK_UNIT_TIME * 1000);
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 	uint32_t location = seek_first_free_block();
 
 	//Crear variable de control de archivo
 	t_FS_File* new_entry = NULL;
 	strcpy(new_entry->name , file_name);
-	new_entry->process_pid = op_pid;
+	new_entry->process_pid = PID;
 	new_entry->initial_bloq = location;
 	new_entry->len = 1;
 	new_entry->size = 0;
@@ -362,10 +359,10 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 
 	list_add(LIST_FILES, new_entry);
 
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", (int) op_pid, file_name);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", PID, file_name);
 
 /* 	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
-	payload_append(respond->payload, &op_pid, sizeof(t_PID));
+	payload_append(respond->payload, &PID, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
 	package_destroy(respond); */
 
@@ -379,11 +376,9 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 		return 1;
 	}
 
-	t_PID op_pid = 0;
 	char* file_name = NULL;
 
 	usleep(WORK_UNIT_TIME * 1000);
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
 	
 	uint32_t size = list_size(LIST_FILES);
@@ -402,7 +397,7 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 		}
 
 		if(file_target == -1) {
-			log_info(MODULE_LOGGER, "[ERROR] PID: <%d> - Archivo <%s> a eliminar no encontrado", (int) op_pid, file_name);
+			log_info(MODULE_LOGGER, "[ERROR] PID: <%d> - Archivo <%s> a eliminar no encontrado", PID, file_name);
 			return 1;
 		}
 
@@ -423,10 +418,10 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 		update_file(file_name,0,-1);
 	}
 	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", (int) op_pid, file_name);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", PID, file_name);
 	
 /* 	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
-	payload_append(respond->payload, &op_pid, sizeof(t_PID));
+	payload_append(respond->payload, &PID, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
 	package_destroy(respond); */
 
@@ -442,17 +437,14 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
 
-	char* file_name = NULL;
-	char* value = NULL;
-	t_PID op_pid = 0;
+	char *file_name;
+	t_MemorySize value;
 	
 	usleep(WORK_UNIT_TIME * 1000);
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
-    text_deserialize(operation_arguments, &(value));
+    payload_shift(operation_arguments, &value, sizeof(value));
 
-	uint32_t valueSize = atoi(value);
-	uint32_t valueNUM = ceil(valueSize/BLOCK_SIZE);
+	uint32_t valueNUM = ceil(value/BLOCK_SIZE);
 
 	t_FS_File* file = seek_file(file_name);
 	uint32_t initial_pos = file->initial_bloq + file->len;
@@ -465,7 +457,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 			initial_pos--;
 		}
 		file->len = valueNUM;
-		file->size = valueSize;
+		file->size = value;
 	}
 	if (file->len < valueNUM)
 	{// Se agregan bloques
@@ -478,14 +470,14 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 				initial_pos++;
 			}
 			file->len = valueNUM;
-			file->size = valueSize;
+			file->size = value;
 
 		}
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
 
-			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", op_pid);
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", PID);
 			compact_blocks();
-			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", op_pid);
+			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
 
 			initial_pos = file->initial_bloq + file->len;
 			for (size_t i = 0; i < diff; i++)
@@ -494,7 +486,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 				initial_pos++;
 			}
 			file->len = valueNUM;
-			file->size = valueSize;
+			file->size = value;
 
 		}
 		else{
@@ -503,17 +495,17 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 		}
 	}
 
-	update_file(file_name,valueSize,file->initial_bloq);
+	update_file(file_name, value, file->initial_bloq);
 	
 		if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
         	exit(EXIT_FAILURE);
     	}
 	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%s>", (int) op_pid, file_name, value);
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Truncar archivo: <%s> - Tamaño: <%d>", PID, file_name, (int) value);
 	
 /* 	t_Package* respond = package_create_with_header(IO_FS_TRUNCATE_CPU_OPCODE);
-	payload_append(respond->payload, &op_pid, sizeof(t_PID));
+	payload_append(respond->payload, &PID, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
 	package_destroy(respond); */
     
@@ -538,12 +530,10 @@ del valor del Registro Puntero Archivo.*/
 	char* file_name = NULL;
 	t_MemorySize ptro = 0;
 	t_MemorySize bytes = 0;
-	t_PID op_pid = 0;
 	t_list* list_dfs = list_create();
 
 	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido de kernel
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
     payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
     payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
@@ -557,7 +547,7 @@ del valor del Registro Puntero Archivo.*/
 
 	//Envio paquete a memoria
 	t_Package* pack_request = package_create_with_header(IO_FS_WRITE_MEMORY);
-	payload_append(&pack_request->payload, &op_pid, sizeof(t_PID));
+	payload_append(&pack_request->payload, &PID, sizeof(t_PID));
     list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
 	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
 	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
@@ -609,12 +599,10 @@ indicada en el Registro Dirección*/
 	char* file_name = NULL;
 	t_MemorySize ptro = 0;
 	t_MemorySize bytes = 0;
-	t_PID op_pid = 0;
 	t_list* list_dfs = list_create();
 
 	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido
-    payload_shift(operation_arguments, &op_pid, sizeof(t_PID));
     text_deserialize(operation_arguments, &(file_name));
     payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
     payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
@@ -637,7 +625,7 @@ indicada en el Registro Dirección*/
 
 	//Se crea paquete y se envia a memoria
 	t_Package* pack_request = package_create_with_header(IO_FS_READ_MEMORY);
-	payload_append(&pack_request->payload, &op_pid, sizeof(t_PID));
+	payload_append(&pack_request->payload, &PID, sizeof(t_PID));
     list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
 	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
 	payload_append(&pack_request->payload, &context, sizeof(bytes));
