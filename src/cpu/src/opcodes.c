@@ -106,11 +106,16 @@ int mov_in_cpu_operation(int argc, char **argv)
     size_t bytes = get_register_size(register_data);
 
     t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, bytes);
+    if(list_physical_addresses == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
 
     void *destination = get_register_pointer(&EXEC_CONTEXT, register_data);
     void *source = malloc((size_t) bytes);
     if(source == NULL) {
-        log_error(MODULE_LOGGER, "malloc: ");
+        log_error(MODULE_LOGGER, "malloc: No se pudieron reservar %zd bytes", (size_t) bytes);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
@@ -159,6 +164,12 @@ int mov_out_cpu_operation(int argc, char **argv)
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
     t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, bytes);
+    if(list_physical_addresses == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
+
     attend_write(EXEC_CONTEXT.PID, list_physical_addresses, source, bytes);
 
     EXEC_CONTEXT.PC++;
@@ -352,6 +363,11 @@ int copy_string_cpu_operation(int argc, char **argv)
     get_register_value(EXEC_CONTEXT, SI_REGISTER, &logical_address_si);
 
     t_list *list_physical_addresses_si = mmu(EXEC_CONTEXT.PID, logical_address_si, size);
+    if(list_physical_addresses_si == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
     
     void *source;
     attend_read(EXEC_CONTEXT.PID, list_physical_addresses_si, &source, size); 
@@ -360,6 +376,11 @@ int copy_string_cpu_operation(int argc, char **argv)
     get_register_value(EXEC_CONTEXT, DI_REGISTER, &logical_address_di);
 
     t_list *list_physical_addresses_di = mmu(EXEC_CONTEXT.PID, logical_address_di, size);
+    if(list_physical_addresses_di == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
 
     attend_write(EXEC_CONTEXT.PID, list_physical_addresses_di, source, size);
 
@@ -467,6 +488,11 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
     t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, size);
+    if(list_physical_addresses == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
 
     EXEC_CONTEXT.PC++;
 
@@ -512,6 +538,12 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
     t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, size);
+    if(list_physical_addresses == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
+
 
     EXEC_CONTEXT.PC++;
 
@@ -636,7 +668,14 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     get_register_value(EXEC_CONTEXT, register_size_destino, &logical_address_destino);
     get_register_value(EXEC_CONTEXT, register_address_ptro, &puntero);
     get_register_value(EXEC_CONTEXT, register_size, &bytes);
+
     t_list *list_physical_addresses_origin = mmu(EXEC_CONTEXT.PID, logical_address_destino, bytes);
+    if(list_physical_addresses_origin == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
+
 
     EXEC_CONTEXT.PC++;
     
@@ -686,7 +725,13 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     get_register_value(EXEC_CONTEXT, register_size_destino, &logical_address_destino);
     get_register_value(EXEC_CONTEXT, register_address_ptro, &puntero);
     get_register_value(EXEC_CONTEXT, register_size, &bytes);
+
     t_list *list_physical_addresses_origin = mmu(EXEC_CONTEXT.PID, logical_address_destino, bytes);
+    if(list_physical_addresses_origin == NULL) {
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        return 1;
+    }
 
     EXEC_CONTEXT.PC++;
     

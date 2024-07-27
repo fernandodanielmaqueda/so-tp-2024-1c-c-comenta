@@ -135,7 +135,7 @@ void respond_frame_request(t_Payload *socketRecibido);
  * @param tablaPaginas Tanla de paginas del proceso donde buscar la pagina.
  * @param pagina Pagina buscada.
  */
-t_Frame_Number seek_frame_number_by_page_number (t_list* tablaPaginas, t_Page_Number pagina);
+t_Frame_Number *seek_frame_number_by_page_number (t_list* tablaPaginas, t_Page_Number pagina);
 
 void resize_process(t_Payload *payload);
 void write_memory(t_Payload *socketRecibido, int socket);

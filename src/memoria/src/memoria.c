@@ -532,38 +532,39 @@ void respond_frame_request(t_Payload *payload) {
 
 //Buscar frame
     t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
-    t_Frame_Number marcoEncontrado = seek_frame_number_by_page_number(procesoBuscado->pages_table, page_number);
-
-    log_debug(MINIMAL_LOGGER, "AAA PID: <%" PRIu16 "> - Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", pidProceso, page_number, marcoEncontrado);
+    
+    t_Frame_Number *marcoEncontrado = seek_frame_number_by_page_number(procesoBuscado->pages_table, page_number);
+    if(marcoEncontrado != NULL)
+        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Pagina: <%" PRIu32 "> - Marco: <%" PRIu32 ">", pidProceso, page_number, *marcoEncontrado);
+    else
+        log_error(MODULE_LOGGER, "El numero de página <%" PRIu32 "> no existe en la tabla de paginas.", page_number);
 
 //Respuesta    
     usleep(RETARDO_RESPUESTA * 1000);
     
     t_Package* package = package_create_with_header(FRAME_REQUEST);
-    payload_append(&(package->payload), &pidProceso, sizeof(pidProceso));
-    payload_append(&(package->payload), &marcoEncontrado, sizeof(marcoEncontrado));
+    if(marcoEncontrado != NULL) {
+        return_value_serialize(&(package->payload), 0);
+        payload_append(&(package->payload), marcoEncontrado, sizeof(*marcoEncontrado));
+    }
+    else {
+        return_value_serialize(&(package->payload), 1);
+    }
     package_send(package, CLIENT_CPU->fd_client);
 }
 
-t_Frame_Number seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Number page_number) {
+t_Frame_Number *seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Number page_number) {
     t_Page *paginaBuscada;
-    t_Frame_Number frame_number;
     uint32_t size = list_size(tablaPaginas);
-
-    if(size <= page_number){
-        log_error(MODULE_LOGGER, "El numero de página <%" PRIu32 "> no existe en la tabla de paginas.", page_number);
-        exit(1);
-    }
 
     for(size_t i = 0; i < size ; i++) {
         paginaBuscada = (t_Page *) list_get(tablaPaginas, i);
         if(paginaBuscada->pagid == page_number) {
-            frame_number = paginaBuscada->assigned_frame;
-            i = size + 1;
+            return &(paginaBuscada->assigned_frame);
         }
     }
 
-    return frame_number;
+    return NULL;
 }
 
 void read_memory(t_Payload *payload, int socket) {

@@ -319,9 +319,14 @@ t_list *mmu(t_PID pid, t_Logical_Address logical_address, size_t bytes) {
                 // TODO
                 exit(1);
             }
-            t_PID pidBuscado;
-            payload_shift(&(package->payload), &pidBuscado, sizeof(pidBuscado) );
-            payload_shift(&(package->payload), &frame_number, sizeof(frame_number) );
+            t_Return_Value return_value;
+            return_value_deserialize(&(package->payload), &return_value);
+            if(return_value) {
+                log_error(MODULE_LOGGER, "No se pudo obtener el número de marco correspondiente al número de pagina % de memoria" PRIu32, page_number);
+                // TODO
+                return NULL;
+            }
+            payload_shift(&(package->payload), &frame_number, sizeof(frame_number));
             package_destroy(package);
             
             log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %" PRIu32 " - Marco: %" PRIu32, pid, page_number, frame_number);
