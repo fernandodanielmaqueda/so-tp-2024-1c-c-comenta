@@ -548,7 +548,13 @@ void respond_frame_request(t_Payload *payload) {
 t_Frame_Number seek_frame_number_by_page_number(t_list *tablaPaginas, t_Page_Number page_number) {
     t_Page *paginaBuscada;
     t_Frame_Number frame_number;
-    int size = list_size(tablaPaginas);
+    uint32_t size = list_size(tablaPaginas);
+
+    if(size >= page_number){
+        log_error(MODULE_LOGGER, "La PAGINA <%d> buscada supera el limite de la tabla de paginas <%d>. ", (int) page_number, (int) frame_number);
+        exit(1);
+    }
+
     for(size_t i = 0; i < size ; i++) {
         paginaBuscada = (t_Page *) list_get(tablaPaginas, i);
         if(paginaBuscada->pagid == page_number) {
@@ -834,8 +840,12 @@ void resize_process(t_Payload *payload){
 
 int seek_oldest_page_updated(t_list* page_list){
 
-    t_Page* mas_antigua = list_get(page_list,0);
     int size = list_size(page_list);
+    return (size - 1);
+    
+    /*
+    t_Page* mas_antigua = list_get(page_list,0);
+    
     int oldest_pos = 0;
 
     for (size_t i = 1; i < size; i++) {
@@ -847,7 +857,7 @@ int seek_oldest_page_updated(t_list* page_list){
         }
     }
     return oldest_pos;
-
+    */
 }
 
 void free_memory(){
