@@ -458,7 +458,7 @@ int io_gen_sleep_cpu_operation(int argc, char **argv)
 int io_stdin_read_cpu_operation(int argc, char **argv)
 {
 
-    if (argc != 3)
+    if (argc != 4)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDIN_READ <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
@@ -508,7 +508,7 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
 int io_stdout_write_cpu_operation(int argc, char **argv)
 {
 
-    if (argc != 3)
+    if (argc != 4)
     {
         log_error(MODULE_LOGGER, "Uso: IO_STDOUT_WRITE <INTERFAZ> <REGISTRO DIRECCION> <REGISTRO TAMANIO>");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
