@@ -496,6 +496,8 @@ void seek_instruccion(t_Payload *payload) {
 
 void create_frames(void) {
     t_MemorySize cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
+    t_MemorySize offset = TAM_MEMORIA % TAM_PAGINA;
+    if(offset != 0) cantidad_marcos++;
     
     LIST_FRAMES = list_create();
     LIST_FREE_FRAMES = list_create();
@@ -734,67 +736,74 @@ void resize_process(t_Payload *payload){
     t_MemorySize paginas = new_size / TAM_PAGINA;
     t_MemorySize resto = new_size % TAM_PAGINA;
 
-    if (resto == 0)
+    if (resto != 0)
         paginas += 1;
 
     int size = list_size(procesoBuscado->pages_table);
     t_Return_Value return_value;
 
-    if(size < paginas) { //Agregar paginas
+    if (new_size > TAM_MEMORIA)
+    {
+        return_value = 1;
+    }
+    else{
+        
+        if(size < paginas) { //Agregar paginas
 
-        //CASO: OUT OF MEMORY
-        if (list_size(LIST_FREE_FRAMES) < (paginas - size))
-            return_value = 1;
-        else {
-            
-            log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Ampliar: <%" PRIu32 ">", pid, size, paginas);
+            //CASO: OUT OF MEMORY
+            if (list_size(LIST_FREE_FRAMES) < (paginas - size))
+                return_value = 1;
 
-            //CASO: HAY ESPACIO Y SUMA PAGINAS
-            for (size_t i = size; i < paginas; i++)
-            {
-                t_Page *pagina = malloc(sizeof(t_Page));
-                pthread_mutex_lock(&(MUTEX_LIST_FREE_FRAMES));
-                t_Frame *marcoLibre = list_get(LIST_FREE_FRAMES,0);
-                list_remove(LIST_FREE_FRAMES,0);
-                pthread_mutex_unlock(&(MUTEX_LIST_FREE_FRAMES));
-                pagina->assigned_frame = marcoLibre->id;
-                pagina->bit_modificado = false;
-                pagina->bit_presencia = false;
-                pagina->bit_uso = false;
-                pagina->pagid = i;
-                pagina->last_use = 0;
-
-                //Actualizo el marco asignado
-                marcoLibre->PID= pid;
-                marcoLibre->assigned_page = pagina;
-
-                list_add(procesoBuscado->pages_table, pagina);
-            }
+            else {
                 
+                log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Ampliar: <%" PRIu32 ">", pid, size, paginas);
+
+                //CASO: HAY ESPACIO Y SUMA PAGINAS
+                for (size_t i = size; i < paginas; i++)
+                {
+                    t_Page *pagina = malloc(sizeof(t_Page));
+                    pthread_mutex_lock(&(MUTEX_LIST_FREE_FRAMES));
+                    t_Frame *marcoLibre = list_get(LIST_FREE_FRAMES,0);
+                    list_remove(LIST_FREE_FRAMES,0);
+                    pthread_mutex_unlock(&(MUTEX_LIST_FREE_FRAMES));
+                    pagina->assigned_frame = marcoLibre->id;
+                    pagina->bit_modificado = false;
+                    pagina->bit_presencia = false;
+                    pagina->bit_uso = false;
+                    pagina->pagid = i;
+                    pagina->last_use = 0;
+
+                    //Actualizo el marco asignado
+                    marcoLibre->PID= pid;
+                    marcoLibre->assigned_page = pagina;
+
+                    list_add(procesoBuscado->pages_table, pagina);
+                }
+                    
+                return_value = 0;
+            }
+        }
+
+        if(size > paginas) { // RESTA paginas
+                
+            log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Reducir: <%" PRIu32 ">", pid, size, paginas);
+            
+            for (size_t i = size; i > paginas; i--)
+            {
+                int pos_lista = seek_oldest_page_updated(procesoBuscado->pages_table);
+                t_Page* pagina = list_get(procesoBuscado->pages_table, pos_lista);
+                list_remove(procesoBuscado->pages_table, pos_lista);
+                pthread_mutex_lock(&(MUTEX_LIST_FREE_FRAMES));
+                t_Frame* marco = list_get(LIST_FRAMES, pagina->assigned_frame);
+                list_add(LIST_FREE_FRAMES,marco);
+                pthread_mutex_unlock(&(MUTEX_LIST_FREE_FRAMES));
+
+                free(pagina);
+            }
+
             return_value = 0;
         }
     }
-
-    if(size > paginas) { // RESTA paginas
-            
-        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Reducir: <%" PRIu32 ">", pid, size, paginas);
-         
-        for (size_t i = size; i > paginas; i--)
-        {
-            int pos_lista = seek_oldest_page_updated(procesoBuscado->pages_table);
-            t_Page* pagina = list_get(procesoBuscado->pages_table, pos_lista);
-            list_remove(procesoBuscado->pages_table, pos_lista);
-            pthread_mutex_lock(&(MUTEX_LIST_FREE_FRAMES));
-            t_Frame* marco = list_get(LIST_FRAMES, pagina->assigned_frame);
-            list_add(LIST_FREE_FRAMES,marco);
-            pthread_mutex_unlock(&(MUTEX_LIST_FREE_FRAMES));
-
-            free(pagina);
-        }
-
-        return_value = 0;
-    }
-
     //No hace falta el caso page == size ya que no sucederia nada
 
     if(send_return_value_with_header(RESIZE_REQUEST, return_value, CLIENT_CPU->fd_client)) {
@@ -813,7 +822,10 @@ void resize_process(t_Payload *payload){
         // pthread_cancel(CLIENT_CPU->thread_client_handler);
         // pthread_join(CLIENT_CPU->thread_client_handler, NULL);
         close(CLIENT_CPU->fd_client);
-        exit(1);
+
+        log_debug(MINIMAL_LOGGER, "[OUT OF MEMORY]PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Reducir: <%" PRIu32 ">", pid, size, paginas);
+
+        exit(EXIT_FAILURE);
     }
 }
 
