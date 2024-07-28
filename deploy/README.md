@@ -4,8 +4,12 @@
 - Las máquinas de la facultad tienen Windows, y NO hay permisos de administrador: no se pueden instalar programas, etc.
 
 ## TODO
+- https://docs.utnso.com.ar/primeros-pasos/tp0 (AGREGAR LO DE CREDENCIALES SSH)
 - Agregar PuTTY
 - Agregar comandos para compilar e instalar las commons, los cspec y los archivos de test
+- Copiar los archivos de test a /home/utnso/scripts ....
+- Hacer un snapshot de la VM antes de arrancar, y desloguearse, eliminar archivos, etc. antes de borrar todo
+- PONER LAS IPS Y PUERTOS EN LOS ARCHIVOS DE CONFIG
 - Comandos de tmux
 - Que el fstab tome todas las IPs y no haya que agregarlas manualmente
 - Acceso a GitHub desde las computadoras de la facultad
@@ -23,7 +27,24 @@
 
 # De antemano
 
-## A. Anotarse en el Sistema de Inscripciones
+## A. Leer documentación
+
+- https://www.utnso.com.ar/
+- https://docs.utnso.com.ar/guias/herramientas/deploy
+- https://docs.utnso.com.ar/primeros-pasos/tp0
+
+Si tuviéramos que resumir en tres cosas, lo que deberían hacer para poder llegar a una entrega con la seguridad de que van a aprobar sería:
+
+Probar el TP
+Practicar el despliegue
+Probar el TP y practicar el despliegue
+Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs) o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
+
+## B. Preparar los configs
+
+Para conectar los módulos del TP entre sí es recomendable usar números de puerto por encima de 1024, ya que es poco probable que estén siendo usados por otro proceso (ej: 8000, 8001, etc).
+
+## C. Anotarse en el Sistema de Inscripciones
 
 Es muy importante que se anoten para que los podamos evaluar, ya que grupo que no esté anotado por más que se presenten en el laboratorio no va a ser evaluado.
 
@@ -35,10 +56,11 @@ Por último les pedimos que si deciden no presentarse a esta entrega nos avisen 
 
 - https://inscripciones.utnso.com.ar/
 
-## B. Generar las credenciales de GitHub
+## D. Generar las credenciales de GitHub
 
 - https://github.com/settings/tokens?type=beta
 - https://github.com/settings/tokens
+- https://github.com/settings/keys
 
 -----------------------------
 
@@ -146,6 +168,8 @@ Links de descarga
 
 Gestor de descargas (Windows)
 - https://www.freedownloadmanager.org/es/download.htm
+- https://ugetdm.com/downloads/windows/#downloadable-packages
+- https://github.com/setvisible/ArrowDL
 
 Gestor de descargas (Ubuntu)
 - https://chemicloud.com/blog/download-google-drive-files-using-wget/
@@ -421,6 +445,8 @@ Esto es por una limitación de los permisos de ejecución que tiene el filesyste
 Mientras un programa está en ejecución, se quitan los permisos de ejecución y de escritura sobre el mismo (x y w)
 Los permisos NO se pueden modificar con chmod. chown tampoco tiene efecto. Es independiente del gid y del pid, seas usuario utnso, root y/o parte del grupo vboxsf
 
+Una forma rápida para sobrellevarlo es copiar los archivos necesarios a ejecutar de la carpeta compartida a cualquier carpeta local de la VM y ejecutarlos desde ahí
+
 -----------------------------
 
 ### (NO en el Deploy) Alternativa 2: Montar una carpeta compartida usando Samba (SMB)
@@ -441,7 +467,7 @@ mkdir /home/utnso/smbCompartida
 
 3. Montar manualmente la carpeta compartida en la VM
 ```bash
-sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida -o username=alumno,password=alumno,vers=3.0,file_mode=0777,dir_mode=0777,uid=1000,gid=1000
+sudo mount -t cifs //alumno/NombreCarpetaCompartida /home/utnso/smbCompartida -o username=alumno,password=alumno,vers=3.0,file_mode=0777,dir_mode=0777,uid=1000,gid=1000
 ```
 
 4. Verificar que la carpeta compartida se haya montado correctamente en la VM
@@ -456,7 +482,7 @@ sudo vi /etc/fstab
 
 Agregarle la siguiente línea al final de dicho archivo.
 ```output
-//NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida cifs username=alumno,password=alumno,vers=3.0,file_mode=0777,dir_mode=0777 0 0
+//alumno/NombreCarpetaCompartida /home/utnso/smbCompartida cifs username=alumno,password=alumno,vers=3.0,file_mode=0777,dir_mode=0777 0 0
 ```
 
 Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cambiarse a 2.0, por ejemplo, de ser necesario
@@ -568,20 +594,22 @@ Puede ser útil para averigüar la IP del Host
 less /var/log/auth.log
 ```
 
+# En el Host (Windows):
+
 -----------------------------
 
 ## 21. Conectarse por SSH a la VM
 
-### En la máquina Host (Windows):
+### Alternativa 1: Usar PowerShell
 
 1. Abrir PowerShell
 
-1. Conocer la IP del Host
+2. Conocer la IP del Host
 ```powershell
 ipconfig
 ```
 
-2. Conectarse con la VM vía ssh
+3. Conectarse con la VM vía ssh
 ```powershell
 ssh utnso@NúmeroIP -p 22
 ```
@@ -606,8 +634,6 @@ Nota: el puerto por defecto para SSH es 22
 	Markdown Preview Github Styling
 	Notepad++ keymap
 	Output Colorizer
-
-### (NO en el Deploy) En la máquina Host (Windows):
 
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-client
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-server
@@ -683,6 +709,8 @@ Host NúmeroIP
   User utnso
   Port 22
 ```
+
+# En la VM Guest (Ubuntu Server):
 
 -----------------------------
 

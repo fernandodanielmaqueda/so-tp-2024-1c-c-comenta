@@ -6,3 +6,6 @@
 - Documentación de pruebas:
 	- https://faq.utnso.com.ar/tp-c-comenta-pruebas
 		- https://docs.google.com/document/d/1XsBsJynoN5A9PTsTEaZsj0q3zsEtcnLgdAHOQ4f_4-g/edit
+- Repositorio de pruebas:
+	- https://faq.utnso.com.ar/tp-c-comenta-pruebas-repo
+		- https://github.com/sisoputnfrba/c-comenta-pruebas
