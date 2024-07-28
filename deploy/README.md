@@ -63,7 +63,11 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 ## 2. Abrir un navegador web
 
+Por ejemplo: Google Chrome, etc.
+
 ## 3. Loguearse en la cuenta de GitHub
+
+- https://github.com/
 
 ## 4. Acceder a este repositorio grupal
 
@@ -148,11 +152,11 @@ Gestor de descargas (Ubuntu)
 
 - General
 	- Básico
-		- `Nombre`: Ubuntu Server 6.1
+		- `Nombre`: SO 2022 Actualizada
 		- `Tipo`: Linux
 		- `Versión`: Ubuntu (64-bit)
 	- Avanzado
-		- `Carpeta de instantáneas`: C:\Users\Usuario\VirtualBox VMs\Ubuntu Server 6.1\Snapshots
+		- `Carpeta de instantáneas`: C:\Users\alumno\VirtualBox VMs\SO 2022 Actualizada\Snapshots
 		- `Portapapeles compartido`: Inhabilitado
 		- `Arrastrar y soltar`: Inhabilitado
 	- Descripción
@@ -236,7 +240,7 @@ Gestor de descargas (Ubuntu)
 
 - Carpetas compartidas
 	- v Carpetas de la máquina
-		- `Nombre`: Compartida | `Ruta`: C:\Users\Usuario\VirtualBox VMs\Compartida | `Acceso`: Completo | `Automontar`: Sí | `En`:
+		- `Nombre`: Compartida | `Ruta`: C:\Users\alumno\VirtualBox VMs\Compartida | `Acceso`: Completo | `Automontar`: Sí | `En`:
 	- v Carpetas transitorias
 
 - Interfaz de usuario
@@ -268,7 +272,7 @@ Gestor de descargas (Ubuntu)
 -----------------------------
 ## 14. Iniciar la VM Server
 
-TODO
+- **SO 2022 Actualizada** *(Base)* 
 
 -----------------------------
 ## 15. Actualizar el índice de paquetes local en la VM
@@ -413,7 +417,7 @@ mkdir /home/utnso/smbCompartida
 
 3. Montar manualmente la carpeta compartida en la VM
 ```bash
-sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida -o username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777,uid=1000,gid=1000
+sudo mount -t cifs //NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida -o username=alumno,password=alumno,vers=3.0,file_mode=0777,dir_mode=0777,uid=1000,gid=1000
 ```
 
 4. Verificar que la carpeta compartida se haya montado correctamente en la VM
@@ -428,7 +432,7 @@ sudo vi /etc/fstab
 
 Agregarle la siguiente línea al final de dicho archivo.
 ```output
-//NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida cifs username=nombreUsuarioWindows,password=ContraseniaUsuarioWindows,vers=3.0,file_mode=0777,dir_mode=0777 0 0
+//NombreOIPDelHostWindows/NombreCarpetaCompartida /home/utnso/smbCompartida cifs username=alumno,password=alumno,vers=3.0,file_mode=0777,dir_mode=0777 0 0
 ```
 
 Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cambiarse a 2.0, por ejemplo, de ser necesario
@@ -643,7 +647,7 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
 `utnso@NúmeroIP`
 
 7. Guardar la configuración en:
-`C:\Users\Usuario\.ssh\config`
+`C:\Users\alumno\.ssh\config`
 
 8. Verificar el archivo anterior:
 ```output
