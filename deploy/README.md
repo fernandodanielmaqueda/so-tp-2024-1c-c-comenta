@@ -5,7 +5,6 @@
 
 ## TODO
 - https://docs.utnso.com.ar/primeros-pasos/tp0 (AGREGAR LO DE CREDENCIALES SSH)
-- Agregar PuTTY
 - Agregar comandos para compilar e instalar las commons, los cspec y los archivos de test
 - Copiar los archivos de test a /home/utnso/scripts ....
 - Hacer un snapshot de la VM antes de arrancar, y desloguearse, eliminar archivos, etc. antes de borrar todo
@@ -16,7 +15,6 @@
 	- https://stackoverflow.com/questions/69336114/the-application-requires-one-of-the-following-versions-of-the-net-framework-ho
 
 - Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad
-- Hacer un script/comando que habilite/deshabilite características de Windows
 - Hacer un script que configure automáticamente la VM en VirtualBox, o llevar los archivos de configuración ya hechos
 - Hacer un script que instale automáticamente las extensiones de VSCode
 - Hacer un script que tome las IPs del Host y del Guest y que haga las conexiones SSH automáticamente y edite los .config acordemente
@@ -82,7 +80,7 @@ En caso de que pasen 5 minutos del horario asignado y el grupo no se haya anunci
 
 Si el trabajo práctico no puede correr en más de una máquina no se iniciará la evaluación y se dará por desaprobada la entrega.
 
- Al momento de iniciar el despliegue del TP según lo indique el ayudante evaluador, el grupo dispondrá de 10 minutos para estar en condiciones de ser evaluado, en caso de que transcurran los 10 minutos y no se pueda iniciar la evaluación, el ayudante evaluador podrá solicitarles que se retiren del laboratorio, dando por finalizada la evaluación con resultado desaprobado.
+Al momento de iniciar el despliegue del TP según lo indique el ayudante evaluador, el grupo dispondrá de 10 minutos para estar en condiciones de ser evaluado, en caso de que transcurran los 10 minutos y no se pueda iniciar la evaluación, el ayudante evaluador podrá solicitarles que se retiren del laboratorio, dando por finalizada la evaluación con resultado desaprobado.
 
 Los grupos contarán con una unica instancia de evaluación por fecha de entrega, es decir, que ante un error no resoluble en el momento en las pruebas, la entrega se considerará desaprobada.
 
@@ -614,6 +612,18 @@ ipconfig
 ssh utnso@NúmeroIP -p 22
 ```
 Nota: el puerto por defecto para SSH es 22
+
+### Alternativa 2: Usar PuTTY
+
+- https://www.putty.org/
+
+[![PuTTY](https://docs.utnso.com.ar/img/guias/herramientas/deploy/deploy-02.jpg)](https://www.putty.org/ "https://www.putty.org/")
+
+- En ***Host Name (or IP address)*** poner la IP dentro de la VM Guest, Ubuntu Server
+- En ***Port*** poner **22**
+- En ***Connection type*** seleccionar la casilla **SSH**
+- Seleccionar el botón **Save**
+- En ***Close window on exit*** seleccionar la casilla **Never**
 
 -----------------------------
 
