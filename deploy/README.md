@@ -272,7 +272,9 @@ Gestor de descargas (Ubuntu)
 -----------------------------
 ## 14. Iniciar la VM Server
 
-- **SO 2022 Actualizada** *(Base)* 
+- **SO 2022 Actualizada** *(Base)*
+
+# Ya en la VM de Ubuntu Server
 
 -----------------------------
 ## 15. Actualizar el índice de paquetes local en la VM
@@ -283,7 +285,7 @@ sudo apt update
 
 -----------------------------
 
-## 16. (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
+## 16. (NO en el Deploy) (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
 
 1. Backupear el archivo `/etc/default/grub` original
 ```bash
@@ -322,7 +324,7 @@ init 6
 
 -----------------------------
 
-## 17. Instalar VirtualBox Guest Additions (para las carpetas compartidas)
+## 17. (NO en el Deploy) Instalar VirtualBox Guest Additions (para las carpetas compartidas)
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
@@ -349,9 +351,9 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 18. Montar una carpeta compartida en la VM
+## 18. (NO en el Deploy) Montar una carpeta compartida en la VM
 
-### Alternativa 1: Montar una carpeta compartida usando vboxsf (VirtualBox Shared Folders)
+### (NO en el Deploy) Alternativa 1: Montar una carpeta compartida usando vboxsf (VirtualBox Shared Folders)
 
 1. Crear el directorio donde montaremos la carpeta compartida en la VM
 ```bash
@@ -389,7 +391,7 @@ Agregarle la siguiente línea al final de dicho archivo.
 vboxsf
 ```
 
-#### Nota sobre las carpetas compartidas de VirtualBox
+#### (NO en el Deploy) Nota sobre las carpetas compartidas de VirtualBox
 
 No se puede ejecutar un programa más de una vez en simultáneo (múltiples instancias de un programa)
 No se pueden depurar con GDB los ejecutables si estos están dentro de las carpetas compartidas (sólo se puede hasta cargar los símbolos de depuración del mismo)
@@ -399,7 +401,7 @@ Los permisos NO se pueden modificar con chmod. chown tampoco tiene efecto. Es in
 
 -----------------------------
 
-### Alternativa 2: Montar una carpeta compartida usando Samba (SMB)
+### (NO en el Deploy) Alternativa 2: Montar una carpeta compartida usando Samba (SMB)
 
 Este método no tiene la limitación anteriormente mencionada.
 
@@ -439,7 +441,7 @@ Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cam
 
 -----------------------------
 
-### Alternativa 3: Montar una carpeta compartida usando ...
+### (NO en el Deploy) Alternativa 3: Montar una carpeta compartida usando ...
 
 - NFS
 - sshfs (ssh filesystem): sudo apt-get install sshfs
@@ -548,7 +550,9 @@ less /var/log/auth.log
 
 ## 20. Conectarse por SSH a la VM
 
-### En Windows (PowerShell):
+### En la máquina Host (Windows):
+
+1. Abrir PowerShell
 
 1. Conocer la IP del Host
 ```powershell
@@ -563,7 +567,7 @@ Nota: el puerto por defecto para SSH es 22
 
 -----------------------------
 
-## 21. Configurar VSCode
+## 21. (NO en el Deploy) Configurar VSCode
 
 ### Extensiones:
 	Remote - SSH
@@ -581,7 +585,7 @@ Nota: el puerto por defecto para SSH es 22
 	Notepad++ keymap
 	Output Colorizer
 
-### En Windows Host:
+### En la máquina Host (Windows):
 
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-client
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-server
