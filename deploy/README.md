@@ -4,17 +4,6 @@
 - Las máquinas de la facultad tienen Windows, y NO hay permisos de administrador: no se pueden instalar programas, etc.
 
 ## TODO
-- AGREGAR PASAR LAS IPS Y PUERTOS POR MENSAJE EN EL GRUPO DE WHATSAPP
-- Revisar si hay permisos para levantar conexión por SMB (Samba) en Windows
-
-- Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad
-- Hacer un script/comando que habilite/deshabilite características de Windows
-- Hacer un script que configure automáticamente la VM en VirtualBox, o llevar los archivos de configuración ya hechos
-- Hacer un script que instale automáticamente las extensiones de VSCode
-- Hacer un script que tome las IPs del Host y del Guest y que haga las conexiones SSH automáticamente y edite los .config acordemente
-- Editar el archivo /home/utnso/base.sh acordemente
-- Conexión a GitHub
-- Buscar un gestor de descargas que sea portable
 - Agregar PuTTY
 - Agregar comandos para compilar e instalar las commons, los cspec y los archivos de test
 - Comandos de tmux
@@ -22,15 +11,27 @@
 - Acceso a GitHub desde las computadoras de la facultad
 	- https://stackoverflow.com/questions/69336114/the-application-requires-one-of-the-following-versions-of-the-net-framework-ho
 
+- Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad
+- Hacer un script/comando que habilite/deshabilite características de Windows
+- Hacer un script que configure automáticamente la VM en VirtualBox, o llevar los archivos de configuración ya hechos
+- Hacer un script que instale automáticamente las extensiones de VSCode
+- Hacer un script que tome las IPs del Host y del Guest y que haga las conexiones SSH automáticamente y edite los .config acordemente
+- Editar el archivo /home/utnso/base.sh acordemente
+- Buscar un gestor de descargas que sea portable
+- Revisar si hay permisos para levantar conexión por SMB (Samba) en Windows
 -----------------------------
 
 # De antemano
 
 ## A. Anotarse en el Sistema de Inscripciones
 
+Es muy importante que se anoten para que los podamos evaluar, ya que grupo que no esté anotado por más que se presenten en el laboratorio no va a ser evaluado.
+
 Cualquier integrante del grupo podrá ingresar al Sistema de Inscripciones y deberá indicar la franja horaria en que el grupo pueda presentarse.
 
 El grupo luego recibirá la fecha y horario estimado de evaluación. Los mismos se asignarán en base a la cantidad de grupos inscriptos. La inscripción cerrará el día anterior a la fecha de entrega a las 20:00hs.
+
+Por último les pedimos que si deciden no presentarse a esta entrega nos avisen por mail a fin de poder organizarnos de la mejor manera.
 
 - https://inscripciones.utnso.com.ar/
 
@@ -45,11 +46,23 @@ El grupo luego recibirá la fecha y horario estimado de evaluación. Los mismos 
 
 ## A. Anunciarse
 
-El día de la evaluación, el grupo deberá notificar su llegada a los ayudantes cuando todos los integrantes se encuentren presentes.
+El día de la evaluación, el grupo deberá notificar su llegada a los ayudantes 
+
+El grupo deberá concurrir el día de la evaluación en el horario asignado, teniendo que anunciar su llegada a alguno de los ayudantes presentes.
+
+Es importante que al momento de anunciarse estén todos los integrantes del grupo.
+
+En caso de que pasen 5 minutos del horario asignado y el grupo no se haya anunciado se asumirá que el grupo no se presenta.
 
 -----------------------------
 
 # Una vez con las máquinas del laboratorio
+
+Si el trabajo práctico no puede correr en más de una máquina no se iniciará la evaluación y se dará por desaprobada la entrega.
+
+ Al momento de iniciar el despliegue del TP según lo indique el ayudante evaluador, el grupo dispondrá de 10 minutos para estar en condiciones de ser evaluado, en caso de que transcurran los 10 minutos y no se pueda iniciar la evaluación, el ayudante evaluador podrá solicitarles que se retiren del laboratorio, dando por finalizada la evaluación con resultado desaprobado.
+
+Los grupos contarán con una unica instancia de evaluación por fecha de entrega, es decir, que ante un error no resoluble en el momento en las pruebas, la entrega se considerará desaprobada.
 
 -----------------------------
 
