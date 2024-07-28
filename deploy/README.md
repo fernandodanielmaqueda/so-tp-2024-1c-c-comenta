@@ -311,14 +311,20 @@ Gestor de descargas (Ubuntu)
 
 # Ya en la VM de Ubuntu Server
 
+- **User**: utnso
+- **Password**: utnso
+
 -----------------------------
 ## 15. (SÓLO en el Deploy) Pasar la IP (de la VM) al resto de los integrantes del grupo
+
+Ya sea enviando un mensaje de texto desde un celular, o anotando en un papel
 
 Para mostrar la IP:
 ```bash
 ifconfig
 ```
-Ya sea enviando un mensaje de texto desde un celular, o anotando en un papel
+
+[![ifconfig](https://docs.utnso.com.ar/img/guias/consola/bash-ifconfig.png)]()
 
 -----------------------------
 ## 16. Actualizar el índice de paquetes local en la VM
@@ -772,37 +778,6 @@ sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 
 ## Anexo 1: Comandos generales
 
-> Cambiar a root
-```bash
-sudo -s
-```
-
-> Salir como root
-```bash
-exit
-```
-
-> Desmontar un disco
-```bash
-sudo umount /ruta/al/punto/de/montaje
-```
-
-> Leer un archivo de texto
-```bash
-less
-```
-
-> Editar un archivo de texto
-```bash
-nano
-vi
-```
-
-> Listar configuración de red
-```bash
-ifconfig
-```
-
 > Apagar
 ```bash
 shutdown now
@@ -812,14 +787,249 @@ shutdown now
 ```bash
 shutdown -r now
 ```
+Alternativa 1:
 ```bash
 reboot
 ```
+Alternativa 2:
+```bash
+init 6
+```
 
-> Listar procesos
+> Activar impresión de comandos ejecutados
+```bash
+set -x
+```
+
+> Desactivar impresión de comandos ejecutados
+```bash
+set +x
+```
+
+> Cambiar a root
+```bash
+sudo -s
+```
+
+> Salir de root
+```bash
+exit
+```
+
+> Listar las opciones de montaje:
+```bash
+mount
+```
+Listar las Carpetas Compartidas de Virtual Box (vboxsf)
+```bash
+mount | grep vboxsf
+```
+
+> Desmontar un disco
+```bash
+sudo umount /ruta/al/punto/de/montaje
+```
+
+> Listar configuración de red
+```bash
+ifconfig
+```
+
+> Imprimir directorio actual
+```bash
+pwd
+```
+
+> Cambiar de directorio
+```bash
+cd <ruta>
+```
+Home (*/home/utnso*)
+```bash
+cd ~
+```
+Directorio padre
+```bash
+cd ..
+```
+Directorio anterior
+```bash
+cd -
+```
+
+> Listar archivos (excepto ocultos) (con formato)
+```bash
+ls
+```
+
+> Listar archivos (incluido ocultos) (con formato)
+```bash
+ls -a
+```
+
+> Listar permisos de archivos
+```bash
+ls -l
+```
+
+> Listar archivos (sin formato)
+```bash
+dir
+```
+
+> Imprimir árbol de archivos y directorios
+```bash
+tree
+```
+
+> Buscar archivo(s) y/o directorio(s) en todos los subdirectorios
+```bash
+find .
+```
+Buscar archivos de log en todos los subdirectorios
+```bash
+find . -type f \( -name '*.log' \) -print
+```
+
+> Crear directorio vacío
+```bash
+mkdir <directorio>
+```
+
+> Crear archivo vacío
+```bash
+touch <archivo>
+```
+
+> Copiar archivo(s) y/o directorio(s) de origen a destino
+```bash
+cp <origen> <destino>
+```
+
+> Mover archivo(s) y/o directorio(s) de origen a destino
+```bash
+mv <origen> <destino>
+```
+
+> Eliminar archivo(s) y/o directorio(s) recursivamente y forzosamente
+```bash
+rm -rf <directorio>
+```
+
+> Eliminar directorio si solo si esta vacio, no está en uso, etc.
+```bash
+rmdir <directorio>
+```
+
+> Leer un archivo de texto
+```bash
+less <archivo>
+```
+
+> Monitorear un archivo de texto en tiempo real
+```bash
+less +F <archivo>
+```
+- Con Ctrl + C podemos pausar el monitoreo para scrollear por el archivo usando las flechas
+- Con Shift + F podemos continuar con el seguimiento que habíamos pausado.
+
+> Imprimir el contenido de un archivo en hexadecimal
+```bash
+hexdump -C <archivo>
+```
+
+> Editar un archivo de texto
+```bash
+vi <archivo>
+```
+
+```bash
+nano <archivo>
+```
+
+En la última línea pueden ver las distintas opciones que se pueden usar.
+
+Por ejemplo: Ctrl + X para salir.
+
+> Administrador de procesos
 ```bash
 htop
 ```
+
+[![htop](https://docs.utnso.com.ar/img/guias/consola/bash-htop-espera-activa.png)]()
+
+Sirve entre otras cosas para:
+- Visualizar el uso de CPU y RAM (para detectar esperas activas y memory leaks).
+- Ordenar los procesos por PID, nombre, uso de CPU/RAM, etc. con el mouse.
+- Filtrar los procesos (e hilos KLT) por nombre con F4.
+- Enviar señales a uno o varios procesos de forma intuitiva con F9.
+
+> Listar todos los archivos abiertos
+```bash
+lsof
+```
+En las entregas, puede ser muy útil junto con el flag -i para corroborar que no haya ningún proceso escuchando en un puerto en particular. Ejemplo:
+```bash
+lsof -i :8080
+```
+
+> Listar todas las variables de entorno:
+```bash
+env
+```
+Encontrar variable más fácilmente
+```bash
+env | grep NOMBRE_VARIABLE
+```
+Imprimir valor variable
+```bash
+echo $NOMBRE_VARIABLE
+```
+
+> Configurar una variable de entorno para la sesión actual:
+```bash
+export NOMBRE_VARIABLE='un valor'
+```
+- Para definir una variable que valga para todas las sesiones, podemos hacerlo agregando el export al final del archivo ~/.bashrc.
+
+> Cambiar el layout del teclado a Inglés (Estados Unidos)
+```bash
+sudo loadkeys us
+```
+
+> Cambiar el layout del teclado a Español (Argentina)
+```bash
+sudo loadkeys es
+```
+
+> Cambiar el dueño de un archivo (cambiar propietario)
+```bash
+chmod
+```
+Para cambiar el ownership de un archivo a mi usuario
+```bash
+chown $USER ejemplo.txt
+```
+Para cambiar el ownership de una carpeta y todo su contenido
+```bash
+chown -R $USER /home/utnso/swap
+```
+
+> Cambiar los permisos de un archivo (cambiar de modo)
+```bash
+chmod
+```
+Para dar permisos de ejecución
+```bash
+chmod +x mi-script.sh
+```
+Para configurar nuevos permisos usando el formato Unix
+```bash
+chmod 777 kernel.config
+```
+
+Machete para escribir los permisos tipo Unix en octal:
+[![chmod](https://docs.utnso.com.ar/img/guias/consola/bash-linux-file-permissions.jpg)]()
 
 > Listar todos los grupos:
 ```bash
@@ -832,21 +1042,11 @@ groups utnso
 groups root
 ```
 
-> Listar las opciones de montaje:
-```bash
-mount | grep vboxsf
-```
-
 > Listar ids
 ```bash
 id
 id -u
 id -g
-```
-
-> Listar permisos de archivos
-```bash
-ls -l
 ```
 
 -----------------------------
