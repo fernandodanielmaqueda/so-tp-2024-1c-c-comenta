@@ -277,7 +277,16 @@ Gestor de descargas (Ubuntu)
 # Ya en la VM de Ubuntu Server
 
 -----------------------------
-## 15. Actualizar el índice de paquetes local en la VM
+## 15. (SÓLO en el Deploy) Pasar la IP (de la VM) al resto de los integrantes del grupo
+
+Para mostrar la IP:
+```bash
+ifconfig
+```
+Ya sea enviando un mensaje de texto desde un celular, o anotando en un papel
+
+-----------------------------
+## 16. Actualizar el índice de paquetes local en la VM
 
 ```bash
 sudo apt update
@@ -285,7 +294,7 @@ sudo apt update
 
 -----------------------------
 
-## 16. (NO en el Deploy) (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
+## 17. (NO en el Deploy) (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
 
 1. Backupear el archivo `/etc/default/grub` original
 ```bash
@@ -324,7 +333,7 @@ init 6
 
 -----------------------------
 
-## 17. (NO en el Deploy) Instalar VirtualBox Guest Additions (para las carpetas compartidas)
+## 18. (NO en el Deploy) Instalar VirtualBox Guest Additions (para las carpetas compartidas)
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
@@ -351,7 +360,7 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 18. (NO en el Deploy) Montar una carpeta compartida en la VM
+## 19. (NO en el Deploy) Montar una carpeta compartida en la VM
 
 ### (NO en el Deploy) Alternativa 1: Montar una carpeta compartida usando vboxsf (VirtualBox Shared Folders)
 
@@ -449,7 +458,7 @@ Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cam
 
 -----------------------------
 
-## 19. Configurar SSH en la VM
+## 20. Configurar SSH en la VM
 
 1. Descargar e instalar openssh-server
 ```bash
@@ -548,7 +557,7 @@ less /var/log/auth.log
 
 -----------------------------
 
-## 20. Conectarse por SSH a la VM
+## 21. Conectarse por SSH a la VM
 
 ### En la máquina Host (Windows):
 
@@ -567,7 +576,7 @@ Nota: el puerto por defecto para SSH es 22
 
 -----------------------------
 
-## 21. (NO en el Deploy) Configurar VSCode
+## 22. (NO en el Deploy) Configurar VSCode
 
 ### Extensiones:
 	Remote - SSH
@@ -585,7 +594,7 @@ Nota: el puerto por defecto para SSH es 22
 	Notepad++ keymap
 	Output Colorizer
 
-### En la máquina Host (Windows):
+### (NO en el Deploy) En la máquina Host (Windows):
 
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-client
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-server
@@ -664,7 +673,7 @@ Host NúmeroIP
 
 -----------------------------
 
-## 22. Configurar Git en la VM
+## 23. Configurar Git en la VM
 
 1. Generar un token en GitHub
 	- Tokens (classic)
@@ -695,7 +704,7 @@ git config --global user.name 'Nombre y Apellido(s)'
 
 -----------------------------
 
-## 23. (NO en el Deploy) Instalar la versión más reciente de CMake
+## 24. (NO en el Deploy) Instalar la versión más reciente de CMake
 
 https://cmake.org/download/
 
