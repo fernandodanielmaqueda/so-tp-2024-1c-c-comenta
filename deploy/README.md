@@ -4,6 +4,9 @@
 - Las máquinas de la facultad tienen Windows, y NO hay permisos de administrador: no se pueden instalar programas, etc.
 
 ## TODO
+- AGREGAR PASAR LAS IPS Y PUERTOS POR MENSAJE EN EL GRUPO DE WHATSAPP
+- Revisar si hay permisos para levantar conexión por SMB (Samba) en Windows
+
 - Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad
 - Hacer un script/comando que habilite/deshabilite características de Windows
 - Hacer un script que configure automáticamente la VM en VirtualBox, o llevar los archivos de configuración ya hechos
@@ -13,7 +16,6 @@
 - Conexión a GitHub
 - Buscar un gestor de descargas que sea portable
 - Agregar PuTTY
-- Agregar comandos para bajarse los submódulos
 - Agregar comandos para compilar e instalar las commons, los cspec y los archivos de test
 - Comandos de tmux
 - Que el fstab tome todas las IPs y no haya que agregarlas manualmente
@@ -34,7 +36,8 @@ El grupo luego recibirá la fecha y horario estimado de evaluación. Los mismos 
 
 ## B. Generar las credenciales de GitHub
 
-TODO
+- https://github.com/settings/tokens?type=beta
+- https://github.com/settings/tokens
 
 -----------------------------
 
