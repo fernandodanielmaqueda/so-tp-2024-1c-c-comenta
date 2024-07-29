@@ -141,7 +141,7 @@ Debería ser equivalente a:
 cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
 
-- En caso de que nos aparezca este error:
+En caso de que nos aparezca este error:
 
 [![.NETFRAMEWORK_ERROR](https://i.sstatic.net/O9L6E.png)]()
 
@@ -700,43 +700,18 @@ ssh utnso@NúmeroIP -p 22
 > https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-client
 > https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-server
 
-Por defecto, la extensión `Remote - SSH` busca el programa `ssh` por algunas de las siguientes rutas (y más):
-- "C:\Program Files (x86)\Common Files\Oracle\Java\java8path\ssh.exe -V"
-- "C:\Program Files (x86)\Common Files\Oracle\Java\javapath\ssh.exe -V"
-- "C:\WINDOWS\system32\ssh.exe -V"
-- "C:\WINDOWS\ssh.exe -V"
-- "C:\WINDOWS\System32\Wbem\ssh.exe -V"
-- "C:\WINDOWS\System32\WindowsPowerShell\v1.0\ssh.exe -V"
-- "C:\WINDOWS\System32\OpenSSH\ssh.exe -V"
-- "C:\GnuWin32\bin\ssh.exe -V"
-- "C:\MinGW\msys\1.0\bin\ssh.exe -V"
-- "C:\MinGW\bin\ssh.exe -V"
-- "C:\Program Files\CMake\bin\ssh.exe -V"
-- "C:\Program Files\dotnet\ssh.exe -V"
-- "C:\bin\ssh.exe -V"
-- "C:\Program Files\PuTTY\ssh.exe -V"
-- "C:\Program Files\GitHub CLI\ssh.exe -V"
-- "C:\Program Files\Git\cmd\ssh.exe -V"
-- "C:\Users\Fernando\AppData\Local\Microsoft\WindowsApps\ssh.exe -V"
-- "C:\Users\Fernando\AppData\Local\Programs\Microsoft VS Code\bin\ssh.exe -V"
-- "C:\Program Files\JetBrains\RubyMine 2023.2.2\bin\ssh.exe -V"
-- "C:\Users\Fernando\AppData\Local\GitHubDesktop\bin\ssh.exe -V"
-- "C:\Program Files\Java\jdk-1.8\bin\ssh.exe -V"
-- "C:\Users\Fernando\AppData\Local\JetBrains\IntelliJ IDEA Community Edition 2023.2.4\bin\ssh.exe -V"
-- "C:\Users\Fernando\.dotnet\tools\ssh.exe -V"
-- "C:\Users\Fernando\AppData\Local\gitkraken\bin\ssh.exe -V"
-- "C:\WINDOWS\System32\OpenSSH\ssh.exe -V"
-- "C:\Program Files\Git\usr\bin\ssh.exe -V"
-- "C:\Program Files (x86)\Git\usr\bin\ssh.exe -V"
-
+Por defecto, la extensión `Remote - SSH` busca el programa `ssh` utilizando todas nuestras variables de entorno.
 En la configuración de la extensión podemos indicarle la ruta hacia el programa `ssh`
-> > Remote-SSH: Settings
+> \> Remote-SSH: Settings
 ```text
 Remote.SSH: Path
 An absolute path to the SSH executable. When empty, it will use "ssh" on the path or in common install locations.
 ```
 
 Si hay que instalar `ssh`, una forma es a través de `OpenSSH`: véase el `Anexo 5`.
+- "C:\WINDOWS\System32\OpenSSH\ssh.exe -V"
+- "C:\Program Files\Git\usr\bin\ssh.exe -V"
+- "C:\Program Files (x86)\Git\usr\bin\ssh.exe -V"
 
 Para conectarse por SSH:
 1. Presionar el botón azul en la esquina inferior izquierda de VSCode
@@ -750,7 +725,7 @@ Para conectarse por SSH:
 `C:\Users\alumno\.ssh\config`
 > En lugar de:
 `C:\ProgramData\ssh\ssh_config`
-> > Remote-SSH: Open SSH Configuration File...
+> \> Remote-SSH: Open SSH Configuration File...
 
 5. Revisar el archivo anterior:
 ```output
@@ -1367,11 +1342,19 @@ Luego de reiniciar, ejecuten `ifconfig` para corroborar que efectivamente las IP
 
 ## Anexo 6: Instalar OpenSSH
 
-### Alternativa 1: Desde GitHub
+### Alternativa 1: Con Git para Windows
+
+https://git-scm.com/download/win
+
+Por defecto, OpenSSH ya viene instalado con Git para Windows, en alguna de las siguientes rutas:
+- "C:\Program Files\Git\usr\bin\ssh.exe -V"
+- "C:\Program Files (x86)\Git\usr\bin\ssh.exe -V"
+
+### Alternativa 2: Desde el repositorio de GitHub
 
 https://github.com/PowerShell/Win32-OpenSSH/releases
 
-### Alternativa 2: Desde PowerShell (Requiere Permisos de Administrador)
+### Alternativa 3: Desde PowerShell (Requiere Permisos de Administrador)
 
 > https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=powershell#tabpanel_1_powershell
 
@@ -1425,6 +1408,18 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
 ```
 
 - https://code.visualstudio.com/docs/remote/ssh-tutorial
+
+-----------------------------
+
+## Anexo 7: Snapshots (Instantáneas) de la VM
+
+https://youtu.be/u1L23ziKgz4
+
+-----------------------------
+
+## Anexo 8: Guardar el estado de una VM
+
+https://youtu.be/YqFybzQmqOc
 
 -----------------------------
 
