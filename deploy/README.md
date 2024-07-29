@@ -1,9 +1,9 @@
 # Notas de Deploy SS.OO
 
-- Algunas de las cosas que se listan también sirven para poder trabajar sobre el repositorio de manera cómoda, no todo es exclusivo para el deploy para la presentación del TP.
-- Las máquinas de la facultad tienen Windows, y NO hay permisos de administrador: no se pueden instalar programas, etc.
+- Algunas de las cosas que se listan también sirven para instalar el entorno de trabajo, no todo es exclusivo para el deploy para la presentación del TP.
+- Las máquinas de la facultad usan Windows, y NO tenemos permisos de administrador: no se pueden instalar programas, etc.
 
-## TODO
+### TODO
 - Comandos de tmux
 - Que el fstab tome todas las IPs y no haya que agregarlas manualmente
 - Instalar `gh` (no viene instalado en la VM de Ubuntu Server)
@@ -27,11 +27,11 @@ sudo apt install gh -y
 
 >Si tuviéramos que resumir en tres cosas, lo que deberían hacer para poder llegar a una entrega con la seguridad de que van a aprobar sería:
 >
->Probar el TP
+>- Probar el TP
 >
->Practicar el despliegue
+>- Practicar el despliegue
 >
->Probar el TP y practicar el despliegue
+>- Probar el TP y practicar el despliegue
 >
 >Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs)
 >o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
@@ -69,7 +69,7 @@ sudo apt install gh -y
 
 -----------------------------
 
-# (SÓLO en el Deploy) Al entrar al laboratorio
+# (SÓLO en el Deploy) Al llegar al laboratorio
 
 Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
@@ -95,7 +95,7 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 -----------------------------
 
-## 1. Prender e iniciar sesión en la computadora
+## 1. Prender e iniciar sesión en una computadora
 
 - **Usuario**: alumno
 - **Contraseña**: alumno
@@ -114,7 +114,7 @@ Por ejemplo: `Google Chrome`, etc.
 
 - https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 
-## 5. Descargar Git Bash PORTABLE
+## 5. Descargar, instalar y abrir el Git Bash *PORTABLE*
 
 - https://git-scm.com/download/win
 	- 32-bits:
@@ -124,7 +124,7 @@ Por ejemplo: `Google Chrome`, etc.
 
 -----------------------------
 
-## 6. Descomprimir y abrir el Git Bash PORTABLE e iniciar sesión en GitHub
+## 6. Iniciar sesión en el Git de Windows
 ```bash
 git config --global user.email 'ejemplo@frba.utn.edu.ar'
 git config --global user.name 'Nombre y Apellido(s)'
@@ -132,7 +132,7 @@ git config --global user.name 'Nombre y Apellido(s)'
 
 -----------------------------
 
-## 7. Clonar este repositorio
+## 7. Clonar este repositorio en Windows
 ```bash
 cd ~ ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
@@ -141,7 +141,7 @@ Debería ser equivalente a:
 cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
 
-En caso de que nos aparezca este error:
+- En caso de que nos aparezca este error:
 
 [![.NETFRAMEWORK_ERROR](https://i.sstatic.net/O9L6E.png)]()
 
@@ -167,14 +167,14 @@ git remote set-url origin git@github.com:sisoputnfrba/tp-2024-1c-Operativos.git
 
 -----------------------------
 
-## 8. Clonarse los submódulos del repositorio
+## 8. Clonarse los submódulos del repositorio en Windows
 ```bash
 cd tp-2024-1c-Operativos ; git submodule update --init --recursive
 ```
 
 -----------------------------
 
-## 9. Ejecutar Scripts Automáticos
+## 9. Ejecutar los Scripts Automáticos de Windows
 
 TODO
 
@@ -346,7 +346,7 @@ Es en caso de que otro grupo la haya usado antes.
 - **SO 2022 Actualizada** *(Base)*
 
 -----------------------------
-## 15. (NO en el Deploy) Hacer un Snapshot de la VM Server
+## 15. (NO en el Deploy) Hacer un Snapshot (Instantánea) de la VM Server
 
 `Instantánea` > `Tomar`
 
@@ -357,15 +357,15 @@ Es en caso de que otro grupo la haya usado antes.
 
 # En la VM de Ubuntu Server
 
-- **utnso login**: utnso
-- **Password**: utnso
+- **utnso login**: `utnso`
+- **Password**: `utnso`
 
 -----------------------------
 ## 17. (SÓLO en el Deploy) Pasar la IP (de la VM) al resto de los integrantes del grupo
 
 Ya sea enviando un mensaje de texto desde un celular, o anotando en un papel
 
-Para mostrar la IP:
+- Para mostrar la IP:
 ```bash
 ifconfig
 ```
@@ -393,16 +393,16 @@ sudo cp /etc/default/grub /etc/default/grub.original
 sudo vi /etc/default/grub
 ```
 
-- Agregar al final la siguiente línea:
+> Agregar al final la siguiente línea:
 ```output
 GRUB_GFXPAYLOAD_LINUX=800x600
 ```
 
-- Modificar la siguiente línea:
+> Modificar la siguiente línea:
 ```output
 GRUB_CMDLINE_LINUX_DEFAULT=""
 ```
-a:
+> a:
 ```output
 GRUB_CMDLINE_LINUX_DEFAULT="nomodeset"
 ```
@@ -471,8 +471,8 @@ ls /home/utnso/vboxsfCompartida
 sudo vi /etc/fstab
 ```
 
-Agregarle la siguiente línea al final de dicho archivo.
-Nótese el uso de tabulaciones en lugar de espacios para separar las columnas de la línea.
+> Agregarle la siguiente línea al final de dicho archivo.
+> Nótese el uso de tabulaciones en lugar de espacios para separar las columnas de la línea.
 ```output
 Compartida	/home/utnso/vboxsfCompartida	vboxsf	rw,exec,uid=1000,gid=1000	0	0
 ```
@@ -482,18 +482,21 @@ Compartida	/home/utnso/vboxsfCompartida	vboxsf	rw,exec,uid=1000,gid=1000	0	0
 sudo vi /etc/modules
 ```
 
-Agregarle la siguiente línea al final de dicho archivo.
+> Agregarle la siguiente línea al final de dicho archivo.
 ```output
 vboxsf
 ```
 
-#### (NO en el Deploy) Nota sobre las carpetas compartidas de VirtualBox
+### (NO en el Deploy) Nota sobre las carpetas compartidas de VirtualBox
 
-No se puede ejecutar un programa más de una vez en simultáneo (múltiples instancias de un programa)
-No se pueden depurar con GDB los ejecutables si estos están dentro de las carpetas compartidas (sólo se puede hasta cargar los símbolos de depuración del mismo)
-Esto es por una limitación de los permisos de ejecución que tiene el filesystem de VirtualBox (vboxsf):
-Mientras un programa está en ejecución, se quitan los permisos de ejecución y de escritura sobre el mismo (x y w)
-Los permisos NO se pueden modificar con chmod. chown tampoco tiene efecto. Es independiente del gid y del pid, seas usuario utnso, root y/o parte del grupo vboxsf
+- No se puede ejecutar un programa más de una vez en simultáneo (múltiples instancias de un programa)
+- No se pueden depurar con `gdb` los ejecutables si estos están dentro de las carpetas compartidas (sólo se puede hasta cargar los símbolos de depuración del mismo)
+
+Esto es por una limitación de los permisos de ejecución que tiene el filesystem de VirtualBox (`vboxsf`):
+- Mientras un programa está en ejecución, se quitan los permisos de ejecución y de escritura sobre el mismo (`x` y `w`)
+- Los permisos NO se pueden modificar con `chmod`.
+- chown tampoco tiene efecto.
+- Sucede independientemente del `gid` y del `pid`, seas usuario `utnso`, `root` y/o parte del grupo `vboxsf`
 
 Una forma rápida para sobrellevarlo es copiar los archivos necesarios a ejecutar de la carpeta compartida a cualquier carpeta local de la VM y ejecutarlos desde ahí
 
@@ -501,7 +504,7 @@ Una forma rápida para sobrellevarlo es copiar los archivos necesarios a ejecuta
 
 ### (NO en el Deploy) Alternativa 2: Montar una carpeta compartida usando Samba (SMB)
 
-Este método no tiene la limitación anteriormente mencionada.
+> Este método no tiene la limitación anteriormente mencionada.
 
 En la VM Ubuntu Server:
 
@@ -530,12 +533,12 @@ ls /home/utnso/smbCompartida
 sudo vi /etc/fstab
 ```
 
-Agregarle la siguiente línea al final de dicho archivo.
+> Agregarle la siguiente línea al final de dicho archivo.
 ```output
 //alumno/NombreCarpetaCompartida /home/utnso/smbCompartida cifs username=alumno,password=alumno,vers=3.0,file_mode=0777,dir_mode=0777 0 0
 ```
 
-Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cambiarse a 2.0, por ejemplo, de ser necesario
+`Nota`: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cambiarse a 2.0, por ejemplo, de ser necesario
 
 -----------------------------
 
@@ -561,7 +564,7 @@ sudo systemctl enable ssh --now
 sudo systemctl status ssh
 ```
 
-La salida debería ser similar a:
+> La salida debería ser similar a:
 ```output
 ● ssh.service - OpenBSD Secure Shell server
      Loaded: loaded (/lib/systemd/system/ssh.service; enabled; vendor preset: enabled)
@@ -585,7 +588,7 @@ sudo ufw enable
 sudo ufw status verbose
 ```
 
-La salida debería ser algo así como:
+> La salida debería ser algo así como:
 ```output
 Status: active
 Logging: on (low)
@@ -603,7 +606,7 @@ To                         Action      From
 sudo lsof -i -P -n | grep LISTEN
 ```
 
-La salida debería ser algo así como:
+> La salida debería ser algo así como:
 ```output
 systemd-r  697 systemd-resolve   14u  IPv4  19989      0t0  TCP 127.0.0.53:53 (LISTEN)
 sshd       778            root    3u  IPv4  20570      0t0  TCP *:22 (LISTEN)
@@ -619,11 +622,11 @@ apache2   2817        www-data    4u  IPv6  20598      0t0  TCP *:80 (LISTEN)
 sudo vi /etc/ssh/sshd_config
 ```
 
-Debajo de esta línea:
+> Debajo de esta línea:
 `Include /etc/ssh/sshd_config.d/*.conf`
 
-Agregar las IPs admitidas para conectarse vía SSH con la VM.
-Las que no figuren en este listado serán rechazadas, por más que ingresen usuario y contraseña correctos.
+> Agregar las IPs admitidas para conectarse vía SSH con la VM.
+> Las que no figuren en este listado serán rechazadas, por más que ingresen usuario y contraseña correctos.
 ```console
 AllowUsers utnso@NúmeroIP
 ```
@@ -638,8 +641,8 @@ sudo systemctl restart ssh
 ifconfig
 ```
 
-8. Ver el log: sirve para saber qué IPs intentaron conectarse vía SSH con la VM
-Puede ser útil para averigüar la IP del Host
+8. Para revisar el log de SSH:
+> Puede ser útil para averigüar la IP del Host: ver qué IPs intentaron conectarse vía SSH con la VM
 ```bash
 less /var/log/auth.log
 ```
@@ -650,7 +653,7 @@ less /var/log/auth.log
 
 ## 23. Conectarse por SSH a la VM
 
-Conocer la IP del Host
+> Conocer la IP del Host
 ```powershell
 ipconfig
 ```
@@ -660,7 +663,7 @@ ipconfig
 ```powershell
 ssh utnso@NúmeroIP -p 22
 ```
-Nota: el puerto por defecto para SSH es 22
+> Nota: el puerto por defecto para SSH es 22
 
 ### Alternativa 2: Usar PuTTY
 
@@ -679,88 +682,77 @@ Nota: el puerto por defecto para SSH es 22
 ## 24. (NO en el Deploy) Configurar VSCode
 
 ### Extensiones:
-	- Remote - SSH
-	- Remote - SSH: Editing Configuration Files
-	- Remote Explorer
-	- WSL
-	- C/C++
-	- C/C++ Extension Pack
-	- C/C++ Themes
-	- GitLens
-	- Live Share
-	- Makefile Tools
-	- Markdown All In One
-	- Markdown Preview Github Styling
-	- Notepad++ keymap
-	- Output Colorizer
+	Remote - SSH
+	Remote - SSH: Editing Configuration Files
+	Remote Explorer
+	WSL
+	C/C++
+	C/C++ Extension Pack
+	C/C++ Themes
+	GitLens
+	Live Share
+	Makefile Tools
+	Markdown All In One
+	Markdown Preview Github Styling
+	Notepad++ keymap
+	Output Colorizer
 
-https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-client
-https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-server
+> https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-client
+> https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-server
 
-https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=powershell#tabpanel_1_powershell
+Por defecto, la extensión `Remote - SSH` busca el programa `ssh` por algunas de las siguientes rutas (y más):
+- "C:\Program Files (x86)\Common Files\Oracle\Java\java8path\ssh.exe -V"
+- "C:\Program Files (x86)\Common Files\Oracle\Java\javapath\ssh.exe -V"
+- "C:\WINDOWS\system32\ssh.exe -V"
+- "C:\WINDOWS\ssh.exe -V"
+- "C:\WINDOWS\System32\Wbem\ssh.exe -V"
+- "C:\WINDOWS\System32\WindowsPowerShell\v1.0\ssh.exe -V"
+- "C:\WINDOWS\System32\OpenSSH\ssh.exe -V"
+- "C:\GnuWin32\bin\ssh.exe -V"
+- "C:\MinGW\msys\1.0\bin\ssh.exe -V"
+- "C:\MinGW\bin\ssh.exe -V"
+- "C:\Program Files\CMake\bin\ssh.exe -V"
+- "C:\Program Files\dotnet\ssh.exe -V"
+- "C:\bin\ssh.exe -V"
+- "C:\Program Files\PuTTY\ssh.exe -V"
+- "C:\Program Files\GitHub CLI\ssh.exe -V"
+- "C:\Program Files\Git\cmd\ssh.exe -V"
+- "C:\Users\Fernando\AppData\Local\Microsoft\WindowsApps\ssh.exe -V"
+- "C:\Users\Fernando\AppData\Local\Programs\Microsoft VS Code\bin\ssh.exe -V"
+- "C:\Program Files\JetBrains\RubyMine 2023.2.2\bin\ssh.exe -V"
+- "C:\Users\Fernando\AppData\Local\GitHubDesktop\bin\ssh.exe -V"
+- "C:\Program Files\Java\jdk-1.8\bin\ssh.exe -V"
+- "C:\Users\Fernando\AppData\Local\JetBrains\IntelliJ IDEA Community Edition 2023.2.4\bin\ssh.exe -V"
+- "C:\Users\Fernando\.dotnet\tools\ssh.exe -V"
+- "C:\Users\Fernando\AppData\Local\gitkraken\bin\ssh.exe -V"
+- "C:\WINDOWS\System32\OpenSSH\ssh.exe -V"
+- "C:\Program Files\Git\usr\bin\ssh.exe -V"
+- "C:\Program Files (x86)\Git\usr\bin\ssh.exe -V"
 
-1. To install OpenSSH using PowerShell, run PowerShell as an Administrator. To make sure that OpenSSH is available, run the following cmdlet:
-
-```powershell
-Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
-```
-The command should return the following output if neither are already installed:
-
-```output
-Name  : OpenSSH.Client~~~~0.0.1.0
-State : NotPresent
-
-Name  : OpenSSH.Server~~~~0.0.1.0
-State : NotPresent
-```
-
-2. Then, install the server or client components as needed:
-
-```powershell
-# Install the OpenSSH Client
-Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
-
-# Install the OpenSSH Server
-Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
-```
-Both commands should return the following output:
-
-```output
-Path          :
-Online        : True
-RestartNeeded : False
-```
-3. To start and configure OpenSSH Server for initial use, open an elevated PowerShell prompt (right click, Run as an administrator), then run the following commands to start the sshd service:
-
-```powershell
-# Start the sshd service
-Start-Service sshd
-
-# OPTIONAL but recommended:
-Set-Service -Name sshd -StartupType 'Automatic'
-
-# Confirm the Firewall rule is configured. It should be created automatically by setup. Run the following to verify
-if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue | Select-Object Name, Enabled)) {
-    Write-Output "Firewall Rule 'OpenSSH-Server-In-TCP' does not exist, creating it..."
-    New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
-} else {
-    Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' has been created and exists."
-}
+En la configuración de la extensión podemos indicarle la ruta hacia el programa `ssh`
+> > Remote-SSH: Settings
+```text
+Remote.SSH: Path
+An absolute path to the SSH executable. When empty, it will use "ssh" on the path or in common install locations.
 ```
 
-- https://code.visualstudio.com/docs/remote/ssh-tutorial
+Si hay que instalar `ssh`, una forma es a través de `OpenSSH`: véase el `Anexo 5`.
 
-4. Presionar el botón azul en la esquina inferior izquierda de VSCode
+Para conectarse por SSH:
+1. Presionar el botón azul en la esquina inferior izquierda de VSCode
 
-5. Seleccionar la opción `Connect to Host...`
+2. Seleccionar la opción `Connect to Host...`
 
-6. Ingresar en el siguiente formato:
-`utnso@NúmeroIP`
+3. Ingresar en el siguiente formato:
+`utnso@NúmeroIPdeVMServer`
 
-7. Guardar la configuración en:
+4. Guardar la configuración en:
 `C:\Users\alumno\.ssh\config`
+> En lugar de:
+`C:\ProgramData\ssh\ssh_config`
+> > Remote-SSH: Open SSH Configuration File...
 
-8. Verificar el archivo anterior:
+5. Revisar el archivo anterior:
 ```output
 # Nombre
 Host NúmeroIP
@@ -1107,11 +1099,11 @@ htop
 
 [![htop](https://docs.utnso.com.ar/img/guias/consola/bash-htop-espera-activa.png)]()
 
-	- Sirve entre otras cosas para:
-		- Visualizar el uso de CPU y RAM (para detectar esperas activas y memory leaks).
-		- Ordenar los procesos por PID, nombre, uso de CPU/RAM, etc. con el mouse.
-		- Filtrar los procesos (e hilos KLT) por nombre con F4.
-		- Enviar señales a uno o varios procesos de forma intuitiva con F9.
+- Sirve entre otras cosas para:
+	- Visualizar el uso de CPU y RAM (para detectar esperas activas y memory leaks).
+	- Ordenar los procesos por PID, nombre, uso de CPU/RAM, etc. con el mouse.
+	- Filtrar los procesos (e hilos KLT) por nombre con F4.
+	- Enviar señales a uno o varios procesos de forma intuitiva con F9.
 
 - Listar todos los archivos abiertos
 ```bash
@@ -1146,12 +1138,11 @@ export NOMBRE_VARIABLE='un valor'
 > Para definir una variable que valga para todas las sesiones, podemos hacerlo agregando el export al final del archivo `~/.bashrc`
 
 - Cambiar el layout del teclado
-	- A Inglés (Estados Unidos)
+> A Inglés (Estados Unidos)
 ```bash
 sudo loadkeys us
 ```
-
-	- A Español (Argentina)
+> A Español (Argentina)
 ```bash
 sudo loadkeys es
 ```
@@ -1186,7 +1177,7 @@ chmod +x mi-script.sh
 chmod 777 kernel.config
 ```
 
-	- Machete para escribir los permisos tipo Unix en octal:
+> Machete para escribir los permisos tipo Unix en octal:
 [![chmod](https://docs.utnso.com.ar/img/guias/consola/bash-linux-file-permissions.jpg)]()
 
 - Listar todos los grupos:
@@ -1209,7 +1200,7 @@ id -g
 
 -----------------------------
 
-## Anexo 2: Comandos de make
+## Anexo 2: Comandos con el makefile
 
 - Compilar todos los módulos
 ```bash
@@ -1298,15 +1289,17 @@ exit
 - Para cerrar forzosamente la ventana de la sesion, presione <kbd>Ctrl</kbd> + <kbd>b</kbd>, seguidamente presione <kbd>x</kbd> y por ultimo presione <kbd>y</kbd>
 - Para crear una nueva ventana, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>c</kbd>
 - Para apartar la sesion con sus ventanas sin cerrarla [detach], presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>d</kbd>
-- Para volver a las sesiones apartadas de tmux [detached], ejecute el comando:
+- Para volver a las sesiones apartadas de `tmux [detached]`, ejecute el comando:
 ```bash
 tmux attach
 ```
-	- Por el número identificador de la sesión
+
+> Por el número identificador de la sesión
 ```bash
 tmux attach -t 0
 ```
-	- Por el nombre de la sesión
+
+> Por el nombre de la sesión
 ```bash
 tmux attach -t 'NombreDeSesion'
 ```
@@ -1318,14 +1311,17 @@ tmux ls
 ```bash
 tmux kill-session
 ```
-	- Por el número identificador de la sesión
+
+> Por el número identificador de la sesión
 ```bash
 tmux kill -t 0
 ```
-	- Por el nombre de la sesión
+
+> Por el nombre de la sesión
 ```bash
 tmux kill -t 'NombreDeSesion'
 ```
+
 - Para cambiarle el nombre a la sesion actual de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>,</kbd>
 - Para alternar entre las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>s</kbd>
 - Para alternar entre las ventanas de las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>w</kbd>
@@ -1366,6 +1362,69 @@ por lo que el router podría terminar asignándoles la misma IP a ambas VMs,
 lo cual generaría conflictos a la hora de conectarlas en red.
 
 Luego de reiniciar, ejecuten `ifconfig` para corroborar que efectivamente las IPs de todas las VMs son distintas.
+
+-----------------------------
+
+## Anexo 6: Instalar OpenSSH
+
+### Alternativa 1: Desde GitHub
+
+https://github.com/PowerShell/Win32-OpenSSH/releases
+
+### Alternativa 2: Desde PowerShell (Requiere Permisos de Administrador)
+
+> https://learn.microsoft.com/en-us/windows-server/administration/openssh/openssh_install_firstuse?tabs=powershell#tabpanel_1_powershell
+
+1. To install OpenSSH using PowerShell, run PowerShell as an Administrator. To make sure that OpenSSH is available, run the following cmdlet:
+
+```powershell
+Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH*'
+```
+The command should return the following output if neither are already installed:
+
+```output
+Name  : OpenSSH.Client~~~~0.0.1.0
+State : NotPresent
+
+Name  : OpenSSH.Server~~~~0.0.1.0
+State : NotPresent
+```
+
+2. Then, install the server or client components as needed:
+
+```powershell
+# Install the OpenSSH Client
+Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+
+# Install the OpenSSH Server
+Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+```
+Both commands should return the following output:
+
+```output
+Path          :
+Online        : True
+RestartNeeded : False
+```
+3. To start and configure OpenSSH Server for initial use, open an elevated PowerShell prompt (right click, Run as an administrator), then run the following commands to start the sshd service:
+
+```powershell
+# Start the sshd service
+Start-Service sshd
+
+# OPTIONAL but recommended:
+Set-Service -Name sshd -StartupType 'Automatic'
+
+# Confirm the Firewall rule is configured. It should be created automatically by setup. Run the following to verify
+if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyContinue | Select-Object Name, Enabled)) {
+    Write-Output "Firewall Rule 'OpenSSH-Server-In-TCP' does not exist, creating it..."
+    New-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+} else {
+    Write-Output "Firewall rule 'OpenSSH-Server-In-TCP' has been created and exists."
+}
+```
+
+- https://code.visualstudio.com/docs/remote/ssh-tutorial
 
 -----------------------------
 
