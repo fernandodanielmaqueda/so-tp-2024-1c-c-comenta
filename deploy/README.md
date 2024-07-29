@@ -1,25 +1,19 @@
-# Notas de Deploy SSOO
+# Notas de Deploy SS.OO
 
 - Algunas de las cosas que se listan también sirven para poder trabajar sobre el repositorio de manera cómoda, no todo es exclusivo para el deploy para la presentación del TP.
 - Las máquinas de la facultad tienen Windows, y NO hay permisos de administrador: no se pueden instalar programas, etc.
 
 ## TODO
-- https://docs.utnso.com.ar/primeros-pasos/tp0 (AGREGAR LO DE CREDENCIALES SSH)
-- Agregar comandos para compilar e instalar las commons, los cspec y los archivos de test
-- Copiar los archivos de test a /home/utnso/scripts ....
-- Hacer un snapshot de la VM antes de arrancar, y desloguearse, eliminar archivos, etc. antes de borrar todo
-- PONER LAS IPS Y PUERTOS EN LOS ARCHIVOS DE CONFIG
 - Comandos de tmux
 - Que el fstab tome todas las IPs y no haya que agregarlas manualmente
-- Acceso a GitHub desde las computadoras de la facultad
-	- https://stackoverflow.com/questions/69336114/the-application-requires-one-of-the-following-versions-of-the-net-framework-ho
+- Instalar `gh` (no viene instalado en la VM de Ubuntu Server)
+```bash
+sudo apt install gh -y
+```
 
-- Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad
-- Hacer un script que configure automáticamente la VM en VirtualBox, o llevar los archivos de configuración ya hechos
-- Hacer un script que instale automáticamente las extensiones de VSCode
-- Hacer un script que tome las IPs del Host y del Guest y que haga las conexiones SSH automáticamente y edite los .config acordemente
+- Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad (.iso, .vhd)
 - Editar el archivo /home/utnso/base.sh acordemente
-- Buscar un gestor de descargas que sea portable
+- Hacer un script que instale automáticamente las extensiones de VSCode
 - Revisar si hay permisos para levantar conexión por SMB (Samba) en Windows
 -----------------------------
 
@@ -36,11 +30,12 @@
 >Probar el TP
 >Practicar el despliegue
 >Probar el TP y practicar el despliegue
->Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs) o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
+>Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs)
+>o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
 
-## B. Preparar los configs
+## B. Preparar los configs en el repositorio grupal
 
-Para conectar los módulos del TP entre sí es recomendable usar números de puerto por encima de 1024, ya que es poco probable que estén siendo usados por otro proceso (ej: 8000, 8001, etc).
+> Para conectar los módulos del TP entre sí es recomendable usar números de puerto por encima de 1024, ya que es poco probable que estén siendo usados por otro proceso (ej: 8000, 8001, etc).
 
 ## C. Anotarse en el Sistema de Inscripciones
 
@@ -57,10 +52,13 @@ Para conectar los módulos del TP entre sí es recomendable usar números de pue
 ## D. Generar las credenciales de GitHub
 
 - Para claves PAT (Personal Access Token)
-	- https://github.com/settings/tokens?type=beta
+	- Tokens (classic)
+		- https://github.com/settings/tokens?type=beta
+			- Los scopes (alcances) mínimos requeridos son: 'repo', 'read:org' y 'workflow'.
 	- https://github.com/settings/tokens
 - Para claves SSH
-	- https://github.com/settings/keys
+	- Fine-grained tokens
+		- https://github.com/settings/keys
 
 ## E. Llevarse anotadas las credenciales de GitHub
 
@@ -68,7 +66,9 @@ Para conectar los módulos del TP entre sí es recomendable usar números de pue
 
 -----------------------------
 
-# (Sólo Deploy) Al entrar al laboratorio
+# (SÓLO en el Deploy) Al entrar al laboratorio
+
+Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 ## A. Anunciarse
 
@@ -94,7 +94,6 @@ Para conectar los módulos del TP entre sí es recomendable usar números de pue
 
 ## 1. Encender e iniciar sesión en la computadora
 
-Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 - **Usuario**: alumno
 - **Contraseña**: alumno
 
@@ -152,15 +151,15 @@ Las alternativas son:
 ```bash
 git config --unset-all credential.helper && git config credential.helper wincred
 ```
-Cuando se te solicite tu nombre de usuario, ingresalo.
-Cuando te solicite tu contraseña, ingresá tu PAT (Personal Access Token) que generaste.
+Cuando eventualmente se te solicite tu nombre de usuario, ingresalo.
+Cuando eventualmente te solicite tu contraseña, ingresá tu PAT (Personal Access Token) que generaste.
 
 2. Si para acceder a tu cuenta de Git usás clave SSH:
 	- Cambiar a SSH:
 ```bash
 git remote set-url origin git@github.com:sisoputnfrba/tp-2024-1c-Operativos.git
 ```
-Deberás ingresar tu clave pública SSH generada.
+Eventualmente deberás ingresar tu clave pública SSH generada.
 
 -----------------------------
 
@@ -177,13 +176,13 @@ TODO
 
 -----------------------------
 
-## 10. (NO en Deploy) Descargar VirtualBox
+## 10. (NO en el Deploy) Descargar VirtualBox
 
 - https://www.virtualbox.org/wiki/Downloads
 
 -----------------------------
 
-## 11. (NO en Deploy) Descargar la VM de Ubuntu Server
+## 11. (NO en el Deploy) Descargar la VM de Ubuntu Server
 
 Página oficial
 - https://docs.utnso.com.ar/recursos/vms
@@ -206,13 +205,13 @@ Gestor de descargas (Ubuntu)
 
 -----------------------------
 
-## 12. (NO en Deploy) Revisar características de Windows
+## 12. (NO en el Deploy) Revisar características de Windows
 
 - Desactivar `Plataforma de Hipervisor de Windows`
 
 -----------------------------
 
-## 13. (NO en Deploy) Configuración de la VM (Ubuntu Server) en VirtualBox
+## 13. (NO en el Deploy) Configuración de la VM (Ubuntu Server) en VirtualBox
 
 - General
 	- Básico
@@ -334,14 +333,23 @@ Gestor de descargas (Ubuntu)
 		- [X] .
 
 -----------------------------
-## 14. (Opcional) Hacer un Snapshot de la VM Server
+## 14. (SÓLO en el Deploy) Restaurar la VM Server al último Snapshot (Instantánea) provisto por la Cátedra
 
-TODO
-
------------------------------
-## 15. Iniciar la VM Server
+Es en caso de que otro grupo la haya usado antes.
 
 - **SO 2022 Actualizada** *(Base)*
+
+Instantánea > Restaurar
+
+-----------------------------
+## 15. (NO en el Deploy) Hacer un Snapshot de la VM Server
+
+Instantánea > Tomar
+
+-----------------------------
+## 16. Iniciar la VM Server
+
+- **SO 2022 Actualizada**
 
 # Ya en la VM de Ubuntu Server
 
@@ -349,7 +357,7 @@ TODO
 - **Password**: utnso
 
 -----------------------------
-## 16. (SÓLO en el Deploy) Pasar la IP (de la VM) al resto de los integrantes del grupo
+## 17. (SÓLO en el Deploy) Pasar la IP (de la VM) al resto de los integrantes del grupo
 
 Ya sea enviando un mensaje de texto desde un celular, o anotando en un papel
 
@@ -361,7 +369,7 @@ ifconfig
 [![ifconfig](https://docs.utnso.com.ar/img/guias/consola/bash-ifconfig.png)]()
 
 -----------------------------
-## 17. Actualizar el índice de paquetes local en la VM
+## 18. Actualizar el índice de paquetes local en la VM
 
 ```bash
 sudo apt update
@@ -369,7 +377,7 @@ sudo apt update
 
 -----------------------------
 
-## 18. (NO en el Deploy) (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
+## 19. (NO en el Deploy) (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
 
 1. Backupear el archivo `/etc/default/grub` original
 ```bash
@@ -408,7 +416,7 @@ init 6
 
 -----------------------------
 
-## 19. (NO en el Deploy) Instalar VirtualBox Guest Additions (para las carpetas compartidas)
+## 20. (NO en el Deploy) Instalar VirtualBox Guest Additions (para las carpetas compartidas)
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
@@ -435,7 +443,7 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 20. (NO en el Deploy) Montar una carpeta compartida en la VM
+## 21. (NO en el Deploy) Montar una carpeta compartida en la VM
 
 ### (NO en el Deploy) Alternativa 1: Montar una carpeta compartida usando vboxsf (VirtualBox Shared Folders)
 
@@ -535,7 +543,7 @@ Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cam
 
 -----------------------------
 
-## 21. Configurar SSH en la VM
+## 22. Configurar SSH en la VM
 
 1. Descargar e instalar openssh-server
 ```bash
@@ -636,7 +644,7 @@ less /var/log/auth.log
 
 -----------------------------
 
-## 22. Conectarse por SSH a la VM
+## 23. Conectarse por SSH a la VM
 
 ### Alternativa 1: Usar PowerShell
 
@@ -667,7 +675,7 @@ Nota: el puerto por defecto para SSH es 22
 
 -----------------------------
 
-## 23. (NO en el Deploy) Configurar VSCode
+## 24. (NO en el Deploy) Configurar VSCode
 
 ### Extensiones:
 	Remote - SSH
@@ -764,29 +772,7 @@ Host NúmeroIP
 
 -----------------------------
 
-## 24. Configurar Git en la VM
-
-1. Generar un token en GitHub
-	- Tokens (classic)
-	https://github.com/settings/tokens
-	The minimum required scopes are 'repo', 'read:org', 'workflow'.
-
-	- Fine-grained tokens
-	https://github.com/settings/tokens?type=beta
-
-2. Instalar `gh` (no viene instalado en la VM de Ubuntu Server)
-
-```bash
-sudo apt install gh -y
-```
-
-3. Loggearse
-
-```bash
-gh auth login
-```
-
-4. Hacer los git config
+## 25. Configurar Git en la VM
 
 ```bash
 git config --global user.email 'ejemplo@frba.utn.edu.ar'
@@ -795,7 +781,121 @@ git config --global user.name 'Nombre y Apellido(s)'
 
 -----------------------------
 
-## 25. (NO en el Deploy) Instalar la versión más reciente de CMake
+## 26. Autenticarse en Git en la VM
+
+# Alternativa 1: Comando gh
+```bash
+gh auth login
+```
+
+# Alternativa 2: Generar claves SSH
+```bash
+ssh-keygen -t ed25519 -C "your@email.com"
+```
+Donde `"your@email.com"` es el email que tienen asociado a su cuenta de GitHub.
+
+Luego, vamos a seguir las instrucciones que nos da el comando para generar las claves. Por defecto, se van a guardar en el directorio `~/.ssh/` con los nombres `id_ed25519` y `id_ed25519.pub`
+
+Por último, vamos a agregar la clave pública a nuestra cuenta de GitHub moviéndonos a `Settings` > `SSH and GPG keys` > `New SSH key`.
+
+- El tipo de clave es `Authentication Key`
+- La clave es el contenido de la clave pública que generamos, el cual pueden ver con el comando `cat ~/.ssh/id_ed25519.pub`
+
+Una vez hecho esto, podemos verificar que todo está configurado correctamente con el comando:
+
+```bash
+ssh -T git@github.com
+```
+bash
+
+La primera vez nos va a preguntar si queremos agregar la clave a la lista de hosts conocidos:
+
+```txt
+The authenticity of host 'github.com' can't be established.
+ED25519 key fingerprint is SHA256:+asdrfadfasfsdf/asdfsdafsdafdsafdf.
+This key is not known by any other names
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+Vamos a responder yes para agregar la clave a la lista de hosts conocidos y poder autenticarnos.
+```
+
+Si todo salió bien, deberíamos ver un mensaje de bienvenida de GitHub:
+
+```txt
+Hi TuUsuarioDeGitHub! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+-----------------------------
+
+## 27. Clonar este repositorio
+```bash
+cd ~ ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
+```
+Debería ser equivalente a:
+```bash
+cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
+```
+
+En caso de que nos aparezca este error:
+[![.NETFRAMEWORK_ERROR](https://i.sstatic.net/O9L6E.png)]()
+
+Como no tenemos permisos de administrador en las máquinas de la facultad, no podemos instalar esa dependencia
+(.NET Framework 4.7.2) y por ende no podemos utilizar el Administrador de Credenciales de Git
+(**Git Credential Manager Core**)
+
+Las alternativas son:
+1. Si para acceder a tu cuenta de Git usás PAT (Personal Access Token):
+	- Usá el Administrador de Credenciales de Windows (**wincred**)
+```bash
+git config --unset-all credential.helper && git config credential.helper wincred
+```
+Cuando se te solicite tu nombre de usuario, ingresalo.
+Cuando te solicite tu contraseña, ingresá tu PAT (Personal Access Token) que generaste.
+
+2. Si para acceder a tu cuenta de Git usás clave SSH:
+	- Cambiar a SSH:
+```bash
+git remote set-url origin git@github.com:sisoputnfrba/tp-2024-1c-Operativos.git
+```
+Deberás ingresar tu clave pública SSH generada.
+
+-----------------------------
+
+## 28. Clonarse los submódulos del repositorio
+```bash
+cd tp-2024-1c-Operativos ; git submodule update --init --recursive
+```
+
+-----------------------------
+
+## 29. Ejecutar Scripts Automáticos
+
+TODO
+
+## 30. Poner las IPs (no los puertos) en los archivos de config
+
+Completar con las IPs que te hayan pasado tus compañeros de equipo que correspondan a las máquinas
+
+-----------------------------
+
+## 31. Copiar los archivos de test
+
+Deben quedar en: /home/utnso/scripts-pruebas/...
+
+-----------------------------
+
+## 32. Instalar la commons library
+
+TODO
+
+-----------------------------
+
+## 33. (NO en el Deploy) Instalar cspec
+
+TODO
+
+-----------------------------
+
+## 34. (NO en el Deploy) Instalar la versión más reciente de CMake
 
 https://cmake.org/download/
 
@@ -807,6 +907,12 @@ https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-x8
 chmod +x cmake-3.29.0-linux-x86_64.sh
 sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 ```
+
+-----------------------------
+
+## 35. Levantar los módulo(s) del TP que correspondan
+
+Los comandos del makefile están en el Anexo 2.
 
 -----------------------------
 
@@ -1215,18 +1321,49 @@ tmux kill -t 'NombreDeSesion'
 
 -----------------------------
 
+## Anexo 5: Clonar la VM
+
+Para simular que contamos con dos máquinas distintas, lo que haremos será clonar la VM que ya tenemos configurada.
+Para ello, vamos a hacer click derecho en la VM > "Clone..." y seguir los pasos para clonar la VM.
+Recomendamos usar la opción "Linked clone" ya que el proceso de clonado es más rápido y ocupa menos espacio:
+
+[![vm-clone](https://docs.utnso.com.ar/img/primeros-pasos/tp0/vm-clone.png)]()
+
+### Resolver conflictos de red
+Por último, vamos a iniciar sesión en una de las VMs y ejecutar las siguientes 3 líneas:
+
+```bash
+sudo rm -f /etc/machine-id
+sudo dbus-uuidgen --ensure=/etc/machine-id
+sudo reboot
+```
+
+Esto lo que hace es generar un nuevo archivo `/etc/machine-id`,
+en el cual se guarda un identificador que permite al router
+asignarle la misma IP a una máquina cada vez que éstase conecta a la red.
+
+Al nosotros haber clonado la misma VM, ambas tienen el mismo `machine-id`,
+por lo que el router podría terminar asignándoles la misma IP a ambas VMs,
+lo cual generaría conflictos a la hora de conectarlas en red.
+
+Luego de reiniciar, ejecuten `ifconfig` para corroborar que efectivamente las IPs de todas las VMs son distintas.
+
+-----------------------------
+
 # Al salir
 
-### 1. Desloguearse de las cuentas del navegador
+### 1. Apagar la VM Ubuntu Server
 
-### 2. Borrar el historial del navegador
+### 2. En Virtual Box, restaurar el snapshot de la VM Ubuntu Server al Base
 
-### 3. Desloguearse de Git
+### 3. Desloguearse de las cuentas del navegador
 
-### 4. Quitar las credenciales de Git en el Administrador de Credenciales de Windows
+### 4. Borrar el historial del navegador
 
-### 5. Eliminar el repositorio clonado
+### 5. Desloguearse del Git de Windows
 
-### 6. Vaciar la papelera de reciclaje
+### 6. Quitar las credenciales de Git en el Administrador de Credenciales de Windows
 
-### 7. Volver la VM Server a un Snapshot anterior
+### 7. Eliminar el repositorio clonado en Windows
+
+### 8. Vaciar la papelera de reciclaje
