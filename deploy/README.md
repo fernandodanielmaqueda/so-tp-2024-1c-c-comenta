@@ -31,12 +31,12 @@
 - https://docs.utnso.com.ar/guias/herramientas/deploy
 - https://docs.utnso.com.ar/primeros-pasos/tp0
 
-Si tuviéramos que resumir en tres cosas, lo que deberían hacer para poder llegar a una entrega con la seguridad de que van a aprobar sería:
-
-Probar el TP
-Practicar el despliegue
-Probar el TP y practicar el despliegue
-Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs) o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
+>Si tuviéramos que resumir en tres cosas, lo que deberían hacer para poder llegar a una entrega con la seguridad de que van a aprobar sería:
+>
+>Probar el TP
+>Practicar el despliegue
+>Probar el TP y practicar el despliegue
+>Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs) o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
 
 ## B. Preparar los configs
 
@@ -44,21 +44,27 @@ Para conectar los módulos del TP entre sí es recomendable usar números de pue
 
 ## C. Anotarse en el Sistema de Inscripciones
 
-Es muy importante que se anoten para que los podamos evaluar, ya que grupo que no esté anotado por más que se presenten en el laboratorio no va a ser evaluado.
-
-Cualquier integrante del grupo podrá ingresar al Sistema de Inscripciones y deberá indicar la franja horaria en que el grupo pueda presentarse.
-
-El grupo luego recibirá la fecha y horario estimado de evaluación. Los mismos se asignarán en base a la cantidad de grupos inscriptos. La inscripción cerrará el día anterior a la fecha de entrega a las 20:00hs.
-
-Por último les pedimos que si deciden no presentarse a esta entrega nos avisen por mail a fin de poder organizarnos de la mejor manera.
-
 - https://inscripciones.utnso.com.ar/
+
+>Es muy importante que se anoten para que los podamos evaluar, ya que grupo que no esté anotado por más que se presenten en el laboratorio no va a ser evaluado.
+>
+>Cualquier integrante del grupo podrá ingresar al Sistema de Inscripciones y deberá indicar la franja horaria en que el grupo pueda presentarse.
+>
+>El grupo luego recibirá la fecha y horario estimado de evaluación. Los mismos se asignarán en base a la cantidad de grupos inscriptos. La inscripción cerrará el día anterior a la fecha de entrega a las 20:00hs.
+>
+>Por último les pedimos que si deciden no presentarse a esta entrega nos avisen por mail a fin de poder organizarnos de la mejor manera.
 
 ## D. Generar las credenciales de GitHub
 
-- https://github.com/settings/tokens?type=beta
-- https://github.com/settings/tokens
-- https://github.com/settings/keys
+- Para claves PAT (Personal Access Token)
+	- https://github.com/settings/tokens?type=beta
+	- https://github.com/settings/tokens
+- Para claves SSH
+	- https://github.com/settings/keys
+
+## E. Llevarse anotadas las credenciales de GitHub
+
+- Ya sea en un papel o en el celular
 
 -----------------------------
 
@@ -66,23 +72,23 @@ Por último les pedimos que si deciden no presentarse a esta entrega nos avisen 
 
 ## A. Anunciarse
 
-El día de la evaluación, el grupo deberá notificar su llegada a los ayudantes 
-
-El grupo deberá concurrir el día de la evaluación en el horario asignado, teniendo que anunciar su llegada a alguno de los ayudantes presentes.
-
-Es importante que al momento de anunciarse estén todos los integrantes del grupo.
-
-En caso de que pasen 5 minutos del horario asignado y el grupo no se haya anunciado se asumirá que el grupo no se presenta.
+>El día de la evaluación, el grupo deberá notificar su llegada a los ayudantes 
+>
+>El grupo deberá concurrir el día de la evaluación en el horario asignado, teniendo que anunciar su llegada a alguno de los ayudantes presentes.
+>
+>Es importante que al momento de anunciarse estén todos los integrantes del grupo.
+>
+>En caso de que pasen 5 minutos del horario asignado y el grupo no se haya anunciado se asumirá que el grupo no se presenta.
 
 -----------------------------
 
 # Una vez con las máquinas del laboratorio
 
-Si el trabajo práctico no puede correr en más de una máquina no se iniciará la evaluación y se dará por desaprobada la entrega.
-
-Al momento de iniciar el despliegue del TP según lo indique el ayudante evaluador, el grupo dispondrá de 10 minutos para estar en condiciones de ser evaluado, en caso de que transcurran los 10 minutos y no se pueda iniciar la evaluación, el ayudante evaluador podrá solicitarles que se retiren del laboratorio, dando por finalizada la evaluación con resultado desaprobado.
-
-Los grupos contarán con una unica instancia de evaluación por fecha de entrega, es decir, que ante un error no resoluble en el momento en las pruebas, la entrega se considerará desaprobada.
+>Si el trabajo práctico no puede correr en más de una máquina no se iniciará la evaluación y se dará por desaprobada la entrega.
+>
+>Al momento de iniciar el despliegue del TP según lo indique el ayudante evaluador, el grupo dispondrá de 10 minutos para estar en condiciones de ser evaluado, en caso de que transcurran los 10 minutos y no se pueda iniciar la evaluación, el ayudante evaluador podrá solicitarles que se retiren del laboratorio, dando por finalizada la evaluación con resultado desaprobado.
+>
+>Los grupos contarán con una unica instancia de evaluación por fecha de entrega, es decir, que ante un error no resoluble en el momento en las pruebas, la entrega se considerará desaprobada.
 
 -----------------------------
 
@@ -132,6 +138,29 @@ Debería ser equivalente a:
 ```bash
 cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
+
+En caso de que nos aparezca este error:
+[![.NETFRAMEWORK_ERROR](https://i.sstatic.net/O9L6E.png)]()
+
+Como no tenemos permisos de administrador en las máquinas de la facultad, no podemos instalar esa dependencia
+(.NET Framework 4.7.2) y por ende no podemos utilizar el Administrador de Credenciales de Git
+(**Git Credential Manager Core**)
+
+Las alternativas son:
+1. Si para acceder a tu cuenta de Git usás PAT (Personal Access Token):
+	- Usá el Administrador de Credenciales de Windows (**wincred**)
+```bash
+git config --unset-all credential.helper && git config credential.helper wincred
+```
+Cuando se te solicite tu nombre de usuario, ingresalo.
+Cuando te solicite tu contraseña, ingresá tu PAT (Personal Access Token) que generaste.
+
+2. Si para acceder a tu cuenta de Git usás clave SSH:
+	- Cambiar a SSH:
+```bash
+git remote set-url origin git@github.com:sisoputnfrba/tp-2024-1c-Operativos.git
+```
+Deberás ingresar tu clave pública SSH generada.
 
 -----------------------------
 
@@ -305,17 +334,22 @@ Gestor de descargas (Ubuntu)
 		- [X] .
 
 -----------------------------
-## 14. Iniciar la VM Server
+## 14. (Opcional) Hacer un Snapshot de la VM Server
+
+TODO
+
+-----------------------------
+## 15. Iniciar la VM Server
 
 - **SO 2022 Actualizada** *(Base)*
 
 # Ya en la VM de Ubuntu Server
 
-- **User**: utnso
+- **utnso login**: utnso
 - **Password**: utnso
 
 -----------------------------
-## 15. (SÓLO en el Deploy) Pasar la IP (de la VM) al resto de los integrantes del grupo
+## 16. (SÓLO en el Deploy) Pasar la IP (de la VM) al resto de los integrantes del grupo
 
 Ya sea enviando un mensaje de texto desde un celular, o anotando en un papel
 
@@ -327,7 +361,7 @@ ifconfig
 [![ifconfig](https://docs.utnso.com.ar/img/guias/consola/bash-ifconfig.png)]()
 
 -----------------------------
-## 16. Actualizar el índice de paquetes local en la VM
+## 17. Actualizar el índice de paquetes local en la VM
 
 ```bash
 sudo apt update
@@ -335,7 +369,7 @@ sudo apt update
 
 -----------------------------
 
-## 17. (NO en el Deploy) (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
+## 18. (NO en el Deploy) (Opcional) GRUB (para configurar el tamaño de pantalla FIJO de la VM)
 
 1. Backupear el archivo `/etc/default/grub` original
 ```bash
@@ -374,7 +408,7 @@ init 6
 
 -----------------------------
 
-## 18. (NO en el Deploy) Instalar VirtualBox Guest Additions (para las carpetas compartidas)
+## 19. (NO en el Deploy) Instalar VirtualBox Guest Additions (para las carpetas compartidas)
 
 1. Iniciada la VM, ir a: `Dispositivos` > `Insertar imagen de CD de las Guest Additions`
 
@@ -401,7 +435,7 @@ sudo usermod -aG vboxsf $USER
 
 -----------------------------
 
-## 19. (NO en el Deploy) Montar una carpeta compartida en la VM
+## 20. (NO en el Deploy) Montar una carpeta compartida en la VM
 
 ### (NO en el Deploy) Alternativa 1: Montar una carpeta compartida usando vboxsf (VirtualBox Shared Folders)
 
@@ -501,7 +535,7 @@ Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cam
 
 -----------------------------
 
-## 20. Configurar SSH en la VM
+## 21. Configurar SSH en la VM
 
 1. Descargar e instalar openssh-server
 ```bash
@@ -602,7 +636,7 @@ less /var/log/auth.log
 
 -----------------------------
 
-## 21. Conectarse por SSH a la VM
+## 22. Conectarse por SSH a la VM
 
 ### Alternativa 1: Usar PowerShell
 
@@ -633,7 +667,7 @@ Nota: el puerto por defecto para SSH es 22
 
 -----------------------------
 
-## 22. (NO en el Deploy) Configurar VSCode
+## 23. (NO en el Deploy) Configurar VSCode
 
 ### Extensiones:
 	Remote - SSH
@@ -730,7 +764,7 @@ Host NúmeroIP
 
 -----------------------------
 
-## 23. Configurar Git en la VM
+## 24. Configurar Git en la VM
 
 1. Generar un token en GitHub
 	- Tokens (classic)
@@ -761,7 +795,7 @@ git config --global user.name 'Nombre y Apellido(s)'
 
 -----------------------------
 
-## 24. (NO en el Deploy) Instalar la versión más reciente de CMake
+## 25. (NO en el Deploy) Instalar la versión más reciente de CMake
 
 https://cmake.org/download/
 
@@ -925,6 +959,8 @@ rmdir <directorio>
 ```bash
 less <archivo>
 ```
+
+- https://www.redswitches.com/blog/less-command-in-linux/#:~:text=What%20is%20the%20less%20command,the%20file%20and%20forward%20navigation.
 
 > Monitorear un archivo de texto en tiempo real
 ```bash
