@@ -28,8 +28,11 @@ sudo apt install gh -y
 >Si tuviéramos que resumir en tres cosas, lo que deberían hacer para poder llegar a una entrega con la seguridad de que van a aprobar sería:
 >
 >Probar el TP
+>
 >Practicar el despliegue
+>
 >Probar el TP y practicar el despliegue
+>
 >Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs)
 >o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
 
@@ -55,9 +58,9 @@ sudo apt install gh -y
 	- Tokens (classic)
 		- https://github.com/settings/tokens?type=beta
 			- Los scopes (alcances) mínimos requeridos son: 'repo', 'read:org' y 'workflow'.
-	- https://github.com/settings/tokens
-- Para claves SSH
 	- Fine-grained tokens
+		- https://github.com/settings/tokens
+- Para claves SSH
 		- https://github.com/settings/keys
 
 ## E. Llevarse anotadas las credenciales de GitHub
@@ -92,7 +95,7 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 -----------------------------
 
-## 1. Encender e iniciar sesión en la computadora
+## 1. Prender e iniciar sesión en la computadora
 
 - **Usuario**: alumno
 - **Contraseña**: alumno
@@ -101,7 +104,7 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 ## 2. Abrir un navegador web
 
-Por ejemplo: Google Chrome, etc.
+Por ejemplo: `Google Chrome`, etc.
 
 ## 3. Loguearse en la cuenta de GitHub
 
@@ -139,6 +142,7 @@ cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnf
 ```
 
 En caso de que nos aparezca este error:
+
 [![.NETFRAMEWORK_ERROR](https://i.sstatic.net/O9L6E.png)]()
 
 Como no tenemos permisos de administrador en las máquinas de la facultad, no podemos instalar esa dependencia
@@ -151,15 +155,15 @@ Las alternativas son:
 ```bash
 git config --unset-all credential.helper && git config credential.helper wincred
 ```
-Cuando eventualmente se te solicite tu nombre de usuario, ingresalo.
-Cuando eventualmente te solicite tu contraseña, ingresá tu PAT (Personal Access Token) que generaste.
+- Cuando eventualmente se te solicite tu nombre de usuario, ingresalo.
+- Cuando eventualmente te solicite tu contraseña, ingresá tu PAT (Personal Access Token) que generaste.
 
 2. Si para acceder a tu cuenta de Git usás clave SSH:
 	- Cambiar a SSH:
 ```bash
 git remote set-url origin git@github.com:sisoputnfrba/tp-2024-1c-Operativos.git
 ```
-Eventualmente deberás ingresar tu clave pública SSH generada.
+- Eventualmente deberás ingresar tu clave pública SSH generada.
 
 -----------------------------
 
@@ -337,21 +341,21 @@ Gestor de descargas (Ubuntu)
 
 Es en caso de que otro grupo la haya usado antes.
 
-- **SO 2022 Actualizada** *(Base)*
+`Instantánea` > `Restaurar`
 
-Instantánea > Restaurar
+- **SO 2022 Actualizada** *(Base)*
 
 -----------------------------
 ## 15. (NO en el Deploy) Hacer un Snapshot de la VM Server
 
-Instantánea > Tomar
+`Instantánea` > `Tomar`
 
 -----------------------------
 ## 16. Iniciar la VM Server
 
 - **SO 2022 Actualizada**
 
-# Ya en la VM de Ubuntu Server
+# En la VM de Ubuntu Server
 
 - **utnso login**: utnso
 - **Password**: utnso
@@ -545,7 +549,7 @@ Nota: `vers=3.0` es para indicar la versión de Samba (SMB) utilizada. Puede cam
 
 ## 22. Configurar SSH en la VM
 
-1. Descargar e instalar openssh-server
+1. Descargar e instalar `openssh-server`
 ```bash
 sudo apt install openssh-server -y
 ```
@@ -646,16 +650,13 @@ less /var/log/auth.log
 
 ## 23. Conectarse por SSH a la VM
 
-### Alternativa 1: Usar PowerShell
-
-1. Abrir PowerShell
-
-2. Conocer la IP del Host
+Conocer la IP del Host
 ```powershell
 ipconfig
 ```
 
-3. Conectarse con la VM vía ssh
+### Alternativa 1: Usar PowerShell
+
 ```powershell
 ssh utnso@NúmeroIP -p 22
 ```
@@ -667,31 +668,31 @@ Nota: el puerto por defecto para SSH es 22
 
 [![PuTTY](https://docs.utnso.com.ar/img/guias/herramientas/deploy/deploy-02.jpg)](https://www.putty.org/ "https://www.putty.org/")
 
-- En ***Host Name (or IP address)*** poner la IP dentro de la VM Guest, Ubuntu Server
-- En ***Port*** poner **22**
-- En ***Connection type*** seleccionar la casilla **SSH**
-- Seleccionar el botón **Save**
-- En ***Close window on exit*** seleccionar la casilla **Never**
+- En `Host Name (or IP address)` poner la IP dentro de la VM Guest, Ubuntu Server
+- En `Port` poner `22`
+- En `Connection type` seleccionar la casilla `SSH`
+- Seleccionar el botón `Save`
+- En `Close window on exit` seleccionar la casilla `Never`
 
 -----------------------------
 
 ## 24. (NO en el Deploy) Configurar VSCode
 
 ### Extensiones:
-	Remote - SSH
-	Remote - SSH: Editing Configuration Files
-	Remote Explorer
-	WSL
-	C/C++
-	C/C++ Extension Pack
-	C/C++ Themes
-	GitLens
-	Live Share
-	Makefile Tools
-	Markdown All In One
-	Markdown Preview Github Styling
-	Notepad++ keymap
-	Output Colorizer
+	- Remote - SSH
+	- Remote - SSH: Editing Configuration Files
+	- Remote Explorer
+	- WSL
+	- C/C++
+	- C/C++ Extension Pack
+	- C/C++ Themes
+	- GitLens
+	- Live Share
+	- Makefile Tools
+	- Markdown All In One
+	- Markdown Preview Github Styling
+	- Notepad++ keymap
+	- Output Colorizer
 
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-client
 https://code.visualstudio.com/docs/remote/troubleshooting#_installing-a-supported-ssh-server
@@ -806,7 +807,6 @@ Una vez hecho esto, podemos verificar que todo está configurado correctamente c
 ```bash
 ssh -T git@github.com
 ```
-bash
 
 La primera vez nos va a preguntar si queremos agregar la clave a la lista de hosts conocidos:
 
@@ -815,8 +815,8 @@ The authenticity of host 'github.com' can't be established.
 ED25519 key fingerprint is SHA256:+asdrfadfasfsdf/asdfsdafsdafdsafdf.
 This key is not known by any other names
 Are you sure you want to continue connecting (yes/no/[fingerprint])?
-Vamos a responder yes para agregar la clave a la lista de hosts conocidos y poder autenticarnos.
 ```
+Vamos a responder `yes` para agregar la clave a la lista de hosts conocidos y poder autenticarnos.
 
 Si todo salió bien, deberíamos ver un mensaje de bienvenida de GitHub:
 
@@ -840,11 +840,11 @@ En caso de que nos aparezca este error:
 
 Como no tenemos permisos de administrador en las máquinas de la facultad, no podemos instalar esa dependencia
 (.NET Framework 4.7.2) y por ende no podemos utilizar el Administrador de Credenciales de Git
-(**Git Credential Manager Core**)
+(`Git Credential Manager Core`)
 
 Las alternativas son:
 1. Si para acceder a tu cuenta de Git usás PAT (Personal Access Token):
-	- Usá el Administrador de Credenciales de Windows (**wincred**)
+	- Usá el Administrador de Credenciales de Windows (`wincred`)
 ```bash
 git config --unset-all credential.helper && git config credential.helper wincred
 ```
@@ -879,7 +879,7 @@ Completar con las IPs que te hayan pasado tus compañeros de equipo que correspo
 
 ## 31. Copiar los archivos de test
 
-Deben quedar en: /home/utnso/scripts-pruebas/...
+Deben quedar en: `/home/utnso/scripts-pruebas`/...
 
 -----------------------------
 
@@ -897,13 +897,11 @@ TODO
 
 ## 34. (NO en el Deploy) Instalar la versión más reciente de CMake
 
-https://cmake.org/download/
-
-wget
-
-https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-x86_64.sh
+- https://cmake.org/download/
+	- https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-x86_64.sh
 
 ```bash
+wget https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-x86_64.sh
 chmod +x cmake-3.29.0-linux-x86_64.sh
 sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 ```
@@ -912,279 +910,297 @@ sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 
 ## 35. Levantar los módulo(s) del TP que correspondan
 
-Los comandos del makefile están en el Anexo 2.
+Los comandos del makefile están en el `Anexo 2`
 
 -----------------------------
 
 ## Anexo 1: Comandos generales
 
-> Apagar
+- Apagar
 ```bash
 shutdown now
 ```
 
-> Reiniciar
+- Reiniciar
 ```bash
 shutdown -r now
 ```
-Alternativa 1:
+
+> Alternativa 1:
 ```bash
 reboot
 ```
-Alternativa 2:
+
+> Alternativa 2:
 ```bash
 init 6
 ```
 
-> Activar impresión de comandos ejecutados
+- Activar impresión de comandos ejecutados
 ```bash
 set -x
 ```
 
-> Desactivar impresión de comandos ejecutados
+- Desactivar impresión de comandos ejecutados
 ```bash
 set +x
 ```
 
-> Cambiar a root
+- Cambiar a root
 ```bash
 sudo -s
 ```
 
-> Salir de root
+- Salir de root
 ```bash
 exit
 ```
 
-> Listar las opciones de montaje:
+- Listar las opciones de montaje:
 ```bash
 mount
 ```
-Listar las Carpetas Compartidas de Virtual Box (vboxsf)
+
+> Listar las Carpetas Compartidas de Virtual Box (vboxsf)
 ```bash
 mount | grep vboxsf
 ```
 
-> Desmontar un disco
+- Desmontar un disco
 ```bash
 sudo umount /ruta/al/punto/de/montaje
 ```
 
-> Listar configuración de red
+- Listar configuración de red
 ```bash
 ifconfig
 ```
 
-> Imprimir directorio actual
+- Imprimir directorio actual
 ```bash
 pwd
 ```
 
-> Cambiar de directorio
+- Cambiar de directorio
 ```bash
 cd <ruta>
 ```
-Home (*/home/utnso*)
+
+> Home (*/home/utnso*)
 ```bash
 cd ~
 ```
-Directorio padre
+
+> Directorio padre
 ```bash
 cd ..
 ```
-Directorio anterior
+
+> Directorio anterior
 ```bash
 cd -
 ```
 
-> Listar archivos (excepto ocultos) (con formato)
+- Listar archivos (excepto ocultos) (con formato)
 ```bash
 ls
 ```
 
-> Listar archivos (incluido ocultos) (con formato)
+- Listar archivos (incluido ocultos) (con formato)
 ```bash
 ls -a
 ```
 
-> Listar permisos de archivos
+- Listar permisos de archivos
 ```bash
 ls -l
 ```
 
-> Listar archivos (sin formato)
+- Listar archivos (sin formato)
 ```bash
 dir
 ```
 
-> Imprimir árbol de archivos y directorios
+- Imprimir árbol de archivos y directorios
 ```bash
 tree
 ```
 
-> Buscar archivo(s) y/o directorio(s) en todos los subdirectorios
+- Buscar archivo(s) y/o directorio(s) en todos los subdirectorios
 ```bash
 find .
 ```
-Buscar archivos de log en todos los subdirectorios
+
+> Buscar archivos de log en todos los subdirectorios
 ```bash
 find . -type f \( -name '*.log' \) -print
 ```
 
-> Crear directorio vacío
+- Crear directorio vacío
 ```bash
 mkdir <directorio>
 ```
 
-> Crear archivo vacío
+- Crear archivo vacío
 ```bash
 touch <archivo>
 ```
 
-> Copiar archivo(s) y/o directorio(s) de origen a destino
+- Copiar archivo(s) y/o directorio(s) de origen a destino
 ```bash
 cp <origen> <destino>
 ```
 
-> Mover archivo(s) y/o directorio(s) de origen a destino
+- Mover archivo(s) y/o directorio(s) de origen a destino
 ```bash
 mv <origen> <destino>
 ```
 
-> Eliminar archivo(s) y/o directorio(s) recursivamente y forzosamente
+- Eliminar archivo(s) y/o directorio(s) recursivamente y forzosamente
 ```bash
 rm -rf <directorio>
 ```
 
-> Eliminar directorio si solo si esta vacio, no está en uso, etc.
+- Eliminar directorio si solo si esta vacio, no está en uso, etc.
 ```bash
 rmdir <directorio>
 ```
 
-> Leer un archivo de texto
+- Leer un archivo de texto
 ```bash
 less <archivo>
 ```
 
-- https://www.redswitches.com/blog/less-command-in-linux/#:~:text=What%20is%20the%20less%20command,the%20file%20and%20forward%20navigation.
+	- https://www.redswitches.com/blog/less-command-in-linux/#:~:text=What%20is%20the%20less%20command,the%20file%20and%20forward%20navigation.
 
-> Monitorear un archivo de texto en tiempo real
+- Monitorear un archivo de texto en tiempo real
 ```bash
 less +F <archivo>
 ```
-- Con Ctrl + C podemos pausar el monitoreo para scrollear por el archivo usando las flechas
-- Con Shift + F podemos continuar con el seguimiento que habíamos pausado.
 
-> Imprimir el contenido de un archivo en hexadecimal
+	- Con Ctrl + C podemos pausar el monitoreo para scrollear por el archivo usando las flechas
+	- Con Shift + F podemos continuar con el seguimiento que habíamos pausado.
+
+- Imprimir el contenido de un archivo en hexadecimal
 ```bash
 hexdump -C <archivo>
 ```
 
-> Editar un archivo de texto
+- Editar un archivo de texto
+	- Con `vi`
 ```bash
 vi <archivo>
 ```
 
+	- Con `nano`
 ```bash
 nano <archivo>
 ```
 
-En la última línea pueden ver las distintas opciones que se pueden usar.
+		- En la última línea pueden ver las distintas opciones que se pueden usar.
+			- Por ejemplo: Ctrl + X para salir.
 
-Por ejemplo: Ctrl + X para salir.
-
-> Administrador de procesos
+- Administrador de procesos
 ```bash
 htop
 ```
 
 [![htop](https://docs.utnso.com.ar/img/guias/consola/bash-htop-espera-activa.png)]()
 
-Sirve entre otras cosas para:
-- Visualizar el uso de CPU y RAM (para detectar esperas activas y memory leaks).
-- Ordenar los procesos por PID, nombre, uso de CPU/RAM, etc. con el mouse.
-- Filtrar los procesos (e hilos KLT) por nombre con F4.
-- Enviar señales a uno o varios procesos de forma intuitiva con F9.
+	- Sirve entre otras cosas para:
+		- Visualizar el uso de CPU y RAM (para detectar esperas activas y memory leaks).
+		- Ordenar los procesos por PID, nombre, uso de CPU/RAM, etc. con el mouse.
+		- Filtrar los procesos (e hilos KLT) por nombre con F4.
+		- Enviar señales a uno o varios procesos de forma intuitiva con F9.
 
-> Listar todos los archivos abiertos
+- Listar todos los archivos abiertos
 ```bash
 lsof
 ```
-En las entregas, puede ser muy útil junto con el flag -i para corroborar que no haya ningún proceso escuchando en un puerto en particular. Ejemplo:
+
+> En las entregas, puede ser muy útil junto con el flag -i para corroborar que no haya ningún proceso escuchando en un puerto en particular. Ejemplo:
 ```bash
 lsof -i :8080
 ```
 
-> Listar todas las variables de entorno:
+- Listar todas las variables de entorno:
 ```bash
 env
 ```
-Encontrar variable más fácilmente
+
+> Encontrar variable más fácilmente
 ```bash
 env | grep NOMBRE_VARIABLE
 ```
-Imprimir valor variable
+
+> Imprimir valor variable
 ```bash
 echo $NOMBRE_VARIABLE
 ```
 
-> Configurar una variable de entorno para la sesión actual:
+- Configurar una variable de entorno para la sesión actual:
 ```bash
 export NOMBRE_VARIABLE='un valor'
 ```
-- Para definir una variable que valga para todas las sesiones, podemos hacerlo agregando el export al final del archivo ~/.bashrc.
 
-> Cambiar el layout del teclado a Inglés (Estados Unidos)
+> Para definir una variable que valga para todas las sesiones, podemos hacerlo agregando el export al final del archivo `~/.bashrc`
+
+- Cambiar el layout del teclado
+	- A Inglés (Estados Unidos)
 ```bash
 sudo loadkeys us
 ```
 
-> Cambiar el layout del teclado a Español (Argentina)
+	- A Español (Argentina)
 ```bash
 sudo loadkeys es
 ```
 
-> Cambiar el dueño de un archivo (cambiar propietario)
+- Cambiar el dueño de un archivo (cambiar propietario)
 ```bash
 chmod
 ```
-Para cambiar el ownership de un archivo a mi usuario
+
+> Para cambiar el ownership de un archivo a mi usuario
 ```bash
 chown $USER ejemplo.txt
 ```
-Para cambiar el ownership de una carpeta y todo su contenido
+
+> Para cambiar el ownership de una carpeta y todo su contenido
 ```bash
 chown -R $USER /home/utnso/swap
 ```
 
-> Cambiar los permisos de un archivo (cambiar de modo)
+- Cambiar los permisos de un archivo (cambiar de modo)
 ```bash
 chmod
 ```
-Para dar permisos de ejecución
+
+> Para dar permisos de ejecución
 ```bash
 chmod +x mi-script.sh
 ```
-Para configurar nuevos permisos usando el formato Unix
+
+> Para configurar nuevos permisos usando el formato Unix
 ```bash
 chmod 777 kernel.config
 ```
 
-Machete para escribir los permisos tipo Unix en octal:
+	- Machete para escribir los permisos tipo Unix en octal:
 [![chmod](https://docs.utnso.com.ar/img/guias/consola/bash-linux-file-permissions.jpg)]()
 
-> Listar todos los grupos:
+- Listar todos los grupos:
 ```bash
 groups
 ```
 
-> Listar todos los grupos a los que pertenece un usuario:
+- Listar todos los grupos a los que pertenece un usuario:
 ```bash
 groups utnso
 groups root
 ```
 
-> Listar ids
+- Listar ids
 ```bash
 id
 id -u
@@ -1195,16 +1211,17 @@ id -g
 
 ## Anexo 2: Comandos de make
 
-> Compilar todos los módulos
+- Compilar todos los módulos
 ```bash
 clear ; make -j -O
 ```
-Es equivalente a:
+
+> Es equivalente a:
 ```bash
 clear ; make all -j -O
 ```
 
-> Compilar un módulo en particular con las utils
+- Compilar un módulo en particular con las utils
 ```bash
 clear ; make src/cpu/bin/cpu -j -O
 clear ; make src/entradasalida/bin/entradasalida -j -O
@@ -1212,17 +1229,17 @@ clear ; make src/kernel/bin/kernel -j -O
 clear ; make src/memoria/bin/memoria -j -O
 ```
 
-> Compilar sólo las utils
+- Compilar sólo las utils
 ```bash
 clear ; make src/utils/bin/libutils.a -j -O
 ```
 
-> Borrar todo lo que se genera al compilar
+- Borrar todo lo que se genera al compilar
 ```bash
 clear ; make cleandirs
 ```
 
-> Ejecutar un módulo
+- Ejecutar un módulo
 ```bash
 clear ; make run-kernel 'kernel_ARGS='
 clear ; make run-cpu 'cpu_ARGS='
@@ -1230,7 +1247,7 @@ clear ; make run-memoria 'memoria_ARGS='
 clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
-> Ejecutar con memcheck un módulo
+- Ejecutar con memcheck un módulo
 ```bash
 clear ; make valgrind-memcheck-kernel 'kernel_ARGS='
 clear ; make valgrind-memcheck-cpu 'cpu_ARGS='
@@ -1238,7 +1255,7 @@ clear ; make valgrind-memcheck-memoria 'memoria_ARGS='
 clear ; make valgrind-memcheck-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
-> Ejecutar con helgrind un módulo
+- Ejecutar con helgrind un módulo
 ```bash
 clear ; make valgrind-helgrind-kernel 'kernel_ARGS='
 clear ; make valgrind-helgrind-cpu 'cpu_ARGS='
@@ -1246,7 +1263,7 @@ clear ; make valgrind-helgrind-memoria 'memoria_ARGS='
 clear ; make valgrind-helgrind-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 ```
 
-> Ejecutar con valgrind (sin ninguna herramienta) un módulo
+- Ejecutar con valgrind (sin ninguna herramienta) un módulo
 ```bash
 clear ; make valgrind-none-kernel 'kernel_ARGS='
 clear ; make valgrind-none-cpu 'cpu_ARGS='
@@ -1258,20 +1275,22 @@ clear ; make valgrind-none-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.
 
 ## Anexo 3: tmux (Terminal MUltipleXer)
 
-> Abrir una sesión nueva
+- Abrir una sesión nueva
 ```bash
 tmux
 ```
-Equivalente:
+
+> Equivalente:
 ```bash
 tmux new
 ```
-> Abrir una sesión nueva y ponerle un nombre:
+
+- Abrir una sesión nueva y ponerle un nombre:
 ```bash
 tmux new -s 'NombreDeSesion'
 ```
 
-> Cerrar la ventana actual de una sesión
+- Cerrar la ventana actual de una sesión
 ```bash
 exit
 ```
