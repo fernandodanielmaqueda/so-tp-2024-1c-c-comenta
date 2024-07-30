@@ -305,12 +305,10 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	t_list *physical_addresses = list_create();
 	size_t bytes;
 
-	//empiezo a "desencolar" el payload recibido
 	//text_deserialize(operation_arguments, &text_received);
 	size_deserialize(operation_arguments, &bytes);
 	list_deserialize(operation_arguments, physical_addresses, size_deserialize_element);
 
-	//Aviso la operacion que voy a hacer
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", (int) PID);
 
 	t_Package* package;
@@ -326,9 +324,7 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	char text_received[bytes + 1]; // Agrego 1 para el '\0'
 	text_received[bytes] = '\0';
 
-	//Recibo nuevo paquete para imprimir por pantalla
 	package_receive(&package, CONNECTION_MEMORY.fd_connection);
-	//Desencolar e imprimir por pantalla
 	payload_shift(&(package->payload), text_received, (size_t) bytes);
 
 	log_info(MODULE_LOGGER, "[IO] Mensaje leido: <%s>", text_received);
