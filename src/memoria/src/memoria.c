@@ -712,7 +712,7 @@ void io_write_memory(t_Payload *payload, int socket) {
                 update_page(current_frame); //Actualizar pagina/TDP
                 pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
                 bytes_restantes -= bytes_inicial;
-    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - FOR Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes_inicial);
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - FOR Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_inicial);
             }
             if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
             {
@@ -721,7 +721,7 @@ void io_write_memory(t_Payload *payload, int socket) {
                 update_page(current_frame); //Actualizar pagina/TDP
                 pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
                 //bytes_restantes -= bytes_inicial;
-    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - FOR Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes_restantes);
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - FOR Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_restantes);
             }
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {

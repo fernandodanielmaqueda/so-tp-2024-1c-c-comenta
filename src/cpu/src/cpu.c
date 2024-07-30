@@ -476,7 +476,7 @@ void replace_tlb_input(t_PID pid, size_t page_number, size_t frame_number) {
     }   
 }
 
-void request_frame_memory(t_PID pid, size_t page) {
+void request_frame_memory(t_PID pid, size_t page_number) {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
     size_serialize(&(package->payload), page_number);
     payload_append(&(package->payload), &pid, sizeof(pid));
