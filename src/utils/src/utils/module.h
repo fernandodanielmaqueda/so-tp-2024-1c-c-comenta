@@ -17,9 +17,9 @@ typedef struct t_Shared_List {
 
 typedef struct t_Drain_Ongoing_Resource_Sync {
 	pthread_mutex_t mutex_resource;
-	sem_t sem_drain_requests_count;
+	unsigned int drain_requests_count;
 	pthread_cond_t cond_drain_requests;
-	sem_t sem_ongoing_count;
+	unsigned int ongoing_count;
 	pthread_cond_t cond_ongoing;
 } t_Drain_Ongoing_Resource_Sync;
 

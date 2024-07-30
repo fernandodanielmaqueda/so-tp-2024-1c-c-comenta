@@ -126,8 +126,6 @@ void initialize_semaphores(void) {
 	sem_init(&SEM_LONG_TERM_SCHEDULER_NEW, 0, 0);
 	sem_init(&SEM_LONG_TERM_SCHEDULER_EXIT, 0, 0);
 	sem_init(&SEM_SHORT_TERM_SCHEDULER, 0, 0);
-
-	sem_init(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL, 0, 0);
 }
 
 void finish_semaphores(void) {
@@ -135,8 +133,6 @@ void finish_semaphores(void) {
 	sem_destroy(&SEM_LONG_TERM_SCHEDULER_NEW);
 	sem_destroy(&SEM_LONG_TERM_SCHEDULER_EXIT);
 	sem_destroy(&SEM_SHORT_TERM_SCHEDULER);
-
-	sem_destroy(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL);
 }
 
 void read_module_config(t_config *module_config) {

@@ -42,8 +42,8 @@ extern int KILL_EXEC_PROCESS;
 extern pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
 
 extern unsigned int MULTIPROGRAMMING_LEVEL;
+extern unsigned int CURRENT_MULTIPROGRAMMING_LEVEL;
 extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_LEVEL;
-extern sem_t SEM_CURRENT_MULTIPROGRAMMING_LEVEL;
 extern pthread_cond_t COND_MULTIPROGRAMMING_LEVEL;
 
 extern int SCHEDULING_PAUSED;

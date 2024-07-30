@@ -21,8 +21,8 @@ int KILL_EXEC_PROCESS = 0;
 pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
 
 unsigned int MULTIPROGRAMMING_LEVEL;
+unsigned int CURRENT_MULTIPROGRAMMING_LEVEL = 0;
 pthread_mutex_t MUTEX_MULTIPROGRAMMING_LEVEL;
-sem_t SEM_CURRENT_MULTIPROGRAMMING_LEVEL;
 pthread_cond_t COND_MULTIPROGRAMMING_LEVEL;
 
 int SCHEDULING_PAUSED;
@@ -429,21 +429,19 @@ int kernel_command_multiprogramming(int argc, char* argv[]) {
 
 
 void wait_multiprogramming_level(void) {
-    int sem_value;
 	pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_LEVEL);
 		while(1) {
-            sem_getvalue(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL, &sem_value);
-            if(sem_value < MULTIPROGRAMMING_LEVEL)
+            if(CURRENT_MULTIPROGRAMMING_LEVEL < MULTIPROGRAMMING_LEVEL)
                 break;
 			pthread_cond_wait(&COND_MULTIPROGRAMMING_LEVEL, &MUTEX_MULTIPROGRAMMING_LEVEL);
 		}
-        sem_post(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL);
+        CURRENT_MULTIPROGRAMMING_LEVEL++;
 	pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_LEVEL);
 }
 
 void signal_multiprogramming_level(void) {
 	pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_LEVEL);
-        sem_wait(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL);
+        CURRENT_MULTIPROGRAMMING_LEVEL--;
         pthread_cond_signal(&COND_MULTIPROGRAMMING_LEVEL);
 	pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_LEVEL);
 }
