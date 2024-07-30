@@ -376,13 +376,13 @@ void listen_cpu(void) {
                 
             case READ_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                read_memory(&(package->payload), CLIENT_CPU->fd_client);
+                io_read_memory(&(package->payload), CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
                 
             case WRITE_REQUEST:
                 log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
-                write_memory(&(package->payload), CLIENT_CPU->fd_client);
+                io_write_memory(&(package->payload), CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
             
@@ -424,12 +424,12 @@ void listen_io(t_Client *client) {
             
             case IO_FS_READ_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (write) recibido.");
-                write_memory(&(package->payload), client->fd_client);
+                io_write_memory(&(package->payload), client->fd_client);
                 break;
             
             case IO_FS_WRITE_MEMORY:
                 log_info(MODULE_LOGGER, "IO: Nueva peticion STDOUT_IO (read) recibido.");
-                read_memory(&(package->payload), client->fd_client);
+                io_read_memory(&(package->payload), client->fd_client);
                 break;
             
             default:
@@ -631,13 +631,42 @@ void io_write_memory(t_Payload *payload, int socket) {
     payload_shift(payload, &bytes, sizeof(bytes));
 
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
-    void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
-    
-    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+    //void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+    //t_Frame_Number current_frame = physical_address / TAM_PAGINA;
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - IOOOOO Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
 
 //COMIENZA LA ESCRITURA
+    int size = list_size(list_physical_addresses);
+
+        for (int i = 0; i < size; i++) {
+            physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, i));
+            t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+            void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+
+            size_t bytes_to_copy;
+            if (i == 0) {//Primera pagina
+                bytes_to_copy = TAM_PAGINA - (physical_address % TAM_PAGINA);
+                bytes_to_copy = (bytes_to_copy > bytes) ? bytes : bytes_to_copy;
+            } else if (i == size - 1) {//Ultima pagina
+                bytes_to_copy = bytes;
+            } else {//Paginas del medio (no ultima)
+                bytes_to_copy = TAM_PAGINA;
+            }
+
+            pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+            payload_shift(payload, posicion, (size_t) bytes_to_copy);
+            //memcpy(text_to_send + offset, posicion, bytes_to_copy);
+            update_page(current_frame);// Actualizar la página
+            pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+
+            //offset += bytes_to_copy;
+            bytes -= bytes_to_copy;
+
+            log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - FOR Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%u>",
+                    pid, physical_address, bytes_to_copy);
+        }
+/*
     if(list_size(list_physical_addresses) == 1) {//En caso de que sea igual a 1 página
         pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
         payload_shift(payload, posicion, (size_t) bytes);
@@ -687,7 +716,7 @@ void io_write_memory(t_Payload *payload, int socket) {
             
         }
     }
-
+*/
     list_destroy_and_destroy_elements(list_physical_addresses, free);
 
     if(send_return_value_with_header(WRITE_REQUEST, 0, socket)) {
