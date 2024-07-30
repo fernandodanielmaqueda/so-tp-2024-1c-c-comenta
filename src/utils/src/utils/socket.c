@@ -142,19 +142,28 @@ int server_start_try(char* port) {
 
     if(fd_server == -1) {
       log_warning(SOCKET_LOGGER, "Funcion socket: %s\n", strerror(errno));
-      continue; /* This one failed */
+      continue; // This one failed
     }
 
-    if(bind(fd_server, rp->ai_addr, rp->ai_addrlen) == 0) 
-      break; /* Until one succeeds */
+    // Permite reutilizar el puerto inmediatamente después de cerrar el socket
+    if(setsockopt(fd_server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, (socklen_t) sizeof(int)) == -1) {
+        log_warning(SOCKET_LOGGER, "Function setsockopt: %s\n", strerror(errno));
+        close(fd_server);
+        continue; // This one failed
+    }
 
-    log_warning(SOCKET_LOGGER, "Funcion bind: %s\n", strerror(errno));
-
+    if(bind(fd_server, rp->ai_addr, rp->ai_addrlen) == -1) {
+      log_warning(SOCKET_LOGGER, "Funcion bind: %s\n", strerror(errno));
+      close(fd_server);
+      continue; // This one failed
+    }
+    
+      break; // Until one succeeds    
   }
 	
-  freeaddrinfo(result); /* No longer needed */
+  freeaddrinfo(result); // No longer needed
 
-  if (rp == NULL) { /* No address succeeded */
+  if (rp == NULL) { // No address succeeded
     return -1;
   }
 
