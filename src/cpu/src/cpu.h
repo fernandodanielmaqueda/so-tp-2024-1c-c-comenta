@@ -96,6 +96,7 @@ void delete_tlb_entry_by_pid_on_resizing(t_PID pid, int resize_number);
 void delete_tlb_entry_by_pid_deleted(t_PID pid);
 void cpu_fetch_next_instruction(char **line);
 void ask_memory_page_size(void);
+void free_list_physical_addresses(t_list *list_physical_addresses);
 t_Page_Quantity seek_quantity_pages_required(t_Logical_Address dir_log, size_t bytes);
 void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size_t bytes);
 void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, size_t bytes);

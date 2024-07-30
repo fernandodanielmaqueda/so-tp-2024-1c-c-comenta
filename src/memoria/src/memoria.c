@@ -613,7 +613,7 @@ void io_read_memory(t_Payload *payload, int socket) {
     }
 
     //text_to_send[offset] = '\0';
-    log_error(MODULE_LOGGER, "Texto a enviar: %s", text_to_send);
+    log_error(MODULE_LOGGER, "Texto a enviar: %s ", text_to_send);
 
     package_send(package, socket);
     package_destroy(package);

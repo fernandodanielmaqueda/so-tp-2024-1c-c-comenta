@@ -476,6 +476,20 @@ void replace_tlb_input(t_PID pid, t_Page_Number page, t_Frame_Number frame) {
     }   
 }
 
+void free_list_physical_addresses(t_list *list_physical_addresses) {
+    if (list_physical_addresses == NULL) return;
+
+    int size = list_size(list_physical_addresses);
+
+    // Liberar cada elemento en la lista
+    for (int i = 0; i < size; i++) {
+        t_Physical_Address *physical_address = (t_Physical_Address *) list_get(list_physical_addresses, i);
+        free(physical_address);  // Liberar memoria del elemento
+    }
+    
+    list_destroy(list_physical_addresses);
+}
+
 void request_frame_memory(t_PID pid, t_Page_Number page) {
     t_Package *package = package_create_with_header(FRAME_REQUEST);
     payload_append(&(package->payload), &page, sizeof(page));
