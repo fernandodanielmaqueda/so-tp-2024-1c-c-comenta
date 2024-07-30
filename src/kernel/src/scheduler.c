@@ -105,7 +105,6 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 	log_trace(MODULE_LOGGER, "Hilo planificador de largo plazo (en EXIT) iniciado");
 
 	t_PCB *pcb;
-	t_Return_Value return_value;
 
 	while(1) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_EXIT);
@@ -153,17 +152,12 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 			exit(1);
 		}
 
-		if(receive_return_value_with_expected_header(PROCESS_DESTROY_HEADER, &return_value, CONNECTION_MEMORY.fd_connection)) {
+		if(receive_expected_header(PROCESS_DESTROY_HEADER, CONNECTION_MEMORY.fd_connection)) {
 			// TODO
         	exit(1);
 		}
 
-		if(return_value) {
-			// TODO
-			log_warning(MODULE_LOGGER, "[Memoria]: No se pudo FINALIZAR_PROCESO %" PRIu32, pcb->exec_context.PID);
-		} else {
-			log_debug(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->exec_context.PID, EXIT_REASONS[pcb->exit_reason]);
-		}
+		log_debug(MINIMAL_LOGGER, "Finaliza el proceso <%d> - Motivo: <%s>", pcb->exec_context.PID, EXIT_REASONS[pcb->exit_reason]);
 
 		//pid_release(pcb->PID);
 		pcb_destroy(pcb);

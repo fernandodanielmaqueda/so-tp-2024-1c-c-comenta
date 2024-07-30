@@ -22,10 +22,10 @@ t_list *LIST_FREE_FRAMES;
 pthread_mutex_t MUTEX_MAIN_MEMORY;
 pthread_mutex_t MUTEX_LIST_FREE_FRAMES;
 
-t_MemorySize TAM_MEMORIA;
-t_MemorySize TAM_PAGINA;
-char *PATH_INSTRUCCIONES;
-int RETARDO_RESPUESTA;
+t_MemorySize MEMORY_SIZE;
+t_MemorySize PAGE_SIZE;
+char *INSTRUCTIONS_PATH;
+int RESPONSE_DELAY;
 
 int module(int argc, char* argv[]) {
 
@@ -36,8 +36,8 @@ int module(int argc, char* argv[]) {
 
     SHARED_LIST_CLIENTS_IO.list = list_create();
 
-    MAIN_MEMORY = (void *) malloc(TAM_MEMORIA);
-    memset(MAIN_MEMORY, (uint32_t) '0', TAM_MEMORIA); //Llena de 0's el espacio de memoria
+    MAIN_MEMORY = (void *) malloc(MEMORY_SIZE);
+    memset(MAIN_MEMORY, (uint32_t) '0', MEMORY_SIZE); //Llena de 0's el espacio de memoria
     LIST_PROCESSES = list_create();
     create_frames();
 
@@ -80,18 +80,18 @@ void finish_semaphores(void) {
 
 void read_module_config(t_config* MODULE_CONFIG) {
     SERVER_MEMORY = (t_Server) {.server_type = MEMORY_PORT_TYPE, .clients_type = TO_BE_IDENTIFIED_PORT_TYPE, .port = config_get_string_value(MODULE_CONFIG, "PUERTO_ESCUCHA")};
-    TAM_MEMORIA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
-    TAM_PAGINA = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
+    MEMORY_SIZE = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_MEMORIA");
+    PAGE_SIZE = (t_MemorySize) config_get_int_value(MODULE_CONFIG, "TAM_PAGINA");
 
-    PATH_INSTRUCCIONES = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
-        if(PATH_INSTRUCCIONES[0]) {
+    INSTRUCTIONS_PATH = config_get_string_value(MODULE_CONFIG, "PATH_INSTRUCCIONES");
+        if(INSTRUCTIONS_PATH[0]) {
 
-            size_t length = strlen(PATH_INSTRUCCIONES);
-            if(PATH_INSTRUCCIONES[length - 1] == '/') {
-                PATH_INSTRUCCIONES[length - 1] = '\0';
+            size_t length = strlen(INSTRUCTIONS_PATH);
+            if(INSTRUCTIONS_PATH[length - 1] == '/') {
+                INSTRUCTIONS_PATH[length - 1] = '\0';
             }
 
-            DIR *dir = opendir(PATH_INSTRUCCIONES);
+            DIR *dir = opendir(INSTRUCTIONS_PATH);
             if(dir == NULL) {
                 log_error(MODULE_LOGGER, "No se pudo abrir el directorio de instrucciones.");
                 // TODO
@@ -100,7 +100,7 @@ void read_module_config(t_config* MODULE_CONFIG) {
             // closedir(dir);
         }
 
-    RETARDO_RESPUESTA = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
+    RESPONSE_DELAY = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
 }
 
 void listen_kernel(void) {
@@ -144,35 +144,44 @@ void listen_kernel(void) {
     }
 }
 
-void create_process(t_Payload *process_data) {
+void create_process(t_Payload *payload) {
 
-    char *argument_path, *target_path;
-    t_Return_Value flag_relative_path;
     t_Process *new_process = malloc(sizeof(t_Process));
-    t_list *instructions_list = list_create();
-    //t_list *pages_table = list_create();
+    if(new_process == NULL) {
+        // TODO
+        log_error(MODULE_LOGGER, "malloc: No se pudo reservar memoria para el nuevo proceso.");
+        return;
+    }
 
-    payload_shift(process_data, &(new_process->PID), sizeof(new_process->PID));
-    text_deserialize(process_data, &(argument_path));
-    return_value_deserialize(process_data, &flag_relative_path);
+    new_process->instructions_list = list_create();
+    new_process->pages_table = list_create();
 
+    char *argument_path;
+    t_Return_Value flag_relative_path;
+
+    payload_shift(payload, &(new_process->PID), sizeof(new_process->PID));
+    text_deserialize(payload, &(argument_path));
+    return_value_deserialize(payload, &flag_relative_path);
+
+    // Genera la ruta hacia el archivo de pseudocódigo
+    char *target_path;
     if(!flag_relative_path) {
         // Ruta absoluta
         target_path = argument_path;
     } else {
         // Ruta relativa
-        target_path = malloc((PATH_INSTRUCCIONES[0] ? (strlen(PATH_INSTRUCCIONES) + 1) : 0) + strlen(argument_path) + 1);
+        target_path = malloc((INSTRUCTIONS_PATH[0] ? (strlen(INSTRUCTIONS_PATH) + 1) : 0) + strlen(argument_path) + 1);
         if(target_path == NULL) {
             log_error(MODULE_LOGGER, "malloc: No se pudo reservar memoria para la ruta relativa.");
             exit(EXIT_FAILURE);
         }
 
         register int i;
-        for(i = 0; PATH_INSTRUCCIONES[i]; i++) {
-            target_path[i] = PATH_INSTRUCCIONES[i];
+        for(i = 0; INSTRUCTIONS_PATH[i]; i++) {
+            target_path[i] = INSTRUCTIONS_PATH[i];
         }
 
-        if(PATH_INSTRUCCIONES[0])
+        if(INSTRUCTIONS_PATH[0])
             target_path[i++] = '/';
 
         register int j;
@@ -182,11 +191,12 @@ void create_process(t_Payload *process_data) {
 
         target_path[i + j] = '\0';
     }
-    log_debug(MODULE_LOGGER, "Archivo Buscado: %s", target_path);
 
-    //CREAR LISTA INST CON EL PARSER
-    if(parser_file(target_path, instructions_list)) {
-        //ENVIAR RTA ERROR A KERNEL
+    log_debug(MODULE_LOGGER, "Ruta hacia el archivo de pseudocódigo: %s", target_path);
+
+    // Crea una lista de instrucciones a partir del archivo de pseudocódigo
+    if(parse_pseudocode_file(target_path, new_process->instructions_list)) {
+        // Envía un mensaje de error al Kernel en caso de no poder abrir el archivo de pseudocódigo
         if(send_return_value_with_header(PROCESS_CREATE_HEADER, 1, CLIENT_KERNEL->fd_client)) {
             // TODO
 
@@ -207,14 +217,15 @@ void create_process(t_Payload *process_data) {
         return;
     }
 
-    new_process->number_of_instructions = list_size(instructions_list);
-    new_process->instructions_list = instructions_list;
-    new_process->pages_table = list_create();
-    list_add(LIST_PROCESSES, new_process);
-    
-    log_debug(MODULE_LOGGER, "Archivo leido: %s", target_path);
+    log_debug(MODULE_LOGGER, "Archivo de pseudocódigo encontrado: %s", target_path);
+    free(target_path);
 
-    //ENVIAR RTA OK A KERNEL
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño: <%d>", new_process->PID, 0);
+
+    // TODO: Agregar MUTEX
+    list_add(LIST_PROCESSES, new_process);
+
+    // Envía respuesta OK a Kernel
     if(send_return_value_with_header(PROCESS_CREATE_HEADER, 0, CLIENT_KERNEL->fd_client)) {
         // TODO
 
@@ -232,7 +243,6 @@ void create_process(t_Payload *process_data) {
         close(CLIENT_CPU->fd_client);
         exit(1);
     }
-    free(target_path);
 }
 
 void kill_process(t_Payload *payload) {
@@ -240,23 +250,38 @@ void kill_process(t_Payload *payload) {
     t_PID pid;
     payload_shift(payload, &pid, sizeof(pid));
 
-    t_Process *process = seek_process_by_pid(pid);
-    t_Page *paginaBuscada;
-    
-    int size = list_size(process->pages_table);
-    for (; size > 0 ; size--)
-    {
-        paginaBuscada = list_get(process->pages_table, size - 1);
-        t_Frame *marco = list_get(LIST_FRAMES, paginaBuscada->assigned_frame);
-        list_add(LIST_FREE_FRAMES, marco);
-        free(paginaBuscada);
+    // TODO: Agregar MUTEX
+    t_Process *process = list_remove_by_condition_with_comparation(LIST_PROCESSES, (bool (*)(void *, void *)) process_matches_pid, (void *) &pid);
+    if(process == NULL) {
+        log_warning(MODULE_LOGGER, "No se encontró un proceso con PID: %" PRIu16, pid);
     }
-    free(process);
-    
-    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño: <%" PRIu32">", pid, size);
-    
-    //ENVIAR RTA OK A KERNEL
-    if(send_return_value_with_header(PROCESS_DESTROY_HEADER, 0, CLIENT_KERNEL->fd_client)) {
+    else {
+
+        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño: <%d>", pid, list_size(process->pages_table));
+
+        char *instruction;
+        t_Page *page;
+        t_Frame *frame;
+
+        for(int size = list_size(process->pages_table); size > 0 ; size--) {
+
+            instruction = list_remove(process->instructions_list, (int) size - 1);
+            free(instruction);
+
+            page = list_remove(process->pages_table, (int) size - 1);
+            // TODO: Agregar MUTEX
+            frame = list_get(LIST_FRAMES, (int) page->assigned_frame);
+            // TODO: Agregar MUTEX
+            list_add(LIST_FREE_FRAMES, frame);
+            free(page);
+        }
+        list_destroy(process->instructions_list);
+        list_destroy(process->pages_table);
+        free(process);
+    }
+
+    // Enviar respuesta OK a Kernel
+    if(send_header(PROCESS_DESTROY_HEADER, CLIENT_KERNEL->fd_client)) {
         // TODO
 
         pthread_cancel(SERVER_MEMORY.thread_server);
@@ -273,10 +298,9 @@ void kill_process(t_Payload *payload) {
         close(CLIENT_CPU->fd_client);
         exit(1);
     }
-    
 }
 
-int parser_file(char* path, t_list *list_instruction) {
+int parse_pseudocode_file(char *path, t_list *list_instruction) {
 
     FILE* file;
     if ((file = fopen(path, "r")) == NULL) {
@@ -362,7 +386,7 @@ void listen_cpu(void) {
                 package_destroy(package);
 
                 package = package_create_with_header(PAGE_SIZE_REQUEST);
-                payload_append(&(package->payload), &TAM_PAGINA, sizeof(TAM_PAGINA));
+                payload_append(&(package->payload), &PAGE_SIZE, sizeof(PAGE_SIZE));
                 package_send(package, CLIENT_CPU->fd_client);
                 package_destroy(package);
 
@@ -440,21 +464,8 @@ void listen_io(t_Client *client) {
     }
 }
 
-t_Process* seek_process_by_pid(t_PID pid) {
-
-    t_Process* procesoBuscado;
-    int size= list_size(LIST_PROCESSES);
-
-    procesoBuscado = list_get(LIST_PROCESSES, 0); //SUPONEMOS QUE SIEMPRE ENCUENTRA EL PID
-
-    for (size_t i = 0; i < size; i++)
-    {
-        procesoBuscado = list_get(LIST_PROCESSES,i);
-        if (procesoBuscado->PID == pid) i=size;
-        
-    }
-    
-    return procesoBuscado;
+bool process_matches_pid(t_Process *process, t_PID *pid) {
+    return process->PID == *pid;
 }
 
 void seek_instruccion(t_Payload *payload) {
@@ -464,14 +475,14 @@ void seek_instruccion(t_Payload *payload) {
     payload_shift(payload, &PID, sizeof(PID));
     payload_shift(payload, &PC, sizeof(PC));
     
-    t_Process *procesoBuscado = seek_process_by_pid(PID);
+    t_Process *procesoBuscado = list_find_by_condition_with_comparation(LIST_PROCESSES, (bool (*)(void *, void *)) process_matches_pid, (void *) &PID);
 
     char* instruccionBuscada = NULL;
     if(PC < list_size(procesoBuscado->instructions_list)) {
         instruccionBuscada = list_get(procesoBuscado->instructions_list, PC);
     }
 
-    usleep(RETARDO_RESPUESTA * 1000);
+    usleep(RESPONSE_DELAY * 1000);
     if(send_text_with_header(INSTRUCTION_REQUEST, instruccionBuscada, CLIENT_CPU->fd_client)) {
         // TODO
 
@@ -494,8 +505,8 @@ void seek_instruccion(t_Payload *payload) {
 }
 
 void create_frames(void) {
-    t_MemorySize cantidad_marcos = TAM_MEMORIA / TAM_PAGINA;
-    t_MemorySize offset = TAM_MEMORIA % TAM_PAGINA;
+    t_MemorySize cantidad_marcos = MEMORY_SIZE / PAGE_SIZE;
+    t_MemorySize offset = MEMORY_SIZE % PAGE_SIZE;
     if(offset != 0) cantidad_marcos++;
     
     LIST_FRAMES = list_create();
@@ -531,7 +542,7 @@ void respond_frame_request(t_Payload *payload) {
     payload_shift(payload, &pidProceso, sizeof(pidProceso));
 
 //Buscar frame
-    t_Process* procesoBuscado = seek_process_by_pid(pidProceso);
+    t_Process *procesoBuscado = list_find_by_condition_with_comparation(LIST_PROCESSES, (bool (*)(void *, void *)) process_matches_pid, (void *) &pidProceso);
     
     t_Frame_Number *marcoEncontrado = seek_frame_number_by_page_number(procesoBuscado->pages_table, page_number);
     if(marcoEncontrado != NULL)
@@ -540,7 +551,7 @@ void respond_frame_request(t_Payload *payload) {
         log_error(MODULE_LOGGER, "El numero de página <%" PRIu32 "> no existe en la tabla de paginas.", page_number);
 
 //Respuesta    
-    usleep(RETARDO_RESPUESTA * 1000);
+    usleep(RESPONSE_DELAY * 1000);
     
     t_Package* package = package_create_with_header(FRAME_REQUEST);
     if(marcoEncontrado != NULL) {
@@ -585,7 +596,7 @@ void io_read_memory(t_Payload *payload, int socket) {
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
 
-    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+    t_Frame_Number current_frame = physical_address / PAGE_SIZE;
 
     t_Package* package = package_create_with_header(READ_REQUEST);
 
@@ -602,12 +613,12 @@ void io_read_memory(t_Payload *payload, int socket) {
     }
     else { //En caso de que el contenido supere a 1 pagina
         t_MemorySize bytes_restantes = bytes;
-        int bytes_inicial = TAM_PAGINA - (physical_address - (current_frame * TAM_PAGINA));
+        int bytes_inicial = PAGE_SIZE - (physical_address - (current_frame * PAGE_SIZE));
         
         for (t_MemorySize i = 1; i > list_size(list_physical_addresses); i++)
         {
             physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, i - 1));
-            current_frame = physical_address / TAM_PAGINA;
+            current_frame = physical_address / PAGE_SIZE;
             //Posicion de la proxima escritura
             posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
 
@@ -637,14 +648,14 @@ void io_read_memory(t_Payload *payload, int socket) {
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
                 pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-                payload_append(&(package->payload), posicion, TAM_PAGINA);
+                payload_append(&(package->payload), posicion, PAGE_SIZE);
 
-                memcpy((void *)(((char *) text_to_send) + offset), posicion, TAM_PAGINA);
-                offset += TAM_PAGINA;
+                memcpy((void *)(((char *) text_to_send) + offset), posicion, PAGE_SIZE);
+                offset += PAGE_SIZE;
 
                 pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
                 update_page(current_frame);
-                bytes_restantes -= TAM_PAGINA;
+                bytes_restantes -= PAGE_SIZE;
             }
             
         }
@@ -669,7 +680,7 @@ void io_write_memory(t_Payload *payload, int socket) {
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
     
-    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+    t_Frame_Number current_frame = physical_address / PAGE_SIZE;
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
 
@@ -683,12 +694,12 @@ void io_write_memory(t_Payload *payload, int socket) {
     }
     else{//En caso de que el contenido supere a 1 pagina
         t_MemorySize bytes_restantes = bytes;
-        int bytes_inicial = TAM_PAGINA - (physical_address - (current_frame * TAM_PAGINA));
+        int bytes_inicial = PAGE_SIZE - (physical_address - (current_frame * PAGE_SIZE));
         
         for (t_MemorySize i = 1; i > list_size(list_physical_addresses); i++)
         {
             physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, i - 1));
-            current_frame = physical_address / TAM_PAGINA;
+            current_frame = physical_address / PAGE_SIZE;
             //Posicion de la proxima escritura
             posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
 
@@ -711,10 +722,10 @@ void io_write_memory(t_Payload *payload, int socket) {
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
                 pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-                payload_shift(payload, posicion, (size_t) TAM_PAGINA);
+                payload_shift(payload, posicion, (size_t) PAGE_SIZE);
                 pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
                 update_page(current_frame);
-                bytes_restantes -= TAM_PAGINA;
+                bytes_restantes -= PAGE_SIZE;
             }
             
         }
@@ -743,7 +754,7 @@ void read_memory(t_Payload *payload, int socket) {
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
 
-    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+    t_Frame_Number current_frame = physical_address / PAGE_SIZE;
 
     t_Package* package = package_create_with_header(READ_REQUEST);
 
@@ -756,12 +767,12 @@ void read_memory(t_Payload *payload, int socket) {
     }
     else { //En caso de que el contenido supere a 1 pagina
         t_MemorySize bytes_restantes = bytes;
-        int bytes_inicial = TAM_PAGINA - (physical_address - (current_frame * TAM_PAGINA));
+        int bytes_inicial = PAGE_SIZE - (physical_address - (current_frame * PAGE_SIZE));
         
         for (t_MemorySize i = 1; i > list_size(list_physical_addresses); i++)
         {
             physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, i - 1));
-            current_frame = physical_address / TAM_PAGINA;
+            current_frame = physical_address / PAGE_SIZE;
             //Posicion de la proxima escritura
             posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
 
@@ -783,10 +794,10 @@ void read_memory(t_Payload *payload, int socket) {
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
                 pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-                payload_append(&(package->payload), posicion, TAM_PAGINA);
+                payload_append(&(package->payload), posicion, PAGE_SIZE);
                 pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
                 update_page(current_frame);
-                bytes_restantes -= TAM_PAGINA;
+                bytes_restantes -= PAGE_SIZE;
             }
             
         }
@@ -808,7 +819,7 @@ void write_memory(t_Payload *payload, int socket) {
     t_Physical_Address physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, 0));
     void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
     
-    t_Frame_Number current_frame = physical_address / TAM_PAGINA;
+    t_Frame_Number current_frame = physical_address / PAGE_SIZE;
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%" PRIu32 "> - Tamaño <%" PRIu32 ">", pid, physical_address, bytes);
 
@@ -822,12 +833,12 @@ void write_memory(t_Payload *payload, int socket) {
     }
     else{//En caso de que el contenido supere a 1 pagina
         t_MemorySize bytes_restantes = bytes;
-        int bytes_inicial = TAM_PAGINA - (physical_address - (current_frame * TAM_PAGINA));
+        int bytes_inicial = PAGE_SIZE - (physical_address - (current_frame * PAGE_SIZE));
         
         for (t_MemorySize i = 1; i > list_size(list_physical_addresses); i++)
         {
             physical_address = *((t_Physical_Address *) list_get(list_physical_addresses, i - 1));
-            current_frame = physical_address / TAM_PAGINA;
+            current_frame = physical_address / PAGE_SIZE;
             //Posicion de la proxima escritura
             posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
 
@@ -850,10 +861,10 @@ void write_memory(t_Payload *payload, int socket) {
             if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
             {
                 pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-                payload_shift(payload, posicion, (size_t) TAM_PAGINA);
+                payload_shift(payload, posicion, (size_t) PAGE_SIZE);
                 pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
                 update_page(current_frame);
-                bytes_restantes -= TAM_PAGINA;
+                bytes_restantes -= PAGE_SIZE;
             }
             
         }
@@ -880,11 +891,11 @@ int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid){
     t_Frame* marco = (t_Frame *) list_get(LIST_FRAMES, current_frame);
     t_Page* current_page = marco->assigned_page;
     int pagid = current_page->pagid;
-    t_Process* proceso = seek_process_by_pid(pid);
-    current_page = list_get(proceso->pages_table, (pagid+1));
+    t_Process *proceso = list_find_by_condition_with_comparation(LIST_PROCESSES, (bool (*)(void *, void *)) process_matches_pid, (void *) &pid);
+    current_page = list_get(proceso->pages_table, (pagid + 1));
     int next_frame = current_page->assigned_frame;
     int offset = 0;
-    int next_dir_fis = next_frame * TAM_PAGINA + offset;
+    int next_dir_fis = next_frame * PAGE_SIZE + offset;
 
     return next_dir_fis;
 }
@@ -897,10 +908,10 @@ void resize_process(t_Payload *payload){
     payload_shift(payload, &pid, sizeof(pid));
     payload_shift(payload, &new_size, sizeof(new_size));
 
-    t_Process* procesoBuscado = seek_process_by_pid(pid);
+    t_Process *procesoBuscado = list_find_by_condition_with_comparation(LIST_PROCESSES, (bool (*)(void *, void *)) process_matches_pid, (void *) &pid);
 
-    t_MemorySize paginas = new_size / TAM_PAGINA;
-    t_MemorySize resto = new_size % TAM_PAGINA;
+    t_MemorySize paginas = new_size / PAGE_SIZE;
+    t_MemorySize resto = new_size % PAGE_SIZE;
 
     if (resto != 0)
         paginas += 1;
@@ -908,7 +919,7 @@ void resize_process(t_Payload *payload){
     int size = list_size(procesoBuscado->pages_table);
     t_Return_Value return_value;
 
-    if (new_size > TAM_MEMORIA)
+    if (new_size > MEMORY_SIZE)
     {
         return_value = 1;
     }
@@ -954,8 +965,7 @@ void resize_process(t_Payload *payload){
                 
             log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Reducir: <%" PRIu32 ">", pid, size, paginas);
             
-            for (size_t i = size; i > paginas; i--)
-            {
+            for (size_t i = size; i > paginas; i--) {
                 int pos_lista = seek_oldest_page_updated(procesoBuscado->pages_table);
                 t_Page* pagina = list_get(procesoBuscado->pages_table, pos_lista);
                 list_remove(procesoBuscado->pages_table, pos_lista);

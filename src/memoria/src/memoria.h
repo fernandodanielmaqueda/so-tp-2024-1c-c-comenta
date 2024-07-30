@@ -26,17 +26,16 @@
 
 typedef struct t_Process {
     t_PID PID;
-    int number_of_instructions;
-    t_list* instructions_list;
-    t_list* pages_table;
+    t_list *instructions_list;
+    t_list *pages_table;
 } t_Process;
 
 typedef struct t_Page {
     t_Page_Number pagid;
+    t_Frame_Number assigned_frame;
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
-    t_Frame_Number assigned_frame;
     time_t last_use;
 } t_Page;
 
@@ -81,7 +80,7 @@ void seek_instruccion(t_Payload *socketRecibido);
  * @param file Archivo a leer
  * @param list_instruction Lista a llenarse con las instrucciones del archivo.
  */
-void create_instruction(FILE* file, t_list* list_instruction);
+void create_instruction(FILE *file, t_list *list_instruction);
 
 
 /**
@@ -89,14 +88,15 @@ void create_instruction(FILE* file, t_list* list_instruction);
  * @param path Path donde se encuentra el archivo.
  * @param list_instruction Lista a llenarse con las instrucciones del archivo.
  */
-int parser_file(char* path, t_list* list_instruction);
+int parse_pseudocode_file(char *path, t_list *list_instruction);
 
 
 /**
- * @brief Busca el proceso asociado al PID de interes.
- * @param pidBuscado Pid de la lista de instrucciones asociada
+ * @brief
+ * @param process
+ * @param pid
  */
-t_Process* seek_process_by_pid(t_PID pidBuscado);
+bool process_matches_pid(t_Process *process, t_PID *pid);
 
 
 
@@ -135,14 +135,14 @@ void respond_frame_request(t_Payload *socketRecibido);
  * @param tablaPaginas Tanla de paginas del proceso donde buscar la pagina.
  * @param pagina Pagina buscada.
  */
-t_Frame_Number *seek_frame_number_by_page_number (t_list* tablaPaginas, t_Page_Number pagina);
+t_Frame_Number *seek_frame_number_by_page_number (t_list *tablaPaginas, t_Page_Number pagina);
 
 void resize_process(t_Payload *payload);
 void write_memory(t_Payload *socketRecibido, int socket);
 void read_memory(t_Payload *socketRecibido, int socket);
 void update_page(t_Frame_Number current_frame);
 int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid);
-int seek_oldest_page_updated(t_list* page_list);
+int seek_oldest_page_updated(t_list *page_list);
 void free_memory();
 void free_all_process();
 
