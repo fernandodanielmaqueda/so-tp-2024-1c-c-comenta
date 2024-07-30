@@ -353,7 +353,8 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	uint32_t location = seek_first_free_block();
 
 	//Crear variable de control de archivo
-	t_FS_File* new_entry = NULL;
+	t_FS_File* new_entry = malloc(sizeof(t_FS_File));
+	new_entry->name = malloc(sizeof(file_name));
 	strcpy(new_entry->name , file_name);
 	new_entry->process_pid = PID;
 	new_entry->initial_bloq = location;
@@ -372,6 +373,8 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
 	package_destroy(respond); */
 
+	free(new_entry);
+	free(new_entry->name);
     return 0;
 }
 
