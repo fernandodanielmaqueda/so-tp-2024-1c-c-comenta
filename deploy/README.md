@@ -22,21 +22,20 @@ sudo apt install gh -y
 ## A. Leer documentación
 
 - https://www.utnso.com.ar/
+- https://docs.utnso.com.ar/primeros-pasos/normas-tp
 - https://docs.utnso.com.ar/guias/herramientas/deploy
 - https://docs.utnso.com.ar/primeros-pasos/tp0
 
 >Si tuviéramos que resumir en tres cosas, lo que deberían hacer para poder llegar a una entrega con la seguridad de que van a aprobar sería:
 >
 >- Probar el TP
->
 >- Practicar el despliegue
->
 >- Probar el TP y practicar el despliegue
 >
 >Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs)
 >o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
 
-## B. Preparar los configs en el repositorio grupal
+## B. Preparar las configs en el repositorio grupal
 
 > Para conectar los módulos del TP entre sí es recomendable usar números de puerto por encima de 1024, ya que es poco probable que estén siendo usados por otro proceso (ej: 8000, 8001, etc).
 
@@ -60,8 +59,6 @@ sudo apt install gh -y
 			- Los scopes (alcances) mínimos requeridos son: 'repo', 'read:org' y 'workflow'.
 	- Fine-grained tokens
 		- https://github.com/settings/tokens
-- Para claves SSH
-		- https://github.com/settings/keys
 
 ## E. Llevarse anotadas las credenciales de GitHub
 
@@ -69,11 +66,9 @@ sudo apt install gh -y
 
 -----------------------------
 
-# (SÓLO en el Deploy) Al llegar al laboratorio
+# (SÓLO en el Deploy) Anunciarse al llegar *TODOS* al laboratorio
 
-Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
-
-## A. Anunciarse
+**Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano**
 
 >El día de la evaluación, el grupo deberá notificar su llegada a los ayudantes 
 >
@@ -97,8 +92,8 @@ Laboratorio de Sistemas UTN FRBA: 3er piso, ~Aula 317, Sede Medrano
 
 ## 1. Prender e iniciar sesión en una computadora
 
-- **Usuario**: alumno
-- **Contraseña**: alumno
+- **Usuario**: `alumno`
+- **Contraseña**: `alumno`
 
 -----------------------------
 
@@ -136,16 +131,17 @@ git config --global user.name 'Nombre y Apellido(s)'
 ```bash
 cd ~ ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
-Debería ser equivalente a:
+
+> Debería ser equivalente a:
 ```bash
 cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
 
-En caso de que nos aparezca este error:
+En caso de que aparezca este error:
 
 [![.NETFRAMEWORK_ERROR](https://i.sstatic.net/O9L6E.png)]()
 
-Como no tenemos permisos de administrador en las máquinas de la facultad, no podemos instalar esa dependencia
+Seleccionar `No`: Como no tenemos permisos de administrador en las máquinas de la facultad, no podemos instalar esa dependencia
 (.NET Framework 4.7.2) y por ende no podemos utilizar el Administrador de Credenciales de Git
 (**Git Credential Manager Core**)
 
@@ -193,15 +189,25 @@ Página oficial
 
 Links de descarga
 - https://drive.google.com/drive/folders/1Pn1SveTGkEVfcc7dYAr1Wc10ftEe8E0J
-- https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view
-- https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view?usp=drive_link
+	- https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view
+	- https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view?usp=drive_link
+	- https://drive.google.com/file/d/16lUW1fRvoitkUiUN58mwJrmyAVezcOdx/view?usp=sharing
+		- https://drive.google.com/uc?export=download&id=16lUW1fRvoitkUiUN58mwJrmyAVezcOdx
+		- https://drive.google.com/u/0/uc?id=16lUW1fRvoitkUiUN58mwJrmyAVezcOdx&export=download
+		- https://drive.google.com/uc?id=16lUW1fRvoitkUiUN58mwJrmyAVezcOdx
+	
+Generadores de links de descarga de Google Drive:
+	- https://www.wonderplugin.com/online-tools/google-drive-direct-link-generator/
+	- https://www.techyleaf.in/google-drive-direct-link-generator/
+	- https://www.innateblogger.com/p/google-drive-direct-link-generator.html
+	- https://chromewebstore.google.com/detail/google-drive-direct-link/ebfajbnnlkjdogmocghbakjbncbgiljb?pli=1
 
-Gestor de descargas (Windows)
+Gestores de descargas (Windows)
 - https://www.freedownloadmanager.org/es/download.htm
 - https://ugetdm.com/downloads/windows/#downloadable-packages
 - https://github.com/setvisible/ArrowDL
 
-Gestor de descargas (Ubuntu)
+Gestores de descargas (Linux)
 - https://chemicloud.com/blog/download-google-drive-files-using-wget/
 - https://medium.com/@acpanjan/download-google-drive-files-using-wget-3c2c025a8b99
 - https://stackoverflow.com/questions/25010369/wget-curl-large-file-from-google-drive
@@ -757,26 +763,52 @@ gh auth login
 ```
 
 # Alternativa 2: Generar claves SSH
+## En la VM Server:
 ```bash
-ssh-keygen -t ed25519 -C "your@email.com"
+ssh-keygen -t ed25519 -C 'your@email.com'
 ```
-Donde `"your@email.com"` es el email que tienen asociado a su cuenta de GitHub.
+Donde `your@email.com` es el email que tienen asociado a su cuenta de GitHub.
 
-Luego, vamos a seguir las instrucciones que nos da el comando para generar las claves. Por defecto, se van a guardar en el directorio `~/.ssh/` con los nombres `id_ed25519` y `id_ed25519.pub`
+Esto crea una nueva clavev SSH, usando el email provisto como una etiqueta.
 
-Por último, vamos a agregar la clave pública a nuestra cuenta de GitHub moviéndonos a `Settings` > `SSH and GPG keys` > `New SSH key`.
+> Generating public/private ALGORITHM key pair.
+When you're prompted to `Enter a file in which to save the key`,
+you can press Enter to accept the default file location.
+Please note that if you created SSH keys previously,
+ssh-keygen may ask you to rewrite another key,
+in which case we recommend creating a custom-named SSH key.
+To do so, type the default file location and replace id_ALGORITHM with your custom key name.
+```text
+> Enter file in which to save the key (/c/Users/YOU/.ssh/id_ALGORITHM):[Press enter]
+```
 
-- El tipo de clave es `Authentication Key`
-- La clave es el contenido de la clave pública que generamos, el cual pueden ver con el comando `cat ~/.ssh/id_ed25519.pub`
+Cuando se te solicite, escribí una frase de contraseña segura. Para más información, mirá: "Working with SSH key passphrases." (https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
+```text
+> Enter passphrase (empty for no passphrase): [Type a passphrase]
+> Enter same passphrase again: [Type passphrase again]
+```
+
+Por defecto, se van a guardar en el directorio `~/.ssh/` con los nombres `id_ed25519` y `id_ed25519.pub`
+
+## En el Host Windows:
+Por último, vamos a agregar la clave pública a nuestra cuenta de GitHub moviéndonos a `Settings` > `SSH and GPG keys` > `New SSH key`:
+- https://github.com/settings/keys
+	- https://github.com/settings/ssh/new
+
+1. Completar el campo `Title`
+2. En `Key Type`seleccionar `Authentication Key`
+3. En `Key` poner la clave pública generado, la cual se puede ver con el comando `cat ~/.ssh/id_ed25519.pub`
+4. Seleccionar `Add SSH Key`
+5. Si se le solicita, confirma el acceso a tu cuenta de GitHub.
+
+## En la VM Server:
 
 Una vez hecho esto, podemos verificar que todo está configurado correctamente con el comando:
-
 ```bash
 ssh -T git@github.com
 ```
 
 La primera vez nos va a preguntar si queremos agregar la clave a la lista de hosts conocidos:
-
 ```txt
 The authenticity of host 'github.com' can't be established.
 ED25519 key fingerprint is SHA256:+asdrfadfasfsdf/asdfsdafsdafdsafdf.
@@ -786,7 +818,6 @@ Are you sure you want to continue connecting (yes/no/[fingerprint])?
 Vamos a responder `yes` para agregar la clave a la lista de hosts conocidos y poder autenticarnos.
 
 Si todo salió bien, deberíamos ver un mensaje de bienvenida de GitHub:
-
 ```txt
 Hi TuUsuarioDeGitHub! You've successfully authenticated, but GitHub does not provide shell access.
 ```
@@ -838,9 +869,10 @@ cd tp-2024-1c-Operativos ; git submodule update --init --recursive
 
 TODO
 
-## 30. Poner las IPs (no los puertos) en los archivos de config
+## 30. Poner las IPs (*los Puertos no*) en los archivos de config
 
 Completar con las IPs que te hayan pasado tus compañeros de equipo que correspondan a las máquinas
+corriendo los módulos
 
 -----------------------------
 
