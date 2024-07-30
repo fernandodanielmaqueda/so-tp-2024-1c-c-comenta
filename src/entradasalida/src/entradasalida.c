@@ -244,12 +244,12 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	}
 
 	t_list *physical_addresses = list_create();
-	t_MemorySize bytes;
+	size_t bytes;
 
 	//Empiezo a "desencolar" el payload recibido
 	
-	payload_shift(operation_arguments, &bytes, sizeof(bytes));
-	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
+	size_deserialize(operation_arguments, &bytes);
+	list_deserialize(operation_arguments, physical_addresses, size_deserialize_element);
 
 	char text_to_send[bytes + 1]; // Le agrego 1 para el '\0' por las dudas
 	char* pointer_verifier;
@@ -281,8 +281,8 @@ int io_stdin_read_io_operation(t_Payload *operation_arguments) {
 	//Creo paquete y argumentos necesarios para enviarle a memoria
 	t_Package *package = package_create_with_header(IO_STDIN_WRITE_MEMORY);
 	payload_append(&(package->payload), &PID, sizeof(PID));
-	list_serialize(&(package->payload), *physical_addresses, physical_address_serialize_element);
-	payload_append(&(package->payload), &bytes, sizeof(bytes));
+	list_serialize(&(package->payload), *physical_addresses, size_serialize_element);
+	size_serialize(&(package->payload), bytes);
 	payload_append(&(package->payload), text_to_send, (size_t) bytes);
 	package_send(package, CONNECTION_MEMORY.fd_connection);
 	package_destroy(package);
@@ -303,12 +303,12 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	}
 			
 	t_list *physical_addresses = list_create();
-	t_MemorySize bytes;
+	size_t bytes;
 
 	//empiezo a "desencolar" el payload recibido
 	//text_deserialize(operation_arguments, &text_received);
-	payload_shift(operation_arguments, &bytes, sizeof(bytes));
-	list_deserialize(operation_arguments, physical_addresses, physical_address_deserialize_element);
+	size_deserialize(operation_arguments, &bytes);
+	list_deserialize(operation_arguments, physical_addresses, size_deserialize_element);
 
 	//Aviso la operacion que voy a hacer
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - OPERACION <IO_STDOUT_WRITE>", (int) PID);
@@ -318,8 +318,8 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	//Creo header para memoria y el paquete con los argumentos
 	package = package_create_with_header(IO_STDOUT_READ_MEMORY);
 	payload_append(&(package->payload), &PID, sizeof(PID));
-	list_serialize(&(package->payload), *physical_addresses, physical_address_serialize_element);
-	payload_append(&(package->payload), &bytes, sizeof(bytes));
+	list_serialize(&(package->payload), *physical_addresses, size_serialize_element);
+	size_serialize(&(package->payload), bytes);
 	package_send(package, CONNECTION_MEMORY.fd_connection);
 	package_destroy(package);
 	
@@ -447,11 +447,11 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_TRUNCATE recibido.");
 
 	char *file_name;
-	t_MemorySize value;
+	size_t value;
 	
 	usleep(WORK_UNIT_TIME * 1000);
     text_deserialize(operation_arguments, &(file_name));
-    payload_shift(operation_arguments, &value, sizeof(value));
+    size_deserialize(operation_arguments, &value);
 
 	uint32_t valueNUM = ceil(value/BLOCK_SIZE);
 
@@ -536,17 +536,17 @@ del valor del Registro Puntero Archivo.*/
 
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
 
-	char* file_name = NULL;
-	t_MemorySize ptro = 0;
-	t_MemorySize bytes = 0;
+	char *file_name = NULL;
+	size_t ptro = 0;
+	size_t bytes = 0;
 	t_list* list_dfs = list_create();
 
 	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido de kernel
-    text_deserialize(operation_arguments, &(file_name));
-    payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
-    payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
-	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
+    text_deserialize(operation_arguments, &file_name);
+    size_deserialize(operation_arguments, &ptro);
+    size_deserialize(operation_arguments, &bytes);
+	list_deserialize(operation_arguments, list_dfs, size_deserialize_element);
 
 	
 	//Busco el file buscado
@@ -557,7 +557,7 @@ del valor del Registro Puntero Archivo.*/
 	//Envio paquete a memoria
 	t_Package* pack_request = package_create_with_header(IO_FS_WRITE_MEMORY);
 	payload_append(&pack_request->payload, &PID, sizeof(t_PID));
-    list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
+    list_serialize(&pack_request->payload, *list_dfs, size_serialize_element);
 	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
 	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
 	package_destroy(pack_request);
@@ -606,16 +606,16 @@ indicada en el Registro Dirección*/
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
 
 	char* file_name = NULL;
-	t_MemorySize ptro = 0;
-	t_MemorySize bytes = 0;
+	size_t ptro;
+	size_t bytes;
 	t_list* list_dfs = list_create();
 
 	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido
     text_deserialize(operation_arguments, &(file_name));
-    payload_shift(operation_arguments, &ptro, sizeof(t_MemorySize));
-    payload_shift(operation_arguments, &bytes, sizeof(t_MemorySize));
-	list_deserialize(operation_arguments, list_dfs, physical_address_deserialize_element);
+    size_deserialize(operation_arguments, &ptro);
+    size_deserialize(operation_arguments, &bytes);
+	list_deserialize(operation_arguments, list_dfs, size_deserialize_element);
 
 	//Busco el file buscado
 	t_FS_File* file = seek_file(file_name);
@@ -635,7 +635,7 @@ indicada en el Registro Dirección*/
 	//Se crea paquete y se envia a memoria
 	t_Package* pack_request = package_create_with_header(IO_FS_READ_MEMORY);
 	payload_append(&pack_request->payload, &PID, sizeof(t_PID));
-    list_serialize(&pack_request->payload, *list_dfs, physical_address_serialize_element);
+    list_serialize(&pack_request->payload, *list_dfs, size_serialize_element);
 	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
 	payload_append(&pack_request->payload, &context, sizeof(bytes));
 	package_send(pack_request,CONNECTION_MEMORY.fd_connection);

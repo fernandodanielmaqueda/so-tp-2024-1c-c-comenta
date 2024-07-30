@@ -17,6 +17,9 @@
 #include "commons/log.h"
 #include "utils/module.h"
 
+typedef uint32_t t_Size;
+
+/*
 typedef uint32_t t_MemorySize;
 typedef uint32_t t_Logical_Address;
 typedef uint32_t t_Physical_Address;
@@ -24,34 +27,35 @@ typedef uint32_t t_Offset;
 typedef uint32_t t_Page_Number;
 typedef t_Page_Number t_Frame_Number;
 typedef uint32_t t_Page_Quantity;
+*/
 
 
-void physical_address_serialize_element(t_Payload *payload, void *source);
+void size_serialize_element(t_Payload *payload, void *source);
 
 
-void physical_address_deserialize_element(t_Payload *payload, void **destination);
+void size_deserialize_element(t_Payload *payload, void **destination);
 
 
 /**
- * @brief Serializacion de un t_Physical_Address para ser enviado.
+ * @brief Serializacion de un size_t para ser enviado.
  * @param payload Payload a encolar.
- * @param source t_Physical_Address fuente a serializar
+ * @param source size_t fuente a serializar
  */
-void physical_address_serialize(t_Payload *payload, t_Physical_Address source);
+void size_serialize(t_Payload *payload, size_t source);
 
 
 /**
- * @brief Deserializacion de un t_Physical_Address para ser leido.
+ * @brief Deserializacion de un size_t para ser leido.
  * @param payload Payload a desencolar.
- * @param destination Destino del t_Physical_Address deserializado
+ * @param destination Destino del size_t deserializado
  */
-void physical_address_deserialize(t_Payload *payload, t_Physical_Address *destination);
+void size_deserialize(t_Payload *payload, size_t *destination);
 
 
 /**
- * @brief Loguea un t_Physical_Address.
- * @param source t_Physical_Address a loguear.
+ * @brief Loguea un size_t.
+ * @param source size_t a loguear.
  */
-void physical_address_log(t_Physical_Address source);
+void size_log(size_t source);
 
 #endif // UTILS_SERIALIZE_MEMORY_H

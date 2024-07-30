@@ -31,8 +31,8 @@ typedef struct t_Process {
 } t_Process;
 
 typedef struct t_Page {
-    t_Page_Number pagid;
-    t_Frame_Number assigned_frame;
+    size_t page_number;
+    size_t assigned_frame_number;
     bool bit_uso;
     bool bit_modificado;
     bool bit_presencia;
@@ -40,8 +40,8 @@ typedef struct t_Page {
 } t_Page;
 
 typedef struct t_Frame {
+    size_t frame_number;
     t_PID PID;
-    t_Frame_Number id;
     t_Page *assigned_page;
 } t_Frame;
 
@@ -56,13 +56,13 @@ void read_module_config(t_config *module_config);
  * @brief Busca el archivo de pseudocodigo y crea la estructura dentro de memoria
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
-void create_process(t_Payload *socketRecibido);
+void create_process(t_Payload *payload);
 
 /**
  * @brief Elimina el proceso, marca el marco como disponible y libera la pagina
  * @param socketRecibido Socket desde donde se va a recibir el pcb.
  */
-void kill_process (t_Payload *socketRecibido);
+void kill_process (t_Payload *payload);
 
 void listen_io(t_Client *client);
 
@@ -135,13 +135,13 @@ void respond_frame_request(t_Payload *socketRecibido);
  * @param tablaPaginas Tanla de paginas del proceso donde buscar la pagina.
  * @param pagina Pagina buscada.
  */
-t_Frame_Number *seek_frame_number_by_page_number (t_list *tablaPaginas, t_Page_Number pagina);
+size_t *seek_frame_number_by_page_number(t_list *tablaPaginas, size_t page_number);
 
 void resize_process(t_Payload *payload);
 void write_memory(t_Payload *socketRecibido, int socket);
 void read_memory(t_Payload *socketRecibido, int socket);
-void update_page(t_Frame_Number current_frame);
-int get_next_dir_fis(t_Frame_Number current_frame, t_PID pid);
+void update_page(size_t frame_number);
+int get_next_dir_fis(size_t frame_number, t_PID pid);
 int seek_oldest_page_updated(t_list *page_list);
 void free_memory();
 void free_all_process();

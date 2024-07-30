@@ -100,12 +100,12 @@ int mov_in_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    t_Logical_Address logical_address;
+    uint32_t logical_address;
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
     size_t bytes = get_register_size(register_data);
 
-    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, bytes);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, (size_t) logical_address, bytes);
     if(list_physical_addresses == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
@@ -160,10 +160,10 @@ int mov_out_cpu_operation(int argc, char **argv)
     void *source = get_register_pointer(&EXEC_CONTEXT, register_data);
     size_t bytes = get_register_size(register_data);
 
-    t_Logical_Address logical_address;
+    uint32_t logical_address;
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
-    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, bytes);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, (size_t) logical_address, bytes);
     if(list_physical_addresses == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
@@ -308,8 +308,8 @@ int resize_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    t_MemorySize size;
-    if(str_to_memory_size(argv[1], &size)) {
+    size_t size;
+    if(str_to_size(argv[1], &size)) {
         log_error(MODULE_LOGGER, "%s: No es un tamaño valido", argv[1]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
@@ -350,8 +350,8 @@ int copy_string_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    t_MemorySize size;
-    if(str_to_memory_size(argv[1], &size)) {
+    size_t size;
+    if(str_to_size(argv[1], &size)) {
         log_error(MODULE_LOGGER, "%s: No es un tamaño valido", argv[1]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
@@ -359,10 +359,10 @@ int copy_string_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "COPY_STRING %s", argv[1]);
 
-    t_Logical_Address logical_address_si;
+    uint32_t logical_address_si;
     get_register_value(EXEC_CONTEXT, SI_REGISTER, &logical_address_si);
 
-    t_list *list_physical_addresses_si = mmu(EXEC_CONTEXT.PID, logical_address_si, size);
+    t_list *list_physical_addresses_si = mmu(EXEC_CONTEXT.PID, (size_t) logical_address_si, size);
     if(list_physical_addresses_si == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
@@ -372,10 +372,10 @@ int copy_string_cpu_operation(int argc, char **argv)
     void *source;
     attend_read(EXEC_CONTEXT.PID, list_physical_addresses_si, &source, size); 
 
-    t_Logical_Address logical_address_di;
+    uint32_t logical_address_di;
     get_register_value(EXEC_CONTEXT, DI_REGISTER, &logical_address_di);
 
-    t_list *list_physical_addresses_di = mmu(EXEC_CONTEXT.PID, logical_address_di, size);
+    t_list *list_physical_addresses_di = mmu(EXEC_CONTEXT.PID, (size_t) logical_address_di, size);
     if(list_physical_addresses_di == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
@@ -481,13 +481,13 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    t_MemorySize size;
+    uint32_t size;
     get_register_value(EXEC_CONTEXT, register_size, &size);
 
-    t_Logical_Address logical_address;
+    uint32_t logical_address;
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
-    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, size);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, (size_t) logical_address, (size_t) size);
     if(list_physical_addresses == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
@@ -499,8 +499,8 @@ int io_stdin_read_cpu_operation(int argc, char **argv)
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(&SYSCALL_INSTRUCTION, IO_STDIN_READ_CPU_OPCODE);
     text_serialize(&SYSCALL_INSTRUCTION, argv[1]);
-    payload_append(&SYSCALL_INSTRUCTION, &size, sizeof(size));
-    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses, physical_address_serialize_element);
+    size_serialize(&SYSCALL_INSTRUCTION, (size_t) size);
+    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses, size_serialize_element);
 
     return 0;
 }
@@ -531,27 +531,26 @@ int io_stdout_write_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    t_MemorySize size;
+    uint32_t size;
     get_register_value(EXEC_CONTEXT, register_size, &size);
 
-    t_Logical_Address logical_address;
+    uint32_t logical_address;
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
 
-    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, logical_address, size);
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, (size_t) logical_address, (size_t) size);
     if(list_physical_addresses == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
 
-
     EXEC_CONTEXT.PC++;
 
     SYSCALL_CALLED = 1;
     cpu_opcode_serialize(&SYSCALL_INSTRUCTION, IO_STDOUT_WRITE_CPU_OPCODE);
     text_serialize(&SYSCALL_INSTRUCTION, argv[1]);
-    payload_append(&SYSCALL_INSTRUCTION, &size, sizeof(size));
-    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses, physical_address_serialize_element);
+    size_serialize(&SYSCALL_INSTRUCTION, (size_t) size);
+    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses, size_serialize_element);
 
     return 0;
 }
@@ -618,7 +617,7 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_FS_TRUNCATE %s %s %s", argv[1], argv[2], argv[3]);
 
-    t_MemorySize bytes = 0;
+    uint32_t bytes = 0;
     get_register_value(EXEC_CONTEXT, register_size, &bytes);
 
     EXEC_CONTEXT.PC++;
@@ -627,7 +626,7 @@ int io_fs_truncate_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(&SYSCALL_INSTRUCTION, IO_FS_TRUNCATE_CPU_OPCODE);
     text_serialize(&SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(&SYSCALL_INSTRUCTION, argv[2]);
-    payload_append(&SYSCALL_INSTRUCTION, &bytes, sizeof(bytes));
+    size_serialize(&SYSCALL_INSTRUCTION, (size_t) bytes);
 
     return 0;
 }
@@ -640,20 +639,23 @@ int io_fs_write_cpu_operation(int argc, char **argv)
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-    e_CPU_Register register_address_ptro;
-    e_CPU_Register register_size_destino;
-    e_CPU_Register register_size;
-    if(decode_register(argv[3], &register_size_destino)) {
+
+    e_CPU_Register register_address;
+    if(decode_register(argv[3], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
+
+    e_CPU_Register register_size;
     if (decode_register(argv[4], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[4]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-    if (decode_register(argv[5], &register_address_ptro)) {
+
+    e_CPU_Register register_pointer;
+    if (decode_register(argv[5], &register_pointer)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[5]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
@@ -661,21 +663,20 @@ int io_fs_write_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "IO_FS_WRITE %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    t_Logical_Address logical_address_destino;
-    t_MemorySize puntero = 0;
-    t_MemorySize bytes = 0;
+    uint32_t logical_address;
+    uint32_t bytes;
+    uint32_t pointer;
 
-    get_register_value(EXEC_CONTEXT, register_size_destino, &logical_address_destino);
-    get_register_value(EXEC_CONTEXT, register_address_ptro, &puntero);
+    get_register_value(EXEC_CONTEXT, register_address, &logical_address);
+    get_register_value(EXEC_CONTEXT, register_pointer, &pointer);
     get_register_value(EXEC_CONTEXT, register_size, &bytes);
 
-    t_list *list_physical_addresses_origin = mmu(EXEC_CONTEXT.PID, logical_address_destino, bytes);
-    if(list_physical_addresses_origin == NULL) {
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, (size_t) logical_address, (size_t) bytes);
+    if(list_physical_addresses == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-
 
     EXEC_CONTEXT.PC++;
     
@@ -683,9 +684,9 @@ int io_fs_write_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(&SYSCALL_INSTRUCTION, IO_FS_WRITE_CPU_OPCODE);
     text_serialize(&SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(&SYSCALL_INSTRUCTION, argv[2]);
-    payload_append(&SYSCALL_INSTRUCTION, &puntero, sizeof(puntero));
-    payload_append(&SYSCALL_INSTRUCTION, &bytes, sizeof(bytes));
-    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
+    size_serialize(&SYSCALL_INSTRUCTION, pointer);
+    size_serialize(&SYSCALL_INSTRUCTION, bytes);
+    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses, size_serialize_element);
 
     return 0;
 }
@@ -698,36 +699,40 @@ int io_fs_read_cpu_operation(int argc, char **argv)
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-    e_CPU_Register register_address_ptro;
-    e_CPU_Register register_size_destino;
-    e_CPU_Register register_size;
-    if(decode_register(argv[3], &register_size_destino)) {
+
+    e_CPU_Register register_address;
+    if(decode_register(argv[3], &register_address)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[3]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
+
+    e_CPU_Register register_size;
     if (decode_register(argv[4], &register_size)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[4]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-    if (decode_register(argv[5], &register_address_ptro)) {
+
+    e_CPU_Register register_pointer;
+    if (decode_register(argv[5], &register_pointer)) {
         log_error(MODULE_LOGGER, "%s: Registro no encontrado", argv[5]);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
+
     log_trace(MODULE_LOGGER, "IO_FS_READ %s %s %s %s %s", argv[1], argv[2], argv[3], argv[4], argv[5]);
 
-    t_Logical_Address logical_address_destino;
-    t_MemorySize puntero = 0;
-    t_MemorySize bytes = 0;
+    uint32_t logical_address;
+    uint32_t bytes;
+    uint32_t pointer;
 
-    get_register_value(EXEC_CONTEXT, register_size_destino, &logical_address_destino);
-    get_register_value(EXEC_CONTEXT, register_address_ptro, &puntero);
+    get_register_value(EXEC_CONTEXT, register_address, &logical_address);
     get_register_value(EXEC_CONTEXT, register_size, &bytes);
+    get_register_value(EXEC_CONTEXT, register_pointer, &pointer);
 
-    t_list *list_physical_addresses_origin = mmu(EXEC_CONTEXT.PID, logical_address_destino, bytes);
-    if(list_physical_addresses_origin == NULL) {
+    t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, (size_t) logical_address, (size_t) bytes);
+    if(list_physical_addresses == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
@@ -739,9 +744,9 @@ int io_fs_read_cpu_operation(int argc, char **argv)
     cpu_opcode_serialize(&SYSCALL_INSTRUCTION, IO_FS_READ_CPU_OPCODE);
     text_serialize(&SYSCALL_INSTRUCTION, argv[1]);
     text_serialize(&SYSCALL_INSTRUCTION, argv[2]);
-    payload_append(&SYSCALL_INSTRUCTION, &puntero, sizeof(puntero));
-    payload_append(&SYSCALL_INSTRUCTION, &bytes, sizeof(bytes));
-    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses_origin, physical_address_serialize_element);
+    size_serialize(&SYSCALL_INSTRUCTION, pointer);
+    size_serialize(&SYSCALL_INSTRUCTION, bytes);
+    list_serialize(&SYSCALL_INSTRUCTION, *list_physical_addresses, size_serialize_element);
 
     return 0;
 }
@@ -789,11 +794,11 @@ int str_to_uint32(char *string, uint32_t *destination)
     return 0;
 }
 
-int str_to_memory_size(char *string, t_MemorySize *destination)
+int str_to_size(char *string, size_t *destination)
 {
     char *end;
 
-    *destination = (t_MemorySize) strtoul(string, &end, 10);
+    *destination = (size_t) strtoul(string, &end, 10);
 
     if(!*string || *end)
         return 1;

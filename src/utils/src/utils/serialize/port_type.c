@@ -30,7 +30,7 @@ void port_type_deserialize(t_Payload *payload, e_Port_Type *destination) {
     return;
 
   t_EnumValue aux;
-  
+
   payload_shift(payload, &aux, sizeof(aux));
     *destination = (e_Port_Type) aux;
 

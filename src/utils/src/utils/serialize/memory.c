@@ -3,47 +3,53 @@
 
 #include "utils/serialize/memory.h"
 
-void physical_address_serialize_element(t_Payload *payload, void *source) {
+void size_serialize_element(t_Payload *payload, void *source) {
     if(payload == NULL || source == NULL)
         return;
 
-    physical_address_serialize(payload, *(t_Physical_Address *) source);
+    size_serialize(payload, *(size_t *) source);
 }
 
-void physical_address_deserialize_element(t_Payload *payload, void **destination) {
+void size_deserialize_element(t_Payload *payload, void **destination) {
   if(payload == NULL || destination == NULL)
     return;
 
-  *destination = malloc(sizeof(t_Physical_Address));
+  *destination = malloc(sizeof(size_t));
   if(*destination == NULL) {
-    log_error(SERIALIZE_LOGGER, "No se pudo reservar memoria para el t_Physical_Address");
+    log_error(SERIALIZE_LOGGER, "malloc: No se pudo reservar memoria para size_t");
     exit(EXIT_FAILURE);
   }
 
-  physical_address_deserialize(payload, (t_Physical_Address *) *destination);
+  size_deserialize(payload, (size_t *) *destination);
 }
 
-void physical_address_serialize(t_Payload *payload, t_Physical_Address source) {
+void size_serialize(t_Payload *payload, size_t source) {
   if(payload == NULL)
     return;
 
-  payload_append(payload, &source, sizeof(source));
+  t_Size aux;
+  
+    aux = (t_Size) source;
+  payload_append(payload, &aux, sizeof(aux));
 
-  physical_address_log(source);
+  size_log(source);
 }
 
-void physical_address_deserialize(t_Payload *payload, t_Physical_Address *destination) {
+void size_deserialize(t_Payload *payload, size_t *destination) {
   if(payload == NULL || destination == NULL)
     return;
 
-  payload_shift(payload, destination, sizeof(*destination));
+  t_Size aux;
 
-  physical_address_log(*destination);
+  payload_shift(payload, &aux, sizeof(aux));
+    *destination = (size_t) aux;
+
+  size_log(*destination);
 }
 
-void physical_address_log(t_Physical_Address source) {
+void size_log(size_t source) {
   log_info(SERIALIZE_LOGGER,
-    "t_Physical_Address: %" PRIu32
+    "size_t: %zd"
     , source
   );
 }

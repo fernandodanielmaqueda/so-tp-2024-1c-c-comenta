@@ -6,7 +6,8 @@
 			"functional": "c",
 			"typeinfo": "c",
 			"type_traits": "c",
-			"compare": "c"
+			"compare": "c",
+			"cmath": "c"
 		},
 		"C_Cpp.errorSquiggles": "disabled",
 	},
