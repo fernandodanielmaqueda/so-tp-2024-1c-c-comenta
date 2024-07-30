@@ -59,20 +59,15 @@ void finish_scheduling(void) {
 
 void initialize_long_term_scheduler(void) {
 	pthread_create(&THREAD_LONG_TERM_SCHEDULER_NEW, NULL, (void *(*)(void *)) long_term_scheduler_new, NULL);
-	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
 	pthread_detach(THREAD_LONG_TERM_SCHEDULER_NEW);
+
 	pthread_create(&THREAD_LONG_TERM_SCHEDULER_EXIT, NULL, (void *(*)(void *)) long_term_scheduler_exit, NULL);
-	//log_info(MODULE_LOGGER, "Inicio planificador largo plazo");
 	pthread_detach(THREAD_LONG_TERM_SCHEDULER_EXIT);
 }
 
 void initialize_short_term_scheduler(void) { //ESTADO RUNNIG - MULTIPROCESAMIENTO
 	pthread_create(&THREAD_SHORT_TERM_SCHEDULER, NULL, (void *(*)(void *)) short_term_scheduler, NULL);
-	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
 	pthread_detach(THREAD_SHORT_TERM_SCHEDULER);
-	pthread_create(&THREAD_MULTIPROGRAMMING_POSTER, NULL, (void *(*)(void *)) multiprogramming_poster, NULL);
-	//log_info(MODULE_LOGGER, "Inicio planificador corto plazo");
-	pthread_detach(THREAD_MULTIPROGRAMMING_POSTER);
 }
 
 void *long_term_scheduler_new(void *NULL_parameter) {
@@ -83,7 +78,7 @@ void *long_term_scheduler_new(void *NULL_parameter) {
 
 	while(1) {
 		sem_wait(&SEM_LONG_TERM_SCHEDULER_NEW);
-		sem_wait(&SEM_MULTIPROGRAMMING_LEVEL);
+		wait_multiprogramming_level();
 
     	wait_draining_requests(&SCHEDULING_SYNC);
 			pthread_mutex_lock(&(SHARED_LIST_NEW.mutex));
@@ -172,8 +167,7 @@ void *long_term_scheduler_exit(void *NULL_parameter) {
 
 		//pid_release(pcb->PID);
 		pcb_destroy(pcb);
-		sem_post(&SEM_MULTIPROGRAMMING_POSTER);
-		
+		signal_multiprogramming_level();
 	}
 
 	return NULL;
@@ -366,26 +360,6 @@ void *start_quantum(t_PCB *pcb) {
     log_trace(MODULE_LOGGER, "PID: <%d> - Se envia interrupcion por quantum tras %li milisegundos", (int) pcb->exec_context.PID, quantum);
 
 	return NULL;
-}
-
-void *multiprogramming_poster(void *NULL_parameter) {
-
-	log_trace(MODULE_LOGGER, "Hilo administrador de multiprogramación iniciado");
-
-    while(1) {
-        sem_wait(&SEM_MULTIPROGRAMMING_POSTER);
-
-        pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
-
-            if(MULTIPROGRAMMING_DIFFERENCE == 0)
-                sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
-            else
-                MULTIPROGRAMMING_DIFFERENCE--;
-
-        pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
-    }
-
-    return NULL;
 }
 
 t_PCB *FIFO_scheduling_algorithm(void) {

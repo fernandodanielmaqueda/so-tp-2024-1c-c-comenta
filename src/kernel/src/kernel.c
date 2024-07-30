@@ -93,7 +93,8 @@ void initialize_mutexes(void) {
 
 	pthread_mutex_init(&MUTEX_KILL_EXEC_PROCESS, NULL);
 
-	pthread_mutex_init(&MUTEX_MULTIPROGRAMMING_DIFFERENCE, NULL);
+	pthread_mutex_init(&MUTEX_MULTIPROGRAMMING_LEVEL, NULL);
+	pthread_cond_init(&COND_MULTIPROGRAMMING_LEVEL, NULL);
 
 	pthread_mutex_init(&MUTEX_SCHEDULING_PAUSED, NULL);
 }
@@ -114,7 +115,8 @@ void finish_mutexes(void) {
 
 	pthread_mutex_destroy(&MUTEX_KILL_EXEC_PROCESS);
 
-	pthread_mutex_destroy(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
+	pthread_mutex_destroy(&MUTEX_MULTIPROGRAMMING_LEVEL);
+	pthread_cond_destroy(&COND_MULTIPROGRAMMING_LEVEL);
 	
 	pthread_mutex_destroy(&MUTEX_SCHEDULING_PAUSED);
 }
@@ -125,8 +127,7 @@ void initialize_semaphores(void) {
 	sem_init(&SEM_LONG_TERM_SCHEDULER_EXIT, 0, 0);
 	sem_init(&SEM_SHORT_TERM_SCHEDULER, 0, 0);
 
-	sem_init(&SEM_MULTIPROGRAMMING_LEVEL, 0, MULTIPROGRAMMING_LEVEL);
-	sem_init(&SEM_MULTIPROGRAMMING_POSTER, 0, 0);
+	sem_init(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL, 0, 0);
 }
 
 void finish_semaphores(void) {
@@ -135,8 +136,7 @@ void finish_semaphores(void) {
 	sem_destroy(&SEM_LONG_TERM_SCHEDULER_EXIT);
 	sem_destroy(&SEM_SHORT_TERM_SCHEDULER);
 
-	sem_destroy(&SEM_MULTIPROGRAMMING_LEVEL);
-	sem_destroy(&SEM_MULTIPROGRAMMING_POSTER);
+	sem_destroy(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL);
 }
 
 void read_module_config(t_config *module_config) {

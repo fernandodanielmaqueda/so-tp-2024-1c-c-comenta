@@ -71,7 +71,6 @@ void *long_term_scheduler_new(void *NULL_parameter);
 void *long_term_scheduler_exit(void *NULL_parameter);
 void *short_term_scheduler(void *NULL_parameter);
 void* start_quantum(t_PCB *pcb);
-void *multiprogramming_poster(void *NULL_argument);
 t_PCB *FIFO_scheduling_algorithm(void);
 t_PCB *RR_scheduling_algorithm(void);
 t_PCB *VRR_scheduling_algorithm(void);

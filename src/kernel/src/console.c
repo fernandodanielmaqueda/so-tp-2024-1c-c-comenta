@@ -21,11 +21,9 @@ int KILL_EXEC_PROCESS = 0;
 pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
 
 unsigned int MULTIPROGRAMMING_LEVEL;
-sem_t SEM_MULTIPROGRAMMING_LEVEL;
-unsigned int MULTIPROGRAMMING_DIFFERENCE = 0;
-pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
-sem_t SEM_MULTIPROGRAMMING_POSTER;
-pthread_t THREAD_MULTIPROGRAMMING_POSTER;
+pthread_mutex_t MUTEX_MULTIPROGRAMMING_LEVEL;
+sem_t SEM_CURRENT_MULTIPROGRAMMING_LEVEL;
+pthread_cond_t COND_MULTIPROGRAMMING_LEVEL;
 
 int SCHEDULING_PAUSED;
 pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
@@ -270,7 +268,7 @@ int kernel_command_start_process(int argc, char* argv[]) {
 		exit(1);
     }
     if(return_value) {
-        log_warning(MODULE_LOGGER, "INICIAR_PROCESO %s", argv[1]);
+        log_warning(MODULE_LOGGER, "No se pudo INICIAR_PROCESO %s", argv[1]);
         // TODO
         return 1;
     }
@@ -421,26 +419,33 @@ int kernel_command_multiprogramming(int argc, char* argv[]) {
 
     log_trace(CONSOLE_LOGGER, "MULTIPROGRAMACION %s", argv[1]);
 
-    if (value >= MULTIPROGRAMMING_LEVEL) {
-        for(register int i = value - MULTIPROGRAMMING_LEVEL; i > 0; i--)
-            sem_post(&SEM_MULTIPROGRAMMING_LEVEL);
-    } else
-        for(register int i = MULTIPROGRAMMING_LEVEL - value; i > 0; i--)
-            if(sem_trywait(&SEM_MULTIPROGRAMMING_LEVEL)) {
-                if(errno != EAGAIN) {
-                    log_warning(CONSOLE_LOGGER, "sem_trywait: %s", strerror(errno));
-                    return 1;
-                }
-
-                pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
-                MULTIPROGRAMMING_DIFFERENCE+= i;
-                pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_DIFFERENCE);
-                sem_post(&SEM_MULTIPROGRAMMING_POSTER);
-            }
-
-    MULTIPROGRAMMING_LEVEL = value;
+    pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_LEVEL);
+        MULTIPROGRAMMING_LEVEL = value;
+        pthread_cond_signal(&COND_MULTIPROGRAMMING_LEVEL);
+    pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_LEVEL);
 
     return 0;
+}
+
+
+void wait_multiprogramming_level(void) {
+    int sem_value;
+	pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_LEVEL);
+		while(1) {
+            sem_getvalue(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL, &sem_value);
+            if(sem_value < MULTIPROGRAMMING_LEVEL)
+                break;
+			pthread_cond_wait(&COND_MULTIPROGRAMMING_LEVEL, &MUTEX_MULTIPROGRAMMING_LEVEL);
+		}
+        sem_post(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL);
+	pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_LEVEL);
+}
+
+void signal_multiprogramming_level(void) {
+	pthread_mutex_lock(&MUTEX_MULTIPROGRAMMING_LEVEL);
+        sem_wait(&SEM_CURRENT_MULTIPROGRAMMING_LEVEL);
+        pthread_cond_signal(&COND_MULTIPROGRAMMING_LEVEL);
+	pthread_mutex_unlock(&MUTEX_MULTIPROGRAMMING_LEVEL);
 }
 
 int kernel_command_process_states(int argc, char* argv[]) {

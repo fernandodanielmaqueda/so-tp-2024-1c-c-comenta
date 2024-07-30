@@ -42,11 +42,9 @@ extern int KILL_EXEC_PROCESS;
 extern pthread_mutex_t MUTEX_KILL_EXEC_PROCESS;
 
 extern unsigned int MULTIPROGRAMMING_LEVEL;
-extern sem_t SEM_MULTIPROGRAMMING_LEVEL;
-extern unsigned int MULTIPROGRAMMING_DIFFERENCE;
-extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_DIFFERENCE;
-extern sem_t SEM_MULTIPROGRAMMING_POSTER;
-extern pthread_t THREAD_MULTIPROGRAMMING_POSTER;
+extern pthread_mutex_t MUTEX_MULTIPROGRAMMING_LEVEL;
+extern sem_t SEM_CURRENT_MULTIPROGRAMMING_LEVEL;
+extern pthread_cond_t COND_MULTIPROGRAMMING_LEVEL;
 
 extern int SCHEDULING_PAUSED;
 extern pthread_mutex_t MUTEX_SCHEDULING_PAUSED;
@@ -64,6 +62,8 @@ int kernel_command_kill_process(int argc, char* argv[]);
 int kernel_command_pause_scheduling(int argc, char* argv[]);
 int kernel_command_resume_scheduling(int argc, char* argv[]);
 int kernel_command_multiprogramming(int argc, char* argv[]);
+void wait_multiprogramming_level(void);
+void signal_multiprogramming_level(void);
 int kernel_command_process_states(int argc, char* argv[]);
 
 #endif // KERNEL_CONSOLE_H
