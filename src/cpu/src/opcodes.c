@@ -109,6 +109,7 @@ int mov_in_cpu_operation(int argc, char **argv)
     if(list_physical_addresses == NULL) {
         log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        // free_list_physical_addresses(list_physical_addresses);
         return 1;
     }
 
@@ -117,12 +118,15 @@ int mov_in_cpu_operation(int argc, char **argv)
     if(source == NULL) {
         log_error(MODULE_LOGGER, "malloc: No se pudieron reservar %zd bytes", (size_t) bytes);
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        // free_list_physical_addresses(list_physical_addresses);
         return 1;
     }
 
     attend_read(EXEC_CONTEXT.PID, list_physical_addresses, &source, bytes);
     memcpy(destination, source, bytes);
     free(source);
+
+    // free_list_physical_addresses(list_physical_addresses);
 
     EXEC_CONTEXT.PC++;
 
