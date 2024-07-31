@@ -292,7 +292,7 @@ void *kernel_cpu_interrupt_handler(void *NULL_parameter) {
 
 t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
 
-    size_t page_number = floor(logical_address / PAGE_SIZE);
+    size_t page_number = (size_t) floor((double) logical_address / (double) PAGE_SIZE);
     size_t offset = logical_address - page_number * PAGE_SIZE;
 
     size_t frame_number;
@@ -344,7 +344,8 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
                 }
             }
 
-        } else { // HAY HIT
+        }
+        else { // HAY HIT
             pthread_mutex_unlock(&MUTEX_TLB);
 
             log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB HIT - PAGINA: %zd", pid, page_number);
@@ -552,7 +553,7 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
 size_t seek_quantity_pages_required(size_t logical_address, size_t bytes){
     size_t page_quantity = 0;
 
-    size_t page_number = floor(logical_address / PAGE_SIZE);
+    size_t page_number = (size_t) floor((double) logical_address / (double) PAGE_SIZE);
     size_t offset = logical_address - page_number * PAGE_SIZE;
 
     if (offset != 0) {

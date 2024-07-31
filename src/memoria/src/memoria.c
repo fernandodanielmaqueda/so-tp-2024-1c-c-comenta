@@ -97,7 +97,7 @@ void read_module_config(t_config* MODULE_CONFIG) {
                 // TODO
                 exit(EXIT_FAILURE);
             }
-            // closedir(dir);
+            closedir(dir);
         }
 
     RESPONSE_DELAY = config_get_int_value(MODULE_CONFIG, "RETARDO_RESPUESTA");
@@ -262,22 +262,23 @@ void kill_process(t_Payload *payload) {
         char *instruction;
         t_Page *page;
         t_Frame *frame;
+        
+        for(int size = list_size(process->instructions_list); size > 0 ; size--) {
+            instruction = list_remove(process->instructions_list, 0);
+            free(instruction);
+        }
+        list_destroy(process->instructions_list);
 
         for(int size = list_size(process->pages_table); size > 0 ; size--) {
-
-            instruction = list_remove(process->instructions_list, (int) size - 1);
-            free(instruction);
-
-            page = list_remove(process->pages_table, (int) size - 1);
+            page = list_remove(process->pages_table, 0);
             // TODO: Agregar MUTEX
             frame = list_get(LIST_FRAMES, (int) page->assigned_frame_number);
             // TODO: Agregar MUTEX
             list_add(LIST_FREE_FRAMES, frame);
             free(page);
         }
-
-        list_destroy(process->instructions_list);
         list_destroy(process->pages_table);
+
         free(process);
     }
 
@@ -507,14 +508,14 @@ void seek_instruccion(t_Payload *payload) {
 }
 
 void create_frames(void) {
+    LIST_FRAMES = list_create();
+    LIST_FREE_FRAMES = list_create();
+
     size_t frame_quantity = MEMORY_SIZE / PAGE_SIZE;
 
     size_t offset = MEMORY_SIZE % PAGE_SIZE;
     if(offset != 0)
         frame_quantity++;
-    
-    LIST_FRAMES = list_create();
-    LIST_FREE_FRAMES = list_create();
 
     for(size_t i = 0; i < frame_quantity; i++) {
         t_Frame *new_frame = malloc(sizeof(t_Frame));
@@ -525,13 +526,13 @@ void create_frames(void) {
     }
 }
 
-void free_frames(){
-    t_Frame *marco_liberar;
+void free_frames(void) {
+    t_Frame *frame;
 
     for(int i = list_size(LIST_FRAMES); i > 0; i--)
     {
-        marco_liberar = (t_Frame *) list_get(LIST_FRAMES, i - 1);
-        free(marco_liberar);
+        frame = (t_Frame *) list_get(LIST_FRAMES, i - 1);
+        free(frame);
     }
 
 }
@@ -590,16 +591,13 @@ void io_read_memory(t_Payload *payload, int socket) {
     list_deserialize(payload, list_physical_addresses, size_deserialize_element);
     size_deserialize(payload, &bytes);
 
+    //char *text_to_send = malloc((size_t) bytes); // Le agrego un '\0' al final por las dudas para asegurar de que el string se pueda imprimir
     char text_to_send[bytes + 1]; // Le agrego un '\0' al final por las dudas para asegurar de que el string se pueda imprimir
     size_t offset = 0;
 
     size_t physical_address = *((size_t *) list_get(list_physical_addresses, 0));
     
-    void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
-
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
-
-    size_t current_frame = physical_address / PAGE_SIZE;
 
     t_Package* package = package_create_with_header(READ_REQUEST);
     int size = list_size(list_physical_addresses);
@@ -620,9 +618,9 @@ void io_read_memory(t_Payload *payload, int socket) {
         }
 
         pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-        payload_append(&(package->payload), posicion, bytes_to_copy);
-        memcpy(text_to_send + offset, posicion, bytes_to_copy);
-        update_page(current_frame);// Actualizar la página
+            payload_append(&(package->payload), posicion, bytes_to_copy);
+            memcpy(text_to_send + offset, posicion, bytes_to_copy);
+            update_page(current_frame);// Actualizar la página
         pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
 
         offset += bytes_to_copy;
@@ -650,9 +648,6 @@ void io_write_memory(t_Payload *payload, int socket) {
     size_deserialize(payload, &bytes);
 
     size_t physical_address = *((size_t *) list_get(list_physical_addresses, 0));
-    void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
-    
-    size_t current_frame = physical_address / PAGE_SIZE;
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
 
@@ -675,9 +670,9 @@ void io_write_memory(t_Payload *payload, int socket) {
             }
 
             pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-            payload_shift(payload, posicion, bytes_to_copy);
-            //memcpy(text_to_send + offset, posicion, bytes_to_copy);
-            update_page(current_frame);// Actualizar la página
+                payload_shift(payload, posicion, bytes_to_copy);
+                //memcpy(text_to_send + offset, posicion, bytes_to_copy);
+                update_page(current_frame);// Actualizar la página
             pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
 
             //offset += bytes_to_copy;
@@ -685,56 +680,6 @@ void io_write_memory(t_Payload *payload, int socket) {
 
             log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
         }
-
-    if(list_size(list_physical_addresses) == 1) { //En caso de que sea igual a 1 página
-        pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-        payload_shift(payload, posicion, bytes);
-        update_page(current_frame); //Actualizar pagina/TDP
-        pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
-        
-    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - PAGINA Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
-    }
-    else{//En caso de que el contenido supere a 1 pagina
-        size_t bytes_restantes = bytes;
-        size_t bytes_inicial = PAGE_SIZE - (physical_address - (current_frame * PAGE_SIZE));
-        
-        for (int i = 1; i < (list_size(list_physical_addresses) +1); i++)
-        {
-            physical_address = *((size_t *) list_get(list_physical_addresses, i - 1));
-            current_frame = physical_address / PAGE_SIZE;
-            //Posicion de la proxima escritura
-            posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
-
-            if (i == 1)//Primera pagina
-            {
-                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-                payload_shift(payload, posicion, bytes_inicial);
-                update_page(current_frame); //Actualizar pagina/TDP
-                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
-                bytes_restantes -= bytes_inicial;
-    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - FOR Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_inicial);
-            }
-            if ((i == list_size(list_physical_addresses)) && (i != 1))//Ultima pagina
-            {
-                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-                payload_shift(payload, posicion, bytes_restantes);
-                update_page(current_frame); //Actualizar pagina/TDP
-                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
-                //bytes_restantes -= bytes_inicial;
-    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - FOR Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_restantes);
-            }
-            if ((i < list_size(list_physical_addresses)) && (i != 1))//Paginas del medio
-            {
-                pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
-                payload_shift(payload, posicion, PAGE_SIZE);
-                update_page(current_frame); //Actualizar pagina/TDP
-                pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
-                bytes_restantes -= PAGE_SIZE;
-                log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, PAGE_SIZE);
-            }
-            
-        }
-    }
     
     list_destroy_and_destroy_elements(list_physical_addresses, free);
 
