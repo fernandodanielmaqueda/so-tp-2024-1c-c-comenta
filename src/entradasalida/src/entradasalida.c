@@ -370,7 +370,6 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	package_destroy(respond); */
 
 	free(new_entry);
-	free(new_entry->name);
     return 0;
 }
 
