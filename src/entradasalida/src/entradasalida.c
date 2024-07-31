@@ -448,10 +448,10 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
     text_deserialize(operation_arguments, &(file_name));
     size_deserialize(operation_arguments, &value);
 
-	uint32_t valueNUM = ceil(value/BLOCK_SIZE);
+	size_t valueNUM = (size_t) ceil(value/BLOCK_SIZE);
 
 	t_FS_File* file = seek_file(file_name);
-	uint32_t initial_pos = file->initial_bloq + file->len;
+	size_t initial_pos = file->initial_bloq + file->len;
 	if (file->len > valueNUM)
 	{//Se restan bloques
 		size_t diff = file->len - valueNUM;
@@ -546,7 +546,7 @@ del valor del Registro Puntero Archivo.*/
 	
 	//Busco el file buscado
 	t_FS_File* file = seek_file(file_name);
-	//uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
+	//size_t block_initial = (size_t) floor((double) ptro / (double) BLOCK_SIZE);
 	uint32_t block_initial = file->initial_bloq;
 
 	//Envio paquete a memoria
@@ -614,10 +614,10 @@ indicada en el Registro Dirección*/
 
 	//Busco el file buscado
 	t_FS_File* file = seek_file(file_name);
-	//uint32_t block_initial = (uint32_t) floor(ptro / BLOCK_SIZE);
-	uint32_t block_initial = file->initial_bloq;
-    //uint32_t offset = (uint32_t) (ptro - block_initial * BLOCK_SIZE);;
-	//uint32_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
+	//size_t block_initial = (size_t) floor((double) ptro / (double) BLOCK_SIZE);
+	size_t block_initial = file->initial_bloq;
+    //size_t offset = (size_t) (ptro - block_initial * BLOCK_SIZE);;
+	//size_t block_quantity_required = seek_quantity_blocks_required(ptro, bytes);
 
     void* context = malloc(bytes);
 	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
@@ -698,7 +698,7 @@ void initialize_blocks() {
 
 
 void initialize_bitmap() {
-	BITMAP_SIZE = ceil(BLOCK_COUNT / 8);
+	BITMAP_SIZE = (size_t) ceil((double) BLOCK_COUNT / 8);
 	
     //size_t path_len_bloqs = strlen(PATH_BASE_DIALFS) + 1 +strlen("bitmap.dat"); //1 por la '/'
 	char* path_file_bitmap = string_new();
@@ -776,9 +776,9 @@ t_FS_File* seek_file(char* file_name){
 }
 
 
-bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len){
-	uint32_t addition = final_len - len;
-	uint32_t final_pos = initial_position + len + addition;
+bool can_assign_block(size_t initial_position, size_t len, size_t final_len){
+	size_t addition = final_len - len;
+	size_t final_pos = initial_position + len + addition;
 
 	for (size_t i = (initial_position + len); i < final_pos; i++)
 	{
@@ -801,11 +801,11 @@ int quantity_free_blocks(){
 	return magic;
 }
 
-uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
-    uint32_t quantity_blocks = 0;
+size_t seek_quantity_blocks_required(size_t puntero, size_t bytes){
+    size_t quantity_blocks = 0;
 
-    uint32_t nro_page = (uint32_t) floor(puntero / BLOCK_SIZE);
-    uint32_t offset = (uint32_t) (puntero - nro_page * BLOCK_SIZE);;
+    size_t nro_page = (size_t) floor((double) puntero / (double) BLOCK_SIZE);
+    size_t offset = (size_t) (puntero - nro_page * BLOCK_SIZE);;
 
     if (offset != 0)
     {
@@ -813,13 +813,13 @@ uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes){
         quantity_blocks++;
     }
 
-    quantity_blocks += (uint32_t) floor(bytes / BLOCK_SIZE);
+    quantity_blocks += (size_t) floor((double) bytes / (double) BLOCK_SIZE);
     
     return quantity_blocks;
 }
 
 
-void free_bitmap_blocks(){
+void free_bitmap_blocks(void){
 	
     if (munmap(PTRO_BLOCKS, (BLOCK_SIZE * BLOCK_COUNT)) == -1) {
         log_error(MODULE_LOGGER, "Error al desmapear el archivo bloques.dat de la memoria: %s", strerror(errno));
@@ -851,7 +851,7 @@ void create_blocks(){
     }
 }
 */
-void create_file(char* file_name, uint32_t initial_block){
+void create_file(char* file_name, size_t initial_block){
     //size_t path_len = strlen(PATH_BASE_DIALFS) + 1 +strlen(file_name); //1 por la '/'
 	char* path_file = string_new();
 	strcpy (path_file, PATH_BASE_DIALFS);
@@ -877,7 +877,7 @@ void create_file(char* file_name, uint32_t initial_block){
 	fclose(FILE_METADATA);
 }
 
-void update_file(char* file_name, uint32_t size, uint32_t location){
+void update_file(char* file_name, size_t size, size_t location){
 	char* path_file = string_new();
 	strcpy (path_file, PATH_BASE_DIALFS);
 	string_append(&path_file, "/");
@@ -893,7 +893,7 @@ void update_file(char* file_name, uint32_t size, uint32_t location){
 }
 
 
-t_FS_File* seek_file_by_header_index(uint32_t position){
+t_FS_File* seek_file_by_header_index(size_t position){
 
 	t_FS_File* magic = NULL;
 
@@ -942,7 +942,7 @@ void compact_blocks(){
 
 }
 
-void moveBlock(uint32_t blocks_to_move, uint32_t size, uint32_t free_spaces, uint32_t location){
+void moveBlock(size_t blocks_to_move, size_t size, size_t free_spaces, size_t location){
 	//Mueve el bloque y actualiza el bitmap
 
     void* context = malloc(size);

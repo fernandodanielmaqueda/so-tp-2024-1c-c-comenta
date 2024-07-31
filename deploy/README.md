@@ -4,6 +4,7 @@
 - Las máquinas de la facultad usan Windows, y NO tenemos permisos de administrador: no se pueden instalar programas, etc.
 
 ### TODO
+- Archivos de dialfs de config
 - Comandos de tmux
 - Que el fstab tome todas las IPs y no haya que agregarlas manualmente
 - Instalar `gh` (no viene instalado en la VM de Ubuntu Server)

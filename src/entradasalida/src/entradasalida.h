@@ -83,16 +83,16 @@ int io_fs_write_io_operation(t_Payload *instruction);
 int io_fs_read_io_operation(t_Payload *instruction);
 uint32_t seek_first_free_block();
 t_FS_File* seek_file(char* file_name);
-bool can_assign_block(uint32_t initial_position, uint32_t len, uint32_t final_len);
-uint32_t seek_quantity_blocks_required(uint32_t puntero, size_t bytes);
+bool can_assign_block(size_t initial_position, size_t len, size_t final_len);
+size_t seek_quantity_blocks_required(size_t puntero, size_t bytes);
 void initialize_bitmap();
 void initialize_blocks();
 void free_bitmap_blocks();
-void create_file(char* file_name, uint32_t first_block);
-void update_file(char* file_name, uint32_t size, uint32_t location);
+void create_file(char* file_name, size_t first_block);
+void update_file(char* file_name, size_t size, size_t location);
 int quantity_free_blocks();
 void compact_blocks();
-t_FS_File* seek_file_by_header_index(uint32_t position);
-void moveBlock(uint32_t blocks_to_move, uint32_t size, uint32_t free_spaces, uint32_t location);
+t_FS_File* seek_file_by_header_index(size_t position);
+void moveBlock(size_t blocks_to_move, size_t size, size_t free_spaces, size_t location);
 
 #endif /* ENTRADASALIDA_H */

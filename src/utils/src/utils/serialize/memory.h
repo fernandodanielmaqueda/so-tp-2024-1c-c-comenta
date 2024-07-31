@@ -19,17 +19,6 @@
 
 typedef uint32_t t_Size;
 
-/*
-typedef uint32_t t_MemorySize;
-typedef uint32_t t_Logical_Address;
-typedef uint32_t t_Physical_Address;
-typedef uint32_t t_Offset;
-typedef uint32_t t_Page_Number;
-typedef t_Page_Number t_Frame_Number;
-typedef uint32_t t_Page_Quantity;
-*/
-
-
 void size_serialize_element(t_Payload *payload, void *source);
 
 
