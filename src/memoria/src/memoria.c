@@ -412,6 +412,12 @@ void listen_cpu(void) {
                 io_write_memory(&(package->payload), CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
+                
+            case COPY_REQUEST:
+                log_info(MODULE_LOGGER, "CPU: Pedido de escritura recibido.");
+                copy_memory(&(package->payload), CLIENT_CPU->fd_client);
+                package_destroy(package);
+                break;
             
             default:
                 log_warning(MODULE_LOGGER, "%s: Header desconocido (%d)", "", package->header);
@@ -635,6 +641,100 @@ void io_read_memory(t_Payload *payload, int socket) {
     package_send(package, socket);
     package_destroy(package);
     list_destroy(list_physical_addresses);
+}
+
+void copy_memory(t_Payload *payload, int socket) {
+    t_PID pid;
+    t_list *list_physical_addresses_origin = list_create();
+    t_list *list_physical_addresses_destiny = list_create();
+    size_t bytes_received;
+
+    payload_shift(payload, &pid, sizeof(pid));
+    list_deserialize(payload, list_physical_addresses_origin, size_deserialize_element);
+    list_deserialize(payload, list_physical_addresses_destiny, size_deserialize_element);
+    size_deserialize(payload, &bytes_received);
+
+    size_t bytes = bytes_received;
+    char text_to_send[bytes_received +1]; // Le agrego un '\0' al final por las dudas para asegurar de que el string se pueda imprimir
+    size_t offset = 0;
+
+    size_t physical_address = *((size_t *) list_get(list_physical_addresses_origin, 0));
+    
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
+
+    int size = list_size(list_physical_addresses_origin);
+    for (int i = 0; i < size; i++) {
+        physical_address = *((size_t *) list_get(list_physical_addresses_origin, i));
+        size_t current_frame = physical_address / PAGE_SIZE;
+        void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+
+        size_t bytes_to_copy;
+        if (i == 0) { //Primera pagina
+            bytes_to_copy = PAGE_SIZE - (physical_address % PAGE_SIZE);
+            bytes_to_copy = (bytes_to_copy > bytes) ? bytes : bytes_to_copy;
+        } else if (i == size - 1) { //Ultima pagina
+            bytes_to_copy = bytes;
+        } else { //Paginas del medio (no ultima)
+            bytes_to_copy = PAGE_SIZE;
+        }
+
+        pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+            //payload_append(&(package->payload), posicion, bytes_to_copy);
+            memcpy(text_to_send + offset, posicion, bytes_to_copy);
+            update_page(current_frame);// Actualizar la página
+        pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+
+        offset += bytes_to_copy;
+        bytes -= bytes_to_copy;
+
+        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
+    }
+
+    text_to_send[offset] = '\0';
+    log_error(MODULE_LOGGER, "Texto a copiar: %s", text_to_send);
+    
+    bytes = bytes_received;
+
+    physical_address = *((size_t *) list_get(list_physical_addresses_destiny, 0));
+    offset = 0;
+    size = list_size(list_physical_addresses_destiny);
+    log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
+        
+        for (int i = 0; i < size; i++) {
+            physical_address = *((size_t *) list_get(list_physical_addresses_destiny, i));
+            size_t current_frame = physical_address / PAGE_SIZE;
+            void *posicion = (void *)(((uint8_t *) MAIN_MEMORY) + physical_address);
+
+            size_t bytes_to_copy;
+            if (i == 0) { //Primera pagina
+                bytes_to_copy = PAGE_SIZE - (physical_address % PAGE_SIZE);
+                bytes_to_copy = (bytes_to_copy > bytes) ? bytes : bytes_to_copy;
+            } else if (i == size - 1) { //Ultima pagina
+                bytes_to_copy = bytes;
+            } else { //Paginas del medio (no ultima)
+                bytes_to_copy = PAGE_SIZE;
+            }
+
+            pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
+                //payload_shift(payload, posicion, bytes_to_copy);
+                memcpy(text_to_send + offset, posicion, bytes_to_copy);
+                update_page(current_frame);// Actualizar la página
+            pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+
+            offset += bytes_to_copy;
+            bytes -= bytes_to_copy;
+
+            log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
+        }
+    
+    list_destroy_and_destroy_elements(list_physical_addresses_destiny, free);
+    list_destroy_and_destroy_elements(list_physical_addresses_origin, free);
+
+    if(send_return_value_with_header(COPY_REQUEST, 0, socket)) {
+        log_info(MODULE_LOGGER, "PID: %i - Accion: COPY FAIL!.", pid);
+        exit(1);
+    }
+
 }
 
 void io_write_memory(t_Payload *payload, int socket) {

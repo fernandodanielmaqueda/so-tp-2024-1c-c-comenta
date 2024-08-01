@@ -538,14 +538,39 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
+    
+
     if(package_receive(&package, CONNECTION_MEMORY.fd_connection)) {
         // TODO
         exit(1);
     }
 
-    log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
+    log_info(MODULE_LOGGER, "DENTRO DE CPU FAIL 1");
     payload_shift(&(package->payload), &destination, bytes);
+    log_info(MODULE_LOGGER, "DENTRO DE CPU FAIL 2222");
     package_destroy(package);
+    log_info(MODULE_LOGGER, "DENTRO DE CPU FAIL 33333");
+}
+
+void attend_copy(t_PID pid, t_list *list_physical_addresses_origin, t_list *list_physical_addresses_destination, size_t bytes) {
+    if(list_physical_addresses_origin == NULL || list_physical_addresses_destination == NULL)
+        return;
+
+    t_Package* package = package_create_with_header(COPY_REQUEST);
+    payload_append(&(package->payload), &(pid), sizeof(pid));
+    list_serialize(&(package->payload), *list_physical_addresses_origin, size_serialize_element);
+    list_serialize(&(package->payload), *list_physical_addresses_destination, size_serialize_element);
+    size_serialize(&(package->payload), bytes);          
+    package_send(package, CONNECTION_MEMORY.fd_connection);
+    package_destroy(package);
+
+    
+    if(receive_expected_header(COPY_REQUEST,CONNECTION_MEMORY.fd_connection)) {
+        log_info(MODULE_LOGGER, "PID: %i - Accion: COPY FAIL!.", pid);
+        exit(1);
+    }
+    log_info(MODULE_LOGGER, "PID: %i - Accion: COPY OK", pid);
+
 }
 
 size_t seek_quantity_pages_required(size_t logical_address, size_t bytes){

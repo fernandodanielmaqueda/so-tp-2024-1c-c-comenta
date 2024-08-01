@@ -363,30 +363,49 @@ int copy_string_cpu_operation(int argc, char **argv)
 
     log_trace(MODULE_LOGGER, "COPY_STRING %s", argv[1]);
 
+    //REGISTRO ORIGEN
     uint32_t logical_address_si;
     get_register_value(EXEC_CONTEXT, SI_REGISTER, &logical_address_si);
-
     t_list *list_physical_addresses_si = mmu(EXEC_CONTEXT.PID, (size_t) logical_address_si, size);
     if(list_physical_addresses_si == NULL || list_size(list_physical_addresses_si) == 0) {
-        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas del registro origen.");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
-    
-    void *source;
-    attend_read(EXEC_CONTEXT.PID, list_physical_addresses_si, &source, size); 
 
+    //REGISTRO DESTINO
     uint32_t logical_address_di;
     get_register_value(EXEC_CONTEXT, DI_REGISTER, &logical_address_di);
-
     t_list *list_physical_addresses_di = mmu(EXEC_CONTEXT.PID, (size_t) logical_address_di, size);
     if(list_physical_addresses_di == NULL || list_size(list_physical_addresses_di) == 0) {
-        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas");
+        log_error(MODULE_LOGGER, "mmu: No se pudo obtener la lista de direcciones fisicas del registro destino.");
         EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
         return 1;
     }
+ /*    
+    //Declaro variable donde se guardara
+    void *source = malloc((size_t) size);
+    if(source == NULL) {
+        log_error(MODULE_LOGGER, "malloc: No se pudieron reservar %zd bytes", (size_t) size);
+        EVICTION_REASON = UNEXPECTED_ERROR_EVICTION_REASON;
+        // free_list_physical_addresses(list_physical_addresses);
+        return 1;
+    }
 
+	log_debug(MINIMAL_LOGGER, "ANTES DEL READ");
+    attend_read(EXEC_CONTEXT.PID, list_physical_addresses_si, &source, size); 
+	log_debug(MINIMAL_LOGGER, "DESPUES DEL READ");
+
+	log_debug(MINIMAL_LOGGER, "ANTES DEL WRITE");
     attend_write(EXEC_CONTEXT.PID, list_physical_addresses_di, source, size);
+	log_debug(MINIMAL_LOGGER, "DESPUES DEL WRITE");
+
+    free(source);
+*/
+  
+	log_debug(MINIMAL_LOGGER, "ANTES DEL WRITE");  
+    attend_copy(EXEC_CONTEXT.PID, list_physical_addresses_si, list_physical_addresses_di, size);
+	log_debug(MINIMAL_LOGGER, "DESPUES DEL WRITE");
 
     EXEC_CONTEXT.PC++;
 
