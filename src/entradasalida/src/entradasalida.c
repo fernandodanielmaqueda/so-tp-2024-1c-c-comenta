@@ -322,10 +322,11 @@ int io_stdout_write_io_operation(t_Payload *operation_arguments) {
 	package_destroy(package);
 	
 	char text_received[bytes + 1]; // Agrego 1 para el '\0'
-	text_received[bytes] = '\0';
 
 	package_receive(&package, CONNECTION_MEMORY.fd_connection);
 	payload_shift(&(package->payload), text_received, (size_t) bytes);
+
+	text_received[bytes] = '\0';
 
 	log_info(MODULE_LOGGER, "[IO] Mensaje leido: <%s>", text_received);
 

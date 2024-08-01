@@ -408,7 +408,7 @@ void listen_cpu(void) {
                 break;
                 
             case WRITE_REQUEST:
-                log_info(MODULE_LOGGER, "CPU: Pedido de lectura recibido.");
+                log_info(MODULE_LOGGER, "CPU: Pedido de escritura recibido.");
                 io_write_memory(&(package->payload), CLIENT_CPU->fd_client);
                 package_destroy(package);
                 break;
@@ -554,13 +554,13 @@ void respond_frame_request(t_Payload *payload) {
     else
         log_error(MODULE_LOGGER, "El numero de página <%zd> no existe en la tabla de paginas.", page_number);
 
-//Respuesta    
+//Respuesta
     usleep(RESPONSE_DELAY * 1000);
     
     t_Package* package = package_create_with_header(FRAME_REQUEST);
     if(frame_number != NULL) {
         return_value_serialize(&(package->payload), 0);
-        payload_append(&(package->payload), frame_number, sizeof(*frame_number));
+        size_serialize(&(package->payload), *frame_number);
     }
     else {
         return_value_serialize(&(package->payload), 1);
@@ -591,7 +591,6 @@ void io_read_memory(t_Payload *payload, int socket) {
     list_deserialize(payload, list_physical_addresses, size_deserialize_element);
     size_deserialize(payload, &bytes);
 
-    //char *text_to_send = malloc((size_t) bytes); // Le agrego un '\0' al final por las dudas para asegurar de que el string se pueda imprimir
     char text_to_send[bytes + 1]; // Le agrego un '\0' al final por las dudas para asegurar de que el string se pueda imprimir
     size_t offset = 0;
 
@@ -600,8 +599,8 @@ void io_read_memory(t_Payload *payload, int socket) {
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
 
     t_Package* package = package_create_with_header(READ_REQUEST);
-    int size = list_size(list_physical_addresses);
 
+    int size = list_size(list_physical_addresses);
     for (int i = 0; i < size; i++) {
         physical_address = *((size_t *) list_get(list_physical_addresses, i));
         size_t current_frame = physical_address / PAGE_SIZE;

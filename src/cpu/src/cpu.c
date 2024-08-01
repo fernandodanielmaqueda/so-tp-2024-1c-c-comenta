@@ -295,14 +295,12 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
     size_t page_number = (size_t) floor((double) logical_address / (double) PAGE_SIZE);
     size_t offset = logical_address - page_number * PAGE_SIZE;
 
-    size_t frame_number;
-    size_t *physical_address;
-
     t_list *list_physical_addresses = list_create();
     size_t required_page_quantity = seek_quantity_pages_required(logical_address, bytes);
 
+    size_t frame_number;
+    size_t *physical_address;
     for(size_t i = 0; i < required_page_quantity; i++) {
-        //log_error(MODULE_LOGGER, "For: %d", (int) i);
         page_number += i;
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
@@ -326,7 +324,7 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
                 // TODO
                 return NULL;
             }
-            payload_shift(&(package->payload), &frame_number, sizeof(frame_number));
+            size_deserialize(&(package->payload), &frame_number);
             package_destroy(package);
             
             log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %zd - Marco: %zd", pid, page_number, frame_number);
@@ -361,7 +359,7 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
 
         *physical_address = frame_number * PAGE_SIZE + offset;
 
-            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB HIT - PAGINA: %zd - DF: %zd", pid, page_number, *physical_address);
+        log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA: %zd - DF: %zd", pid, page_number, *physical_address); // CAMBIARLO A MODULE_LOGGER
         if(offset)
             offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
@@ -506,7 +504,7 @@ void ask_memory_page_size(void) {
         // TODO
         exit(1);
     }
-    payload_shift(&(package->payload), &PAGE_SIZE, sizeof(PAGE_SIZE));
+    size_deserialize(&(package->payload), &PAGE_SIZE);
     package_destroy(package);
 }
 
@@ -552,13 +550,19 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
 
 size_t seek_quantity_pages_required(size_t logical_address, size_t bytes){
     size_t page_quantity = 0;
-
-    size_t page_number = (size_t) floor((double) logical_address / (double) PAGE_SIZE);
-    size_t offset = logical_address - page_number * PAGE_SIZE;
+    
+    size_t offset = logical_address % PAGE_SIZE;
 
     if (offset != 0) {
-        bytes -= (PAGE_SIZE - offset);
-        page_quantity++;
+        // Calcula los bytes restantes en la primera página
+        size_t bytes_in_first_page = PAGE_SIZE - offset;
+
+        if(bytes <= bytes_in_first_page)
+            return 1;
+        else {
+            bytes -= bytes_in_first_page;
+            page_quantity++;
+        }
     }
 
     page_quantity += (size_t) ceil((double) bytes / (double) PAGE_SIZE);
