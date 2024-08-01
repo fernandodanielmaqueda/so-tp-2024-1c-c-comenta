@@ -399,7 +399,7 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
 	package_destroy(respond); */
 
-	free(new_entry);
+//	free(new_entry);
     return 0;
 }
 
@@ -447,9 +447,10 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 		for (size_t i = 0; i < size; i++) //busqueda del file indicado
 		{
 			t_FS_File* file = list_get(LIST_FILES,i);
-			if (strcmp(file->name, file_name)){
-				i = size;
+			if (strcmp(file->name, file_name) == 0 ){
 				file_target = i;
+				i = size;
+				
 			}
 		}
 
@@ -762,7 +763,7 @@ void initialize_bitmap() {
 	//Checkeo si el file ya esta creado, sino lo elimino
 	//if (access(path_file_bitmap, F_OK) == 0)remove(path_file_bitmap);
 	
-    int fd = open(path_file_bitmap, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    int fd = open(path_file_bitmap, O_RDWR | O_CREAT , S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
         exit(EXIT_FAILURE);
@@ -921,8 +922,8 @@ void create_file(char* file_name, size_t initial_block){
     }
 
 	t_config* config_temp = config_create(path_file);
-    config_set_value(config_temp, "BLOQUE_INICIAL", "0");
-    config_set_value(config_temp, "TAMAÑO_ARCHIVO", string_itoa(initial_block));
+    config_set_value(config_temp, "BLOQUE_INICIAL", string_itoa(initial_block));
+    config_set_value(config_temp, "TAMAÑO_ARCHIVO", "0");
 	config_save_in_file(config_temp,path_file);
 	config_destroy(config_temp);
 		
