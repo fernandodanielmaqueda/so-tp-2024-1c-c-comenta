@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"

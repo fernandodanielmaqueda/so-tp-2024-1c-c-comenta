@@ -201,6 +201,35 @@ void dialfs_interface_function(void) {
 	initialize_blocks();
 	initialize_bitmap();
 	LIST_FILES = list_create();
+	struct dirent* entrada;
+	DIR *dir = opendir(PATH_BASE_DIALFS); 
+	if (dir != NULL) {
+		while((entrada = readdir(dir)) != NULL) {
+			if (entrada->d_type == DT_REG) {
+				const char *ext = strrchr(entrada->d_name, '.');
+				if(ext != NULL && strcmp(ext, ".txt") == 0){
+					log_info(MODULE_LOGGER, "%s/%s\n", PATH_BASE_DIALFS, entrada->d_name);
+					t_FS_File* new_entry = malloc(sizeof(t_FS_File));
+					new_entry->name = malloc(sizeof(entrada->d_name));
+					strcpy(new_entry->name , entrada->d_name);	
+					char* file_to_get = malloc(strlen(PATH_BASE_DIALFS)+ 1 + strlen(entrada->d_name));
+					strcpy(file_to_get,PATH_BASE_DIALFS);
+					strcat(file_to_get,"/");
+					strcat(file_to_get,entrada->d_name);
+
+					t_config* data = config_create(file_to_get);
+					new_entry->initial_bloq = config_get_int_value(data, "BLOQUE_INICIAL");
+					new_entry->size = config_get_int_value(data, "TAMAÑO_ARCHIVO");
+					new_entry->len = ceil((double)new_entry->size / (double)BLOCK_SIZE);
+					new_entry->process_pid = 0; 
+					list_add(LIST_FILES, new_entry);
+				}
+			} 
+		}
+	}
+	closedir(dir);
+
+	int list_len = list_size(LIST_FILES);
 }
 
 int io_operation_execute(t_Payload *io_operation) {
@@ -731,9 +760,9 @@ void initialize_bitmap() {
 	string_append(&path_file_bitmap, "bitmap.dat");
 
 	//Checkeo si el file ya esta creado, sino lo elimino
-	if (access(path_file_bitmap, F_OK) == 0)remove(path_file_bitmap);
+	//if (access(path_file_bitmap, F_OK) == 0)remove(path_file_bitmap);
 	
-    int fd = open("bitmap.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    int fd = open(path_file_bitmap, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
         exit(EXIT_FAILURE);
