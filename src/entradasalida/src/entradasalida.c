@@ -443,7 +443,7 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 
 		//Liberacion del bitarray
 		uint32_t initial_pos = file->initial_bloq;
-		for (size_t i = 0; i = file->len; i++)
+		for (size_t i = 0; i == file->len; i++)
 		{
 			bitarray_clean_bit(BITMAP, initial_pos);
 			initial_pos++;

@@ -717,7 +717,7 @@ void copy_memory(t_Payload *payload, int socket) {
 
             pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
                 //payload_shift(payload, posicion, bytes_to_copy);
-                memcpy(text_to_send + offset, posicion, bytes_to_copy);
+                memcpy(posicion,text_to_send + offset, bytes_to_copy);
                 update_page(current_frame);// Actualizar la página
             pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
 
