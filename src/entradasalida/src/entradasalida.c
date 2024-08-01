@@ -220,7 +220,13 @@ void dialfs_interface_function(void) {
 					t_config* data = config_create(file_to_get);
 					new_entry->initial_bloq = config_get_int_value(data, "BLOQUE_INICIAL");
 					new_entry->size = config_get_int_value(data, "TAMAÑO_ARCHIVO");
-					new_entry->len = ceil((double)new_entry->size / (double)BLOCK_SIZE);
+					if(new_entry->size == 0){
+						new_entry->len = 1;
+					}else{
+						new_entry->len = ceil((double)new_entry->size / (double)BLOCK_SIZE);
+					}
+
+					
 					//new_entry->process_pid = 0; 
 					list_add(LIST_FILES, new_entry);
 				}
@@ -437,7 +443,7 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 
 		//Liberacion del bitarray
 		uint32_t initial_pos = file->initial_bloq;
-		for (size_t i = 0; i <= file->len; i++)
+		for (size_t i = 0; i = file->len; i++)
 		{
 			bitarray_clean_bit(BITMAP, initial_pos);
 			initial_pos++;
