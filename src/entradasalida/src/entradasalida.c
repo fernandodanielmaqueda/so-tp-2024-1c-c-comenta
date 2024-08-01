@@ -371,7 +371,6 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	package_destroy(respond); */
 
 	free(new_entry);
-	free(new_entry->name);
     return 0;
 }
 
@@ -387,6 +386,29 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 	usleep(WORK_UNIT_TIME * 1000);
     text_deserialize(operation_arguments, &(file_name));
 	
+/* 	creamos una estructura de tipo FS File para guardar ahi los datos
+	t_FS_File file_to_delete;
+	
+	podemos buscar el archivo directo por el path
+	char* path_of_file_to_delete = string_new();
+	strcpy(path_of_file_to_delete, PATH_BASE_DIALFS);
+	string_append(path_of_file_to_delete, "/");
+	strcat(path_of_file_to_delete, file_name);
+	
+	//aca ya tenemos la ruta al archivo, le podemos conseguir los valores como si fuese un config
+	t_config* data = config_create(path_of_file_to_delete);
+
+	//creo que la estructura de FS_FILE podria no tener ni el campo name ni el campo op_pid
+
+	file_to_delete.name = config_get_string_value(data, "name");
+	file_to_delete.initial_bloq = config_get_int_value(data, "BLOQUE_INICIAL");
+	file_to_delete.size = config_get_int_value(data, "TAMANIO_ARCHIVO");
+
+	//para borrar se puede usar la funcion remove
+	if(remove(file_name) == 0){
+		todo lo que se tiene que hacer si se borra
+	}
+ */
 	uint32_t size = list_size(LIST_FILES);
 
 	if(size > 0){
