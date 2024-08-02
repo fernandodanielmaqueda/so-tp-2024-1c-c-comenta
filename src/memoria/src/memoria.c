@@ -376,12 +376,6 @@ void listen_cpu(void) {
                 respond_frame_request(&(package->payload));
                 package_destroy(package);
                 break;
-
-            /*
-                log_warning(MODULE_LOGGER, "Se desconecto CPU.");
-                log_destroy(MODULE_LOGGER);
-                return;
-            */
                 
             case PAGE_SIZE_REQUEST:
             {
@@ -750,6 +744,9 @@ void io_write_memory(t_Payload *payload, int socket) {
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
 
+    char text_to_send[bytes];
+    size_t offset = 0;
+
 //COMIENZA LA ESCRITURA
     int size = list_size(list_physical_addresses);
 
@@ -768,16 +765,24 @@ void io_write_memory(t_Payload *payload, int socket) {
                 bytes_to_copy = PAGE_SIZE;
             }
 
+            char leido[bytes_to_copy+1];
+
             pthread_mutex_lock(&MUTEX_MAIN_MEMORY);
                 payload_shift(payload, posicion, bytes_to_copy);
                 //memcpy(text_to_send + offset, posicion, bytes_to_copy);
+                memcpy(leido, posicion, bytes_to_copy);
                 update_page(current_frame);// Actualizar la página
             pthread_mutex_unlock(&MUTEX_MAIN_MEMORY);
+    leido[bytes_to_copy] = '\0';
 
-            //offset += bytes_to_copy;
+            offset += bytes_to_copy;
             bytes -= bytes_to_copy;
 
+
+
             log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
+            log_error(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - TEXTO: %s", pid, leido);
+
         }
     
     list_destroy_and_destroy_elements(list_physical_addresses, free);

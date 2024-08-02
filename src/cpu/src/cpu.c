@@ -297,11 +297,12 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
 
     t_list *list_physical_addresses = list_create();
     size_t required_page_quantity = seek_quantity_pages_required(logical_address, bytes);
+            log_error(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA INICIAL: %zd REQUIRED PAGES --> %zd", pid, page_number, required_page_quantity);
 
     size_t frame_number;
     size_t *physical_address;
     for(size_t i = 0; i < required_page_quantity; i++) {
-        page_number += i;
+            log_error(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA: %zd", pid, page_number);
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
         pthread_mutex_lock(&MUTEX_TLB);
@@ -364,6 +365,7 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
             offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
         list_add(list_physical_addresses, physical_address);
+        page_number ++;
     }
     
     return list_physical_addresses;
@@ -508,14 +510,14 @@ void ask_memory_page_size(void) {
     package_destroy(package);
 }
 
-void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size_t bytes) {
+void attend_write(t_PID pid, t_list *list_physical_addresses, char* source, size_t bytes) {
 
     t_Package* package;
 
     package = package_create_with_header(WRITE_REQUEST);
     payload_append(&(package->payload), &pid, sizeof(pid));
     list_serialize(&(package->payload), *list_physical_addresses, size_serialize_element);
-    payload_append(&(package->payload), &bytes, sizeof(bytes));
+    size_serialize(&(package->payload), bytes);
     payload_append(&(package->payload), source, (size_t) bytes);
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);

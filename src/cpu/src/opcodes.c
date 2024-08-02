@@ -163,9 +163,15 @@ int mov_out_cpu_operation(int argc, char **argv)
 
     void *source = get_register_pointer(&EXEC_CONTEXT, register_data);
     size_t bytes = get_register_size(register_data);
+        log_error(MODULE_LOGGER, "LO QUE TENGO EN SOURCE ACA ES ESTO: %s", source);
 
     uint32_t logical_address;
     get_register_value(EXEC_CONTEXT, register_address, &logical_address);
+
+    char text[bytes+1];
+    memcpy(text, source, bytes);
+        log_error(MODULE_LOGGER, "LO QUE TENGO EN SOURCE ACA ES ESTO: %s", text);
+    text[bytes] = '\0';
 
     t_list *list_physical_addresses = mmu(EXEC_CONTEXT.PID, (size_t) logical_address, bytes);
     if(list_physical_addresses == NULL || list_size(list_physical_addresses) == 0) {
@@ -174,7 +180,7 @@ int mov_out_cpu_operation(int argc, char **argv)
         return 1;
     }
 
-    attend_write(EXEC_CONTEXT.PID, list_physical_addresses, source, bytes);
+    attend_write(EXEC_CONTEXT.PID, list_physical_addresses, text, bytes);
 
     EXEC_CONTEXT.PC++;
 
