@@ -513,9 +513,9 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 		}
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
 
-			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", PID);
+			log_debug(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", PID);
 			compact_blocks();
-			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
+			log_debug(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
 
 			initial_pos = file->initial_bloq + file->len;
 			for (size_t i = 0; i < diff; i++)
@@ -572,7 +572,7 @@ del valor del Registro Puntero Archivo.*/
 
 	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido de kernel
-    text_deserialize(operation_arguments, &file_name);
+    text_deserialize(operation_arguments, &(file_name));
     size_deserialize(operation_arguments, &ptro);
     size_deserialize(operation_arguments, &bytes);
 	list_deserialize(operation_arguments, list_dfs, size_deserialize_element);
@@ -595,17 +595,11 @@ del valor del Registro Puntero Archivo.*/
 	t_Package* package_memory = NULL;
 	package_receive(&package_memory, CONNECTION_MEMORY.fd_connection);
 	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
-	//void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (ptro));
-    payload_shift(&package_memory->payload, posicion, (size_t) bytes);
-	package_destroy(package_memory);
-    //void* context = malloc(bytes);
-    //memcpy(posicion, context, bytes); 
-	//free(context);
 
-    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
-        // TODO
-        exit(1);
-    }
+    payload_shift(&package_memory->payload, posicion, (size_t) bytes);
+
+	package_destroy(package_memory); 
+
 
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - Escribir Archivo: <%s> - Tamaño a Escribir: <%d> - Puntero Archivo: <%d>",
 				 (int) PID, file_name, (int)bytes, (int)ptro);
@@ -680,10 +674,10 @@ indicada en el Registro Dirección*/
         exit(1);
 	}
 
-    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
+/*     if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
         // TODO
         exit(1);
-    }
+    } */
 
     return 0;
 }
