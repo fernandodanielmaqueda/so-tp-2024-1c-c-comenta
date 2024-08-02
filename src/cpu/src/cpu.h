@@ -97,7 +97,8 @@ void delete_tlb_entry_by_pid_deleted(t_PID pid);
 void cpu_fetch_next_instruction(char **line);
 void ask_memory_page_size(void);
 size_t seek_quantity_pages_required(size_t logical_address, size_t bytes);
-void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size_t bytes);
+void attend_write(t_PID pid, t_list *list_physical_addresses, char *source, size_t bytes);
 void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, size_t bytes);
+void attend_copy(t_PID pid, t_list *list_physical_addresses_origin, t_list *list_physical_addresses_destination, size_t bytes);
 
 #endif /* CPU_H */

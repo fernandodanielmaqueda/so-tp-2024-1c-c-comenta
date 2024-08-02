@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include "commons/log.h"
 #include "commons/config.h"
 #include "commons/string.h"
@@ -39,7 +40,7 @@ typedef struct t_IO_Operation {
 
 typedef struct t_FS_File {
     char *name;
-    t_PID process_pid;
+//    t_PID process_pid;
     uint32_t initial_bloq;
     uint32_t len;
     uint32_t size;

@@ -201,6 +201,40 @@ void dialfs_interface_function(void) {
 	initialize_blocks();
 	initialize_bitmap();
 	LIST_FILES = list_create();
+	struct dirent* entrada;
+	DIR *dir = opendir(PATH_BASE_DIALFS); 
+	if (dir != NULL) {
+		while((entrada = readdir(dir)) != NULL) {
+			if (entrada->d_type == DT_REG) {
+				const char *ext = strrchr(entrada->d_name, '.');
+				if(ext != NULL && strcmp(ext, ".txt") == 0){
+					log_info(MODULE_LOGGER, "%s/%s\n", PATH_BASE_DIALFS, entrada->d_name);
+					t_FS_File* new_entry = malloc(sizeof(t_FS_File));
+					new_entry->name = malloc(sizeof(entrada->d_name));
+					strcpy(new_entry->name , entrada->d_name);	
+					char* file_to_get = malloc(strlen(PATH_BASE_DIALFS)+ 1 + strlen(entrada->d_name));
+					strcpy(file_to_get,PATH_BASE_DIALFS);
+					strcat(file_to_get,"/");
+					strcat(file_to_get,entrada->d_name);
+
+					t_config* data = config_create(file_to_get);
+					new_entry->initial_bloq = config_get_int_value(data, "BLOQUE_INICIAL");
+					new_entry->size = config_get_int_value(data, "TAMAÑO_ARCHIVO");
+					if(new_entry->size == 0){
+						new_entry->len = 1;
+					}else{
+						new_entry->len = ceil((double)new_entry->size / (double)BLOCK_SIZE);
+					}
+					
+					//new_entry->process_pid = 0; 
+					list_add(LIST_FILES, new_entry);
+				}
+			} 
+		}
+	}
+	closedir(dir);
+
+	//int list_len = list_size(LIST_FILES);
 }
 
 int io_operation_execute(t_Payload *io_operation) {
@@ -349,11 +383,13 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
     text_deserialize(operation_arguments, &(file_name));
 	uint32_t location = seek_first_free_block();
 
+
+	log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", PID, file_name);
 	//Crear variable de control de archivo
 	t_FS_File* new_entry = malloc(sizeof(t_FS_File));
 	new_entry->name = malloc(sizeof(file_name));
 	strcpy(new_entry->name , file_name);
-	new_entry->process_pid = PID;
+//	new_entry->process_pid = PID;
 	new_entry->initial_bloq = location;
 	new_entry->len = 1;
 	new_entry->size = 0;
@@ -362,15 +398,7 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	bitarray_set_bit(BITMAP, location);
 
 	list_add(LIST_FILES, new_entry);
-
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", PID, file_name);
-
-/* 	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
-	payload_append(respond->payload, &PID, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond); */
-
-	free(new_entry);
+	
     return 0;
 }
 
@@ -385,30 +413,9 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 
 	usleep(WORK_UNIT_TIME * 1000);
     text_deserialize(operation_arguments, &(file_name));
-	
-/* 	creamos una estructura de tipo FS File para guardar ahi los datos
-	t_FS_File file_to_delete;
-	
-	podemos buscar el archivo directo por el path
-	char* path_of_file_to_delete = string_new();
-	strcpy(path_of_file_to_delete, PATH_BASE_DIALFS);
-	string_append(path_of_file_to_delete, "/");
-	strcat(path_of_file_to_delete, file_name);
-	
-	//aca ya tenemos la ruta al archivo, le podemos conseguir los valores como si fuese un config
-	t_config* data = config_create(path_of_file_to_delete);
 
-	//creo que la estructura de FS_FILE podria no tener ni el campo name ni el campo op_pid
-
-	file_to_delete.name = config_get_string_value(data, "name");
-	file_to_delete.initial_bloq = config_get_int_value(data, "BLOQUE_INICIAL");
-	file_to_delete.size = config_get_int_value(data, "TAMANIO_ARCHIVO");
-
-	//para borrar se puede usar la funcion remove
-	if(remove(file_name) == 0){
-		todo lo que se tiene que hacer si se borra
-	}
- */
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", PID, file_name);
+	
 	uint32_t size = list_size(LIST_FILES);
 
 	if(size > 0){
@@ -419,8 +426,8 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 		{
 			t_FS_File* file = list_get(LIST_FILES,i);
 			if (strcmp(file->name, file_name)){
-				i = size;
 				file_target = i;
+				i = size;
 			}
 		}
 
@@ -429,9 +436,10 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 			return 1;
 		}
 
+	log_info(MODULE_LOGGER, "El len del archivo es %d", file->len);
 		//Liberacion del bitarray
 		uint32_t initial_pos = file->initial_bloq;
-		for (size_t i = 0; i < file->len; i++)
+		for (size_t i = 1; i <= file->len; i++)
 		{
 			bitarray_clean_bit(BITMAP, initial_pos);
 			initial_pos++;
@@ -443,16 +451,18 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
     	}
 
 		list_remove(LIST_FILES, file_target);
-		update_file(file_name,0,-1);
+		//free(file_target);
+		//update_file(file_name,0,-1);b
 	}
 	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", PID, file_name);
-	
-/* 	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
-	payload_append(respond->payload, &PID, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond); */
 
+	char* path_file = string_new();
+	strcpy (path_file, PATH_BASE_DIALFS);
+	string_append(&path_file, "/");
+	string_append(&path_file, file_name);
+	remove(path_file);
+
+	free(path_file);
     return 0;
 }
 
@@ -503,9 +513,9 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 		}
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
 
-			log_info(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", PID);
+			log_debug(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", PID);
 			compact_blocks();
-			log_info(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
+			log_debug(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
 
 			initial_pos = file->initial_bloq + file->len;
 			for (size_t i = 0; i < diff; i++)
@@ -562,7 +572,7 @@ del valor del Registro Puntero Archivo.*/
 
 	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido de kernel
-    text_deserialize(operation_arguments, &file_name);
+    text_deserialize(operation_arguments, &(file_name));
     size_deserialize(operation_arguments, &ptro);
     size_deserialize(operation_arguments, &bytes);
 	list_deserialize(operation_arguments, list_dfs, size_deserialize_element);
@@ -585,17 +595,11 @@ del valor del Registro Puntero Archivo.*/
 	t_Package* package_memory = NULL;
 	package_receive(&package_memory, CONNECTION_MEMORY.fd_connection);
 	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
-	//void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (ptro));
-    payload_shift(&package_memory->payload, posicion, (size_t) bytes);
-	package_destroy(package_memory);
-    //void* context = malloc(bytes);
-    //memcpy(posicion, context, bytes); 
-	//free(context);
 
-    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
-        // TODO
-        exit(1);
-    }
+    payload_shift(&package_memory->payload, posicion, (size_t) bytes);
+
+	package_destroy(package_memory); 
+
 
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - Escribir Archivo: <%s> - Tamaño a Escribir: <%d> - Puntero Archivo: <%d>",
 				 (int) PID, file_name, (int)bytes, (int)ptro);
@@ -670,10 +674,10 @@ indicada en el Registro Dirección*/
         exit(1);
 	}
 
-    if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
+/*     if(send_return_value_with_header(WRITE_REQUEST, 0, CONNECTION_KERNEL.fd_connection)) {
         // TODO
         exit(1);
-    }
+    } */
 
     return 0;
 }
@@ -731,9 +735,8 @@ void initialize_bitmap() {
 	string_append(&path_file_bitmap, "bitmap.dat");
 
 	//Checkeo si el file ya esta creado, sino lo elimino
-	if (access(path_file_bitmap, F_OK) == 0)remove(path_file_bitmap);
 	
-    int fd = open("bitmap.dat", O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    int fd = open(path_file_bitmap, O_RDWR | O_CREAT , S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bitmap.dat: %s", strerror(errno));
         exit(EXIT_FAILURE);
@@ -892,8 +895,8 @@ void create_file(char* file_name, size_t initial_block){
     }
 
 	t_config* config_temp = config_create(path_file);
-    config_set_value(config_temp, "BLOQUE_INICIAL", "0");
-    config_set_value(config_temp, "TAMAÑO_ARCHIVO", string_itoa(initial_block));
+    config_set_value(config_temp, "BLOQUE_INICIAL", string_itoa(initial_block));
+    config_set_value(config_temp, "TAMAÑO_ARCHIVO", "0");
 	config_save_in_file(config_temp,path_file);
 	config_destroy(config_temp);
 		

@@ -297,11 +297,12 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
 
     t_list *list_physical_addresses = list_create();
     size_t required_page_quantity = seek_quantity_pages_required(logical_address, bytes);
+            log_error(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA INICIAL: %zd REQUIRED PAGES --> %zd", pid, page_number, required_page_quantity);
 
     size_t frame_number;
     size_t *physical_address;
     for(size_t i = 0; i < required_page_quantity; i++) {
-        page_number += i;
+            log_error(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA: %zd", pid, page_number);
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
         pthread_mutex_lock(&MUTEX_TLB);
@@ -364,6 +365,7 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
             offset = 0; //El offset solo es importante en la 1ra pagina buscada
 
         list_add(list_physical_addresses, physical_address);
+        page_number ++;
     }
     
     return list_physical_addresses;
@@ -508,14 +510,14 @@ void ask_memory_page_size(void) {
     package_destroy(package);
 }
 
-void attend_write(t_PID pid, t_list *list_physical_addresses, void *source, size_t bytes) {
+void attend_write(t_PID pid, t_list *list_physical_addresses, char* source, size_t bytes) {
 
     t_Package* package;
 
     package = package_create_with_header(WRITE_REQUEST);
     payload_append(&(package->payload), &pid, sizeof(pid));
     list_serialize(&(package->payload), *list_physical_addresses, size_serialize_element);
-    payload_append(&(package->payload), &bytes, sizeof(bytes));
+    size_serialize(&(package->payload), bytes);
     payload_append(&(package->payload), source, (size_t) bytes);
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
@@ -538,14 +540,39 @@ void attend_read(t_PID pid, t_list *list_physical_addresses, void *destination, 
     package_send(package, CONNECTION_MEMORY.fd_connection);
     package_destroy(package);
 
+    
+
     if(package_receive(&package, CONNECTION_MEMORY.fd_connection)) {
         // TODO
         exit(1);
     }
 
-    log_info(MODULE_LOGGER, "PID: %i - Accion: LEER OK", pid);
+    log_info(MODULE_LOGGER, "DENTRO DE CPU FAIL 1");
     payload_shift(&(package->payload), &destination, bytes);
+    log_info(MODULE_LOGGER, "DENTRO DE CPU FAIL 2222");
     package_destroy(package);
+    log_info(MODULE_LOGGER, "DENTRO DE CPU FAIL 33333");
+}
+
+void attend_copy(t_PID pid, t_list *list_physical_addresses_origin, t_list *list_physical_addresses_destination, size_t bytes) {
+    if(list_physical_addresses_origin == NULL || list_physical_addresses_destination == NULL)
+        return;
+
+    t_Package* package = package_create_with_header(COPY_REQUEST);
+    payload_append(&(package->payload), &(pid), sizeof(pid));
+    list_serialize(&(package->payload), *list_physical_addresses_origin, size_serialize_element);
+    list_serialize(&(package->payload), *list_physical_addresses_destination, size_serialize_element);
+    size_serialize(&(package->payload), bytes);          
+    package_send(package, CONNECTION_MEMORY.fd_connection);
+    package_destroy(package);
+
+    
+    if(receive_expected_header(COPY_REQUEST,CONNECTION_MEMORY.fd_connection)) {
+        log_info(MODULE_LOGGER, "PID: %i - Accion: COPY FAIL!.", pid);
+        exit(1);
+    }
+    log_info(MODULE_LOGGER, "PID: %i - Accion: COPY OK", pid);
+
 }
 
 size_t seek_quantity_pages_required(size_t logical_address, size_t bytes){

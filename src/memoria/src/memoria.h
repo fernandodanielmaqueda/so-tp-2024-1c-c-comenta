@@ -148,5 +148,6 @@ void free_all_process();
 
 void io_write_memory(t_Payload *payload, int socket);
 void io_read_memory(t_Payload *payload, int socket);
+void copy_memory(t_Payload *payload, int socket);
 
 #endif /* MEMORIA_H */
