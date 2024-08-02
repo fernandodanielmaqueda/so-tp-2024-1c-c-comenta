@@ -225,7 +225,6 @@ void dialfs_interface_function(void) {
 					}else{
 						new_entry->len = ceil((double)new_entry->size / (double)BLOCK_SIZE);
 					}
-
 					
 					//new_entry->process_pid = 0; 
 					list_add(LIST_FILES, new_entry);
@@ -384,6 +383,8 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
     text_deserialize(operation_arguments, &(file_name));
 	uint32_t location = seek_first_free_block();
 
+
+	log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", PID, file_name);
 	//Crear variable de control de archivo
 	t_FS_File* new_entry = malloc(sizeof(t_FS_File));
 	new_entry->name = malloc(sizeof(file_name));
@@ -397,15 +398,7 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
 	bitarray_set_bit(BITMAP, location);
 
 	list_add(LIST_FILES, new_entry);
-
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", PID, file_name);
-
-/* 	t_Package* respond = package_create_with_header(IO_FS_CREATE_CPU_OPCODE);
-	payload_append(respond->payload, &PID, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond); */
-
-	free(new_entry);
+	
     return 0;
 }
 
@@ -420,6 +413,8 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 
 	usleep(WORK_UNIT_TIME * 1000);
     text_deserialize(operation_arguments, &(file_name));
+
+    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", PID, file_name);
 	
 	uint32_t size = list_size(LIST_FILES);
 
@@ -441,9 +436,10 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
 			return 1;
 		}
 
+	log_info(MODULE_LOGGER, "El len del archivo es %d", file->len);
 		//Liberacion del bitarray
 		uint32_t initial_pos = file->initial_bloq;
-		for (size_t i = 0; i == file->len; i++)
+		for (size_t i = 1; i <= file->len; i++)
 		{
 			bitarray_clean_bit(BITMAP, initial_pos);
 			initial_pos++;
@@ -455,16 +451,18 @@ int io_fs_delete_io_operation(t_Payload *operation_arguments) {
     	}
 
 		list_remove(LIST_FILES, file_target);
-		update_file(file_name,0,-1);
+		//free(file_target);
+		//update_file(file_name,0,-1);b
 	}
 	
-    log_debug(MINIMAL_LOGGER, "PID: <%d> - Eliminar archivo: <%s>", PID, file_name);
-	
-/* 	t_Package* respond = package_create_with_header(IO_FS_DELETE_CPU_OPCODE);
-	payload_append(respond->payload, &PID, sizeof(t_PID));
-	package_send(respond, CONNECTION_KERNEL.fd_connection);
-	package_destroy(respond); */
 
+	char* path_file = string_new();
+	strcpy (path_file, PATH_BASE_DIALFS);
+	string_append(&path_file, "/");
+	string_append(&path_file, file_name);
+	remove(path_file);
+
+	free(path_file);
     return 0;
 }
 
