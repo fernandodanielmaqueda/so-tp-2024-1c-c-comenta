@@ -4,21 +4,13 @@
 - Las máquinas de la facultad usan Windows, y NO tenemos permisos de administrador: no se pueden instalar programas, etc.
 
 ### TODO
-- Archivos de dialfs de config
-- Comandos de tmux
-- Que el fstab tome todas las IPs y no haya que agregarlas manualmente
-- Instalar `gh` (no viene instalado en la VM de Ubuntu Server)
-```bash
-sudo apt install gh -y
-```
-
 - Evaluar cómo hacer para pasar el repositorio y los scripts de deploy lo más fácil posible a las máquinas de la facultad (.iso, .vhd)
 - Editar el archivo /home/utnso/base.sh acordemente
 - Hacer un script que instale automáticamente las extensiones de VSCode
 - Revisar si hay permisos para levantar conexión por SMB (Samba) en Windows
 -----------------------------
 
-# De antemano
+# (SÓLO en el Deploy) De antemano
 
 ## A. Leer documentación
 
@@ -30,8 +22,8 @@ sudo apt install gh -y
 >Si tuviéramos que resumir en tres cosas, lo que deberían hacer para poder llegar a una entrega con la seguridad de que van a aprobar sería:
 >
 >- Probar el TP
->- Practicar el despliegue
->- Probar el TP y practicar el despliegue
+>- Practicar el despliegue (deploy)
+>- Probar el TP y practicar el despliegue (deploy)
 >
 >Para esto pueden ir a los laboratorios de Medrano (que están abiertos de lunes a viernes de 10 a 21hs y sábados de 10 a 18hs)
 >o, de no ser posible, pueden utilizar las VMs server desde sus casas de la misma forma que en el TP0. 
@@ -63,7 +55,7 @@ sudo apt install gh -y
 
 ## E. Llevarse anotadas las credenciales de GitHub
 
-- Ya sea en un papel o en el celular
+- Ya sea en un papel, en el celular o en un pendrive
 
 -----------------------------
 
@@ -81,7 +73,7 @@ sudo apt install gh -y
 
 -----------------------------
 
-# Una vez con las máquinas del laboratorio
+# (SÓLO en el Deploy) Una vez con las máquinas del laboratorio
 
 >Si el trabajo práctico no puede correr en más de una máquina no se iniciará la evaluación y se dará por desaprobada la entrega.
 >
@@ -91,26 +83,26 @@ sudo apt install gh -y
 
 -----------------------------
 
-## 1. Prender e iniciar sesión en una computadora
+## 1. (SÓLO en el Deploy) Prender e iniciar sesión en una computadora
 
 - **Usuario**: `alumno`
 - **Contraseña**: `alumno`
 
 -----------------------------
 
-## 2. Abrir un navegador web
+## 2. (NO en el Deploy) Abrir un navegador web
 
 Por ejemplo: `Google Chrome`, etc.
 
-## 3. Loguearse en la cuenta de GitHub
+## 3. (NO en el Deploy) Loguearse en la cuenta de GitHub
 
 - https://github.com/
 
-## 4. Acceder a este repositorio grupal
+## 4. (NO en el Deploy) Acceder a este repositorio grupal
 
 - https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 
-## 5. Descargar, instalar y abrir el Git Bash *PORTABLE*
+## 5. (NO en el Deploy) Descargar, instalar y abrir el Git Bash *PORTABLE*
 
 - https://git-scm.com/download/win
 	- 32-bits:
@@ -120,7 +112,7 @@ Por ejemplo: `Google Chrome`, etc.
 
 -----------------------------
 
-## 6. Iniciar sesión en el Git de Windows
+## 6. (NO en el Deploy) Iniciar sesión en el Git de Windows
 ```bash
 git config --global user.email 'ejemplo@frba.utn.edu.ar'
 git config --global user.name 'Nombre y Apellido(s)'
@@ -128,7 +120,7 @@ git config --global user.name 'Nombre y Apellido(s)'
 
 -----------------------------
 
-## 7. Clonar este repositorio en Windows
+## 7. (NO en el Deploy) Clonar este repositorio en Windows
 ```bash
 cd ~ ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
@@ -164,14 +156,14 @@ git remote set-url origin git@github.com:sisoputnfrba/tp-2024-1c-Operativos.git
 
 -----------------------------
 
-## 8. Clonarse los submódulos del repositorio en Windows
+## 8. (NO en el Deploy) Clonarse los submódulos del repositorio en Windows
 ```bash
 cd tp-2024-1c-Operativos ; git submodule update --init --recursive
 ```
 
 -----------------------------
 
-## 9. Ejecutar los Scripts Automáticos de Windows
+## 9. (NO en el Deploy) Ejecutar los Scripts Automáticos de Windows
 
 TODO
 
@@ -372,7 +364,7 @@ Es en caso de que otro grupo la haya usado antes.
 
 Ya sea enviando un mensaje de texto desde un celular, o anotando en un papel
 
-- Para mostrar la IP:
+- Para mostrar la IP de la Guest VM Server:
 ```bash
 ifconfig
 ```
@@ -494,7 +486,7 @@ sudo vi /etc/modules
 vboxsf
 ```
 
-### (NO en el Deploy) Nota sobre las carpetas compartidas de VirtualBox
+### Nota sobre las carpetas compartidas de VirtualBox
 
 - No se puede ejecutar un programa más de una vez en simultáneo (múltiples instancias de un programa)
 - No se pueden depurar con `gdb` los ejecutables si estos están dentro de las carpetas compartidas (sólo se puede hasta cargar los símbolos de depuración del mismo)
@@ -557,7 +549,7 @@ sudo vi /etc/fstab
 
 -----------------------------
 
-## 22. Configurar SSH en la VM
+## 22. (NO en el Deploy) Configurar SSH en la VM
 
 1. Descargar e instalar `openssh-server`
 ```bash
@@ -632,10 +624,10 @@ sudo vi /etc/ssh/sshd_config
 > Debajo de esta línea:
 `Include /etc/ssh/sshd_config.d/*.conf`
 
-> Agregar las IPs admitidas para conectarse vía SSH con la VM.
-> Las que no figuren en este listado serán rechazadas, por más que ingresen usuario y contraseña correctos.
+> Habilitar al usuario `utnso` para conectarse vía SSH con la VM.
+> Cualquier IP será admitida, siempre y cuando ingrese el usuario y contraseña correctos.
 ```console
-AllowUsers utnso@NúmeroIP
+AllowUsers utnso
 ```
 
 6. Reiniciar el servicio de ssh
@@ -643,12 +635,7 @@ AllowUsers utnso@NúmeroIP
 sudo systemctl restart ssh
 ```
 
-7. Ver cuál es la IP de la VM
-```bash
-ifconfig
-```
-
-8. Para revisar el log de SSH:
+Tip. Para revisar el log de SSH:
 > Puede ser útil para averigüar la IP del Host: ver qué IPs intentaron conectarse vía SSH con la VM
 ```bash
 less /var/log/auth.log
@@ -759,6 +746,12 @@ git config --global user.name 'Nombre y Apellido(s)'
 ## 26. Autenticarse en Git en la VM
 
 # Alternativa 1: Comando gh
+1. Instalar `gh` (no viene instalado en la VM de Ubuntu Server)
+```bash
+sudo apt install gh -y
+```
+
+2. Loguearse
 ```bash
 gh auth login
 ```
@@ -834,29 +827,6 @@ Debería ser equivalente a:
 cd /c/Users/alumno ; git clone --recurse-submodules https://github.com/sisoputnfrba/tp-2024-1c-Operativos
 ```
 
-En caso de que nos aparezca este error:
-[![.NETFRAMEWORK_ERROR](https://i.sstatic.net/O9L6E.png)]()
-
-Como no tenemos permisos de administrador en las máquinas de la facultad, no podemos instalar esa dependencia
-(.NET Framework 4.7.2) y por ende no podemos utilizar el Administrador de Credenciales de Git
-(`Git Credential Manager Core`)
-
-Las alternativas son:
-1. Si para acceder a tu cuenta de Git usás PAT (Personal Access Token):
-	- Usá el Administrador de Credenciales de Windows (`wincred`)
-```bash
-git config --unset-all credential.helper && git config credential.helper wincred
-```
-Cuando se te solicite tu nombre de usuario, ingresalo.
-Cuando te solicite tu contraseña, ingresá tu PAT (Personal Access Token) que generaste.
-
-2. Si para acceder a tu cuenta de Git usás clave SSH:
-	- Cambiar a SSH:
-```bash
-git remote set-url origin git@github.com:sisoputnfrba/tp-2024-1c-Operativos.git
-```
-Deberás ingresar tu clave pública SSH generada.
-
 -----------------------------
 
 ## 28. Clonarse los submódulos del repositorio
@@ -866,7 +836,7 @@ cd tp-2024-1c-Operativos ; git submodule update --init --recursive
 
 -----------------------------
 
-## 29. Ejecutar Scripts Automáticos
+## 29. (NO en el Deploy) Ejecutar Scripts Automáticos
 
 TODO
 
@@ -877,25 +847,40 @@ corriendo los módulos
 
 -----------------------------
 
-## 31. Copiar los archivos de test
+## 31. Crear un acceso directo (soft link) a los archivos de test
 
 Deben quedar en: `/home/utnso/scripts-pruebas`/...
+```bash
+ln -s /home/utnso/tp-2024-1c-Operativos/thirdparty/c-comenta-pruebas /home/utnso/scripts-pruebas
+```
 
 -----------------------------
 
-## 32. Instalar la commons library
+## 32. Crear el directorio para DialFS (Para el módulo de Entrada/Salida) 
+```bash
+mkdir -p /home/utnso/dialfs
+```
+
+-----------------------------
+
+## 33. (NO en el Deploy) Instalar la SO Commons Library
+
+```bash
+cd /home/utnso/tp-2024-1c-Operativos/thirdparty/so-commons-library
+make debug
+make install
+cd -
+```
+
+-----------------------------
+
+## 34. (NO en el Deploy) Instalar CSpec
 
 TODO
 
 -----------------------------
 
-## 33. (NO en el Deploy) Instalar cspec
-
-TODO
-
------------------------------
-
-## 34. (NO en el Deploy) Instalar la versión más reciente de CMake
+## 35. (NO en el Deploy) Instalar la versión más reciente de CMake
 
 - https://cmake.org/download/
 	- https://github.com/Kitware/CMake/releases/download/v3.29.0/cmake-3.29.0-linux-x86_64.sh
@@ -908,13 +893,54 @@ sudo ./cmake-3.29.0-linux-x86_64.sh --prefix=/usr/local --skip-license
 
 -----------------------------
 
-## 35. Levantar los módulo(s) del TP que correspondan
+## 36. Levantar los módulo(s) del TP que correspondan
 
-Los comandos del makefile están en el `Anexo 2`
+Los comandos del makefile están en el `Anexo 5`
 
 -----------------------------
 
-## Anexo 1: Comandos generales
+## Anexo 1: Snapshots (Instantáneas) de la VM
+
+https://youtu.be/u1L23ziKgz4
+
+-----------------------------
+
+## Anexo 2: Guardar el estado de una VM
+
+https://youtu.be/YqFybzQmqOc
+
+-----------------------------
+
+## Anexo 3: Clonar la VM
+
+Para simular que contamos con dos máquinas distintas, lo que haremos será clonar la VM que ya tenemos configurada.
+Para ello, vamos a hacer click derecho en la VM > "Clone..." y seguir los pasos para clonar la VM.
+Recomendamos usar la opción "Linked clone" ya que el proceso de clonado es más rápido y ocupa menos espacio:
+
+[![vm-clone](https://docs.utnso.com.ar/img/primeros-pasos/tp0/vm-clone.png)]()
+
+### Resolver conflictos de red
+Por último, vamos a iniciar sesión en una de las VMs y ejecutar las siguientes 3 líneas:
+
+```bash
+sudo rm -f /etc/machine-id
+sudo dbus-uuidgen --ensure=/etc/machine-id
+sudo reboot
+```
+
+Esto lo que hace es generar un nuevo archivo `/etc/machine-id`,
+en el cual se guarda un identificador que permite al router
+asignarle la misma IP a una máquina cada vez que éstase conecta a la red.
+
+Al nosotros haber clonado la misma VM, ambas tienen el mismo `machine-id`,
+por lo que el router podría terminar asignándoles la misma IP a ambas VMs,
+lo cual generaría conflictos a la hora de conectarlas en red.
+
+Luego de reiniciar, ejecuten `ifconfig` para corroborar que efectivamente las IPs de todas las VMs son distintas.
+
+-----------------------------
+
+## Anexo 4: Comandos generales
 
 - Apagar
 ```bash
@@ -1056,6 +1082,17 @@ cp <origen> <destino>
 mv <origen> <destino>
 ```
 
+> Using mv command to move all files including the hidden files
+```bash
+mv -f /path/subdirectory/{.,}* /path/
+```
+
+> Este comando se expande a:
+```bash
+mv /path/subdirectory/* /path/subdirectory/.* /path/
+```
+> Here, the asterisk (*) symbol represents all files in the subdirectory folder, and the dot-asterisk (.*) symbol represents all hidden files in the subdirectory folder. Both types of files will be moved to the path directory.
+
 - Eliminar archivo(s) y/o directorio(s) recursivamente y forzosamente
 ```bash
 rm -rf <directorio>
@@ -1188,6 +1225,11 @@ chmod 777 kernel.config
 > Machete para escribir los permisos tipo Unix en octal:
 [![chmod](https://docs.utnso.com.ar/img/guias/consola/bash-linux-file-permissions.jpg)]()
 
+- Listar todos los usuarios:
+```bash
+users
+```
+
 - Listar todos los grupos:
 ```bash
 groups
@@ -1208,7 +1250,7 @@ id -g
 
 -----------------------------
 
-## Anexo 2: Comandos con el makefile
+## Anexo 5: Comandos con el makefile
 
 - Compilar todos los módulos
 ```bash
@@ -1243,7 +1285,7 @@ clear ; make cleandirs
 clear ; make run-kernel 'kernel_ARGS='
 clear ; make run-cpu 'cpu_ARGS='
 clear ; make run-memoria 'memoria_ARGS='
-clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 SLP1.config'
 ```
 
 - Ejecutar con memcheck un módulo
@@ -1251,7 +1293,7 @@ clear ; make run-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
 clear ; make valgrind-memcheck-kernel 'kernel_ARGS='
 clear ; make valgrind-memcheck-cpu 'cpu_ARGS='
 clear ; make valgrind-memcheck-memoria 'memoria_ARGS='
-clear ; make valgrind-memcheck-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+clear ; make valgrind-memcheck-entradasalida 'entradasalida_ARGS=SLP1 SLP1.config'
 ```
 
 - Ejecutar con helgrind un módulo
@@ -1259,7 +1301,7 @@ clear ; make valgrind-memcheck-entradasalida 'entradasalida_ARGS=SLP1 entradasal
 clear ; make valgrind-helgrind-kernel 'kernel_ARGS='
 clear ; make valgrind-helgrind-cpu 'cpu_ARGS='
 clear ; make valgrind-helgrind-memoria 'memoria_ARGS='
-clear ; make valgrind-helgrind-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+clear ; make valgrind-helgrind-entradasalida 'entradasalida_ARGS=SLP1 SLP1.config'
 ```
 
 - Ejecutar con valgrind (sin ninguna herramienta) un módulo
@@ -1267,12 +1309,91 @@ clear ; make valgrind-helgrind-entradasalida 'entradasalida_ARGS=SLP1 entradasal
 clear ; make valgrind-none-kernel 'kernel_ARGS='
 clear ; make valgrind-none-cpu 'cpu_ARGS='
 clear ; make valgrind-none-memoria 'memoria_ARGS='
-clear ; make valgrind-none-entradasalida 'entradasalida_ARGS=SLP1 entradasalida.config'
+clear ; make valgrind-none-entradasalida 'entradasalida_ARGS=SLP1 SLP1.config'
 ```
 
 -----------------------------
 
-## Anexo 3: tmux (Terminal MUltipleXer)
+## Anexo 6: Opciones importantes de gcc
+
+`-DDEBUG -fdiagnostics-color=always -lcommons -lpthread -lreadline -lm`
+
+-----------------------------
+
+## Anexo 7: Comandos de Git
+
+- Moverse a un commit específico de un repositorio
+```bash
+git checkout -q <commit-hash>
+```
+
+- Clonar un repositorio con todos sus submódulos
+```bash
+git clone
+```
+
+- Clonar todos los submódulos de un repositorio ya clonado
+```bash
+git submodule update --init --recursive
+```
+
+- Agregar un submodulo
+```bash
+git submodule add https://github.com/sisoputnfrba/c-comenta-pruebas thirdparty/c-comenta-pruebas
+```
+
+- Saber a qué commit hash apunta el submódulo
+```bash
+cd submodules/mysubmodule
+git rev-parse HEAD
+```
+
+- Actualizar todos los submódulos hasta sus últimos commits
+```bash
+git submodule update --remote --merge
+```
+
+- Actualizar manualmente el commit hash al que apunta un submódulo
+```bash
+cd submodules/mysubmodule
+git fetch
+git pull
+
+Opcional:
+git checkout -q <commit-hash>
+
+cd -
+git add submodules/mysubmodule
+git commit -m "Update submodule to new commit"
+```
+
+- Eliminar un submódulo
+```bash
+git submodule deinit <submodule>
+git rm <submodule>
+```
+
+```text
+hint: You have divergent branches and need to specify how to reconcile them.
+hint: You can do so by running one of the following commands sometime before
+hint: your next pull:
+hint: 
+hint:   git config pull.rebase false  # merge
+hint:   git config pull.rebase true   # rebase
+hint:   git config pull.ff only       # fast-forward only
+hint: 
+hint: You can replace "git config" with "git config --global" to set a default
+hint: preference for all repositories. You can also pass --rebase, --no-rebase,
+hint: or --ff-only on the command line to override the configured default per
+hint: invocation.
+fatal: Need to specify how to reconcile divergent branches.
+```
+
+-----------------------------
+
+## Anexo 8: tmux (Terminal MUltipleXer)
+
+Referencia: https://gist.github.com/MohamedAlaa/2961058
 
 - Abrir una sesión nueva
 ```bash
@@ -1333,47 +1454,12 @@ tmux kill -t 'NombreDeSesion'
 - Para cambiarle el nombre a la sesion actual de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>,</kbd>
 - Para alternar entre las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>s</kbd>
 - Para alternar entre las ventanas de las sesiones abiertas de tmux, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>w</kbd>
-- Para iniciar el modo desplazamiento por la ventana, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>[</kbd> (con la distribucion de teclado latinoamericano, <kbd>[</kbd> es <kbd>⇧ Shift</kbd> + <kbd>{</kbd>)
+- Para iniciar el modo desplazamiento por la ventana, presione <kbd>Ctrl</kbd> + <kbd>b</kbd> y seguidamente presione <kbd>[</kbd> (con la distribucion de teclado latinoamericano, <kbd>[</kbd> es <kbd>⇧ Shift</kbd> + <kbd>{</kbd>) ]
 - Para finalizar el modo desplazamiento por la ventana, presione <kbd>q</kbd>
 
 -----------------------------
 
-## Anexo 4: Opciones importantes de gcc
-
-`-DDEBUG -fdiagnostics-color=always -lcommons -lpthread -lreadline -lm`
-
------------------------------
-
-## Anexo 5: Clonar la VM
-
-Para simular que contamos con dos máquinas distintas, lo que haremos será clonar la VM que ya tenemos configurada.
-Para ello, vamos a hacer click derecho en la VM > "Clone..." y seguir los pasos para clonar la VM.
-Recomendamos usar la opción "Linked clone" ya que el proceso de clonado es más rápido y ocupa menos espacio:
-
-[![vm-clone](https://docs.utnso.com.ar/img/primeros-pasos/tp0/vm-clone.png)]()
-
-### Resolver conflictos de red
-Por último, vamos a iniciar sesión en una de las VMs y ejecutar las siguientes 3 líneas:
-
-```bash
-sudo rm -f /etc/machine-id
-sudo dbus-uuidgen --ensure=/etc/machine-id
-sudo reboot
-```
-
-Esto lo que hace es generar un nuevo archivo `/etc/machine-id`,
-en el cual se guarda un identificador que permite al router
-asignarle la misma IP a una máquina cada vez que éstase conecta a la red.
-
-Al nosotros haber clonado la misma VM, ambas tienen el mismo `machine-id`,
-por lo que el router podría terminar asignándoles la misma IP a ambas VMs,
-lo cual generaría conflictos a la hora de conectarlas en red.
-
-Luego de reiniciar, ejecuten `ifconfig` para corroborar que efectivamente las IPs de todas las VMs son distintas.
-
------------------------------
-
-## Anexo 6: Instalar OpenSSH
+## Anexo 9: Instalar OpenSSH
 
 ### Alternativa 1: Con Git para Windows
 
@@ -1444,23 +1530,11 @@ if (!(Get-NetFirewallRule -Name "OpenSSH-Server-In-TCP" -ErrorAction SilentlyCon
 
 -----------------------------
 
-## Anexo 7: Snapshots (Instantáneas) de la VM
-
-https://youtu.be/u1L23ziKgz4
-
------------------------------
-
-## Anexo 8: Guardar el estado de una VM
-
-https://youtu.be/YqFybzQmqOc
-
------------------------------
-
 # Al salir
 
 ### 1. Apagar la VM Ubuntu Server
 
-### 2. En Virtual Box, restaurar el snapshot de la VM Ubuntu Server al Base
+### 2. En VirtualBox, restaurar el snapshot de la VM Ubuntu Server al Base
 
 ### 3. Desloguearse de las cuentas del navegador
 
