@@ -986,6 +986,7 @@ void compact_blocks(t_FS_File* file, size_t nuevoLen){
 						bitarray_clean_bit(BITMAP,new_pos);
 						new_pos++;
 					}
+		free(aux_memory);
 		
 			
     if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
