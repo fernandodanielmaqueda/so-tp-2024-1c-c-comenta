@@ -517,15 +517,15 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 			compact_blocks(file, valueNUM);
 			log_debug(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
 
-			initial_pos = file->initial_bloq + file->len;
-			for (size_t i = 0; i < diff; i++)
+/*			//initial_pos = file->initial_bloq + file->len;
+ 			for (size_t i = 0; i < diff; i++)
 			{
 				bitarray_set_bit(BITMAP, initial_pos);
 				initial_pos++;
 			}
 			file->len = valueNUM;
 			file->size = value;
-
+ */
 		}
 		else{
         	log_error(MODULE_LOGGER, "[FS] ERROR: OUT_OF_MEMORY --> Can't assing blocks");
@@ -693,7 +693,7 @@ void initialize_blocks() {
 	//Checkeo si el file ya esta creado, sino lo elimino
 	//if (access(path_file_blocks, F_OK) == 0)remove(path_file_blocks);
 
-    int fd = open(path_file_blocks, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    int fd = open(path_file_blocks, O_RDWR | O_CREAT , S_IRUSR | S_IWUSR);
     if (fd == -1) {
         log_error(MODULE_LOGGER, "Error al abrir el archivo bloques.dat: %s", strerror(errno));
         exit(EXIT_FAILURE);
@@ -960,13 +960,13 @@ void compact_blocks(t_FS_File* file, size_t nuevoLen){
 					total_free_spaces++;
 
 				}
-				else{//BITMAP no libre, no es el archivo en cuestion
+				else if(file->initial_bloq != i){//BITMAP no libre, no es el archivo en cuestion
 					t_FS_File* temp_entry = seek_file_by_header_index(i);
 					len = temp_entry->len;
 					if (total_free_spaces != 0){//Mueve el bloque y actualiza el bitmap
 						moveBlock(temp_entry->len, total_free_spaces, i);
-						temp_entry->initial_bloq = i;
-						update_file(temp_entry->name, temp_entry->size, i);
+						temp_entry->initial_bloq = i - total_free_spaces;
+						update_file(temp_entry->name, temp_entry->size, i - total_free_spaces);
 					}
 					i+=len -1; //Salteo los casos ya contemplados en moveBlock
 
