@@ -482,7 +482,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
     text_deserialize(operation_arguments, &(file_name));
     size_deserialize(operation_arguments, &value);
 
-	size_t valueNUM = (size_t) ceil(value/BLOCK_SIZE);
+	size_t valueNUM = (size_t) ceil((double)value / (double)BLOCK_SIZE);
 
 	t_FS_File* file = seek_file(file_name);
 	size_t initial_pos = file->initial_bloq + file->len;
@@ -514,7 +514,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
 
 			log_debug(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", PID);
-			compact_blocks();
+			compact_blocks(file, valueNUM);
 			log_debug(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
 
 			initial_pos = file->initial_bloq + file->len;
@@ -691,7 +691,7 @@ void initialize_blocks() {
 	string_append(&path_file_blocks, "bloques.dat");
 
 	//Checkeo si el file ya esta creado, sino lo elimino
-	if (access(path_file_blocks, F_OK) == 0)remove(path_file_blocks);
+	//if (access(path_file_blocks, F_OK) == 0)remove(path_file_blocks);
 
     int fd = open(path_file_blocks, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd == -1) {
@@ -933,10 +933,12 @@ t_FS_File* seek_file_by_header_index(size_t position){
 	return magic;
 }
 
-void compact_blocks(){
+void compact_blocks(t_FS_File* file, size_t nuevoLen){
 	usleep(COMPRESSION_DELAY * 1000);
 	int total_free_spaces = 0;
 	int len = 0;
+	void* aux_memory = malloc(file->len * BLOCK_SIZE);
+	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (file->initial_bloq * BLOCK_SIZE));
 
 			for (uint32_t i = 0; i < BLOCK_COUNT; i++)
 			{
@@ -944,19 +946,47 @@ void compact_blocks(){
 				{
 					total_free_spaces++;
 				}
-				else{//Busco el header
+				else if(file->initial_bloq == i) //Copio la memoria del archivo a agrandar a un aux 
+				{
+					memcpy(aux_memory, posicion, (file->len * BLOCK_SIZE)); 
+					int pos = i;
+
+					for (size_t q = 0; q < file->len; q++)
+					{
+						bitarray_clean_bit(BITMAP,pos);
+						pos++;
+					}
+					i += file->len -1;
+					total_free_spaces++;
+
+				}
+				else{//BITMAP no libre, no es el archivo en cuestion
 					t_FS_File* temp_entry = seek_file_by_header_index(i);
 					len = temp_entry->len;
 					if (total_free_spaces != 0){//Mueve el bloque y actualiza el bitmap
-						moveBlock(temp_entry->len, temp_entry->size, total_free_spaces, i);
-						temp_entry->initial_bloq -= total_free_spaces;
+						moveBlock(temp_entry->len, total_free_spaces, i);
+						temp_entry->initial_bloq = i;
 						update_file(temp_entry->name, temp_entry->size, i);
 					}
-					i+=len; //Salteo los casos ya contemplados en moveBlock
+					i+=len -1; //Salteo los casos ya contemplados en moveBlock
 
 				}
 				
 			}
+		
+		//Actualizo el proceso copiado
+		size_t new_pos = BLOCK_COUNT - total_free_spaces;
+		file->initial_bloq = new_pos;
+		file->len = nuevoLen;
+		posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (new_pos * BLOCK_SIZE));
+		memcpy(posicion, aux_memory, (file->len * BLOCK_SIZE)); 
+		update_file(file->name, file->size, new_pos);
+					for (size_t r = 0; r < file->len; r++)
+					{
+						bitarray_clean_bit(BITMAP,new_pos);
+						new_pos++;
+					}
+		
 			
     if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bitmap.dat con el archivo: %s", strerror(errno));
@@ -969,9 +999,9 @@ void compact_blocks(){
 
 }
 
-void moveBlock(size_t blocks_to_move, size_t size, size_t free_spaces, size_t location){
+void moveBlock(size_t blocks_to_move, size_t free_spaces, size_t location){
 	//Mueve el bloque y actualiza el bitmap
-
+	size_t size = blocks_to_move * BLOCK_SIZE;
     void* context = malloc(size);
 	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (location * BLOCK_SIZE));
     memcpy(context, posicion, size); 

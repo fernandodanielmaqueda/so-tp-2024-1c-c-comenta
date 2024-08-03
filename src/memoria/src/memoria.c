@@ -744,7 +744,7 @@ void io_write_memory(t_Payload *payload, int socket) {
 
     log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes);
 
-    char text_to_send[bytes];
+    //char text_to_send[bytes];
     size_t offset = 0;
 
 //COMIENZA LA ESCRITURA
