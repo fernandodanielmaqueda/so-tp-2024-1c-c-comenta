@@ -1,6 +1,14 @@
 .metadata/
 
+# Log files
 *.log
+
+# Config files
+/src/*.config
+/configs/
+
+# Data files
+#*.dat
 
 # Eclipse files
 .settings/
@@ -19,12 +27,17 @@
 bin/
 obj/
 build/
+#   This pattern ignores any directory named obj in the repository, regardless of its location in the directory tree.
+#   For example, it will ignore obj/, src/obj/, docs/obj/, etc.
+
 
 /cpu/
 /entradasalida/
 /kernel/
 /memoria/
 /utils/
+#   This pattern is more specific and ignores only the cpu directory at the root of the repository.
+#   It will ignore cpu/ but not src/cpu/ or any other cpu directory that is not at the root level.
 
 # Prerequisites
 *.d
