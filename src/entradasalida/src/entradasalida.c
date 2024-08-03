@@ -983,7 +983,7 @@ void compact_blocks(t_FS_File* file, size_t nuevoLen){
 		update_file(file->name, file->size, new_pos);
 					for (size_t r = 0; r < file->len; r++)
 					{
-						bitarray_clean_bit(BITMAP,new_pos);
+						bitarray_set_bit(BITMAP,new_pos);
 						new_pos++;
 					}
 		free(aux_memory);
