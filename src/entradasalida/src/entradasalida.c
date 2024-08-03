@@ -383,7 +383,6 @@ int io_fs_create_io_operation(t_Payload *operation_arguments) {
     text_deserialize(operation_arguments, &(file_name));
 	uint32_t location = seek_first_free_block();
 
-
 	log_debug(MINIMAL_LOGGER, "PID: <%d> - Crear archivo: <%s>", PID, file_name);
 	//Crear variable de control de archivo
 	t_FS_File* new_entry = malloc(sizeof(t_FS_File));
@@ -486,9 +485,9 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 
 	t_FS_File* file = seek_file(file_name);
 	size_t initial_pos = file->initial_bloq + file->len;
-	if (file->len > valueNUM)
+	if(file->len > valueNUM)
 	{//Se restan bloques
-			log_debug(MODULE_LOGGER, "SE SUMA BLOQUES");
+			log_debug(MODULE_LOGGER, "SE RESTAN BLOQUES");
 		size_t diff = file->len - valueNUM;
 		for (size_t i = 0; i < diff; i++)
 		{
@@ -504,7 +503,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	{// Se agregan bloques
 		size_t diff = valueNUM - file->len;
 		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
-			log_debug(MODULE_LOGGER, "SE RESTA BLOQUES");
+			log_debug(MODULE_LOGGER, "SE SUMAN BLOQUES");
 
 			for (size_t i = 0; i < diff; i++)
 			{
@@ -550,7 +549,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	payload_append(respond->payload, &PID, sizeof(t_PID));
 	package_send(respond, CONNECTION_KERNEL.fd_connection);
 	package_destroy(respond); */
-    
+
     return 0;
 }
 
@@ -570,13 +569,13 @@ del valor del Registro Puntero Archivo.*/
     log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_WRITE recibido.");
 
 	char *file_name = NULL;
-	size_t ptro = 0;
-	size_t bytes = 0;
+	size_t ptro;
+	size_t bytes;
 	t_list* list_dfs = list_create();
 
 	usleep(WORK_UNIT_TIME * 1000);
 	//Leo el payload recibido de kernel
-    text_deserialize(operation_arguments, &(file_name));
+    text_deserialize(operation_arguments, &file_name);
     size_deserialize(operation_arguments, &ptro);
     size_deserialize(operation_arguments, &bytes);
 	list_deserialize(operation_arguments, list_dfs, size_deserialize_element);
@@ -589,19 +588,18 @@ del valor del Registro Puntero Archivo.*/
 
 	//Envio paquete a memoria
 	t_Package* pack_request = package_create_with_header(IO_FS_WRITE_MEMORY);
-	payload_append(&pack_request->payload, &PID, sizeof(t_PID));
+	payload_append(&pack_request->payload, &PID, sizeof(PID));
     list_serialize(&pack_request->payload, *list_dfs, size_serialize_element);
-	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
+	size_serialize(&pack_request->payload, bytes);
 	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
 	package_destroy(pack_request);
 
 	//Recibo respuesta de memoria con el contenido
-	t_Package* package_memory = NULL;
+	t_Package* package_memory;
 	package_receive(&package_memory, CONNECTION_MEMORY.fd_connection);
 	void *posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (block_initial * BLOCK_SIZE + ptro));
 
     payload_shift(&package_memory->payload, posicion, (size_t) bytes);
-
 	package_destroy(package_memory); 
 
 
