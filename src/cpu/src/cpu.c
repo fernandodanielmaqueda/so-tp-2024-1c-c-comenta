@@ -297,12 +297,10 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
 
     t_list *list_physical_addresses = list_create();
     size_t required_page_quantity = seek_quantity_pages_required(logical_address, bytes);
-            log_error(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA INICIAL: %zd REQUIRED PAGES --> %zd", pid, page_number, required_page_quantity);
 
     size_t frame_number;
     size_t *physical_address;
     for(size_t i = 0; i < required_page_quantity; i++) {
-            log_error(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA: %zd", pid, page_number);
 
         // CHEQUEO SI ESTA EN TLB EL FRAME QUE NECESITO
         pthread_mutex_lock(&MUTEX_TLB);
@@ -328,7 +326,7 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
             size_deserialize(&(package->payload), &frame_number);
             package_destroy(package);
             
-            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %zd - Marco: %zd", pid, page_number, frame_number);
+            log_debug(MODULE_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %zd - Marco: %zd", pid, page_number, frame_number);
 
             if (TLB_ENTRY_COUNT > 0) {
                 if (list_size(TLB) < TLB_ENTRY_COUNT)
@@ -348,7 +346,7 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
             pthread_mutex_unlock(&MUTEX_TLB);
 
             log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - TLB HIT - PAGINA: %zd", pid, page_number);
-            log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %zd - Marco: %zd", pid, page_number, frame_number);
+            log_debug(MODULE_LOGGER, "PID: %" PRIu16 " - OBTENER MARCO - Página: %zd - Marco: %zd", pid, page_number, frame_number);
 
         }
 
@@ -360,7 +358,7 @@ t_list *mmu(t_PID pid, size_t logical_address, size_t bytes) {
 
         *physical_address = frame_number * PAGE_SIZE + offset;
 
-        log_debug(MINIMAL_LOGGER, "PID: %" PRIu16 " - PAGINA: %zd - DF: %zd", pid, page_number, *physical_address); // CAMBIARLO A MODULE_LOGGER
+        log_debug(MODULE_LOGGER, "PID: %" PRIu16 " - PAGINA: %zd - DF: %zd", pid, page_number, *physical_address); // CAMBIARLO A MODULE_LOGGER
         if(offset)
             offset = 0; //El offset solo es importante en la 1ra pagina buscada
 

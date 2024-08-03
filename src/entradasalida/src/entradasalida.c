@@ -488,6 +488,7 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 	size_t initial_pos = file->initial_bloq + file->len;
 	if (file->len > valueNUM)
 	{//Se restan bloques
+			log_debug(MODULE_LOGGER, "SE SUMA BLOQUES");
 		size_t diff = file->len - valueNUM;
 		for (size_t i = 0; i < diff; i++)
 		{
@@ -496,11 +497,14 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 		}
 		file->len = valueNUM;
 		file->size = value;
+		
+		update_file(file_name, value, file->initial_bloq);
 	}
 	if (file->len < valueNUM)
 	{// Se agregan bloques
 		size_t diff = valueNUM - file->len;
 		if(can_assign_block(file->initial_bloq, file->len, valueNUM)){
+			log_debug(MODULE_LOGGER, "SE RESTA BLOQUES");
 
 			for (size_t i = 0; i < diff; i++)
 			{
@@ -509,12 +513,13 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 			}
 			file->len = valueNUM;
 			file->size = value;
+		update_file(file_name, value, file->initial_bloq);
 
 		}
 		else if(quantity_free_blocks() >= valueNUM){//VERIFICA SI COMPACTAR SOLUCIONA EL PROBLEMA
 
 			log_debug(MINIMAL_LOGGER, "PID: <%d> - Inicio Compactacion", PID);
-			compact_blocks(file, valueNUM);
+			compact_blocks(file, valueNUM, value);
 			log_debug(MINIMAL_LOGGER, "PID: <%d> - Fin Compactacion", PID);
 
 /*			//initial_pos = file->initial_bloq + file->len;
@@ -533,7 +538,6 @@ int io_fs_truncate_io_operation(t_Payload *operation_arguments) {
 		}
 	}
 
-	update_file(file_name, value, file->initial_bloq);
 	
 		if (msync(PTRO_BITMAP, BITMAP_SIZE, MS_SYNC) == -1) {
         	log_error(MODULE_LOGGER, "Error al sincronizar los cambios en bloques.dat con el archivo: %s", strerror(errno));
@@ -790,16 +794,18 @@ uint32_t seek_first_free_block(){
 
 t_FS_File* seek_file(char* file_name){
 
-	t_FS_File* file = list_get(LIST_FILES,0);
+    t_FS_File* found_file = NULL;
 
-	for (size_t i = 0; i < list_size(LIST_FILES); i++)
-	{
-		
-		t_FS_File* file = list_get(LIST_FILES,i);
-		if (strcmp(file->name, file_name)) i = list_size(LIST_FILES);
-	}
-	
-	return file;
+    for (size_t i = 0; i < list_size(LIST_FILES); i++) {
+        t_FS_File* file = list_get(LIST_FILES, i);
+        
+        if (strcmp(file->name, file_name) == 0) {
+            found_file = file;  
+            break;  
+        }
+    }
+    
+    return found_file;
 }
 
 
@@ -933,7 +939,7 @@ t_FS_File* seek_file_by_header_index(size_t position){
 	return magic;
 }
 
-void compact_blocks(t_FS_File* file, size_t nuevoLen){
+void compact_blocks(t_FS_File* file, size_t nuevoLen, size_t nuevoSize){
 	usleep(COMPRESSION_DELAY * 1000);
 	int total_free_spaces = 0;
 	int len = 0;
@@ -978,6 +984,7 @@ void compact_blocks(t_FS_File* file, size_t nuevoLen){
 		size_t new_pos = BLOCK_COUNT - total_free_spaces;
 		file->initial_bloq = new_pos;
 		file->len = nuevoLen;
+		file->size = nuevoSize;
 		posicion = (void *)(((uint8_t *) PTRO_BLOCKS) + (new_pos * BLOCK_SIZE));
 		memcpy(posicion, aux_memory, (file->len * BLOCK_SIZE)); 
 		update_file(file->name, file->size, new_pos);

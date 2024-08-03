@@ -409,9 +409,7 @@ int copy_string_cpu_operation(int argc, char **argv)
     free(source);
 */
   
-	log_debug(MINIMAL_LOGGER, "ANTES DEL WRITE");  
     attend_copy(EXEC_CONTEXT.PID, list_physical_addresses_si, list_physical_addresses_di, size);
-	log_debug(MINIMAL_LOGGER, "DESPUES DEL WRITE");
 
     EXEC_CONTEXT.PC++;
 
