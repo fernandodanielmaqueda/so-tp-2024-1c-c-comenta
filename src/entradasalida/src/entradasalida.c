@@ -664,7 +664,7 @@ indicada en el Registro Dirección*/
 	payload_append(&pack_request->payload, &PID, sizeof(t_PID));
     list_serialize(&pack_request->payload, *list_dfs, size_serialize_element);
 	payload_append(&pack_request->payload, &bytes, sizeof(bytes));
-	payload_append(&pack_request->payload, &context, sizeof(bytes));
+	payload_append(&pack_request->payload, context, sizeof(bytes));
 	package_send(pack_request,CONNECTION_MEMORY.fd_connection);
 	package_destroy(pack_request);
 
