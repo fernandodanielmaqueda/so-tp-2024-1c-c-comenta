@@ -257,7 +257,7 @@ void kill_process(t_Payload *payload) {
     }
     else {
 
-        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño: <%d>", pid, list_size(process->pages_table));
+        log_debug(MODULE_LOGGER, "PID: <%" PRIu16 "> - Tamaño: <%d>", pid, list_size(process->pages_table));
 
         char *instruction;
         t_Page *page;
@@ -625,7 +625,7 @@ void io_read_memory(t_Payload *payload, int socket) {
         offset += bytes_to_copy;
         bytes -= bytes_to_copy;
 
-        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
+        log_debug(MODULE_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
     }
 
     // Le agrego un '\0' al final por las dudas para asegurar de que el string se pueda imprimir
@@ -681,7 +681,7 @@ void copy_memory(t_Payload *payload, int socket) {
         offset += bytes_to_copy;
         bytes -= bytes_to_copy;
 
-        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
+        log_debug(MODULE_LOGGER, "PID: <%" PRIu16 "> - Accion: <LEER> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
     }
 
     text_to_send[offset] = '\0';
@@ -718,7 +718,7 @@ void copy_memory(t_Payload *payload, int socket) {
             offset += bytes_to_copy;
             bytes -= bytes_to_copy;
 
-            log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
+            log_debug(MODULE_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
         }
     
     list_destroy_and_destroy_elements(list_physical_addresses_destiny, free);
@@ -780,8 +780,8 @@ void io_write_memory(t_Payload *payload, int socket) {
 
 
 
-            log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
-            log_error(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - TEXTO: %s", pid, leido);
+            log_debug(MODULE_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - Direccion fisica: <%zd> - Tamaño <%zd>", pid, physical_address, bytes_to_copy);
+            log_error(MODULE_LOGGER, "PID: <%" PRIu16 "> - Accion: <ESCRIBIR> - TEXTO: %s", pid, leido);
 
         }
     
@@ -1048,7 +1048,7 @@ void resize_process(t_Payload *payload){
         // pthread_join(CLIENT_CPU->thread_client_handler, NULL);
         close(CLIENT_CPU->fd_client);
 
-        log_debug(MINIMAL_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Reducir: <%zd>", pid, size, page_quantity);
+        log_debug(MODULE_LOGGER, "PID: <%" PRIu16 "> - Tamaño Actual: <%" PRIu32 "> - Tamaño a Reducir: <%zd>", pid, size, page_quantity);
 
         exit(EXIT_FAILURE);
     }
