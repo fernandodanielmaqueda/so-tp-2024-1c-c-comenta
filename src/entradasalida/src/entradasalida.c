@@ -567,7 +567,7 @@ del valor del Registro Puntero Archivo.*/
 		return 1;
 	}
 
-    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_READ recibido.");
+    log_trace(MODULE_LOGGER, "[FS] Pedido del tipo IO_FS_WRITE recibido.");
 
 	char *file_name = NULL;
 	size_t ptro = 0;
