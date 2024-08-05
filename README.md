@@ -12,7 +12,7 @@
 
 ## Prerequisitos
 
-Sistema operativo tipo Unix (probado en Ubuntu Server)
+Sistema operativo tipo Unix (probado en `Ubuntu Server`)
 
 ## Dependencias
 
