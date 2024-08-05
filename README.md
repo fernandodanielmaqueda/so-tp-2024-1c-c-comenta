@@ -7,7 +7,7 @@
 | MAQUEDA, Fernando Daniel   | [@fernandodanielmaqueda](https://github.com/fernandodanielmaqueda) |
 | FINK, Brian                | [@Brai93](https://github.com/Brai93)                               |
 | ARANZAMENDI, Iñaki Joaquín | [@inaaranza](https://github.com/inaaranza)                         |
-| MOROSINI, Pablo            | [@MorosiniP](https://github.com/MorosiniP)                         |
+| MOROSINI, Pablo Ariel      | [@MorosiniP](https://github.com/MorosiniP)                         |
 | BENCINA, Morena            | [@MoreBencina](https://github.com/MoreBencina)                     |
 
 ## Prerequisitos
