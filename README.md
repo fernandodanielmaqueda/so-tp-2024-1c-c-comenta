@@ -2,13 +2,13 @@
 
 ## Grupo "Operativos"
 
-| Apellido y Nombre(s)       | Usuario de GitHub |
-|----------------------------|-------------|-----------------|
+| Apellido y Nombre(s)       | Usuario de GitHub                                                  |
+|----------------------------|--------------------------------------------------------------------|
 | MAQUEDA, Fernando Daniel   | [@fernandodanielmaqueda](https://github.com/fernandodanielmaqueda) |
-| FINK, Brian                | [@Brai93](https://github.com/Brai93) |
-| ARANZAMENDI, Iñaki Joaquín | [@inaaranza](https://github.com/inaaranza) |
-| MORISINI, Pablo            | [@MorosiniP](https://github.com/MorosiniP) |
-| BENCINA, Morena            | [@MoreBencina](https://github.com/MoreBencina) |
+| FINK, Brian                | [@Brai93](https://github.com/Brai93)                               |
+| ARANZAMENDI, Iñaki Joaquín | [@inaaranza](https://github.com/inaaranza)                         |
+| MORISINI, Pablo            | [@MorosiniP](https://github.com/MorosiniP)                         |
+| BENCINA, Morena            | [@MoreBencina](https://github.com/MoreBencina)                     |
 
 ## Prerequisitos
 
