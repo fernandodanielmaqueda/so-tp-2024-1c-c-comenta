@@ -2,13 +2,13 @@
 
 ## Grupo "Operativos"
 
-| Apellido y Nombre(s)       | Usuario de GitHub                                                  |
-|----------------------------|--------------------------------------------------------------------|
-| MAQUEDA, Fernando Daniel   | [@fernandodanielmaqueda](https://github.com/fernandodanielmaqueda) |
-| FINK, Brian                | [@Brai93](https://github.com/Brai93)                               |
-| ARANZAMENDI, Iñaki Joaquín | [@inaaranza](https://github.com/inaaranza)                         |
-| MOROSINI, Pablo Ariel      | [@MorosiniP](https://github.com/MorosiniP)                         |
-| BENCINA, Morena            | [@MoreBencina](https://github.com/MoreBencina)                     |
+| Legajo    | Apellido(s) | Nombre(s)       | Usuario de GitHub                                                  | Correo electrónico institucional  | Curso |
+| --------- | ----------- | --------------- | ------------------------------------------------------------------ | --------------------------------- | ----- |
+| 173.065-4 | Maqueda     | Fernando Daniel | [@fernandodanielmaqueda](https://github.com/fernandodanielmaqueda) | fmaqueda@frba.utn.edu.ar          | K3153 |
+| 144.922-9 | Fink        | Brian           | [@Brai93](https://github.com/Brai93)                               | brianfink@frba.utn.edu.ar         | K3054 |
+| 175.400-2 | Morosini    | Pablo Ariel     | [@MorosiniP](https://github.com/MorosiniP)                         | pmorosini@frba.utn.edu.ar         | K3154 |
+| 177.292-2 | Bencina     | Morena          | [@MoreBencina](https://github.com/MoreBencina)                     | mbencina@frba.utn.edu.ar          | K3054 |
+| 172.659-6 | Aranzamendi | Iñaki Joaquín   | [@inaaranza](https://github.com/inaaranza)                         | iaranzamendi@frba.utn.edu.ar      | K3254 |
 
 ## Prerequisitos
 
